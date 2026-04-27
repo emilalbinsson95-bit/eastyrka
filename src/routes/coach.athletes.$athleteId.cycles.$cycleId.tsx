@@ -458,6 +458,7 @@ function WeekEditor({
   weekIndex,
   previousWeek,
   exerciseLib,
+  baselines,
   onTogglePublish,
   onCopyFromPrevious,
 }: {
@@ -465,6 +466,7 @@ function WeekEditor({
   weekIndex: number;
   previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
+  baselines: Record<string, number>;
   onTogglePublish: (publish: boolean) => void;
   onCopyFromPrevious: () => void;
 }) {

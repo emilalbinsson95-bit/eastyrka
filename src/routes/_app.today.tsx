@@ -129,7 +129,9 @@ function TodayPage() {
              id, day_of_week, title, notes,
              planned_exercises (
                id, exercise, variation, target_sets, target_reps,
-               target_rpe, target_weight_kg, notes, order_index
+               target_rpe, target_rir, intensity_metric,
+               target_weight_kg, lengthened_partials, last_set_to_failure,
+               notes, order_index
              )
            )`,
         )

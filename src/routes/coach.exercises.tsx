@@ -174,6 +174,7 @@ function ExerciseLibraryPage() {
             </Button>
           </DialogTrigger>
           <ExerciseDialog
+            key={editing?.id ?? "new"}
             editing={editing}
             onSubmit={(values) =>
               upsertMutation.mutate({ id: editing?.id, ...values })

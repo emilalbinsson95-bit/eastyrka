@@ -2,9 +2,10 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, Save, TrendingDown, Plus, Settings, Calendar, BarChart3 } from "lucide-react";
+import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { LineChart, Line, ResponsiveContainer, Tooltip, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Card,

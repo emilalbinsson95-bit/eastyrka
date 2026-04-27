@@ -712,7 +712,8 @@ function WeekEditor({
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {DAYS.map((dayName, day) => {
+        {Array.from({ length: daysPerWeek }, (_, day) => {
+          const dayName = dayLabel(day);
           const session = sessionsByDay.get(day);
           const dayExes = session
             ? exercises

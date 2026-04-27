@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
-import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart } from "lucide-react";
+import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -523,6 +523,21 @@ function AnalyticsPage() {
               <SelectItem value="365">Last 365 days</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              exportHistoryCsv({
+                athleteName: profileQuery.data?.full_name ?? "athlete",
+                logs: allLogs,
+                surveys: surveysQuery.data ?? [],
+              })
+            }
+            disabled={allLogs.length === 0 && (surveysQuery.data ?? []).length === 0}
+          >
+            <Download className="mr-1 h-4 w-4" />
+            Export CSV
+          </Button>
         </div>
       </div>
 

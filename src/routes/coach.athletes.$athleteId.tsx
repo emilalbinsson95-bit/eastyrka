@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, Save, TrendingDown, Plus, Settings, Calendar } from "lucide-react";
+import { ArrowLeft, Save, TrendingDown, Plus, Settings, Calendar, BarChart3 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,14 +83,24 @@ function AthleteDetailPage() {
             </p>
           )}
         </div>
-        <Button asChild>
-          <Link
-            to="/coach/athletes/$athleteId/cycles"
-            params={{ athleteId }}
-          >
-            <Calendar className="mr-1 h-4 w-4" /> Mesocycles
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link
+              to="/coach/athletes/$athleteId/analytics"
+              params={{ athleteId }}
+            >
+              <BarChart3 className="mr-1 h-4 w-4" /> Analytics
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link
+              to="/coach/athletes/$athleteId/cycles"
+              params={{ athleteId }}
+            >
+              <Calendar className="mr-1 h-4 w-4" /> Mesocycles
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">

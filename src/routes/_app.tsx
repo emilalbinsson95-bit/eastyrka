@@ -44,14 +44,17 @@ function AthleteLayout() {
             <Activity className="h-5 w-5 text-primary" />
             EA Training System
           </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => signOut().then(() => navigate({ to: "/" }))}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="ml-1 hidden sm:inline">Sign out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <RoleSwitcher />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut().then(() => navigate({ to: "/" }))}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Sign out</span>
+            </Button>
+          </div>
         </div>
       </header>
 

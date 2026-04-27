@@ -728,6 +728,7 @@ function WeekEditor({
                     renderItem={(ex) => (
                       <ExerciseRow
                         ex={ex}
+                        oneRm={baselines[ex.exercise] ?? 0}
                         onUpdate={(patch) =>
                           updateExerciseMutation.mutate({ id: ex.id, patch })
                         }

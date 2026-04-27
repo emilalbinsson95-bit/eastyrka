@@ -180,9 +180,7 @@ function TodayPage() {
     // Convert: Mon=0..Sun=6 (matches our storage)
     const jsDay = today.getDay(); // 0=Sun..6=Sat
     const dow = jsDay === 0 ? 6 : jsDay - 1;
-    return planQuery.data.planned_sessions
-      .sort((a, b) => a.day_of_week - b.day_of_week)
-      .find((s) => s.day_of_week === dow);
+    return planQuery.data.planned_sessions.find((s) => s.day_of_week === dow);
   }, [planQuery.data, today]);
 
   const baselines = baselinesQuery.data ?? {};
@@ -331,7 +329,7 @@ function PlannedSessionCard({
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        {session.planned_exercises
+        {[...session.planned_exercises]
           .sort((a, b) => a.order_index - b.order_index)
           .map((ex) => {
             const exerciseLogs = logs.filter(

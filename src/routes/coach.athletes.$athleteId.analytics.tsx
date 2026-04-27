@@ -177,24 +177,21 @@ function AnalyticsPage() {
     queryFn: async () => {
       const since = new Date();
       since.setDate(since.getDate() - days);
-      // mesocycles -> week_plans -> planned_sessions -> planned_exercises (targets)
-      const { data: cycles, error: cErr } = await supabase
-        .from("mesocycles")
-        .select("id, start_date, total_weeks")
-        .eq("athlete_id", athleteId);
-      if (cErr) throw cErr;
-      const cycleIds = (cycles ?? []).map((c) => c.id);
-      if (cycleIds.length === 0) return { plannedDays: [] as string[], plannedTargets: [] as Array<{ date: string; target_rpe: number | null }> };
-
       const { data: weeks, error: wErr } = await supabase
         .from("week_plans")
-        .select("id, mesocycle_id, week_number, status")
-        .in("mesocycle_id", cycleIds);
+        .select("id, week_start_date, status")
+        .eq("athlete_id", athleteId)
+        .eq("status", "published")
+        .gte("week_start_date", format(since, "yyyy-MM-dd"));
       if (wErr) throw wErr;
-      const publishedWeeks = (weeks ?? []).filter((w) => w.status === "published");
-      const weekById = new Map(publishedWeeks.map((w) => [w.id, w]));
-      const weekIds = publishedWeeks.map((w) => w.id);
-      if (weekIds.length === 0) return { plannedDays: [] as string[], plannedTargets: [] as Array<{ date: string; target_rpe: number | null }> };
+      const weekIds = (weeks ?? []).map((w) => w.id);
+      if (weekIds.length === 0) {
+        return {
+          plannedDays: [] as string[],
+          plannedTargets: [] as Array<{ date: string; target_rpe: number | null }>,
+        };
+      }
+      const weekById = new Map((weeks ?? []).map((w) => [w.id, w]));
 
       const { data: sessions, error: sErr } = await supabase
         .from("planned_sessions")
@@ -203,31 +200,31 @@ function AnalyticsPage() {
       if (sErr) throw sErr;
 
       const sessionIds = (sessions ?? []).map((s) => s.id);
-      const { data: targets, error: tErr } = sessionIds.length
+      const targetsRes = sessionIds.length
         ? await supabase
             .from("planned_exercises")
             .select("planned_session_id, target_rpe")
             .in("planned_session_id", sessionIds)
         : { data: [], error: null };
-      if (tErr) throw tErr;
+      if (targetsRes.error) throw targetsRes.error;
+      const targets = targetsRes.data ?? [];
 
-      const cycleById = new Map((cycles ?? []).map((c) => [c.id, c]));
       const plannedDays: string[] = [];
       const plannedTargets: Array<{ date: string; target_rpe: number | null }> = [];
+      const today = new Date();
 
       for (const s of sessions ?? []) {
         const week = weekById.get(s.week_plan_id);
         if (!week) continue;
-        const cycle = cycleById.get(week.mesocycle_id);
-        if (!cycle) continue;
-        const cycleStart = parseISO(cycle.start_date);
-        // week 1 = first week from cycleStart; day_of_week 1 = Monday
-        const weekStart = addDays(cycleStart, (week.week_number - 1) * 7);
-        const sessionDate = addDays(weekStart, (s.day_of_week - 1));
+        const weekStart = parseISO(week.week_start_date);
+        // day_of_week: 1 = Monday ... 7 = Sunday
+        const sessionDate = addDays(weekStart, s.day_of_week - 1);
         const dateStr = format(sessionDate, "yyyy-MM-dd");
-        if (sessionDate >= since && sessionDate <= new Date()) {
+        if (sessionDate >= since && sessionDate <= today) {
           plannedDays.push(dateStr);
-          const sessTargets = (targets ?? []).filter((t) => t.planned_session_id === s.id);
+          const sessTargets = targets.filter(
+            (t) => t.planned_session_id === s.id,
+          );
           for (const t of sessTargets) {
             plannedTargets.push({ date: dateStr, target_rpe: t.target_rpe });
           }

@@ -78,8 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Bootstrap: subscribe FIRST, then read existing session.
+  // Dedupe role fetches: a single getSession + INITIAL_SESSION event would
+  // otherwise fire two identical user_roles queries on every page load.
   useEffect(() => {
     let unsubscribed = false;
+    let lastFetchedUserId: string | null = null;
+    let inFlight: Promise<AppRole[]> | null = null;
 
     const applyRoles = (next: AppRole[]) => {
       if (unsubscribed) return;
@@ -87,16 +91,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setView((prev) => pickActiveRole(next, prev ?? readStoredView()));
     };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const loadRoles = (userId: string) => {
+      if (lastFetchedUserId === userId && inFlight) return inFlight;
+      lastFetchedUserId = userId;
+      inFlight = fetchRoles(userId);
+      return inFlight;
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (unsubscribed) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
-        // Defer role fetch off the auth callback to avoid deadlocks
+        // Skip duplicate role fetches across getSession / INITIAL_SESSION /
+        // TOKEN_REFRESHED events for the same user.
+        if (event === "TOKEN_REFRESHED" && lastFetchedUserId === newSession.user.id) {
+          return;
+        }
         setTimeout(() => {
-          fetchRoles(newSession.user.id).then(applyRoles);
+          loadRoles(newSession.user.id).then(applyRoles);
         }, 0);
       } else {
+        lastFetchedUserId = null;
+        inFlight = null;
         setRoles([]);
         setView(null);
       }
@@ -107,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) {
-        fetchRoles(data.session.user.id).then((next) => {
+        loadRoles(data.session.user.id).then((next) => {
           if (unsubscribed) return;
           applyRoles(next);
           setLoading(false);

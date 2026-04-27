@@ -45,7 +45,8 @@ function AthleteLayout() {
             <Activity className="h-5 w-5 text-primary" />
             EA Training System
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
             <RoleSwitcher />
             <Button
               variant="ghost"
@@ -65,9 +66,10 @@ function AthleteLayout() {
 
       {/* Bottom tab bar (mobile-first) */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card">
-        <div className="mx-auto grid max-w-3xl grid-cols-3">
+        <div className="mx-auto grid max-w-3xl grid-cols-4">
           <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label="Today" />
           <TabLink to="/history" icon={<History className="h-5 w-5" />} label="History" />
+          <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label="Messages" />
           <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label="Me" />
         </div>
       </nav>
@@ -80,7 +82,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/today" | "/history" | "/me";
+  to: "/today" | "/history" | "/me" | "/messages";
   icon: React.ReactNode;
   label: string;
 }) {

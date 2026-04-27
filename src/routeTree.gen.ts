@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as AppRouteImport } from './routes/_app'
@@ -28,6 +29,11 @@ import { Route as CoachAthletesAthleteIdCyclesCycleIdRouteImport } from './route
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/coach': typeof CoachRouteWithChildren
   '/login': typeof LoginRoute
+  '/messages': typeof MessagesRoute
   '/signup': typeof SignupRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/messages': typeof MessagesRoute
   '/signup': typeof SignupRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/coach': typeof CoachRouteWithChildren
   '/login': typeof LoginRoute
+  '/messages': typeof MessagesRoute
   '/signup': typeof SignupRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/me': typeof AppMeRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/'
     | '/coach'
     | '/login'
+    | '/messages'
     | '/signup'
     | '/history'
     | '/me'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/messages'
     | '/signup'
     | '/history'
     | '/me'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/coach'
     | '/login'
+    | '/messages'
     | '/signup'
     | '/_app/history'
     | '/_app/me'
@@ -208,6 +220,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   CoachRoute: typeof CoachRouteWithChildren
   LoginRoute: typeof LoginRoute
+  MessagesRoute: typeof MessagesRoute
   SignupRoute: typeof SignupRoute
 }
 
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -388,6 +408,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   CoachRoute: CoachRouteWithChildren,
   LoginRoute: LoginRoute,
+  MessagesRoute: MessagesRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport

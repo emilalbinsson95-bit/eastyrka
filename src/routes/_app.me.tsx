@@ -10,7 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
-export const Route = createFileRoute("/_athlete/me")({
+export const Route = createFileRoute("/_app/me")({
   head: () => ({
     meta: [
       { title: "My Profile — EAkoefficient" },

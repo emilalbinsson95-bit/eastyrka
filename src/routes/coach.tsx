@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/_coach")({
+export const Route = createFileRoute("/coach")({
   component: CoachLayout,
 });
 

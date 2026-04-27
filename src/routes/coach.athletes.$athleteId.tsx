@@ -39,7 +39,7 @@ const DEFAULT_EXERCISES = [
   "Lår Curl",
 ];
 
-export const Route = createFileRoute("/_coach/athletes/$athleteId")({
+export const Route = createFileRoute("/coach/athletes/$athleteId")({
   head: () => ({
     meta: [
       { title: "Athlete dashboard — EAkoefficient Coach" },
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_coach/athletes/$athleteId")({
 });
 
 function AthleteDetailPage() {
-  const { athleteId } = useParams({ from: "/_coach/athletes/$athleteId" });
+  const { athleteId } = useParams({ from: "/coach/athletes/$athleteId" });
 
   const profileQuery = useQuery({
     queryKey: ["athlete-profile", athleteId],

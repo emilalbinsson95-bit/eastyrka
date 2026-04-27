@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export const Route = createFileRoute("/_coach/templates")({
+export const Route = createFileRoute("/coach/templates")({
   head: () => ({
     meta: [
       { title: "Plan templates — EAkoefficient Coach" },

@@ -45,7 +45,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_athlete/today")({
+export const Route = createFileRoute("/_app/today")({
   head: () => ({
     meta: [
       { title: "Today's Session — EAkoefficient" },

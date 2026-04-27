@@ -18,7 +18,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_athlete/history")({
+export const Route = createFileRoute("/_app/history")({
   head: () => ({
     meta: [
       { title: "History — EAkoefficient" },

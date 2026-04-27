@@ -21,7 +21,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_coach/")({
+export const Route = createFileRoute("/coach/")({
   head: () => ({
     meta: [
       { title: "My Athletes — EAkoefficient Coach" },

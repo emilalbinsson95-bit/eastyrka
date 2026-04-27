@@ -372,6 +372,51 @@ export type Database = {
         }
         Relationships: []
       }
+      readiness_surveys: {
+        Row: {
+          athlete_id: string
+          bodyweight_kg: number | null
+          created_at: string
+          daily_form: number
+          date: string
+          fatigue: number
+          id: string
+          life_stress: number
+          notes: string | null
+          sleep_hours: number | null
+          updated_at: string
+          work_stress: number
+        }
+        Insert: {
+          athlete_id: string
+          bodyweight_kg?: number | null
+          created_at?: string
+          daily_form: number
+          date: string
+          fatigue: number
+          id?: string
+          life_stress: number
+          notes?: string | null
+          sleep_hours?: number | null
+          updated_at?: string
+          work_stress: number
+        }
+        Update: {
+          athlete_id?: string
+          bodyweight_kg?: number | null
+          created_at?: string
+          daily_form?: number
+          date?: string
+          fatigue?: number
+          id?: string
+          life_stress?: number
+          notes?: string | null
+          sleep_hours?: number | null
+          updated_at?: string
+          work_stress?: number
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           athlete_id: string

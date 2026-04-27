@@ -46,6 +46,7 @@ const exerciseSchema = z.object({
   name: z.string().trim().min(1, "Name required").max(80),
   category: z.string().trim().max(40).optional().or(z.literal("")),
   description: z.string().trim().max(2000).optional().or(z.literal("")),
+  default_intensity_metric: z.enum(["rpe", "rir"]),
 });
 
 interface Exercise {
@@ -55,6 +56,7 @@ interface Exercise {
   category: string | null;
   is_global: boolean;
   created_by: string | null;
+  default_intensity_metric: "rpe" | "rir";
   updated_at: string;
 }
 

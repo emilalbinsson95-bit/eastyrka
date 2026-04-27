@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
@@ -71,6 +71,7 @@ function CyclesListPage() {
   const userId = user!.id;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const childMatches = useChildMatches();
 
   const profileQuery = useQuery({
     queryKey: ["athlete-profile", athleteId],
@@ -131,6 +132,10 @@ function CyclesListPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
 
   return (
     <div className="space-y-4">

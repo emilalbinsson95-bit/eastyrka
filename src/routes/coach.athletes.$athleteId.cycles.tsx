@@ -133,6 +133,10 @@ function CyclesListPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">

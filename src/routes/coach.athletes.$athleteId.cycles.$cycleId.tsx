@@ -544,12 +544,16 @@ function WeekEditor({
       const existing = (sessionsQuery.data?.exercises ?? []).filter(
         (e) => e.planned_session_id === input.sessionId,
       );
+      const metric = lib.default_intensity_metric ?? "rpe";
       const { error } = await supabase.from("planned_exercises").insert({
         planned_session_id: input.sessionId,
         exercise_id: lib.id,
         exercise: lib.name,
         target_sets: 3,
-        target_reps: 5,
+        target_reps: metric === "rir" ? 10 : 5,
+        intensity_metric: metric,
+        target_rpe: metric === "rpe" ? 7 : null,
+        target_rir: metric === "rir" ? 2 : null,
         order_index: existing.length,
       });
       if (error) throw error;
@@ -571,7 +575,11 @@ function WeekEditor({
         target_sets: ex.target_sets,
         target_reps: ex.target_reps,
         target_rpe: ex.target_rpe,
+        target_rir: ex.target_rir,
+        intensity_metric: ex.intensity_metric,
         target_weight_kg: ex.target_weight_kg,
+        lengthened_partials: ex.lengthened_partials,
+        last_set_to_failure: ex.last_set_to_failure,
         notes: ex.notes,
         order_index: existing.length,
       });

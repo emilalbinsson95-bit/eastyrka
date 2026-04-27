@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO, startOfWeek, differenceInCalendarDays, addDays } from "date-fns";
+import { format, parseISO, startOfWeek, addDays } from "date-fns";
 import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart } from "lucide-react";
 import {
   ResponsiveContainer,

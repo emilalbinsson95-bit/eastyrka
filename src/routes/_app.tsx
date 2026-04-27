@@ -4,6 +4,7 @@ import { Calendar, History, User as UserIcon, LogOut, Activity } from "lucide-re
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,
@@ -19,7 +20,9 @@ function AthleteLayout() {
       navigate({ to: "/login" });
       return;
     }
-    if (role === "coach") {
+    // Only bounce to coach if the user has no athlete role at all.
+    // Coaches who have enabled athlete view stay here.
+    if (role !== "athlete") {
       navigate({ to: "/coach" });
     }
   }, [user, role, loading, navigate]);
@@ -41,14 +44,17 @@ function AthleteLayout() {
             <Activity className="h-5 w-5 text-primary" />
             EA Training System
           </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => signOut().then(() => navigate({ to: "/" }))}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="ml-1 hidden sm:inline">Sign out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <RoleSwitcher />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut().then(() => navigate({ to: "/" }))}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Sign out</span>
+            </Button>
+          </div>
         </div>
       </header>
 

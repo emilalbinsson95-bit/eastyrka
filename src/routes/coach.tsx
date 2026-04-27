@@ -4,6 +4,7 @@ import { Users, BookOpen, Mail, LogOut, Activity } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 export const Route = createFileRoute("/coach")({
   component: CoachLayout,
@@ -19,7 +20,9 @@ function CoachLayout() {
       navigate({ to: "/login" });
       return;
     }
-    if (role === "athlete") {
+    // Only bounce to athlete if the user has no coach role at all.
+    // Coaches who switched into athlete view stay there until they switch back.
+    if (role !== "coach") {
       navigate({ to: "/today" });
     }
   }, [user, role, loading, navigate]);
@@ -56,14 +59,17 @@ function CoachLayout() {
               label="Invites"
             />
           </nav>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => signOut().then(() => navigate({ to: "/" }))}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="ml-1 hidden sm:inline">Sign out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <RoleSwitcher />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut().then(() => navigate({ to: "/" }))}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Sign out</span>
+            </Button>
+          </div>
         </div>
         {/* Mobile nav */}
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">

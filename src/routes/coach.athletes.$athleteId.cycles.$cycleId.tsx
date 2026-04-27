@@ -6,14 +6,32 @@ import {
   ArrowLeft,
   Plus,
   Send,
-  Save,
   Trash2,
-  Eye,
   EyeOff,
   GripVertical,
+  Copy,
+  CopyPlus,
+  Pencil,
+  Check,
 } from "lucide-react";
-import { z } from "zod";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import {
@@ -26,7 +44,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -36,14 +53,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute(
@@ -158,7 +173,6 @@ function CycleDetailPage() {
     },
   });
 
-  // Ensure week_plans rows exist for every week in the meso
   const ensureWeeksMutation = useMutation({
     mutationFn: async () => {
       const cycle = cycleQuery.data!;
@@ -195,7 +209,6 @@ function CycleDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Auto-create missing weeks once data loads
   useMemo(() => {
     if (
       cycleQuery.data &&
@@ -223,6 +236,83 @@ function CycleDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Copy entire structure from one week to another
+  const copyWeekMutation = useMutation({
+    mutationFn: async (input: { fromWeekId: string; toWeekId: string }) => {
+      // Load source sessions + exercises
+      const { data: srcSess, error: e1 } = await supabase
+        .from("planned_sessions")
+        .select("id, day_of_week, title, notes")
+        .eq("week_plan_id", input.fromWeekId);
+      if (e1) throw e1;
+      const srcSessions = srcSess ?? [];
+      const srcIds = srcSessions.map((s) => s.id);
+      let srcExes: PlannedExerciseRow[] = [];
+      if (srcIds.length) {
+        const { data: ex, error: e2 } = await supabase
+          .from("planned_exercises")
+          .select(
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg, notes, order_index",
+          )
+          .in("planned_session_id", srcIds);
+        if (e2) throw e2;
+        srcExes = (ex ?? []) as PlannedExerciseRow[];
+      }
+
+      // Wipe destination sessions (cascade-ish: delete exercises then sessions)
+      const { data: dstSess } = await supabase
+        .from("planned_sessions")
+        .select("id")
+        .eq("week_plan_id", input.toWeekId);
+      const dstIds = (dstSess ?? []).map((s) => s.id);
+      if (dstIds.length) {
+        await supabase
+          .from("planned_exercises")
+          .delete()
+          .in("planned_session_id", dstIds);
+        await supabase.from("planned_sessions").delete().in("id", dstIds);
+      }
+
+      // Insert new sessions and remember mapping
+      for (const s of srcSessions) {
+        const { data: newSess, error: e3 } = await supabase
+          .from("planned_sessions")
+          .insert({
+            week_plan_id: input.toWeekId,
+            day_of_week: s.day_of_week,
+            title: s.title,
+            notes: s.notes,
+          })
+          .select("id")
+          .single();
+        if (e3) throw e3;
+        const sessExes = srcExes.filter((e) => e.planned_session_id === s.id);
+        if (sessExes.length) {
+          const { error: e4 } = await supabase.from("planned_exercises").insert(
+            sessExes.map((e) => ({
+              planned_session_id: newSess.id,
+              exercise_id: e.exercise_id,
+              exercise: e.exercise,
+              variation: e.variation,
+              target_sets: e.target_sets,
+              target_reps: e.target_reps,
+              target_rpe: e.target_rpe,
+              target_weight_kg: e.target_weight_kg,
+              notes: e.notes,
+              order_index: e.order_index,
+            })),
+          );
+          if (e4) throw e4;
+        }
+      }
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["week-sessions", vars.toWeekId] });
+      toast.success("Week copied");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (cycleQuery.isLoading || !cycleQuery.data) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
@@ -231,6 +321,7 @@ function CycleDetailPage() {
   const weeks = weeksQuery.data ?? [];
   const publishedCount = weeks.filter((w) => w.status === "published").length;
   const currentWeek = weeks[activeWeek];
+  const previousWeek = activeWeek > 0 ? weeks[activeWeek - 1] : null;
 
   return (
     <div className="space-y-4">
@@ -263,7 +354,6 @@ function CycleDetailPage() {
         </div>
       </div>
 
-      {/* Week selector */}
       <Card>
         <CardContent className="p-3">
           <div className="flex flex-wrap gap-2">
@@ -299,10 +389,24 @@ function CycleDetailPage() {
           key={currentWeek.id}
           week={currentWeek}
           weekIndex={activeWeek}
+          previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
+          onCopyFromPrevious={() => {
+            if (!previousWeek) return;
+            if (
+              !confirm(
+                `Replace Week ${activeWeek + 1} with a copy of Week ${activeWeek}? This will overwrite any existing sessions.`,
+              )
+            )
+              return;
+            copyWeekMutation.mutate({
+              fromWeekId: previousWeek.id,
+              toWeekId: currentWeek.id,
+            });
+          }}
         />
       )}
     </div>
@@ -312,13 +416,17 @@ function CycleDetailPage() {
 function WeekEditor({
   week,
   weekIndex,
+  previousWeek,
   exerciseLib,
   onTogglePublish,
+  onCopyFromPrevious,
 }: {
   week: WeekPlanRow;
   weekIndex: number;
+  previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
   onTogglePublish: (publish: boolean) => void;
+  onCopyFromPrevious: () => void;
 }) {
   const qc = useQueryClient();
 
@@ -364,6 +472,18 @@ function WeekEditor({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const updateSessionMutation = useMutation({
+    mutationFn: async (input: { id: string; patch: Partial<PlannedSessionRow> }) => {
+      const { error } = await supabase
+        .from("planned_sessions")
+        .update(input.patch)
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["week-sessions", week.id] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const deleteSessionMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("planned_sessions").delete().eq("id", id);
@@ -396,6 +516,29 @@ function WeekEditor({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const duplicateExerciseMutation = useMutation({
+    mutationFn: async (ex: PlannedExerciseRow) => {
+      const existing = (sessionsQuery.data?.exercises ?? []).filter(
+        (e) => e.planned_session_id === ex.planned_session_id,
+      );
+      const { error } = await supabase.from("planned_exercises").insert({
+        planned_session_id: ex.planned_session_id,
+        exercise_id: ex.exercise_id,
+        exercise: ex.exercise,
+        variation: ex.variation,
+        target_sets: ex.target_sets,
+        target_reps: ex.target_reps,
+        target_rpe: ex.target_rpe,
+        target_weight_kg: ex.target_weight_kg,
+        notes: ex.notes,
+        order_index: existing.length,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["week-sessions", week.id] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const updateExerciseMutation = useMutation({
     mutationFn: async (input: {
       id: string;
@@ -419,6 +562,22 @@ function WeekEditor({
     onSuccess: () => qc.invalidateQueries({ queryKey: ["week-sessions", week.id] }),
   });
 
+  const reorderExercisesMutation = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      // Update order_index for each
+      await Promise.all(
+        orderedIds.map((id, idx) =>
+          supabase
+            .from("planned_exercises")
+            .update({ order_index: idx })
+            .eq("id", id),
+        ),
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["week-sessions", week.id] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const sessions = sessionsQuery.data?.sessions ?? [];
   const exercises = sessionsQuery.data?.exercises ?? [];
   const sessionsByDay = new Map<number, PlannedSessionRow>();
@@ -437,39 +596,51 @@ function WeekEditor({
               : "Only visible to you. Publish when the athlete is ready."}
           </p>
         </div>
-        <Button
-          variant={week.status === "published" ? "outline" : "default"}
-          size="sm"
-          onClick={() => onTogglePublish(week.status !== "published")}
-        >
-          {week.status === "published" ? (
-            <>
-              <EyeOff className="mr-1 h-4 w-4" /> Unpublish
-            </>
-          ) : (
-            <>
-              <Send className="mr-1 h-4 w-4" /> Publish to athlete
-            </>
+        <div className="flex flex-wrap gap-2">
+          {previousWeek && (
+            <Button variant="outline" size="sm" onClick={onCopyFromPrevious}>
+              <Copy className="mr-1 h-4 w-4" /> Copy from Week {weekIndex}
+            </Button>
           )}
-        </Button>
+          <Button
+            variant={week.status === "published" ? "outline" : "default"}
+            size="sm"
+            onClick={() => onTogglePublish(week.status !== "published")}
+          >
+            {week.status === "published" ? (
+              <>
+                <EyeOff className="mr-1 h-4 w-4" /> Unpublish
+              </>
+            ) : (
+              <>
+                <Send className="mr-1 h-4 w-4" /> Publish to athlete
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {DAYS.map((dayName, day) => {
           const session = sessionsByDay.get(day);
           const dayExes = session
-            ? exercises.filter((e) => e.planned_session_id === session.id)
+            ? exercises
+                .filter((e) => e.planned_session_id === session.id)
+                .sort((a, b) => a.order_index - b.order_index)
             : [];
           return (
             <Card key={day} className={!session ? "border-dashed" : undefined}>
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-1">
                   <CardTitle className="text-sm">{dayName}</CardTitle>
                   {session ? (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteSessionMutation.mutate(session.id)}
+                      onClick={() => {
+                        if (confirm(`Delete ${dayName} session?`))
+                          deleteSessionMutation.mutate(session.id);
+                      }}
                     >
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>
@@ -483,24 +654,34 @@ function WeekEditor({
                     </Button>
                   )}
                 </div>
-                {session?.title && (
-                  <CardDescription className="text-xs">
-                    {session.title}
-                  </CardDescription>
+                {session && (
+                  <SessionTitle
+                    session={session}
+                    onSave={(title) =>
+                      updateSessionMutation.mutate({
+                        id: session.id,
+                        patch: { title },
+                      })
+                    }
+                  />
                 )}
               </CardHeader>
               {session && (
                 <CardContent className="space-y-2 pt-0">
-                  {dayExes.map((ex) => (
-                    <ExerciseRow
-                      key={ex.id}
-                      ex={ex}
-                      onUpdate={(patch) =>
-                        updateExerciseMutation.mutate({ id: ex.id, patch })
-                      }
-                      onDelete={() => deleteExerciseMutation.mutate(ex.id)}
-                    />
-                  ))}
+                  <SortableExerciseList
+                    items={dayExes}
+                    onReorder={(ids) => reorderExercisesMutation.mutate(ids)}
+                    renderItem={(ex) => (
+                      <ExerciseRow
+                        ex={ex}
+                        onUpdate={(patch) =>
+                          updateExerciseMutation.mutate({ id: ex.id, patch })
+                        }
+                        onDuplicate={() => duplicateExerciseMutation.mutate(ex)}
+                        onDelete={() => deleteExerciseMutation.mutate(ex.id)}
+                      />
+                    )}
+                  />
                   <AddExerciseRow
                     exerciseLib={exerciseLib}
                     onAdd={(libId) =>
@@ -520,19 +701,147 @@ function WeekEditor({
   );
 }
 
+function SessionTitle({
+  session,
+  onSave,
+}: {
+  session: PlannedSessionRow;
+  onSave: (title: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(session.title ?? "");
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="h-7 text-xs"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onSave(value);
+              setEditing(false);
+            }
+            if (e.key === "Escape") setEditing(false);
+          }}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => {
+            onSave(value);
+            setEditing(false);
+          }}
+        >
+          <Check className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="group flex items-center gap-1 text-left"
+    >
+      <CardDescription className="text-xs">
+        {session.title || "Untitled"}
+      </CardDescription>
+      <Pencil className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+    </button>
+  );
+}
+
+function SortableExerciseList({
+  items,
+  onReorder,
+  renderItem,
+}: {
+  items: PlannedExerciseRow[];
+  onReorder: (orderedIds: string[]) => void;
+  renderItem: (ex: PlannedExerciseRow) => React.ReactNode;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(items, oldIndex, newIndex);
+    onReorder(next.map((i) => i.id));
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={items.map((i) => i.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-2">
+          {items.map((ex) => (
+            <SortableItem key={ex.id} id={ex.id}>
+              {renderItem(ex)}
+            </SortableItem>
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+function SortableItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div data-drag-handle {...attributes} {...listeners} className="contents">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ExerciseRow({
   ex,
   onUpdate,
+  onDuplicate,
   onDelete,
 }: {
   ex: PlannedExerciseRow;
   onUpdate: (patch: Partial<PlannedExerciseRow>) => void;
+  onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const [sets, setSets] = useState(String(ex.target_sets));
   const [reps, setReps] = useState(String(ex.target_reps));
   const [rpe, setRpe] = useState(ex.target_rpe?.toString() ?? "");
   const [weight, setWeight] = useState(ex.target_weight_kg?.toString() ?? "");
+  const [notes, setNotes] = useState(ex.notes ?? "");
+  const [showNotes, setShowNotes] = useState(!!ex.notes);
 
   const commit = () => {
     const patch: Partial<PlannedExerciseRow> = {
@@ -545,22 +854,70 @@ function ExerciseRow({
   };
 
   return (
-    <div className="rounded-md border border-border p-2">
+    <div className="rounded-md border border-border bg-card p-2">
       <div className="flex items-center justify-between gap-1">
-        <div className="flex items-center gap-1 min-w-0">
-          <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <div className="flex min-w-0 items-center gap-1">
+          <button
+            type="button"
+            className="cursor-grab touch-none p-0.5 text-muted-foreground hover:text-foreground active:cursor-grabbing"
+            // The parent SortableItem owns drag listeners, so this just shows affordance
+            onClick={(e) => e.preventDefault()}
+            aria-label="Drag to reorder"
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
           <span className="truncate text-sm font-medium">{ex.exercise}</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={onDelete} className="h-7 w-7">
-          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <span className="text-lg leading-none">⋯</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onPointerDown={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onClick={onDuplicate}>
+              <CopyPlus className="mr-2 h-4 w-4" /> Add another block (same
+              exercise)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              {showNotes ? "Hide notes" : "Add notes"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={onDelete}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <div className="mt-1 grid grid-cols-4 gap-1">
+      <div
+        className="mt-1 grid grid-cols-4 gap-1"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <NumField label="Sets" value={sets} onChange={setSets} onBlur={commit} />
         <NumField label="Reps" value={reps} onChange={setReps} onBlur={commit} />
         <NumField label="RPE" value={rpe} onChange={setRpe} onBlur={commit} step="0.5" />
         <NumField label="kg" value={weight} onChange={setWeight} onBlur={commit} step="0.5" />
       </div>
+      {showNotes && (
+        <div className="mt-1" onPointerDown={(e) => e.stopPropagation()}>
+          <Input
+            placeholder="Notes (e.g. tempo 3-1-1, paused)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={() => onUpdate({ notes: notes || null })}
+            className="h-7 text-xs"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -602,7 +959,10 @@ function AddExerciseRow({
 }) {
   const [pick, setPick] = useState("");
   return (
-    <div className="flex gap-1">
+    <div
+      className="flex gap-1"
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       <Select
         value={pick}
         onValueChange={(v) => {

@@ -30,7 +30,7 @@ const signupSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password must be under 72 characters"),
-  role: z.enum(["coach", "athlete"]),
+  role: z.enum(["coach", "athlete", "physio", "patient"]),
 });
 
 export const Route = createFileRoute("/signup")({
@@ -39,12 +39,20 @@ export const Route = createFileRoute("/signup")({
       { title: "Sign up — EA Training System" },
       {
         name: "description",
-        content: "Create a coach or athlete account on EA Training System.",
+        content:
+          "Create an account on EA Training System — for coaches, athletes, physiotherapists and patients.",
       },
     ],
   }),
   component: SignupPage,
 });
+
+function roleHome(r: AppRole) {
+  if (r === "coach") return "/coach" as const;
+  if (r === "physio") return "/physio" as const;
+  if (r === "patient") return "/patient" as const;
+  return "/today" as const;
+}
 
 function SignupPage() {
   const { signUp, user, role: userRole, loading } = useAuth();
@@ -56,8 +64,11 @@ function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      if (userRole === "coach") navigate({ to: "/coach" });
+    if (!loading && user && userRole) {
+      const target = roleHome(userRole);
+      if (target === "/coach") navigate({ to: "/coach" });
+      else if (target === "/physio") navigate({ to: "/physio" });
+      else if (target === "/patient") navigate({ to: "/patient" });
       else navigate({ to: "/today" });
     }
   }, [user, userRole, loading, navigate]);
@@ -142,20 +153,23 @@ function SignupPage() {
                 onValueChange={(v) => setRole(v as AppRole)}
                 className="grid grid-cols-2 gap-2"
               >
-                <Label
-                  htmlFor="role-athlete"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-input p-3 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                >
-                  <RadioGroupItem value="athlete" id="role-athlete" />
-                  Athlete
-                </Label>
-                <Label
-                  htmlFor="role-coach"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-input p-3 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                >
-                  <RadioGroupItem value="coach" id="role-coach" />
-                  Coach
-                </Label>
+                {(
+                  [
+                    { v: "athlete", label: "Athlete" },
+                    { v: "coach", label: "Coach" },
+                    { v: "patient", label: "Patient" },
+                    { v: "physio", label: "Physiotherapist" },
+                  ] as const
+                ).map((opt) => (
+                  <Label
+                    key={opt.v}
+                    htmlFor={`role-${opt.v}`}
+                    className="flex cursor-pointer items-center gap-2 rounded-md border border-input p-3 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  >
+                    <RadioGroupItem value={opt.v} id={`role-${opt.v}`} />
+                    {opt.label}
+                  </Label>
+                ))}
               </RadioGroup>
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>

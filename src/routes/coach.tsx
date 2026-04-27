@@ -59,14 +59,17 @@ function CoachLayout() {
               label="Invites"
             />
           </nav>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => signOut().then(() => navigate({ to: "/" }))}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="ml-1 hidden sm:inline">Sign out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <RoleSwitcher />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut().then(() => navigate({ to: "/" }))}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Sign out</span>
+            </Button>
+          </div>
         </div>
         {/* Mobile nav */}
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">

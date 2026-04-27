@@ -130,33 +130,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback<AuthState["signUp"]>(
     async (email, password, fullName, signupRole) => {
-      const { data, error } = await supabase.auth.signUp({
+      // The selected role is passed in user metadata and read by the
+      // `handle_new_user` database trigger, which assigns the matching
+      // row in public.user_roles. Doing it server-side avoids the RLS
+      // race that exists before a session is established (especially
+      // with email confirmation enabled).
+      const redirectTarget = signupRole === "coach" ? "/coach" : "/today";
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo:
-            typeof window !== "undefined" ? `${window.location.origin}/today` : undefined,
-          data: { full_name: fullName },
+            typeof window !== "undefined"
+              ? `${window.location.origin}${redirectTarget}`
+              : undefined,
+          data: { full_name: fullName, role: signupRole },
         },
       });
       if (error) return { error: error.message };
-
-      // Trigger creates default 'athlete' role. If user signed up as coach,
-      // upgrade their role row.
-      if (signupRole === "coach" && data.user) {
-        await supabase
-          .from("user_roles")
-          .upsert(
-            { user_id: data.user.id, role: "coach" },
-            { onConflict: "user_id,role" },
-          );
-        // Remove the auto-created athlete row so login redirects to coach UI.
-        await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", data.user.id)
-          .eq("role", "athlete");
-      }
       return { error: null };
     },
     [],

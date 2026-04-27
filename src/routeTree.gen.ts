@@ -22,6 +22,7 @@ import { Route as AppMeRouteImport } from './routes/_app.me'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as CoachAthletesAthleteIdRouteImport } from './routes/coach.athletes.$athleteId'
 import { Route as CoachAthletesAthleteIdCyclesRouteImport } from './routes/coach.athletes.$athleteId.cycles'
+import { Route as CoachAthletesAthleteIdAnalyticsRouteImport } from './routes/coach.athletes.$athleteId.analytics'
 import { Route as CoachAthletesAthleteIdCyclesCycleIdRouteImport } from './routes/coach.athletes.$athleteId.cycles.$cycleId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -89,6 +90,12 @@ const CoachAthletesAthleteIdCyclesRoute =
     path: '/cycles',
     getParentRoute: () => CoachAthletesAthleteIdRoute,
   } as any)
+const CoachAthletesAthleteIdAnalyticsRoute =
+  CoachAthletesAthleteIdAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => CoachAthletesAthleteIdRoute,
+  } as any)
 const CoachAthletesAthleteIdCyclesCycleIdRoute =
   CoachAthletesAthleteIdCyclesCycleIdRouteImport.update({
     id: '/$cycleId',
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/coach/invites': typeof CoachInvitesRoute
   '/coach/': typeof CoachIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
+  '/coach/athletes/$athleteId/analytics': typeof CoachAthletesAthleteIdAnalyticsRoute
   '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
   '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
 }
@@ -122,6 +130,7 @@ export interface FileRoutesByTo {
   '/coach/invites': typeof CoachInvitesRoute
   '/coach': typeof CoachIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
+  '/coach/athletes/$athleteId/analytics': typeof CoachAthletesAthleteIdAnalyticsRoute
   '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
   '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
 }
@@ -139,6 +148,7 @@ export interface FileRoutesById {
   '/coach/invites': typeof CoachInvitesRoute
   '/coach/': typeof CoachIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
+  '/coach/athletes/$athleteId/analytics': typeof CoachAthletesAthleteIdAnalyticsRoute
   '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
   '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
 }
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/coach/invites'
     | '/coach/'
     | '/coach/athletes/$athleteId'
+    | '/coach/athletes/$athleteId/analytics'
     | '/coach/athletes/$athleteId/cycles'
     | '/coach/athletes/$athleteId/cycles/$cycleId'
   fileRoutesByTo: FileRoutesByTo
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/coach/invites'
     | '/coach'
     | '/coach/athletes/$athleteId'
+    | '/coach/athletes/$athleteId/analytics'
     | '/coach/athletes/$athleteId/cycles'
     | '/coach/athletes/$athleteId/cycles/$cycleId'
   id:
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
     | '/coach/invites'
     | '/coach/'
     | '/coach/athletes/$athleteId'
+    | '/coach/athletes/$athleteId/analytics'
     | '/coach/athletes/$athleteId/cycles'
     | '/coach/athletes/$athleteId/cycles/$cycleId'
   fileRoutesById: FileRoutesById
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachAthletesAthleteIdCyclesRouteImport
       parentRoute: typeof CoachAthletesAthleteIdRoute
     }
+    '/coach/athletes/$athleteId/analytics': {
+      id: '/coach/athletes/$athleteId/analytics'
+      path: '/analytics'
+      fullPath: '/coach/athletes/$athleteId/analytics'
+      preLoaderRoute: typeof CoachAthletesAthleteIdAnalyticsRouteImport
+      parentRoute: typeof CoachAthletesAthleteIdRoute
+    }
     '/coach/athletes/$athleteId/cycles/$cycleId': {
       id: '/coach/athletes/$athleteId/cycles/$cycleId'
       path: '/$cycleId'
@@ -331,11 +351,13 @@ const CoachAthletesAthleteIdCyclesRouteWithChildren =
   )
 
 interface CoachAthletesAthleteIdRouteChildren {
+  CoachAthletesAthleteIdAnalyticsRoute: typeof CoachAthletesAthleteIdAnalyticsRoute
   CoachAthletesAthleteIdCyclesRoute: typeof CoachAthletesAthleteIdCyclesRouteWithChildren
 }
 
 const CoachAthletesAthleteIdRouteChildren: CoachAthletesAthleteIdRouteChildren =
   {
+    CoachAthletesAthleteIdAnalyticsRoute: CoachAthletesAthleteIdAnalyticsRoute,
     CoachAthletesAthleteIdCyclesRoute:
       CoachAthletesAthleteIdCyclesRouteWithChildren,
   }

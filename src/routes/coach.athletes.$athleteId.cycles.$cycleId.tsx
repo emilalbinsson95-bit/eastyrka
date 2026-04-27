@@ -1145,12 +1145,14 @@ function NumField({
   onChange,
   onBlur,
   step,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   onBlur: () => void;
   step?: string;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -1161,6 +1163,7 @@ function NumField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
+        placeholder={placeholder}
         className="h-7 px-2 text-xs"
       />
     </div>

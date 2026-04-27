@@ -60,6 +60,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  prescribedWeightKg,
+  type IntensityMetric,
+} from "@/lib/intensity";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute(

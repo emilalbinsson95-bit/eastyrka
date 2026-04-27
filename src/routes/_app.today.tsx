@@ -14,6 +14,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { Checkbox } from "@/components/ui/checkbox";
+import { rirToRpe } from "@/lib/intensity";
 import {
   Card,
   CardContent,

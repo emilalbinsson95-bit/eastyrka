@@ -377,6 +377,13 @@ function PlannedExerciseRow({
   const targetSets = ex.target_sets;
   const isDone = completed >= targetSets;
 
+  const intensityLabel =
+    ex.intensity_metric === "rir" && ex.target_rir != null
+      ? `${ex.target_rir} RIR`
+      : ex.target_rpe != null
+        ? `RPE ${ex.target_rpe}`
+        : null;
+
   return (
     <div className="rounded-lg border border-border p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -390,9 +397,28 @@ function PlannedExerciseRow({
           </div>
           <p className="text-xs text-muted-foreground">
             Target: {ex.target_sets}×{ex.target_reps}
-            {ex.target_rpe && ` @RPE${ex.target_rpe}`}
+            {intensityLabel && ` @ ${intensityLabel}`}
             {ex.target_weight_kg && ` · ${ex.target_weight_kg}kg`}
           </p>
+          {(ex.lengthened_partials || ex.last_set_to_failure) && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {ex.lengthened_partials && (
+                <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                  + Lengthened partials
+                </span>
+              )}
+              {ex.last_set_to_failure && (
+                <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+                  Last set → failure
+                </span>
+              )}
+            </div>
+          )}
+          {ex.notes && (
+            <p className="mt-1 text-xs italic text-muted-foreground">
+              {ex.notes}
+            </p>
+          )}
         </div>
         <span className="text-xs font-medium text-muted-foreground">
           {completed}/{targetSets}

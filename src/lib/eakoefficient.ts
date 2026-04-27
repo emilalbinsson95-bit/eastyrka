@@ -93,7 +93,7 @@ export function readinessClasses(status: ReadinessStatus): string {
  *  - Set 1 itself is the baseline reference (no drop yet).
  *  - drop ≤ 4%   → Optimal
  *  - 4% < drop < 5% → Acceptable
- *  - drop ≥ 5%   → Junk (limit reached)
+ *  - drop ≥ 5%   → Fatigue limit reached
  */
 export function volumeQualityFromDrop(
   setNumber: number,
@@ -101,7 +101,7 @@ export function volumeQualityFromDrop(
 ): VolumeQuality {
   if (setNumber <= 1) return "baseline";
   if (dropPercent <= 4) return "optimal";
-  if (dropPercent >= 5) return "junk";
+  if (dropPercent >= 5) return "fatigue_limit";
   return "acceptable";
 }
 
@@ -113,8 +113,8 @@ export function volumeQualityLabel(q: VolumeQuality): string {
       return "Optimal";
     case "acceptable":
       return "Acceptable";
-    case "junk":
-      return "Junk (limit)";
+    case "fatigue_limit":
+      return "Fatigue limit";
     default:
       return "—";
   }
@@ -126,7 +126,7 @@ export function volumeQualityClasses(q: VolumeQuality): string {
       return "bg-status-adapting text-status-adapting-foreground";
     case "acceptable":
       return "bg-status-peaking text-status-peaking-foreground";
-    case "junk":
+    case "fatigue_limit":
       return "bg-status-exhausted text-status-exhausted-foreground";
     case "baseline":
       return "bg-muted text-muted-foreground";

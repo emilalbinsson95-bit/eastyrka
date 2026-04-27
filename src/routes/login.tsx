@@ -11,7 +11,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — EAkoefficient" },
+      { title: "Sign in — EA Training System" },
       { name: "description", content: "Sign in to your coach or athlete account." },
     ],
   }),
@@ -52,7 +52,7 @@ function LoginPage() {
             <Activity className="h-6 w-6 text-primary" />
           </div>
           <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Sign in to your EAkoefficient account</CardDescription>
+          <CardDescription>Sign in to your EA Training System account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

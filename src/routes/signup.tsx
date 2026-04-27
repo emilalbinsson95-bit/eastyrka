@@ -36,10 +36,10 @@ const signupSchema = z.object({
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Sign up — EAkoefficient" },
+      { title: "Sign up — EA Training System" },
       {
         name: "description",
-        content: "Create a coach or athlete account on EAkoefficient.",
+        content: "Create a coach or athlete account on EA Training System.",
       },
     ],
   }),

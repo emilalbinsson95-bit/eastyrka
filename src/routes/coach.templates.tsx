@@ -10,7 +10,7 @@ import {
 export const Route = createFileRoute("/coach/templates")({
   head: () => ({
     meta: [
-      { title: "Plan templates — EAkoefficient Coach" },
+      { title: "Plan templates — EA Training System Coach" },
       { name: "description", content: "Reusable week templates for your athletes." },
     ],
   }),

@@ -38,7 +38,7 @@ function CoachLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/coach" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EAkoefficient
+            EA Training System
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               Coach
             </span>

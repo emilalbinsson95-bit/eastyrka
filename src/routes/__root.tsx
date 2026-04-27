@@ -45,14 +45,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EAkoefficient — Powerlifting Coaching Platform" },
+      { title: "EA Training System — Powerlifting Coaching Platform" },
       {
         name: "description",
         content:
-          "Coach your powerlifting athletes with the EAkoefficient autoregulation system. Send weekly plans, track readiness, and stop junk volume in its tracks.",
+          "Coach your powerlifting athletes with the EA Training System. Send weekly plans, track readiness, and stop junk volume in its tracks.",
       },
-      { name: "author", content: "EAkoefficient" },
-      { property: "og:title", content: "EAkoefficient — Powerlifting Coaching Platform" },
+      { name: "author", content: "EA Training System" },
+      { property: "og:title", content: "EA Training System — Powerlifting Coaching Platform" },
       {
         property: "og:description",
         content:

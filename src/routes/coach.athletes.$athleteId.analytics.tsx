@@ -886,3 +886,73 @@ function ChartCard({
     </Card>
   );
 }
+
+// ===== CSV export =====
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadCsv(filename: string, rows: (string | number | null)[][]) {
+  const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+interface ExportArgs {
+  athleteName: string;
+  logs: LogRow[];
+  surveys: Array<{
+    date: string;
+    daily_form: number;
+    fatigue: number;
+    work_stress: number;
+    life_stress: number;
+    bodyweight_kg: number | null;
+  }>;
+}
+
+function exportHistoryCsv({ athleteName, logs, surveys }: ExportArgs) {
+  const safeName = athleteName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  // Training logs
+  const logRows: (string | number | null)[][] = [
+    ["date", "exercise", "variation", "set_number", "reps", "weight_kg", "rpe"],
+    ...logs.map((l) => [
+      l.date,
+      l.exercise,
+      l.variation ?? "",
+      l.set_number,
+      l.reps,
+      l.weight_kg,
+      l.rpe,
+    ]),
+  ];
+  downloadCsv(`${safeName}-training-${today}.csv`, logRows);
+
+  // Readiness surveys (separate file)
+  if (surveys.length > 0) {
+    const surveyRows: (string | number | null)[][] = [
+      ["date", "daily_form", "fatigue", "work_stress", "life_stress", "bodyweight_kg"],
+      ...surveys.map((s) => [
+        s.date,
+        s.daily_form,
+        s.fatigue,
+        s.work_stress,
+        s.life_stress,
+        s.bodyweight_kg,
+      ]),
+    ];
+    downloadCsv(`${safeName}-readiness-${today}.csv`, surveyRows);
+  }
+}

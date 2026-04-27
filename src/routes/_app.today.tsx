@@ -176,14 +176,45 @@ function TodayPage() {
     },
   });
 
-  // Determine today's planned session (Mon=1 .. Sun=0 in date-fns; we store 0=Mon..6=Sun)
+  // Pick the next uncompleted day in the published week.
+  // A session is "completed" when every planned exercise has at least one logged set
+  // (any date — since days are abstract slots, not calendar dates).
+  const weekPlannedExerciseIds = useMemo(() => {
+    if (!planQuery.data) return [] as string[];
+    return planQuery.data.planned_sessions.flatMap((s) =>
+      s.planned_exercises.map((e) => e.id),
+    );
+  }, [planQuery.data]);
+
+  const weekLogsQuery = useQuery({
+    queryKey: ["week-logs", userId, planQuery.data?.id],
+    enabled: !!planQuery.data && weekPlannedExerciseIds.length > 0,
+    queryFn: async (): Promise<{ planned_exercise_id: string }[]> => {
+      const { data, error } = await supabase
+        .from("training_logs")
+        .select("planned_exercise_id")
+        .eq("athlete_id", userId)
+        .in("planned_exercise_id", weekPlannedExerciseIds);
+      if (error) throw error;
+      return (data ?? []) as { planned_exercise_id: string }[];
+    },
+  });
+
   const todayPlanned: PlannedSession | undefined = useMemo(() => {
     if (!planQuery.data) return undefined;
-    // Convert: Mon=0..Sun=6 (matches our storage)
-    const jsDay = today.getDay(); // 0=Sun..6=Sat
-    const dow = jsDay === 0 ? 6 : jsDay - 1;
-    return planQuery.data.planned_sessions.find((s) => s.day_of_week === dow);
-  }, [planQuery.data, today]);
+    const loggedSet = new Set(
+      (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
+    );
+    const orderedSessions = [...planQuery.data.planned_sessions].sort(
+      (a, b) => a.day_of_week - b.day_of_week,
+    );
+    // First session whose planned exercises are not all logged.
+    const next = orderedSessions.find((s) =>
+      s.planned_exercises.some((e) => !loggedSet.has(e.id)),
+    );
+    // Fall back to the last session if every day is complete.
+    return next ?? orderedSessions[orderedSessions.length - 1];
+  }, [planQuery.data, weekLogsQuery.data]);
 
   const baselines = baselinesQuery.data ?? {};
   const logs = logsQuery.data ?? [];

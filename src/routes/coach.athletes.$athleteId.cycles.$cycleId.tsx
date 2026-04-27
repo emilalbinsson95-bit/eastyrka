@@ -188,10 +188,27 @@ function CycleDetailPage() {
     queryFn: async (): Promise<ExerciseLib[]> => {
       const { data, error } = await supabase
         .from("exercises")
-        .select("id, name, category, description")
+        .select("id, name, category, description, default_intensity_metric")
         .order("name");
       if (error) throw error;
       return (data ?? []) as ExerciseLib[];
+    },
+  });
+
+  // Athlete's 1RMs — used to compute prescribed kg from RPE/RIR. Coach only.
+  const baselinesQuery = useQuery({
+    queryKey: ["athlete-baselines", athleteId],
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data, error } = await supabase
+        .from("baselines")
+        .select("exercise, one_rm_kg")
+        .eq("athlete_id", athleteId);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of (data ?? []) as BaselineRow[]) {
+        map[row.exercise] = Number(row.one_rm_kg);
+      }
+      return map;
     },
   });
 

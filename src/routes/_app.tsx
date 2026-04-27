@@ -4,6 +4,7 @@ import { Calendar, History, User as UserIcon, LogOut, Activity } from "lucide-re
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,
@@ -19,7 +20,9 @@ function AthleteLayout() {
       navigate({ to: "/login" });
       return;
     }
-    if (role === "coach") {
+    // Only bounce to coach if the user has no athlete role at all.
+    // Coaches who have enabled athlete view stay here.
+    if (role !== "athlete") {
       navigate({ to: "/coach" });
     }
   }, [user, role, loading, navigate]);

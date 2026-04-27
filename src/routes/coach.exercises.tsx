@@ -279,15 +279,20 @@ function ExerciseDialog({
   saving,
 }: {
   editing: Exercise | null;
-  onSubmit: (v: { name: string; category?: string; description?: string }) => void;
+  onSubmit: (v: {
+    name: string;
+    category?: string;
+    description?: string;
+    default_intensity_metric: "rpe" | "rir";
+  }) => void;
   saving: boolean;
 }) {
   const [name, setName] = useState(editing?.name ?? "");
   const [category, setCategory] = useState(editing?.category ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
-
-  // Re-sync when "editing" changes (e.g. opening dialog for a different exercise)
-  // Note: Dialog mounts the content once per open, so initial state above is enough.
+  const [metric, setMetric] = useState<"rpe" | "rir">(
+    editing?.default_intensity_metric ?? "rpe",
+  );
 
   return (
     <DialogContent>
@@ -318,6 +323,35 @@ function ExerciseDialog({
           />
         </div>
         <div>
+          <Label>Default intensity metric</Label>
+          <div className="mt-1 flex gap-2">
+            <Button
+              type="button"
+              variant={metric === "rpe" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMetric("rpe")}
+              className="flex-1"
+            >
+              RPE
+              <span className="ml-2 text-[10px] opacity-70">powerlifting</span>
+            </Button>
+            <Button
+              type="button"
+              variant={metric === "rir" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMetric("rir")}
+              className="flex-1"
+            >
+              RIR
+              <span className="ml-2 text-[10px] opacity-70">bodybuilding</span>
+            </Button>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            This is the default when programming this exercise. Coaches can still
+            override per set in the plan.
+          </p>
+        </div>
+        <div>
           <Label htmlFor="description">Description / cues</Label>
           <Textarea
             id="description"
@@ -335,12 +369,20 @@ function ExerciseDialog({
             setName("");
             setCategory("");
             setDescription("");
+            setMetric("rpe");
           }}
         >
           <X className="mr-1 h-4 w-4" /> Reset
         </Button>
         <Button
-          onClick={() => onSubmit({ name, category, description })}
+          onClick={() =>
+            onSubmit({
+              name,
+              category,
+              description,
+              default_intensity_metric: metric,
+            })
+          }
           disabled={saving || !name.trim()}
         >
           <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : "Save"}

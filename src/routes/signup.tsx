@@ -30,7 +30,7 @@ const signupSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password must be under 72 characters"),
-  role: z.enum(["coach", "athlete"]),
+  role: z.enum(["coach", "athlete", "physio", "patient"]),
 });
 
 export const Route = createFileRoute("/signup")({
@@ -39,12 +39,20 @@ export const Route = createFileRoute("/signup")({
       { title: "Sign up — EA Training System" },
       {
         name: "description",
-        content: "Create a coach or athlete account on EA Training System.",
+        content:
+          "Create an account on EA Training System — for coaches, athletes, physiotherapists and patients.",
       },
     ],
   }),
   component: SignupPage,
 });
+
+function roleHome(r: AppRole) {
+  if (r === "coach") return "/coach" as const;
+  if (r === "physio") return "/physio" as const;
+  if (r === "patient") return "/patient" as const;
+  return "/today" as const;
+}
 
 function SignupPage() {
   const { signUp, user, role: userRole, loading } = useAuth();
@@ -56,9 +64,8 @@ function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      if (userRole === "coach") navigate({ to: "/coach" });
-      else navigate({ to: "/today" });
+    if (!loading && user && userRole) {
+      navigate({ to: roleHome(userRole) });
     }
   }, [user, userRole, loading, navigate]);
 

@@ -223,6 +223,9 @@ function ExerciseLibraryPage() {
                             {ex.category}
                           </Badge>
                         )}
+                        <Badge variant="outline" className="text-xs uppercase">
+                          {ex.default_intensity_metric}
+                        </Badge>
                         {!ex.is_global && mine && (
                           <Badge className="bg-primary/10 text-primary hover:bg-primary/15 text-xs">
                             Yours

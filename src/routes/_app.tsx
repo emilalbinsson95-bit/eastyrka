@@ -1,11 +1,14 @@
-import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,
@@ -14,6 +17,26 @@ export const Route = createFileRoute("/_app")({
 function AthleteLayout() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Detect first-time athletes (no readiness survey ever) → onboarding.
+  const onboardingCheck = useQuery({
+    queryKey: ["onboarding-check", user?.id],
+    enabled: !!user && role === "athlete",
+    queryFn: async () => {
+      const localFlag =
+        typeof window !== "undefined" &&
+        localStorage.getItem(`ea-onboarded-${user!.id}`) === "1";
+      if (localFlag) return { needsOnboarding: false };
+      const { count, error } = await supabase
+        .from("readiness_surveys")
+        .select("id", { count: "exact", head: true })
+        .eq("athlete_id", user!.id);
+      if (error) return { needsOnboarding: false };
+      return { needsOnboarding: (count ?? 0) === 0 };
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (loading) return;
@@ -25,8 +48,15 @@ function AthleteLayout() {
     // Coaches who have enabled athlete view stay here.
     if (role !== "athlete") {
       navigate({ to: "/coach" });
+      return;
     }
-  }, [user, role, loading, navigate]);
+    if (
+      onboardingCheck.data?.needsOnboarding &&
+      !location.pathname.startsWith("/onboarding")
+    ) {
+      navigate({ to: "/onboarding" });
+    }
+  }, [user, role, loading, navigate, onboardingCheck.data, location.pathname]);
 
   if (loading || !user || role !== "athlete") {
     return (
@@ -37,7 +67,7 @@ function AthleteLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
@@ -47,6 +77,7 @@ function AthleteLayout() {
           </Link>
           <div className="flex items-center gap-1">
             <NotificationsBell />
+            <ThemeToggle />
             <RoleSwitcher />
             <Button
               variant="ghost"
@@ -65,7 +96,10 @@ function AthleteLayout() {
       </main>
 
       {/* Bottom tab bar (mobile-first) */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="mx-auto grid max-w-3xl grid-cols-4">
           <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label="Today" />
           <TabLink to="/history" icon={<History className="h-5 w-5" />} label="History" />
@@ -89,10 +123,11 @@ function TabLink({
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-1 py-3 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      className="relative flex flex-col items-center gap-1 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
       activeProps={{
         className: cn(
-          "flex flex-col items-center gap-1 py-3 text-xs text-primary",
+          "relative flex flex-col items-center gap-1 py-2.5 text-xs text-primary font-medium",
+          "before:absolute before:inset-x-6 before:top-0 before:h-0.5 before:rounded-full before:bg-primary",
         ),
       }}
     >

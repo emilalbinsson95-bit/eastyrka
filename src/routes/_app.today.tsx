@@ -44,6 +44,7 @@ import {
   processLogs,
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
+import { ReadinessGate } from "@/components/ReadinessGate";
 
 export const Route = createFileRoute("/_app/today")({
   head: () => ({
@@ -217,34 +218,36 @@ function TodayPage() {
         </Card>
       )}
 
-      {!isLoading && todayPlanned && (
-        <PlannedSessionCard
-          session={todayPlanned}
-          logs={logs}
-          processed={processed}
-          baselines={baselines}
-          athleteId={userId}
-          dateStr={todayStr}
-        />
-      )}
-
-      {!isLoading && !todayPlanned && (
-        <Card>
-          <CardHeader>
-            <CardTitle>No session planned for today</CardTitle>
-            <CardDescription>
-              You can still log freestyle sets below — they'll show up in your history
-              and feed into your EAkoefficient.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FreestyleQuickLog
+      {!isLoading && (
+        <ReadinessGate athleteId={userId} dateStr={todayStr}>
+          {todayPlanned ? (
+            <PlannedSessionCard
+              session={todayPlanned}
+              logs={logs}
+              processed={processed}
+              baselines={baselines}
               athleteId={userId}
               dateStr={todayStr}
-              baselines={baselines}
             />
-          </CardContent>
-        </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>No session planned for today</CardTitle>
+                <CardDescription>
+                  You can still log freestyle sets below — they'll show up in your history
+                  and feed into your EAkoefficient.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FreestyleQuickLog
+                  athleteId={userId}
+                  dateStr={todayStr}
+                  baselines={baselines}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </ReadinessGate>
       )}
 
       {/* Always show today's logged sets */}

@@ -98,7 +98,7 @@ function AthleteDetailPage() {
               to="/coach/athletes/$athleteId/cycles"
               params={{ athleteId }}
             >
-              <Calendar className="mr-1 h-4 w-4" /> Mesocycles
+              <Calendar className="mr-1 h-4 w-4" /> Training program
             </Link>
           </Button>
         </div>

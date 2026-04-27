@@ -285,6 +285,74 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_session_feedback: {
+        Row: {
+          comments: string | null
+          created_at: string
+          id: string
+          pain_after: number | null
+          patient_id: string
+          session_id: string
+          sleep_quality: number | null
+          stiffness: number | null
+          swelling: number | null
+          updated_at: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          pain_after?: number | null
+          patient_id: string
+          session_id: string
+          sleep_quality?: number | null
+          stiffness?: number | null
+          swelling?: number | null
+          updated_at?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          pain_after?: number | null
+          patient_id?: string
+          session_id?: string
+          sleep_quality?: number | null
+          stiffness?: number | null
+          swelling?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_session_feedback_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "rehab_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      physio_patients: {
+        Row: {
+          created_at: string
+          id: string
+          patient_id: string
+          physio_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_id: string
+          physio_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_id?: string
+          physio_id?: string
+        }
+        Relationships: []
+      }
       plan_template_exercises: {
         Row: {
           exercise: string
@@ -577,6 +645,110 @@ export type Database = {
         }
         Relationships: []
       }
+      rehab_exercises: {
+        Row: {
+          created_at: string
+          hold_seconds: number | null
+          id: string
+          load_kg: number | null
+          name: string
+          notes: string | null
+          order_index: number
+          pain_rating: number | null
+          perceived_exertion: number | null
+          reps: number | null
+          resistance_band: string | null
+          rom_notes: string | null
+          session_id: string
+          sets: number | null
+          tolerance: string | null
+        }
+        Insert: {
+          created_at?: string
+          hold_seconds?: number | null
+          id?: string
+          load_kg?: number | null
+          name: string
+          notes?: string | null
+          order_index?: number
+          pain_rating?: number | null
+          perceived_exertion?: number | null
+          reps?: number | null
+          resistance_band?: string | null
+          rom_notes?: string | null
+          session_id: string
+          sets?: number | null
+          tolerance?: string | null
+        }
+        Update: {
+          created_at?: string
+          hold_seconds?: number | null
+          id?: string
+          load_kg?: number | null
+          name?: string
+          notes?: string | null
+          order_index?: number
+          pain_rating?: number | null
+          perceived_exertion?: number | null
+          reps?: number | null
+          resistance_band?: string | null
+          rom_notes?: string | null
+          session_id?: string
+          sets?: number | null
+          tolerance?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehab_exercises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "rehab_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rehab_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          objective_notes: string | null
+          overall_pain: number | null
+          patient_id: string
+          physio_id: string
+          session_date: string
+          status: string
+          subjective_notes: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objective_notes?: string | null
+          overall_pain?: number | null
+          patient_id: string
+          physio_id: string
+          session_date?: string
+          status?: string
+          subjective_notes?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objective_notes?: string | null
+          overall_pain?: number | null
+          patient_id?: string
+          physio_id?: string
+          session_date?: string
+          status?: string
+          subjective_notes?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           athlete_id: string
@@ -724,6 +896,10 @@ export type Database = {
       }
       is_coach_of: {
         Args: { _athlete_id: string; _coach_id: string }
+        Returns: boolean
+      }
+      is_physio_of: {
+        Args: { _patient_id: string; _physio_id: string }
         Returns: boolean
       }
     }

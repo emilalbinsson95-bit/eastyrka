@@ -12,10 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "coach" | "athlete";
 
+const VIEW_MODE_KEY = "ea-view-mode";
+
 interface AuthState {
   user: User | null;
   session: Session | null;
+  /** The currently active view (coach or athlete). Coaches with both roles can switch. */
   role: AppRole | null;
+  /** All roles the user actually holds (one or both). */
+  roles: AppRole[];
+  /** True when the user holds the coach role, regardless of current view. */
+  isCoach: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (
@@ -26,30 +33,59 @@ interface AuthState {
   ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
+  /** Switch the active view (only effective if the user holds both roles). */
+  setViewMode: (view: AppRole) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-async function fetchRole(userId: string): Promise<AppRole | null> {
+async function fetchRoles(userId: string): Promise<AppRole[]> {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId);
-  if (error || !data || data.length === 0) return null;
-  // Coach takes priority if a user somehow has both
-  if (data.some((r) => r.role === "coach")) return "coach";
+  if (error || !data) return [];
+  const set = new Set<AppRole>();
+  for (const r of data) {
+    if (r.role === "coach" || r.role === "athlete") set.add(r.role);
+  }
+  return Array.from(set);
+}
+
+function readStoredView(): AppRole | null {
+  if (typeof window === "undefined") return null;
+  const v = window.localStorage.getItem(VIEW_MODE_KEY);
+  return v === "coach" || v === "athlete" ? v : null;
+}
+
+function pickActiveRole(
+  roles: AppRole[],
+  storedView: AppRole | null,
+): AppRole | null {
+  if (roles.length === 0) return null;
+  // Honour stored view if user actually has that role
+  if (storedView && roles.includes(storedView)) return storedView;
+  // Default: coach first, otherwise athlete
+  if (roles.includes("coach")) return "coach";
   return "athlete";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [view, setView] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Bootstrap: subscribe FIRST, then read existing session.
   useEffect(() => {
     let unsubscribed = false;
+
+    const applyRoles = (next: AppRole[]) => {
+      if (unsubscribed) return;
+      setRoles(next);
+      setView((prev) => pickActiveRole(next, prev ?? readStoredView()));
+    };
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (unsubscribed) return;
@@ -58,12 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newSession?.user) {
         // Defer role fetch off the auth callback to avoid deadlocks
         setTimeout(() => {
-          fetchRole(newSession.user.id).then((r) => {
-            if (!unsubscribed) setRole(r);
-          });
+          fetchRoles(newSession.user.id).then(applyRoles);
         }, 0);
       } else {
-        setRole(null);
+        setRoles([]);
+        setView(null);
       }
     });
 
@@ -72,11 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) {
-        fetchRole(data.session.user.id).then((r) => {
-          if (!unsubscribed) {
-            setRole(r);
-            setLoading(false);
-          }
+        fetchRoles(data.session.user.id).then((next) => {
+          if (unsubscribed) return;
+          applyRoles(next);
+          setLoading(false);
         });
       } else {
         setLoading(false);
@@ -132,18 +166,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
-    setRole(null);
+    setRoles([]);
+    setView(null);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(VIEW_MODE_KEY);
+    }
   }, []);
 
   const refreshRole = useCallback(async () => {
     if (!user) return;
-    const r = await fetchRole(user.id);
-    setRole(r);
+    const next = await fetchRoles(user.id);
+    setRoles(next);
+    setView((prev) => pickActiveRole(next, prev ?? readStoredView()));
   }, [user]);
 
+  const setViewMode = useCallback(
+    (next: AppRole) => {
+      if (!roles.includes(next)) return;
+      setView(next);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(VIEW_MODE_KEY, next);
+      }
+    },
+    [roles],
+  );
+
   const value = useMemo<AuthState>(
-    () => ({ user, session, role, loading, signIn, signUp, signOut, refreshRole }),
-    [user, session, role, loading, signIn, signUp, signOut, refreshRole],
+    () => ({
+      user,
+      session,
+      role: view,
+      roles,
+      isCoach: roles.includes("coach"),
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      refreshRole,
+      setViewMode,
+    }),
+    [user, session, view, roles, loading, signIn, signUp, signOut, refreshRole, setViewMode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

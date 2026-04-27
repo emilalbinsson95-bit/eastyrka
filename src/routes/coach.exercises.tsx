@@ -73,7 +73,9 @@ function ExerciseLibraryPage() {
     queryFn: async (): Promise<Exercise[]> => {
       const { data, error } = await supabase
         .from("exercises")
-        .select("id, name, description, category, is_global, created_by, updated_at")
+        .select(
+          "id, name, description, category, is_global, created_by, default_intensity_metric, updated_at",
+        )
         .order("is_global", { ascending: false })
         .order("name", { ascending: true });
       if (error) throw error;

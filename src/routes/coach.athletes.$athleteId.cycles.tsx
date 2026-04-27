@@ -48,6 +48,7 @@ const mesoSchema = z.object({
   goal: z.string().trim().max(200).optional().or(z.literal("")),
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   total_weeks: z.number().int().min(1).max(24),
+  days_per_week: z.number().int().min(2).max(6),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 
@@ -57,6 +58,7 @@ interface Mesocycle {
   goal: string | null;
   start_date: string;
   total_weeks: number;
+  days_per_week: number;
   status: "draft" | "active" | "archived";
   notes: string | null;
 }
@@ -87,7 +89,7 @@ function CyclesListPage() {
     queryFn: async (): Promise<Mesocycle[]> => {
       const { data, error } = await supabase
         .from("mesocycles")
-        .select("id, name, goal, start_date, total_weeks, status, notes")
+        .select("id, name, goal, start_date, total_weeks, days_per_week, status, notes")
         .eq("athlete_id", athleteId)
         .order("start_date", { ascending: false });
       if (error) throw error;
@@ -105,6 +107,7 @@ function CyclesListPage() {
         goal: parsed.goal || null,
         start_date: parsed.start_date,
         total_weeks: parsed.total_weeks,
+        days_per_week: parsed.days_per_week,
         notes: parsed.notes || null,
       });
       if (error) throw error;
@@ -237,6 +240,7 @@ function NewMesoDialog({
   const [goal, setGoal] = useState("");
   const [startDate, setStartDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [weeks, setWeeks] = useState("4");
+  const [daysPerWeek, setDaysPerWeek] = useState("4");
   const [notes, setNotes] = useState("");
 
   return (
@@ -265,7 +269,7 @@ function NewMesoDialog({
             placeholder="Build squat volume base"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <Label>Start date (Mon)</Label>
             <Input
@@ -282,6 +286,16 @@ function NewMesoDialog({
               max={24}
               value={weeks}
               onChange={(e) => setWeeks(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Days / week</Label>
+            <Input
+              type="number"
+              min={2}
+              max={6}
+              value={daysPerWeek}
+              onChange={(e) => setDaysPerWeek(e.target.value)}
             />
           </div>
         </div>
@@ -302,6 +316,7 @@ function NewMesoDialog({
               goal,
               start_date: startDate,
               total_weeks: parseInt(weeks, 10) || 4,
+              days_per_week: Math.min(6, Math.max(2, parseInt(daysPerWeek, 10) || 4)),
               notes,
             })
           }

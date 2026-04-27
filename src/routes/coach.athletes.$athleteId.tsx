@@ -52,7 +52,10 @@ export const Route = createFileRoute("/coach/athletes/$athleteId")({
 
 function AthleteDetailPage() {
   const { athleteId } = useParams({ from: "/coach/athletes/$athleteId" });
-
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
   const profileQuery = useQuery({
     queryKey: ["athlete-profile", athleteId],
     queryFn: async () => {

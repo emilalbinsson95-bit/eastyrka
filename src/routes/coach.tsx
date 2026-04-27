@@ -22,10 +22,11 @@ function CoachLayout() {
       navigate({ to: "/login" });
       return;
     }
-    // Only bounce to athlete if the user has no coach role at all.
-    // Coaches who switched into athlete view stay there until they switch back.
+    // Send the user to the layout that matches their active role.
     if (role !== "coach") {
-      navigate({ to: "/today" });
+      if (role === "physio") navigate({ to: "/physio" });
+      else if (role === "patient") navigate({ to: "/patient" });
+      else if (role === "athlete") navigate({ to: "/today" });
     }
   }, [user, role, loading, navigate]);
 

@@ -28,6 +28,8 @@ function LoginPage() {
   useEffect(() => {
     if (!loading && user) {
       if (role === "coach") navigate({ to: "/coach" });
+      else if (role === "physio") navigate({ to: "/physio" });
+      else if (role === "patient") navigate({ to: "/patient" });
       else navigate({ to: "/today" });
     }
   }, [user, role, loading, navigate]);

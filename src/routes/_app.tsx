@@ -38,7 +38,7 @@ function AthleteLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
@@ -67,7 +67,10 @@ function AthleteLayout() {
       </main>
 
       {/* Bottom tab bar (mobile-first) */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="mx-auto grid max-w-3xl grid-cols-4">
           <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label="Today" />
           <TabLink to="/history" icon={<History className="h-5 w-5" />} label="History" />
@@ -91,15 +94,22 @@ function TabLink({
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-1 py-3 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      className="relative flex flex-col items-center gap-1 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
       activeProps={{
         className: cn(
-          "flex flex-col items-center gap-1 py-3 text-xs text-primary",
+          "relative flex flex-col items-center gap-1 py-2.5 text-xs text-primary font-medium",
         ),
       }}
     >
-      {icon}
-      <span>{label}</span>
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <span className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary" />
+          )}
+          {icon}
+          <span>{label}</span>
+        </>
+      )}
     </Link>
   );
 }

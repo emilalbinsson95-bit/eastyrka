@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format, parseISO, addWeeks } from "date-fns";
 import {
   ArrowLeft,
@@ -248,7 +248,7 @@ function CycleDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  useMemo(() => {
+  useEffect(() => {
     if (
       cycleQuery.data &&
       weeksQuery.data &&

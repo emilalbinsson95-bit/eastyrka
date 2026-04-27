@@ -59,6 +59,20 @@ function AthleteDetailPage() {
   const profileQuery = useQuery({
     queryKey: ["athlete-profile", athleteId],
     queryFn: async () => {
+      // Defense in depth: confirm this athlete is linked to the current coach
+      // before exposing their profile in the UI.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      const { data: link, error: linkErr } = await supabase
+        .from("coach_athletes")
+        .select("id")
+        .eq("coach_id", user.id)
+        .eq("athlete_id", athleteId)
+        .maybeSingle();
+      if (linkErr) throw linkErr;
+      if (!link) throw new Error("This athlete is not linked to your account");
       const { data, error } = await supabase
         .from("profiles")
         .select("full_name, weight_class")

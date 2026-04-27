@@ -64,9 +64,19 @@ export const getRouter = () => {
         staleTime: 30_000,
         refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
-          if (isDatabaseConnectionError(error)) return false;
+          // Retry transient DB connection errors up to 5 times with backoff —
+          // Supabase recovers within a few seconds after schema-cache resets.
+          if (isDatabaseConnectionError(error)) return failureCount < 5;
           return failureCount < 1;
         },
+        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+      },
+      mutations: {
+        retry: (failureCount, error) => {
+          if (isDatabaseConnectionError(error)) return failureCount < 3;
+          return false;
+        },
+        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
       },
     },
   });

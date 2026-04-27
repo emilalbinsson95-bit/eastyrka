@@ -291,7 +291,7 @@ function CycleDetailPage() {
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", srcIds);
         if (e2) throw e2;
@@ -487,7 +487,7 @@ function WeekEditor({
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", sessionIds)
           .order("order_index");

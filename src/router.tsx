@@ -61,8 +61,14 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 30_000,
+        // Most data in this app is coach-authored or daily logs — safe to keep
+        // fresh for a couple of minutes to eliminate refetch flashes when
+        // navigating between pages.
+        staleTime: 2 * 60_000,
+        gcTime: 10 * 60_000,
         refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
         retry: (failureCount, error) => {
           // Retry transient DB connection errors up to 5 times with backoff —
           // Supabase recovers within a few seconds after schema-cache resets.
@@ -85,6 +91,8 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Preload routes on link hover/touch so navigations feel instant.
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: DefaultErrorComponent,
   });

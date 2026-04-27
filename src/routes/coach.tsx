@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Users, BookOpen, Mail, LogOut, Activity } from "lucide-react";
+import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export const Route = createFileRoute("/coach")({
   component: CoachLayout,
@@ -54,12 +55,18 @@ function CoachLayout() {
               label="Exercises"
             />
             <CoachNavLink
+              to="/messages"
+              icon={<MessageCircle className="h-4 w-4" />}
+              label="Messages"
+            />
+            <CoachNavLink
               to="/coach/invites"
               icon={<Mail className="h-4 w-4" />}
               label="Invites"
             />
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
             <RoleSwitcher />
             <Button
               variant="ghost"
@@ -78,6 +85,11 @@ function CoachLayout() {
             to="/coach/exercises"
             icon={<BookOpen className="h-4 w-4" />}
             label="Exercises"
+          />
+          <CoachNavLink
+            to="/messages"
+            icon={<MessageCircle className="h-4 w-4" />}
+            label="Messages"
           />
           <CoachNavLink
             to="/coach/invites"
@@ -100,7 +112,7 @@ function CoachNavLink({
   label,
   exact,
 }: {
-  to: "/coach" | "/coach/exercises" | "/coach/invites";
+  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/messages";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

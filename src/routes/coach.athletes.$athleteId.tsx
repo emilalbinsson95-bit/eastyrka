@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
@@ -52,7 +52,10 @@ export const Route = createFileRoute("/coach/athletes/$athleteId")({
 
 function AthleteDetailPage() {
   const { athleteId } = useParams({ from: "/coach/athletes/$athleteId" });
-
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
   const profileQuery = useQuery({
     queryKey: ["athlete-profile", athleteId],
     queryFn: async () => {

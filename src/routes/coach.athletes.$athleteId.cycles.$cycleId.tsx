@@ -89,7 +89,9 @@ export const Route = createFileRoute(
   component: CycleDetailPage,
 });
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+function dayLabel(index: number) {
+  return `Day ${index + 1}`;
+}
 
 interface Cycle {
   id: string;
@@ -97,6 +99,7 @@ interface Cycle {
   goal: string | null;
   start_date: string;
   total_weeks: number;
+  days_per_week: number;
   status: "draft" | "active" | "archived";
   notes: string | null;
 }
@@ -161,7 +164,7 @@ function CycleDetailPage() {
     queryFn: async (): Promise<Cycle | null> => {
       const { data, error } = await supabase
         .from("mesocycles")
-        .select("id, name, goal, start_date, total_weeks, status, notes")
+        .select("id, name, goal, start_date, total_weeks, days_per_week, status, notes")
         .eq("id", cycleId)
         .maybeSingle();
       if (error) throw error;

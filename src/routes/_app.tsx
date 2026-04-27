@@ -1,6 +1,8 @@
-import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,26 @@ export const Route = createFileRoute("/_app")({
 function AthleteLayout() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Detect first-time athletes (no readiness survey ever) → onboarding.
+  const onboardingCheck = useQuery({
+    queryKey: ["onboarding-check", user?.id],
+    enabled: !!user && role === "athlete",
+    queryFn: async () => {
+      const localFlag =
+        typeof window !== "undefined" &&
+        localStorage.getItem(`ea-onboarded-${user!.id}`) === "1";
+      if (localFlag) return { needsOnboarding: false };
+      const { count, error } = await supabase
+        .from("readiness_surveys")
+        .select("id", { count: "exact", head: true })
+        .eq("athlete_id", user!.id);
+      if (error) return { needsOnboarding: false };
+      return { needsOnboarding: (count ?? 0) === 0 };
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (loading) return;
@@ -26,8 +48,15 @@ function AthleteLayout() {
     // Coaches who have enabled athlete view stay here.
     if (role !== "athlete") {
       navigate({ to: "/coach" });
+      return;
     }
-  }, [user, role, loading, navigate]);
+    if (
+      onboardingCheck.data?.needsOnboarding &&
+      !location.pathname.startsWith("/onboarding")
+    ) {
+      navigate({ to: "/onboarding" });
+    }
+  }, [user, role, loading, navigate, onboardingCheck.data, location.pathname]);
 
   if (loading || !user || role !== "athlete") {
     return (

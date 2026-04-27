@@ -62,6 +62,35 @@ function MePage() {
         </p>
       </div>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            Your athlete code
+          </CardTitle>
+          <CardDescription>
+            Share this code with your coach so they can connect your account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 truncate rounded-md border border-border bg-background px-3 py-2 font-mono text-xs sm:text-sm">
+              {userId}
+            </code>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(userId);
+                toast.success("Athlete code copied");
+              }}
+            >
+              <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Account</CardTitle>

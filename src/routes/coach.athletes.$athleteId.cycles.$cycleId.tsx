@@ -430,6 +430,7 @@ function CycleDetailPage() {
           weekIndex={activeWeek}
           previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
+          baselines={baselinesQuery.data ?? {}}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }

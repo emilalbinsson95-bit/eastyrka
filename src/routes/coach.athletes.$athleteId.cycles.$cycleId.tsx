@@ -882,11 +882,13 @@ function SortableItem({
 
 function ExerciseRow({
   ex,
+  oneRm,
   onUpdate,
   onDuplicate,
   onDelete,
 }: {
   ex: PlannedExerciseRow;
+  oneRm: number;
   onUpdate: (patch: Partial<PlannedExerciseRow>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -894,19 +896,74 @@ function ExerciseRow({
   const [sets, setSets] = useState(String(ex.target_sets));
   const [reps, setReps] = useState(String(ex.target_reps));
   const [rpe, setRpe] = useState(ex.target_rpe?.toString() ?? "");
+  const [rir, setRir] = useState(ex.target_rir?.toString() ?? "");
   const [weight, setWeight] = useState(ex.target_weight_kg?.toString() ?? "");
   const [notes, setNotes] = useState(ex.notes ?? "");
   const [showNotes, setShowNotes] = useState(!!ex.notes);
+  const metric: IntensityMetric = ex.intensity_metric;
 
-  const commit = () => {
-    const patch: Partial<PlannedExerciseRow> = {
-      target_sets: parseInt(sets, 10) || 1,
-      target_reps: parseInt(reps, 10) || 1,
-      target_rpe: rpe ? parseFloat(rpe) : null,
-      target_weight_kg: weight ? parseFloat(weight) : null,
+  const computeAndPatch = (
+    overrides: Partial<{
+      sets: string;
+      reps: string;
+      rpe: string;
+      rir: string;
+      weight: string;
+      metric: IntensityMetric;
+    }> = {},
+  ): Partial<PlannedExerciseRow> => {
+    const m = overrides.metric ?? metric;
+    const s = parseInt(overrides.sets ?? sets, 10) || 1;
+    const r = parseInt(overrides.reps ?? reps, 10) || 1;
+    const rpeVal = (overrides.rpe ?? rpe) ? parseFloat(overrides.rpe ?? rpe) : null;
+    const rirVal = (overrides.rir ?? rir) ? parseFloat(overrides.rir ?? rir) : null;
+    // Auto-compute target_weight_kg from 1RM × intensity, unless coach typed one explicitly
+    let kgVal: number | null = null;
+    const explicitWeight = (overrides.weight ?? weight).trim();
+    if (explicitWeight) {
+      kgVal = parseFloat(explicitWeight);
+    } else if (oneRm > 0) {
+      kgVal = prescribedWeightKg({
+        oneRmKg: oneRm,
+        reps: r,
+        metric: m,
+        rpe: rpeVal,
+        rir: rirVal,
+      });
+    }
+    return {
+      target_sets: s,
+      target_reps: r,
+      intensity_metric: m,
+      target_rpe: m === "rpe" ? rpeVal : null,
+      target_rir: m === "rir" ? rirVal : null,
+      target_weight_kg: kgVal,
     };
-    onUpdate(patch);
   };
+
+  const commit = () => onUpdate(computeAndPatch());
+
+  const switchMetric = (next: IntensityMetric) => {
+    if (next === metric) return;
+    // When switching, clear the other field locally
+    if (next === "rpe") setRir("");
+    else setRpe("");
+    onUpdate(computeAndPatch({ metric: next }));
+  };
+
+  // Computed prescribed weight (coach view) — derived live from current inputs
+  const computedKg = useMemo(() => {
+    const r = parseInt(reps, 10) || 1;
+    const rpeVal = rpe ? parseFloat(rpe) : null;
+    const rirVal = rir ? parseFloat(rir) : null;
+    return prescribedWeightKg({
+      oneRmKg: oneRm,
+      reps: r,
+      metric,
+      rpe: rpeVal,
+      rir: rirVal,
+    });
+  }, [oneRm, reps, rpe, rir, metric]);
 
   return (
     <div className="rounded-md border border-border bg-card p-2">
@@ -915,7 +972,6 @@ function ExerciseRow({
           <button
             type="button"
             className="cursor-grab touch-none p-0.5 text-muted-foreground hover:text-foreground active:cursor-grabbing"
-            // The parent SortableItem owns drag listeners, so this just shows affordance
             onClick={(e) => e.preventDefault()}
             aria-label="Drag to reorder"
           >
@@ -923,35 +979,65 @@ function ExerciseRow({
           </button>
           <span className="truncate text-sm font-medium">{ex.exercise}</span>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+        <div
+          className="flex items-center gap-1"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {/* Metric toggle */}
+          <div className="flex overflow-hidden rounded-md border border-border text-[10px]">
+            <button
+              type="button"
+              onClick={() => switchMetric("rpe")}
+              className={cn(
+                "px-1.5 py-0.5 font-semibold",
+                metric === "rpe"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              RPE
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMetric("rir")}
+              className={cn(
+                "px-1.5 py-0.5 font-semibold",
+                metric === "rir"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              RIR
+            </button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <span className="text-lg leading-none">⋯</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <span className="text-lg leading-none">⋯</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onPointerDown={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <CopyPlus className="mr-2 h-4 w-4" /> Add another block (same
-              exercise)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              {showNotes ? "Hide notes" : "Add notes"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem onClick={onDuplicate}>
+                <CopyPlus className="mr-2 h-4 w-4" /> Add another block (same
+                exercise)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                {showNotes ? "Hide notes" : "Add notes"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div
         className="mt-1 grid grid-cols-4 gap-1"
@@ -959,9 +1045,85 @@ function ExerciseRow({
       >
         <NumField label="Sets" value={sets} onChange={setSets} onBlur={commit} />
         <NumField label="Reps" value={reps} onChange={setReps} onBlur={commit} />
-        <NumField label="RPE" value={rpe} onChange={setRpe} onBlur={commit} step="0.5" />
-        <NumField label="kg" value={weight} onChange={setWeight} onBlur={commit} step="0.5" />
+        {metric === "rpe" ? (
+          <NumField
+            label="RPE"
+            value={rpe}
+            onChange={setRpe}
+            onBlur={commit}
+            step="0.5"
+          />
+        ) : (
+          <NumField
+            label="RIR"
+            value={rir}
+            onChange={setRir}
+            onBlur={commit}
+            step="1"
+          />
+        )}
+        <NumField
+          label="kg"
+          value={weight}
+          onChange={setWeight}
+          onBlur={commit}
+          step="0.5"
+          placeholder={computedKg != null ? String(computedKg) : ""}
+        />
       </div>
+
+      {/* Coach-only computed weight hint */}
+      {oneRm > 0 && computedKg != null && !weight && (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="mt-1 inline-flex cursor-help items-center gap-1 text-[10px] text-muted-foreground">
+                <Calculator className="h-3 w-3" />
+                Auto: <span className="font-semibold text-foreground">
+                  {computedKg} kg
+                </span>{" "}
+                (from athlete's 1RM, hidden from athlete)
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[220px] text-xs">
+              The athlete sees only this prescribed kg, never their 1RM.
+              Override by typing a value in the kg box.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+      {oneRm === 0 && (
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          No 1RM set for {ex.exercise} — set one to auto-compute kg from{" "}
+          {metric.toUpperCase()}.
+        </div>
+      )}
+
+      {/* Toggles: lengthened partials, last set to failure */}
+      <div
+        className="mt-2 flex flex-wrap gap-3"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <label className="flex cursor-pointer items-center gap-1.5 text-[11px]">
+          <Checkbox
+            checked={ex.lengthened_partials}
+            onCheckedChange={(v) =>
+              onUpdate({ lengthened_partials: v === true })
+            }
+          />
+          Lengthened partials
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5 text-[11px]">
+          <Checkbox
+            checked={ex.last_set_to_failure}
+            onCheckedChange={(v) =>
+              onUpdate({ last_set_to_failure: v === true })
+            }
+          />
+          Last set to failure
+        </label>
+      </div>
+
       {showNotes && (
         <div className="mt-1" onPointerDown={(e) => e.stopPropagation()}>
           <Input

@@ -65,7 +65,11 @@ function SignupPage() {
 
   useEffect(() => {
     if (!loading && user && userRole) {
-      navigate({ to: roleHome(userRole) });
+      const target = roleHome(userRole);
+      if (target === "/coach") navigate({ to: "/coach" });
+      else if (target === "/physio") navigate({ to: "/physio" });
+      else if (target === "/patient") navigate({ to: "/patient" });
+      else navigate({ to: "/today" });
     }
   }, [user, userRole, loading, navigate]);
 

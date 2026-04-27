@@ -10,13 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as PhysioRouteImport } from './routes/physio'
+import { Route as PatientRouteImport } from './routes/patient'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PhysioIndexRouteImport } from './routes/physio.index'
+import { Route as PatientIndexRouteImport } from './routes/patient.index'
 import { Route as CoachIndexRouteImport } from './routes/coach.index'
+import { Route as PhysioInvitesRouteImport } from './routes/physio.invites'
 import { Route as CoachInvitesRouteImport } from './routes/coach.invites'
 import { Route as CoachExercisesRouteImport } from './routes/coach.exercises'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
@@ -30,6 +35,16 @@ import { Route as CoachAthletesAthleteIdCyclesCycleIdRouteImport } from './route
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PhysioRoute = PhysioRouteImport.update({
+  id: '/physio',
+  path: '/physio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatientRoute = PatientRouteImport.update({
+  id: '/patient',
+  path: '/patient',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -61,10 +76,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhysioIndexRoute = PhysioIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PhysioRoute,
+} as any)
+const PatientIndexRoute = PatientIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PatientRoute,
+} as any)
 const CoachIndexRoute = CoachIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => CoachRoute,
+} as any)
+const PhysioInvitesRoute = PhysioInvitesRouteImport.update({
+  id: '/invites',
+  path: '/invites',
+  getParentRoute: () => PhysioRoute,
 } as any)
 const CoachInvitesRoute = CoachInvitesRouteImport.update({
   id: '/invites',
@@ -121,13 +151,18 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
+  '/patient': typeof PatientRouteWithChildren
+  '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
   '/today': typeof AppTodayRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
+  '/physio/invites': typeof PhysioInvitesRoute
   '/coach/': typeof CoachIndexRoute
+  '/patient/': typeof PatientIndexRoute
+  '/physio/': typeof PhysioIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
   '/coach/athletes/$athleteId/analytics': typeof CoachAthletesAthleteIdAnalyticsRoute
   '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
@@ -144,7 +179,10 @@ export interface FileRoutesByTo {
   '/today': typeof AppTodayRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
+  '/physio/invites': typeof PhysioInvitesRoute
   '/coach': typeof CoachIndexRoute
+  '/patient': typeof PatientIndexRoute
+  '/physio': typeof PhysioIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
   '/coach/athletes/$athleteId/analytics': typeof CoachAthletesAthleteIdAnalyticsRoute
   '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
@@ -158,13 +196,18 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
+  '/patient': typeof PatientRouteWithChildren
+  '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/me': typeof AppMeRoute
   '/_app/today': typeof AppTodayRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
+  '/physio/invites': typeof PhysioInvitesRoute
   '/coach/': typeof CoachIndexRoute
+  '/patient/': typeof PatientIndexRoute
+  '/physio/': typeof PhysioIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
   '/coach/athletes/$athleteId/analytics': typeof CoachAthletesAthleteIdAnalyticsRoute
   '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
@@ -178,13 +221,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/messages'
     | '/onboarding'
+    | '/patient'
+    | '/physio'
     | '/signup'
     | '/history'
     | '/me'
     | '/today'
     | '/coach/exercises'
     | '/coach/invites'
+    | '/physio/invites'
     | '/coach/'
+    | '/patient/'
+    | '/physio/'
     | '/coach/athletes/$athleteId'
     | '/coach/athletes/$athleteId/analytics'
     | '/coach/athletes/$athleteId/cycles'
@@ -201,7 +249,10 @@ export interface FileRouteTypes {
     | '/today'
     | '/coach/exercises'
     | '/coach/invites'
+    | '/physio/invites'
     | '/coach'
+    | '/patient'
+    | '/physio'
     | '/coach/athletes/$athleteId'
     | '/coach/athletes/$athleteId/analytics'
     | '/coach/athletes/$athleteId/cycles'
@@ -214,13 +265,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/messages'
     | '/onboarding'
+    | '/patient'
+    | '/physio'
     | '/signup'
     | '/_app/history'
     | '/_app/me'
     | '/_app/today'
     | '/coach/exercises'
     | '/coach/invites'
+    | '/physio/invites'
     | '/coach/'
+    | '/patient/'
+    | '/physio/'
     | '/coach/athletes/$athleteId'
     | '/coach/athletes/$athleteId/analytics'
     | '/coach/athletes/$athleteId/cycles'
@@ -234,6 +290,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRoute
   OnboardingRoute: typeof OnboardingRoute
+  PatientRoute: typeof PatientRouteWithChildren
+  PhysioRoute: typeof PhysioRouteWithChildren
   SignupRoute: typeof SignupRoute
 }
 
@@ -244,6 +302,20 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/physio': {
+      id: '/physio'
+      path: '/physio'
+      fullPath: '/physio'
+      preLoaderRoute: typeof PhysioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patient': {
+      id: '/patient'
+      path: '/patient'
+      fullPath: '/patient'
+      preLoaderRoute: typeof PatientRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -288,12 +360,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/physio/': {
+      id: '/physio/'
+      path: '/'
+      fullPath: '/physio/'
+      preLoaderRoute: typeof PhysioIndexRouteImport
+      parentRoute: typeof PhysioRoute
+    }
+    '/patient/': {
+      id: '/patient/'
+      path: '/'
+      fullPath: '/patient/'
+      preLoaderRoute: typeof PatientIndexRouteImport
+      parentRoute: typeof PatientRoute
+    }
     '/coach/': {
       id: '/coach/'
       path: '/'
       fullPath: '/coach/'
       preLoaderRoute: typeof CoachIndexRouteImport
       parentRoute: typeof CoachRoute
+    }
+    '/physio/invites': {
+      id: '/physio/invites'
+      path: '/invites'
+      fullPath: '/physio/invites'
+      preLoaderRoute: typeof PhysioInvitesRouteImport
+      parentRoute: typeof PhysioRoute
     }
     '/coach/invites': {
       id: '/coach/invites'
@@ -423,6 +516,30 @@ const CoachRouteChildren: CoachRouteChildren = {
 
 const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)
 
+interface PatientRouteChildren {
+  PatientIndexRoute: typeof PatientIndexRoute
+}
+
+const PatientRouteChildren: PatientRouteChildren = {
+  PatientIndexRoute: PatientIndexRoute,
+}
+
+const PatientRouteWithChildren =
+  PatientRoute._addFileChildren(PatientRouteChildren)
+
+interface PhysioRouteChildren {
+  PhysioInvitesRoute: typeof PhysioInvitesRoute
+  PhysioIndexRoute: typeof PhysioIndexRoute
+}
+
+const PhysioRouteChildren: PhysioRouteChildren = {
+  PhysioInvitesRoute: PhysioInvitesRoute,
+  PhysioIndexRoute: PhysioIndexRoute,
+}
+
+const PhysioRouteWithChildren =
+  PhysioRoute._addFileChildren(PhysioRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
@@ -430,6 +547,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MessagesRoute: MessagesRoute,
   OnboardingRoute: OnboardingRoute,
+  PatientRoute: PatientRouteWithChildren,
+  PhysioRoute: PhysioRouteWithChildren,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport

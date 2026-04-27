@@ -101,12 +101,14 @@ function ExerciseLibraryPage() {
       name: string;
       category?: string;
       description?: string;
+      default_intensity_metric: "rpe" | "rir";
     }) => {
       const parsed = exerciseSchema.parse(input);
       const payload = {
         name: parsed.name,
         category: parsed.category || null,
         description: parsed.description || null,
+        default_intensity_metric: parsed.default_intensity_metric,
         created_by: userId,
         is_global: false,
       };
@@ -117,6 +119,7 @@ function ExerciseLibraryPage() {
             name: payload.name,
             category: payload.category,
             description: payload.description,
+            default_intensity_metric: payload.default_intensity_metric,
           })
           .eq("id", input.id);
         if (error) throw error;

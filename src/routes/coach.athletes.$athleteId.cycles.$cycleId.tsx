@@ -278,6 +278,21 @@ function CycleDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const updateDaysPerWeekMutation = useMutation({
+    mutationFn: async (n: number) => {
+      const { error } = await supabase
+        .from("mesocycles")
+        .update({ days_per_week: n })
+        .eq("id", cycleId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mesocycle", cycleId] });
+      toast.success("Days per week updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   // Copy entire structure from one week to another
   const copyWeekMutation = useMutation({
     mutationFn: async (input: { fromWeekId: string; toWeekId: string }) => {
@@ -389,8 +404,24 @@ function CycleDetailPage() {
               {format(parseISO(cycle.start_date), "MMM d, yyyy")}
             </p>
           </div>
-          <div className="text-sm text-muted-foreground">
-            <Badge variant="outline" className="mr-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Label htmlFor="dpw" className="text-xs">Days/week</Label>
+              <Select
+                value={String(cycle.days_per_week)}
+                onValueChange={(v) => updateDaysPerWeekMutation.mutate(parseInt(v, 10))}
+              >
+                <SelectTrigger id="dpw" className="h-8 w-16">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Badge variant="outline">
               {publishedCount} published
             </Badge>
             <Badge variant="outline">

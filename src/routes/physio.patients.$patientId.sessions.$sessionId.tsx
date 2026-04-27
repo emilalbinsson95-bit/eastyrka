@@ -346,6 +346,8 @@ interface RehabExercise {
   notes: string | null;
 }
 
+type ExercisePatch = Partial<Pick<RehabExercise, "pain_rating" | "perceived_exertion" | "tolerance" | "rom_notes">>;
+
 function ExerciseRow({
   ex,
   canEdit,

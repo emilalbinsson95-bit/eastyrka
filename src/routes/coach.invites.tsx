@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/coach/invites")({
   head: () => ({
     meta: [
-      { title: "Invite athletes — EAkoefficient Coach" },
+      { title: "Invite athletes — EA Training System Coach" },
       { name: "description", content: "Connect with athletes to coach them." },
     ],
   }),

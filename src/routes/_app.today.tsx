@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/today")({
   head: () => ({
     meta: [
-      { title: "Today's Session — EAkoefficient" },
+      { title: "Today's Session — EA Training System" },
       { name: "description", content: "Log today's lifts and see your readiness in real time." },
     ],
   }),

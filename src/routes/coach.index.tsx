@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/coach/")({
   head: () => ({
     meta: [
-      { title: "My Athletes — EAkoefficient Coach" },
+      { title: "My Athletes — EA Training System Coach" },
       {
         name: "description",
         content: "Roster of your athletes with current readiness status.",

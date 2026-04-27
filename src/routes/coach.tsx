@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Users, LayoutTemplate, Mail, LogOut, Activity } from "lucide-react";
+import { Users, BookOpen, Mail, LogOut, Activity } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ function CoachLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/coach" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EAkoefficient
+            EA Training System
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               Coach
             </span>
@@ -46,9 +46,9 @@ function CoachLayout() {
           <nav className="hidden items-center gap-1 md:flex">
             <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label="Athletes" exact />
             <CoachNavLink
-              to="/coach/templates"
-              icon={<LayoutTemplate className="h-4 w-4" />}
-              label="Templates"
+              to="/coach/exercises"
+              icon={<BookOpen className="h-4 w-4" />}
+              label="Exercises"
             />
             <CoachNavLink
               to="/coach/invites"
@@ -69,9 +69,9 @@ function CoachLayout() {
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
           <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label="Athletes" exact />
           <CoachNavLink
-            to="/coach/templates"
-            icon={<LayoutTemplate className="h-4 w-4" />}
-            label="Templates"
+            to="/coach/exercises"
+            icon={<BookOpen className="h-4 w-4" />}
+            label="Exercises"
           />
           <CoachNavLink
             to="/coach/invites"
@@ -94,7 +94,7 @@ function CoachNavLink({
   label,
   exact,
 }: {
-  to: "/coach" | "/coach/templates" | "/coach/invites";
+  to: "/coach" | "/coach/exercises" | "/coach/invites";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

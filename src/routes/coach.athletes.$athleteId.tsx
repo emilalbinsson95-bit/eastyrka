@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, Save, TrendingDown, Plus, Settings } from "lucide-react";
+import { ArrowLeft, Save, TrendingDown, Plus, Settings, Calendar } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +42,7 @@ const DEFAULT_EXERCISES = [
 export const Route = createFileRoute("/coach/athletes/$athleteId")({
   head: () => ({
     meta: [
-      { title: "Athlete dashboard — EAkoefficient Coach" },
+      { title: "Athlete dashboard — EA Training System Coach" },
       { name: "description", content: "EAkoefficient analytics and programming for one athlete." },
     ],
   }),
@@ -67,7 +67,7 @@ function AthleteDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-2 mb-1">
             <Link to="/coach">
@@ -83,6 +83,14 @@ function AthleteDetailPage() {
             </p>
           )}
         </div>
+        <Button asChild>
+          <Link
+            to="/coach/athletes/$athleteId/cycles"
+            params={{ athleteId }}
+          >
+            <Calendar className="mr-1 h-4 w-4" /> Mesocycles
+          </Link>
+        </Button>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">

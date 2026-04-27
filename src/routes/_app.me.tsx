@@ -13,7 +13,7 @@ import {
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
     meta: [
-      { title: "My Profile — EAkoefficient" },
+      { title: "My Profile — EA Training System" },
       { name: "description", content: "Your profile and current 1RM baselines." },
     ],
   }),

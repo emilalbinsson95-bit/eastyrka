@@ -39,7 +39,7 @@ function AthleteLayout() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link to="/today" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EAkoefficient
+            EA Training System
           </Link>
           <Button
             variant="ghost"

@@ -62,9 +62,85 @@ export type Database = {
         }
         Relationships: []
       }
+      exercises: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_global: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_global?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_global?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mesocycles: {
+        Row: {
+          athlete_id: string
+          coach_id: string
+          created_at: string
+          goal: string | null
+          id: string
+          name: string
+          notes: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["cycle_status"]
+          total_weeks: number
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          coach_id: string
+          created_at?: string
+          goal?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["cycle_status"]
+          total_weeks: number
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          coach_id?: string
+          created_at?: string
+          goal?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["cycle_status"]
+          total_weeks?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plan_template_exercises: {
         Row: {
           exercise: string
+          exercise_id: string | null
           id: string
           notes: string | null
           order_index: number
@@ -77,6 +153,7 @@ export type Database = {
         }
         Insert: {
           exercise: string
+          exercise_id?: string | null
           id?: string
           notes?: string | null
           order_index?: number
@@ -89,6 +166,7 @@ export type Database = {
         }
         Update: {
           exercise?: string
+          exercise_id?: string | null
           id?: string
           notes?: string | null
           order_index?: number
@@ -100,6 +178,13 @@ export type Database = {
           variation?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "plan_template_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "plan_template_exercises_template_session_id_fkey"
             columns: ["template_session_id"]
@@ -169,6 +254,7 @@ export type Database = {
         Row: {
           created_at: string
           exercise: string
+          exercise_id: string | null
           id: string
           notes: string | null
           order_index: number
@@ -182,6 +268,7 @@ export type Database = {
         Insert: {
           created_at?: string
           exercise: string
+          exercise_id?: string | null
           id?: string
           notes?: string | null
           order_index?: number
@@ -195,6 +282,7 @@ export type Database = {
         Update: {
           created_at?: string
           exercise?: string
+          exercise_id?: string | null
           id?: string
           notes?: string | null
           order_index?: number
@@ -206,6 +294,13 @@ export type Database = {
           variation?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "planned_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "planned_exercises_planned_session_id_fkey"
             columns: ["planned_session_id"]
@@ -360,9 +455,11 @@ export type Database = {
           coach_id: string
           created_at: string
           id: string
+          mesocycle_id: string | null
           notes: string | null
           status: Database["public"]["Enums"]["plan_status"]
           updated_at: string
+          week_index: number | null
           week_start_date: string
         }
         Insert: {
@@ -370,9 +467,11 @@ export type Database = {
           coach_id: string
           created_at?: string
           id?: string
+          mesocycle_id?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           updated_at?: string
+          week_index?: number | null
           week_start_date: string
         }
         Update: {
@@ -380,12 +479,22 @@ export type Database = {
           coach_id?: string
           created_at?: string
           id?: string
+          mesocycle_id?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           updated_at?: string
+          week_index?: number | null
           week_start_date?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "week_plans_mesocycle_id_fkey"
+            columns: ["mesocycle_id"]
+            isOneToOne: false
+            referencedRelation: "mesocycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -406,6 +515,7 @@ export type Database = {
     }
     Enums: {
       app_role: "coach" | "athlete"
+      cycle_status: "draft" | "active" | "archived"
       plan_status: "draft" | "published"
     }
     CompositeTypes: {
@@ -535,6 +645,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["coach", "athlete"],
+      cycle_status: ["draft", "active", "archived"],
       plan_status: ["draft", "published"],
     },
   },

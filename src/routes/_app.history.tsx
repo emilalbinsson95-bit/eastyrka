@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/history")({
   head: () => ({
     meta: [
-      { title: "History — EAkoefficient" },
+      { title: "History — EA Training System" },
       { name: "description", content: "Your past sessions and EAkoefficient trends." },
     ],
   }),

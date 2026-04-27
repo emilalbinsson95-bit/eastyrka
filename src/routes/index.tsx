@@ -9,11 +9,11 @@ import { useNavigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "EAkoefficient — Powerlifting Coaching Platform" },
+      { title: "EA Training System — Powerlifting Coaching Platform" },
       {
         name: "description",
         content:
-          "Coach powerlifters with the EAkoefficient autoregulation system. Weekly plans, real-time CNS-fatigue tracking, and intra-set volume quality.",
+          "Coach powerlifters with the EA Training System. Weekly plans, real-time CNS-fatigue tracking, and intra-set volume quality.",
       },
     ],
   }),
@@ -38,7 +38,7 @@ function Landing() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EAkoefficient
+            EA Training System
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
@@ -58,7 +58,7 @@ function Landing() {
         </div>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
           Stop guessing.{" "}
-          <span className="text-primary">Coach with EAkoefficient.</span>
+          <span className="text-primary">Coach with EA Training System.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
           Send weekly training plans, see every athlete's readiness in real time, and
@@ -95,7 +95,7 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        EAkoefficient — autoregulation for serious lifters.
+        EA Training System — autoregulation for serious lifters.
       </footer>
     </div>
   );

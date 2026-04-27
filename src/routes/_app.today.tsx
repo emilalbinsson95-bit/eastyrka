@@ -722,6 +722,7 @@ function FreestyleQuickLog({
     onSuccess: () => {
       toast.success("Set logged");
       queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
       setSetNumber((n) => n + 1);
     },
     onError: (e) => toast.error((e as Error).message),

@@ -4,7 +4,6 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   format,
   parseISO,
-  startOfWeek,
   addDays,
   isToday,
   isSameDay,
@@ -115,10 +114,6 @@ function TodayPage() {
   const userId = user!.id;
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
-  const weekStart = format(
-    startOfWeek(today, { weekStartsOn: 1 }),
-    "yyyy-MM-dd",
-  );
 
   // Fetch the most recent published week (calendar-independent: athlete advances day-by-day).
   const planQuery = useQuery({

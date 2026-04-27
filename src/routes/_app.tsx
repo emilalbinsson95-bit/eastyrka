@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Calendar, History, User as UserIcon, LogOut, Activity } from "lucide-react";
+import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,

@@ -149,20 +149,23 @@ function SignupPage() {
                 onValueChange={(v) => setRole(v as AppRole)}
                 className="grid grid-cols-2 gap-2"
               >
-                <Label
-                  htmlFor="role-athlete"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-input p-3 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                >
-                  <RadioGroupItem value="athlete" id="role-athlete" />
-                  Athlete
-                </Label>
-                <Label
-                  htmlFor="role-coach"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-input p-3 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                >
-                  <RadioGroupItem value="coach" id="role-coach" />
-                  Coach
-                </Label>
+                {(
+                  [
+                    { v: "athlete", label: "Athlete" },
+                    { v: "coach", label: "Coach" },
+                    { v: "patient", label: "Patient" },
+                    { v: "physio", label: "Physiotherapist" },
+                  ] as const
+                ).map((opt) => (
+                  <Label
+                    key={opt.v}
+                    htmlFor={`role-${opt.v}`}
+                    className="flex cursor-pointer items-center gap-2 rounded-md border border-input p-3 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  >
+                    <RadioGroupItem value={opt.v} id={`role-${opt.v}`} />
+                    {opt.label}
+                  </Label>
+                ))}
               </RadioGroup>
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>

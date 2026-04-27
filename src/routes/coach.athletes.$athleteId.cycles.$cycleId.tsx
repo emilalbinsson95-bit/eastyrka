@@ -13,6 +13,7 @@ import {
   CopyPlus,
   Pencil,
   Check,
+  Calculator,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -59,6 +60,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  prescribedWeightKg,
+  type IntensityMetric,
+} from "@/lib/intensity";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute(
@@ -105,7 +117,11 @@ interface PlannedExerciseRow {
   target_sets: number;
   target_reps: number;
   target_rpe: number | null;
+  target_rir: number | null;
+  intensity_metric: IntensityMetric;
   target_weight_kg: number | null;
+  lengthened_partials: boolean;
+  last_set_to_failure: boolean;
   notes: string | null;
   order_index: number;
 }
@@ -123,6 +139,12 @@ interface ExerciseLib {
   name: string;
   category: string | null;
   description: string | null;
+  default_intensity_metric: IntensityMetric;
+}
+
+interface BaselineRow {
+  exercise: string;
+  one_rm_kg: number;
 }
 
 function CycleDetailPage() {
@@ -166,10 +188,27 @@ function CycleDetailPage() {
     queryFn: async (): Promise<ExerciseLib[]> => {
       const { data, error } = await supabase
         .from("exercises")
-        .select("id, name, category, description")
+        .select("id, name, category, description, default_intensity_metric")
         .order("name");
       if (error) throw error;
       return (data ?? []) as ExerciseLib[];
+    },
+  });
+
+  // Athlete's 1RMs — used to compute prescribed kg from RPE/RIR. Coach only.
+  const baselinesQuery = useQuery({
+    queryKey: ["athlete-baselines", athleteId],
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data, error } = await supabase
+        .from("baselines")
+        .select("exercise, one_rm_kg")
+        .eq("athlete_id", athleteId);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of (data ?? []) as BaselineRow[]) {
+        map[row.exercise] = Number(row.one_rm_kg);
+      }
+      return map;
     },
   });
 
@@ -252,7 +291,7 @@ function CycleDetailPage() {
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", srcIds);
         if (e2) throw e2;
@@ -297,7 +336,11 @@ function CycleDetailPage() {
               target_sets: e.target_sets,
               target_reps: e.target_reps,
               target_rpe: e.target_rpe,
+              target_rir: e.target_rir,
+              intensity_metric: e.intensity_metric,
               target_weight_kg: e.target_weight_kg,
+              lengthened_partials: e.lengthened_partials,
+              last_set_to_failure: e.last_set_to_failure,
               notes: e.notes,
               order_index: e.order_index,
             })),
@@ -391,6 +434,7 @@ function CycleDetailPage() {
           weekIndex={activeWeek}
           previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
+          baselines={baselinesQuery.data ?? {}}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
@@ -418,6 +462,7 @@ function WeekEditor({
   weekIndex,
   previousWeek,
   exerciseLib,
+  baselines,
   onTogglePublish,
   onCopyFromPrevious,
 }: {
@@ -425,6 +470,7 @@ function WeekEditor({
   weekIndex: number;
   previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
+  baselines: Record<string, number>;
   onTogglePublish: (publish: boolean) => void;
   onCopyFromPrevious: () => void;
 }) {
@@ -445,7 +491,7 @@ function WeekEditor({
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", sessionIds)
           .order("order_index");
@@ -502,12 +548,16 @@ function WeekEditor({
       const existing = (sessionsQuery.data?.exercises ?? []).filter(
         (e) => e.planned_session_id === input.sessionId,
       );
+      const metric = lib.default_intensity_metric ?? "rpe";
       const { error } = await supabase.from("planned_exercises").insert({
         planned_session_id: input.sessionId,
         exercise_id: lib.id,
         exercise: lib.name,
         target_sets: 3,
-        target_reps: 5,
+        target_reps: metric === "rir" ? 10 : 5,
+        intensity_metric: metric,
+        target_rpe: metric === "rpe" ? 7 : null,
+        target_rir: metric === "rir" ? 2 : null,
         order_index: existing.length,
       });
       if (error) throw error;
@@ -529,7 +579,11 @@ function WeekEditor({
         target_sets: ex.target_sets,
         target_reps: ex.target_reps,
         target_rpe: ex.target_rpe,
+        target_rir: ex.target_rir,
+        intensity_metric: ex.intensity_metric,
         target_weight_kg: ex.target_weight_kg,
+        lengthened_partials: ex.lengthened_partials,
+        last_set_to_failure: ex.last_set_to_failure,
         notes: ex.notes,
         order_index: existing.length,
       });
@@ -674,6 +728,7 @@ function WeekEditor({
                     renderItem={(ex) => (
                       <ExerciseRow
                         ex={ex}
+                        oneRm={baselines[ex.exercise] ?? 0}
                         onUpdate={(patch) =>
                           updateExerciseMutation.mutate({ id: ex.id, patch })
                         }
@@ -827,11 +882,13 @@ function SortableItem({
 
 function ExerciseRow({
   ex,
+  oneRm,
   onUpdate,
   onDuplicate,
   onDelete,
 }: {
   ex: PlannedExerciseRow;
+  oneRm: number;
   onUpdate: (patch: Partial<PlannedExerciseRow>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -839,19 +896,74 @@ function ExerciseRow({
   const [sets, setSets] = useState(String(ex.target_sets));
   const [reps, setReps] = useState(String(ex.target_reps));
   const [rpe, setRpe] = useState(ex.target_rpe?.toString() ?? "");
+  const [rir, setRir] = useState(ex.target_rir?.toString() ?? "");
   const [weight, setWeight] = useState(ex.target_weight_kg?.toString() ?? "");
   const [notes, setNotes] = useState(ex.notes ?? "");
   const [showNotes, setShowNotes] = useState(!!ex.notes);
+  const metric: IntensityMetric = ex.intensity_metric;
 
-  const commit = () => {
-    const patch: Partial<PlannedExerciseRow> = {
-      target_sets: parseInt(sets, 10) || 1,
-      target_reps: parseInt(reps, 10) || 1,
-      target_rpe: rpe ? parseFloat(rpe) : null,
-      target_weight_kg: weight ? parseFloat(weight) : null,
+  const computeAndPatch = (
+    overrides: Partial<{
+      sets: string;
+      reps: string;
+      rpe: string;
+      rir: string;
+      weight: string;
+      metric: IntensityMetric;
+    }> = {},
+  ): Partial<PlannedExerciseRow> => {
+    const m = overrides.metric ?? metric;
+    const s = parseInt(overrides.sets ?? sets, 10) || 1;
+    const r = parseInt(overrides.reps ?? reps, 10) || 1;
+    const rpeVal = (overrides.rpe ?? rpe) ? parseFloat(overrides.rpe ?? rpe) : null;
+    const rirVal = (overrides.rir ?? rir) ? parseFloat(overrides.rir ?? rir) : null;
+    // Auto-compute target_weight_kg from 1RM × intensity, unless coach typed one explicitly
+    let kgVal: number | null = null;
+    const explicitWeight = (overrides.weight ?? weight).trim();
+    if (explicitWeight) {
+      kgVal = parseFloat(explicitWeight);
+    } else if (oneRm > 0) {
+      kgVal = prescribedWeightKg({
+        oneRmKg: oneRm,
+        reps: r,
+        metric: m,
+        rpe: rpeVal,
+        rir: rirVal,
+      });
+    }
+    return {
+      target_sets: s,
+      target_reps: r,
+      intensity_metric: m,
+      target_rpe: m === "rpe" ? rpeVal : null,
+      target_rir: m === "rir" ? rirVal : null,
+      target_weight_kg: kgVal,
     };
-    onUpdate(patch);
   };
+
+  const commit = () => onUpdate(computeAndPatch());
+
+  const switchMetric = (next: IntensityMetric) => {
+    if (next === metric) return;
+    // When switching, clear the other field locally
+    if (next === "rpe") setRir("");
+    else setRpe("");
+    onUpdate(computeAndPatch({ metric: next }));
+  };
+
+  // Computed prescribed weight (coach view) — derived live from current inputs
+  const computedKg = useMemo(() => {
+    const r = parseInt(reps, 10) || 1;
+    const rpeVal = rpe ? parseFloat(rpe) : null;
+    const rirVal = rir ? parseFloat(rir) : null;
+    return prescribedWeightKg({
+      oneRmKg: oneRm,
+      reps: r,
+      metric,
+      rpe: rpeVal,
+      rir: rirVal,
+    });
+  }, [oneRm, reps, rpe, rir, metric]);
 
   return (
     <div className="rounded-md border border-border bg-card p-2">
@@ -860,7 +972,6 @@ function ExerciseRow({
           <button
             type="button"
             className="cursor-grab touch-none p-0.5 text-muted-foreground hover:text-foreground active:cursor-grabbing"
-            // The parent SortableItem owns drag listeners, so this just shows affordance
             onClick={(e) => e.preventDefault()}
             aria-label="Drag to reorder"
           >
@@ -868,35 +979,65 @@ function ExerciseRow({
           </button>
           <span className="truncate text-sm font-medium">{ex.exercise}</span>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+        <div
+          className="flex items-center gap-1"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {/* Metric toggle */}
+          <div className="flex overflow-hidden rounded-md border border-border text-[10px]">
+            <button
+              type="button"
+              onClick={() => switchMetric("rpe")}
+              className={cn(
+                "px-1.5 py-0.5 font-semibold",
+                metric === "rpe"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              RPE
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMetric("rir")}
+              className={cn(
+                "px-1.5 py-0.5 font-semibold",
+                metric === "rir"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              RIR
+            </button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <span className="text-lg leading-none">⋯</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <span className="text-lg leading-none">⋯</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onPointerDown={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <CopyPlus className="mr-2 h-4 w-4" /> Add another block (same
-              exercise)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              {showNotes ? "Hide notes" : "Add notes"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem onClick={onDuplicate}>
+                <CopyPlus className="mr-2 h-4 w-4" /> Add another block (same
+                exercise)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                {showNotes ? "Hide notes" : "Add notes"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div
         className="mt-1 grid grid-cols-4 gap-1"
@@ -904,9 +1045,85 @@ function ExerciseRow({
       >
         <NumField label="Sets" value={sets} onChange={setSets} onBlur={commit} />
         <NumField label="Reps" value={reps} onChange={setReps} onBlur={commit} />
-        <NumField label="RPE" value={rpe} onChange={setRpe} onBlur={commit} step="0.5" />
-        <NumField label="kg" value={weight} onChange={setWeight} onBlur={commit} step="0.5" />
+        {metric === "rpe" ? (
+          <NumField
+            label="RPE"
+            value={rpe}
+            onChange={setRpe}
+            onBlur={commit}
+            step="0.5"
+          />
+        ) : (
+          <NumField
+            label="RIR"
+            value={rir}
+            onChange={setRir}
+            onBlur={commit}
+            step="1"
+          />
+        )}
+        <NumField
+          label="kg"
+          value={weight}
+          onChange={setWeight}
+          onBlur={commit}
+          step="0.5"
+          placeholder={computedKg != null ? String(computedKg) : ""}
+        />
       </div>
+
+      {/* Coach-only computed weight hint */}
+      {oneRm > 0 && computedKg != null && !weight && (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="mt-1 inline-flex cursor-help items-center gap-1 text-[10px] text-muted-foreground">
+                <Calculator className="h-3 w-3" />
+                Auto: <span className="font-semibold text-foreground">
+                  {computedKg} kg
+                </span>{" "}
+                (from athlete's 1RM, hidden from athlete)
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[220px] text-xs">
+              The athlete sees only this prescribed kg, never their 1RM.
+              Override by typing a value in the kg box.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+      {oneRm === 0 && (
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          No 1RM set for {ex.exercise} — set one to auto-compute kg from{" "}
+          {metric.toUpperCase()}.
+        </div>
+      )}
+
+      {/* Toggles: lengthened partials, last set to failure */}
+      <div
+        className="mt-2 flex flex-wrap gap-3"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <label className="flex cursor-pointer items-center gap-1.5 text-[11px]">
+          <Checkbox
+            checked={ex.lengthened_partials}
+            onCheckedChange={(v) =>
+              onUpdate({ lengthened_partials: v === true })
+            }
+          />
+          Lengthened partials
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5 text-[11px]">
+          <Checkbox
+            checked={ex.last_set_to_failure}
+            onCheckedChange={(v) =>
+              onUpdate({ last_set_to_failure: v === true })
+            }
+          />
+          Last set to failure
+        </label>
+      </div>
+
       {showNotes && (
         <div className="mt-1" onPointerDown={(e) => e.stopPropagation()}>
           <Input
@@ -928,12 +1145,14 @@ function NumField({
   onChange,
   onBlur,
   step,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   onBlur: () => void;
   step?: string;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -944,6 +1163,7 @@ function NumField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
+        placeholder={placeholder}
         className="h-7 px-2 text-xs"
       />
     </div>

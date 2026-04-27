@@ -14,6 +14,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { Checkbox } from "@/components/ui/checkbox";
+import { rirToRpe } from "@/lib/intensity";
 import {
   Card,
   CardContent,
@@ -70,7 +72,11 @@ interface PlannedExercise {
   target_sets: number;
   target_reps: number;
   target_rpe: number | null;
+  target_rir: number | null;
+  intensity_metric: "rpe" | "rir";
   target_weight_kg: number | null;
+  lengthened_partials: boolean;
+  last_set_to_failure: boolean;
   notes: string | null;
   order_index: number;
 }
@@ -125,7 +131,9 @@ function TodayPage() {
              id, day_of_week, title, notes,
              planned_exercises (
                id, exercise, variation, target_sets, target_reps,
-               target_rpe, target_weight_kg, notes, order_index
+               target_rpe, target_rir, intensity_metric,
+               target_weight_kg, lengthened_partials, last_set_to_failure,
+               notes, order_index
              )
            )`,
         )
@@ -288,11 +296,9 @@ function TodayPage() {
       )}
 
       <p className="text-center text-xs text-muted-foreground">
-        Need to update your 1RM baselines? Ask your coach — they manage them on the
-        athlete page.{" "}
-        <Link to="/me" className="text-primary hover:underline">
-          View baselines
-        </Link>
+        Prescribed weights come from your coach based on your current strength —
+        focus on hitting the target reps and {""}
+        <span className="font-medium">RPE/RIR</span>.
       </p>
     </div>
   );
@@ -371,6 +377,13 @@ function PlannedExerciseRow({
   const targetSets = ex.target_sets;
   const isDone = completed >= targetSets;
 
+  const intensityLabel =
+    ex.intensity_metric === "rir" && ex.target_rir != null
+      ? `${ex.target_rir} RIR`
+      : ex.target_rpe != null
+        ? `RPE ${ex.target_rpe}`
+        : null;
+
   return (
     <div className="rounded-lg border border-border p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -384,9 +397,28 @@ function PlannedExerciseRow({
           </div>
           <p className="text-xs text-muted-foreground">
             Target: {ex.target_sets}×{ex.target_reps}
-            {ex.target_rpe && ` @RPE${ex.target_rpe}`}
+            {intensityLabel && ` @ ${intensityLabel}`}
             {ex.target_weight_kg && ` · ${ex.target_weight_kg}kg`}
           </p>
+          {(ex.lengthened_partials || ex.last_set_to_failure) && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {ex.lengthened_partials && (
+                <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                  + Lengthened partials
+                </span>
+              )}
+              {ex.last_set_to_failure && (
+                <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+                  Last set → failure
+                </span>
+              )}
+            </div>
+          )}
+          {ex.notes && (
+            <p className="mt-1 text-xs italic text-muted-foreground">
+              {ex.notes}
+            </p>
+          )}
         </div>
         <span className="text-xs font-medium text-muted-foreground">
           {completed}/{targetSets}
@@ -472,22 +504,35 @@ function LogSetButton({
   const [rpe, setRpe] = useState<number>(
     previousLog ? Number(previousLog.rpe) : Number(ex.target_rpe ?? 7),
   );
+  const [rir, setRir] = useState<number>(
+    ex.target_rir != null ? Number(ex.target_rir) : 2,
+  );
+  const [partials, setPartials] = useState<boolean>(ex.lengthened_partials);
+  const [toFailure, setToFailure] = useState<boolean>(
+    ex.last_set_to_failure && nextSet === ex.target_sets,
+  );
   const [comment, setComment] = useState("");
   const queryClient = useQueryClient();
 
+  const usingRir = ex.intensity_metric === "rir";
+  const effectiveRpe = usingRir ? rirToRpe(rir) : rpe;
+
   const livePreview = useMemo(() => {
-    const e1rm = dailyE1RM({ weight_kg: weight, reps, rpe });
-    const eak = baseline > 0 ? eaKoefficient({ weight_kg: weight, reps, rpe }, baseline) : 0;
+    const e1rm = dailyE1RM({ weight_kg: weight, reps, rpe: effectiveRpe });
+    const eak =
+      baseline > 0
+        ? eaKoefficient({ weight_kg: weight, reps, rpe: effectiveRpe }, baseline)
+        : 0;
     const status = readinessFromEAk(eak);
     return { e1rm, eak, status };
-  }, [weight, reps, rpe, baseline]);
+  }, [weight, reps, effectiveRpe, baseline]);
 
   const mutation = useMutation({
     mutationFn: async () => {
       const parsed = setSchema.parse({
         weight_kg: weight,
         reps,
-        rpe,
+        rpe: effectiveRpe,
         comment: comment || undefined,
       });
       const { error } = await supabase.from("training_logs").insert({
@@ -499,6 +544,9 @@ function LogSetButton({
         reps: parsed.reps,
         weight_kg: parsed.weight_kg,
         rpe: parsed.rpe,
+        rir: usingRir ? rir : null,
+        lengthened_partials: partials,
+        to_failure: toFailure,
         comment: parsed.comment ?? null,
         planned_exercise_id: ex.id,
       });
@@ -512,6 +560,14 @@ function LogSetButton({
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  const intensityLabel = usingRir
+    ? ex.target_rir != null
+      ? `${ex.target_rir} RIR`
+      : "RIR"
+    : ex.target_rpe != null
+      ? `RPE ${ex.target_rpe}`
+      : "RPE";
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -527,15 +583,36 @@ function LogSetButton({
             {ex.exercise} — Set {nextSet}
           </SheetTitle>
           <SheetDescription>
-            Target: {ex.target_reps} reps
-            {ex.target_rpe && ` @RPE${ex.target_rpe}`}
+            Target: {ex.target_reps} reps @ {intensityLabel}
             {ex.target_weight_kg && ` · ${ex.target_weight_kg}kg`}
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-4 px-4 py-4">
           <NumField label="Weight (kg)" step={2.5} value={weight} onChange={setWeight} />
           <NumField label="Reps" step={1} value={reps} onChange={setReps} />
-          <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
+          {usingRir ? (
+            <NumField label="RIR (reps in reserve)" step={1} min={0} max={10} value={rir} onChange={setRir} />
+          ) : (
+            <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
+          )}
+
+          <div className="flex flex-wrap gap-4 rounded-md border border-border p-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={partials}
+                onCheckedChange={(v) => setPartials(v === true)}
+              />
+              Lengthened partials
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={toFailure}
+                onCheckedChange={(v) => setToFailure(v === true)}
+              />
+              Set taken to failure
+            </label>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="comment">Comment (optional)</Label>
             <Input
@@ -549,13 +626,13 @@ function LogSetButton({
 
           <div className="rounded-lg border border-border bg-readiness-tint p-3">
             <div className="text-xs font-medium text-muted-foreground">
-              Live EAkoefficient preview
+              Live E1RM preview
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-lg font-bold">
                 {livePreview.e1rm.toFixed(1)} kg E1RM
               </span>
-              {baseline > 0 ? (
+              {baseline > 0 && (
                 <span
                   className={cn(
                     "rounded-full px-3 py-1 text-sm font-semibold",
@@ -564,8 +641,6 @@ function LogSetButton({
                 >
                   {livePreview.eak.toFixed(0)}% · {readinessLabel(livePreview.status)}
                 </span>
-              ) : (
-                <span className="text-xs text-muted-foreground">No baseline set</span>
               )}
             </div>
           </div>

@@ -46,6 +46,7 @@ const exerciseSchema = z.object({
   name: z.string().trim().min(1, "Name required").max(80),
   category: z.string().trim().max(40).optional().or(z.literal("")),
   description: z.string().trim().max(2000).optional().or(z.literal("")),
+  default_intensity_metric: z.enum(["rpe", "rir"]),
 });
 
 interface Exercise {
@@ -55,6 +56,7 @@ interface Exercise {
   category: string | null;
   is_global: boolean;
   created_by: string | null;
+  default_intensity_metric: "rpe" | "rir";
   updated_at: string;
 }
 
@@ -71,7 +73,9 @@ function ExerciseLibraryPage() {
     queryFn: async (): Promise<Exercise[]> => {
       const { data, error } = await supabase
         .from("exercises")
-        .select("id, name, description, category, is_global, created_by, updated_at")
+        .select(
+          "id, name, description, category, is_global, created_by, default_intensity_metric, updated_at",
+        )
         .order("is_global", { ascending: false })
         .order("name", { ascending: true });
       if (error) throw error;
@@ -97,12 +101,14 @@ function ExerciseLibraryPage() {
       name: string;
       category?: string;
       description?: string;
+      default_intensity_metric: "rpe" | "rir";
     }) => {
       const parsed = exerciseSchema.parse(input);
       const payload = {
         name: parsed.name,
         category: parsed.category || null,
         description: parsed.description || null,
+        default_intensity_metric: parsed.default_intensity_metric,
         created_by: userId,
         is_global: false,
       };
@@ -113,6 +119,7 @@ function ExerciseLibraryPage() {
             name: payload.name,
             category: payload.category,
             description: payload.description,
+            default_intensity_metric: payload.default_intensity_metric,
           })
           .eq("id", input.id);
         if (error) throw error;
@@ -216,6 +223,9 @@ function ExerciseLibraryPage() {
                             {ex.category}
                           </Badge>
                         )}
+                        <Badge variant="outline" className="text-xs uppercase">
+                          {ex.default_intensity_metric}
+                        </Badge>
                         {!ex.is_global && mine && (
                           <Badge className="bg-primary/10 text-primary hover:bg-primary/15 text-xs">
                             Yours
@@ -269,15 +279,20 @@ function ExerciseDialog({
   saving,
 }: {
   editing: Exercise | null;
-  onSubmit: (v: { name: string; category?: string; description?: string }) => void;
+  onSubmit: (v: {
+    name: string;
+    category?: string;
+    description?: string;
+    default_intensity_metric: "rpe" | "rir";
+  }) => void;
   saving: boolean;
 }) {
   const [name, setName] = useState(editing?.name ?? "");
   const [category, setCategory] = useState(editing?.category ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
-
-  // Re-sync when "editing" changes (e.g. opening dialog for a different exercise)
-  // Note: Dialog mounts the content once per open, so initial state above is enough.
+  const [metric, setMetric] = useState<"rpe" | "rir">(
+    editing?.default_intensity_metric ?? "rpe",
+  );
 
   return (
     <DialogContent>
@@ -308,6 +323,35 @@ function ExerciseDialog({
           />
         </div>
         <div>
+          <Label>Default intensity metric</Label>
+          <div className="mt-1 flex gap-2">
+            <Button
+              type="button"
+              variant={metric === "rpe" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMetric("rpe")}
+              className="flex-1"
+            >
+              RPE
+              <span className="ml-2 text-[10px] opacity-70">powerlifting</span>
+            </Button>
+            <Button
+              type="button"
+              variant={metric === "rir" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMetric("rir")}
+              className="flex-1"
+            >
+              RIR
+              <span className="ml-2 text-[10px] opacity-70">bodybuilding</span>
+            </Button>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            This is the default when programming this exercise. Coaches can still
+            override per set in the plan.
+          </p>
+        </div>
+        <div>
           <Label htmlFor="description">Description / cues</Label>
           <Textarea
             id="description"
@@ -325,12 +369,20 @@ function ExerciseDialog({
             setName("");
             setCategory("");
             setDescription("");
+            setMetric("rpe");
           }}
         >
           <X className="mr-1 h-4 w-4" /> Reset
         </Button>
         <Button
-          onClick={() => onSubmit({ name, category, description })}
+          onClick={() =>
+            onSubmit({
+              name,
+              category,
+              description,
+              default_intensity_metric: metric,
+            })
+          }
           disabled={saving || !name.trim()}
         >
           <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : "Save"}

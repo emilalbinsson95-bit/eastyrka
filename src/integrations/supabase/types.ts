@@ -67,6 +67,7 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
+          default_intensity_metric: Database["public"]["Enums"]["intensity_metric"]
           description: string | null
           id: string
           is_global: boolean
@@ -77,6 +78,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          default_intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
           description?: string | null
           id?: string
           is_global?: boolean
@@ -87,6 +89,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          default_intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
           description?: string | null
           id?: string
           is_global?: boolean
@@ -256,10 +259,14 @@ export type Database = {
           exercise: string
           exercise_id: string | null
           id: string
+          intensity_metric: Database["public"]["Enums"]["intensity_metric"]
+          last_set_to_failure: boolean
+          lengthened_partials: boolean
           notes: string | null
           order_index: number
           planned_session_id: string
           target_reps: number
+          target_rir: number | null
           target_rpe: number | null
           target_sets: number
           target_weight_kg: number | null
@@ -270,10 +277,14 @@ export type Database = {
           exercise: string
           exercise_id?: string | null
           id?: string
+          intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
+          last_set_to_failure?: boolean
+          lengthened_partials?: boolean
           notes?: string | null
           order_index?: number
           planned_session_id: string
           target_reps: number
+          target_rir?: number | null
           target_rpe?: number | null
           target_sets: number
           target_weight_kg?: number | null
@@ -284,10 +295,14 @@ export type Database = {
           exercise?: string
           exercise_id?: string | null
           id?: string
+          intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
+          last_set_to_failure?: boolean
+          lengthened_partials?: boolean
           notes?: string | null
           order_index?: number
           planned_session_id?: string
           target_reps?: number
+          target_rir?: number | null
           target_rpe?: number | null
           target_sets?: number
           target_weight_kg?: number | null
@@ -426,10 +441,13 @@ export type Database = {
           exercise: string
           form_score: number | null
           id: string
+          lengthened_partials: boolean
           planned_exercise_id: string | null
           reps: number
+          rir: number | null
           rpe: number
           set_number: number
+          to_failure: boolean
           variation: string | null
           weight_kg: number
         }
@@ -441,10 +459,13 @@ export type Database = {
           exercise: string
           form_score?: number | null
           id?: string
+          lengthened_partials?: boolean
           planned_exercise_id?: string | null
           reps: number
+          rir?: number | null
           rpe: number
           set_number: number
+          to_failure?: boolean
           variation?: string | null
           weight_kg: number
         }
@@ -456,10 +477,13 @@ export type Database = {
           exercise?: string
           form_score?: number | null
           id?: string
+          lengthened_partials?: boolean
           planned_exercise_id?: string | null
           reps?: number
+          rir?: number | null
           rpe?: number
           set_number?: number
+          to_failure?: boolean
           variation?: string | null
           weight_kg?: number
         }
@@ -561,6 +585,7 @@ export type Database = {
     Enums: {
       app_role: "coach" | "athlete"
       cycle_status: "draft" | "active" | "archived"
+      intensity_metric: "rpe" | "rir"
       plan_status: "draft" | "published"
     }
     CompositeTypes: {
@@ -691,6 +716,7 @@ export const Constants = {
     Enums: {
       app_role: ["coach", "athlete"],
       cycle_status: ["draft", "active", "archived"],
+      intensity_metric: ["rpe", "rir"],
       plan_status: ["draft", "published"],
     },
   },

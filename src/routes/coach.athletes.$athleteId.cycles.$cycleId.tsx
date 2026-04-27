@@ -89,7 +89,9 @@ export const Route = createFileRoute(
   component: CycleDetailPage,
 });
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+function dayLabel(index: number) {
+  return `Day ${index + 1}`;
+}
 
 interface Cycle {
   id: string;
@@ -97,6 +99,7 @@ interface Cycle {
   goal: string | null;
   start_date: string;
   total_weeks: number;
+  days_per_week: number;
   status: "draft" | "active" | "archived";
   notes: string | null;
 }
@@ -161,7 +164,7 @@ function CycleDetailPage() {
     queryFn: async (): Promise<Cycle | null> => {
       const { data, error } = await supabase
         .from("mesocycles")
-        .select("id, name, goal, start_date, total_weeks, status, notes")
+        .select("id, name, goal, start_date, total_weeks, days_per_week, status, notes")
         .eq("id", cycleId)
         .maybeSingle();
       if (error) throw error;
@@ -271,6 +274,21 @@ function CycleDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["meso-weeks", cycleId] });
       toast.success("Updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateDaysPerWeekMutation = useMutation({
+    mutationFn: async (n: number) => {
+      const { error } = await supabase
+        .from("mesocycles")
+        .update({ days_per_week: n })
+        .eq("id", cycleId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mesocycle", cycleId] });
+      toast.success("Days per week updated");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -386,8 +404,24 @@ function CycleDetailPage() {
               {format(parseISO(cycle.start_date), "MMM d, yyyy")}
             </p>
           </div>
-          <div className="text-sm text-muted-foreground">
-            <Badge variant="outline" className="mr-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Label htmlFor="dpw" className="text-xs">Days/week</Label>
+              <Select
+                value={String(cycle.days_per_week)}
+                onValueChange={(v) => updateDaysPerWeekMutation.mutate(parseInt(v, 10))}
+              >
+                <SelectTrigger id="dpw" className="h-8 w-16">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Badge variant="outline">
               {publishedCount} published
             </Badge>
             <Badge variant="outline">
@@ -432,6 +466,7 @@ function CycleDetailPage() {
           key={currentWeek.id}
           week={currentWeek}
           weekIndex={activeWeek}
+          daysPerWeek={cycle.days_per_week}
           previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
@@ -460,6 +495,7 @@ function CycleDetailPage() {
 function WeekEditor({
   week,
   weekIndex,
+  daysPerWeek,
   previousWeek,
   exerciseLib,
   baselines,
@@ -468,6 +504,7 @@ function WeekEditor({
 }: {
   week: WeekPlanRow;
   weekIndex: number;
+  daysPerWeek: number;
   previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
   baselines: Record<string, number>;
@@ -510,7 +547,7 @@ function WeekEditor({
       const { error } = await supabase.from("planned_sessions").insert({
         week_plan_id: week.id,
         day_of_week: day,
-        title: `${DAYS[day]} session`,
+        title: `${dayLabel(day)} session`,
       });
       if (error) throw error;
     },
@@ -675,7 +712,8 @@ function WeekEditor({
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {DAYS.map((dayName, day) => {
+        {Array.from({ length: daysPerWeek }, (_, day) => {
+          const dayName = dayLabel(day);
           const session = sessionsByDay.get(day);
           const dayExes = session
             ? exercises

@@ -10,7 +10,9 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "coach" | "athlete";
+export type AppRole = "coach" | "athlete" | "physio" | "patient";
+
+const ALL_ROLES: AppRole[] = ["coach", "athlete", "physio", "patient"];
 
 const VIEW_MODE_KEY = "ea-view-mode";
 
@@ -47,7 +49,7 @@ async function fetchRoles(userId: string): Promise<AppRole[]> {
   if (error || !data) return [];
   const set = new Set<AppRole>();
   for (const r of data) {
-    if (r.role === "coach" || r.role === "athlete") set.add(r.role);
+    if ((ALL_ROLES as string[]).includes(r.role)) set.add(r.role as AppRole);
   }
   return Array.from(set);
 }
@@ -55,7 +57,7 @@ async function fetchRoles(userId: string): Promise<AppRole[]> {
 function readStoredView(): AppRole | null {
   if (typeof window === "undefined") return null;
   const v = window.localStorage.getItem(VIEW_MODE_KEY);
-  return v === "coach" || v === "athlete" ? v : null;
+  return (ALL_ROLES as string[]).includes(v ?? "") ? (v as AppRole) : null;
 }
 
 function pickActiveRole(
@@ -63,11 +65,12 @@ function pickActiveRole(
   storedView: AppRole | null,
 ): AppRole | null {
   if (roles.length === 0) return null;
-  // Honour stored view if user actually has that role
   if (storedView && roles.includes(storedView)) return storedView;
-  // Default: coach first, otherwise athlete
-  if (roles.includes("coach")) return "coach";
-  return "athlete";
+  // Default priority: coach → physio → athlete → patient
+  for (const r of ["coach", "physio", "athlete", "patient"] as AppRole[]) {
+    if (roles.includes(r)) return r;
+  }
+  return roles[0];
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -152,7 +155,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // row in public.user_roles. Doing it server-side avoids the RLS
       // race that exists before a session is established (especially
       // with email confirmation enabled).
-      const redirectTarget = signupRole === "coach" ? "/coach" : "/today";
+      const redirectTarget =
+        signupRole === "coach"
+          ? "/coach"
+          : signupRole === "physio"
+            ? "/physio"
+            : signupRole === "patient"
+              ? "/patient"
+              : "/today";
       const { error } = await supabase.auth.signUp({
         email,
         password,

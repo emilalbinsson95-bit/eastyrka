@@ -2,9 +2,10 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, Save, TrendingDown, Plus, Settings, Calendar, BarChart3 } from "lucide-react";
+import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { LineChart, Line, ResponsiveContainer, Tooltip, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
@@ -338,6 +339,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
       toast.success("Baseline saved");
       queryClient.invalidateQueries({ queryKey: ["athlete-baselines-list", athleteId] });
       queryClient.invalidateQueries({ queryKey: ["athlete-baselines", athleteId] });
+      queryClient.invalidateQueries({ queryKey: ["baseline-history", athleteId] });
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -375,8 +377,10 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
           {existing.map((b) => (
             <BaselineRow
               key={b.id}
+              athleteId={athleteId}
               exercise={b.exercise}
               kg={Number(b.one_rm_kg)}
+              updatedAt={b.updated_at}
               onSave={(kg) => upsertMutation.mutate({ exercise: b.exercise, kg })}
               onDelete={() => deleteMutation.mutate(b.id)}
             />
@@ -442,39 +446,180 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
 }
 
 function BaselineRow({
+  athleteId,
   exercise,
   kg,
+  updatedAt,
   onSave,
   onDelete,
 }: {
+  athleteId: string;
   exercise: string;
   kg: number;
+  updatedAt: string;
   onSave: (kg: number) => void;
   onDelete: () => void;
 }) {
   const [value, setValue] = useState(kg);
+  const [open, setOpen] = useState(false);
   const dirty = value !== kg;
 
+  const historyQuery = useQuery({
+    queryKey: ["baseline-history", athleteId, exercise],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("baseline_history")
+        .select("id, one_rm_kg, recorded_at")
+        .eq("athlete_id", athleteId)
+        .eq("exercise", exercise)
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const history = historyQuery.data ?? [];
+  const first = history[0];
+  const last = history[history.length - 1];
+  const delta = first && last ? Number(last.one_rm_kg) - Number(first.one_rm_kg) : 0;
+  const deltaPct = first && Number(first.one_rm_kg) > 0
+    ? (delta / Number(first.one_rm_kg)) * 100
+    : 0;
+  const chartData = history.map((h) => ({
+    date: h.recorded_at,
+    kg: Number(h.one_rm_kg),
+  }));
+
   return (
-    <div className="flex items-end gap-2 rounded-md border border-border p-2">
-      <div className="flex-1">
-        <div className="text-xs text-muted-foreground">{exercise}</div>
-        <Input
-          type="number"
-          min={0}
-          max={1000}
-          step={2.5}
-          value={value}
-          onChange={(e) => setValue(Number(e.target.value))}
-          className="mt-1"
-        />
+    <div className="rounded-md border border-border">
+      <div className="flex items-end gap-2 p-2">
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-medium">{exercise}</div>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              <History className="h-3 w-3" />
+              {open ? "Hide history" : "Show history"}
+            </button>
+          </div>
+          <Input
+            type="number"
+            min={0}
+            max={1000}
+            step={2.5}
+            value={value}
+            onChange={(e) => setValue(Number(e.target.value))}
+            className="mt-1"
+          />
+          <div className="mt-1 text-[10px] text-muted-foreground">
+            Last updated {format(parseISO(updatedAt), "MMM d, yyyy")}
+          </div>
+        </div>
+        <Button size="sm" disabled={!dirty} onClick={() => onSave(value)}>
+          <Save className="mr-1 h-3.5 w-3.5" /> Save
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onDelete}>
+          Remove
+        </Button>
       </div>
-      <Button size="sm" disabled={!dirty} onClick={() => onSave(value)}>
-        <Save className="mr-1 h-3.5 w-3.5" /> Save
-      </Button>
-      <Button size="sm" variant="ghost" onClick={onDelete}>
-        Remove
-      </Button>
+
+      {open && (
+        <div className="border-t border-border bg-muted/30 p-3 space-y-3">
+          {historyQuery.isLoading ? (
+            <p className="text-xs text-muted-foreground">Loading history…</p>
+          ) : history.length < 2 ? (
+            <p className="text-xs text-muted-foreground">
+              Only one record so far — update the 1RM above to start tracking progress.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {history.length} records since {format(parseISO(first!.recorded_at), "MMM d, yyyy")}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 font-medium",
+                    delta > 0 && "text-emerald-500",
+                    delta < 0 && "text-destructive",
+                    delta === 0 && "text-muted-foreground",
+                  )}
+                >
+                  {delta > 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : delta < 0 ? (
+                    <TrendingDown className="h-3 w-3" />
+                  ) : null}
+                  {delta > 0 ? "+" : ""}
+                  {delta.toFixed(1)} kg ({deltaPct > 0 ? "+" : ""}
+                  {deltaPct.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="h-24">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <YAxis
+                      domain={["dataMin - 5", "dataMax + 5"]}
+                      hide
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
+                      labelFormatter={(v) => format(parseISO(String(v)), "MMM d, yyyy")}
+                      formatter={(val: number) => [`${val} kg`, "1RM"]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="kg"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="max-h-32 overflow-y-auto text-xs">
+                <table className="w-full">
+                  <tbody>
+                    {[...history].reverse().map((h, i, arr) => {
+                      const prev = arr[i + 1];
+                      const diff = prev ? Number(h.one_rm_kg) - Number(prev.one_rm_kg) : 0;
+                      return (
+                        <tr key={h.id} className="border-b border-border/50 last:border-0">
+                          <td className="py-1 text-muted-foreground">
+                            {format(parseISO(h.recorded_at), "MMM d, yyyy")}
+                          </td>
+                          <td className="py-1 text-right font-medium">
+                            {Number(h.one_rm_kg)} kg
+                          </td>
+                          <td
+                            className={cn(
+                              "py-1 pl-2 text-right text-[11px]",
+                              diff > 0 && "text-emerald-500",
+                              diff < 0 && "text-destructive",
+                              diff === 0 && "text-muted-foreground",
+                            )}
+                          >
+                            {prev ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}` : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

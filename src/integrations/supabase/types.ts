@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      baseline_history: {
+        Row: {
+          athlete_id: string
+          exercise: string
+          id: string
+          note: string | null
+          one_rm_kg: number
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          athlete_id: string
+          exercise: string
+          id?: string
+          note?: string | null
+          one_rm_kg: number
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          athlete_id?: string
+          exercise?: string
+          id?: string
+          note?: string | null
+          one_rm_kg?: number
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
       baselines: {
         Row: {
           athlete_id: string

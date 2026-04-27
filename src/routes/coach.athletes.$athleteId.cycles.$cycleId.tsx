@@ -117,7 +117,11 @@ interface PlannedExerciseRow {
   target_sets: number;
   target_reps: number;
   target_rpe: number | null;
+  target_rir: number | null;
+  intensity_metric: IntensityMetric;
   target_weight_kg: number | null;
+  lengthened_partials: boolean;
+  last_set_to_failure: boolean;
   notes: string | null;
   order_index: number;
 }
@@ -135,6 +139,12 @@ interface ExerciseLib {
   name: string;
   category: string | null;
   description: string | null;
+  default_intensity_metric: IntensityMetric;
+}
+
+interface BaselineRow {
+  exercise: string;
+  one_rm_kg: number;
 }
 
 function CycleDetailPage() {

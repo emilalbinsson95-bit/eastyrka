@@ -22,7 +22,7 @@ export type VolumeQuality =
   | "baseline"
   | "optimal"
   | "acceptable"
-  | "junk"
+  | "fatigue_limit"
   | "unknown";
 
 export interface SetInput {

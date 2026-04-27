@@ -296,11 +296,9 @@ function TodayPage() {
       )}
 
       <p className="text-center text-xs text-muted-foreground">
-        Need to update your 1RM baselines? Ask your coach — they manage them on the
-        athlete page.{" "}
-        <Link to="/me" className="text-primary hover:underline">
-          View baselines
-        </Link>
+        Prescribed weights come from your coach based on your current strength —
+        focus on hitting the target reps and {""}
+        <span className="font-medium">RPE/RIR</span>.
       </p>
     </div>
   );

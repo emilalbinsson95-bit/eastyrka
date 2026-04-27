@@ -98,18 +98,12 @@ function TabLink({
       activeProps={{
         className: cn(
           "relative flex flex-col items-center gap-1 py-2.5 text-xs text-primary font-medium",
+          "before:absolute before:inset-x-6 before:top-0 before:h-0.5 before:rounded-full before:bg-primary",
         ),
       }}
     >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <span className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary" />
-          )}
-          {icon}
-          <span>{label}</span>
-        </>
-      )}
+      {icon}
+      <span>{label}</span>
     </Link>
   );
 }

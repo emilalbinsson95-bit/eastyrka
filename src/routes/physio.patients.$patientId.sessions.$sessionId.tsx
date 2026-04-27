@@ -113,7 +113,7 @@ function PhysioSession() {
       patch,
     }: {
       id: string;
-      patch: Record<string, unknown>;
+      patch: ExercisePatch;
     }) => {
       const { error } = await supabase
         .from("rehab_exercises")
@@ -354,7 +354,7 @@ function ExerciseRow({
 }: {
   ex: RehabExercise;
   canEdit: boolean;
-  onUpdate: (patch: Record<string, unknown>) => void;
+  onUpdate: (patch: ExercisePatch) => void;
   onRemove: () => void;
 }) {
   return (

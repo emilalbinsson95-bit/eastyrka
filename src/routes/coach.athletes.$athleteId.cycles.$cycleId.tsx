@@ -466,6 +466,7 @@ function CycleDetailPage() {
           key={currentWeek.id}
           week={currentWeek}
           weekIndex={activeWeek}
+          daysPerWeek={cycle.days_per_week}
           previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
@@ -494,6 +495,7 @@ function CycleDetailPage() {
 function WeekEditor({
   week,
   weekIndex,
+  daysPerWeek,
   previousWeek,
   exerciseLib,
   baselines,
@@ -502,6 +504,7 @@ function WeekEditor({
 }: {
   week: WeekPlanRow;
   weekIndex: number;
+  daysPerWeek: number;
   previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
   baselines: Record<string, number>;
@@ -544,7 +547,7 @@ function WeekEditor({
       const { error } = await supabase.from("planned_sessions").insert({
         week_plan_id: week.id,
         day_of_week: day,
-        title: `${DAYS[day]} session`,
+        title: `${dayLabel(day)} session`,
       });
       if (error) throw error;
     },

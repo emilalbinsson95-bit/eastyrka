@@ -13,6 +13,7 @@ import {
   CopyPlus,
   Pencil,
   Check,
+  Calculator,
 } from "lucide-react";
 import { toast } from "sonner";
 import {

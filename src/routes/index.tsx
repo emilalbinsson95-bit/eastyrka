@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, Gauge, TrendingDown, Users } from "lucide-react";
+import { Activity, Gauge, TrendingDown, Users, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
@@ -9,11 +9,11 @@ import { useNavigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "EA Training System — Powerlifting Coaching Platform" },
+      { title: "EA Training System — Coaching & Rehab Monitoring" },
       {
         name: "description",
         content:
-          "Coach powerlifters with the EA Training System. Weekly plans, real-time CNS-fatigue tracking, and intra-set volume quality.",
+          "A professional platform for coaches, athletes, physiotherapists and patients. Plan, track and monitor progress in one place.",
       },
     ],
   }),
@@ -28,6 +28,8 @@ function Landing() {
     if (loading) return;
     if (user) {
       if (role === "coach") navigate({ to: "/coach" });
+      else if (role === "physio") navigate({ to: "/physio" });
+      else if (role === "patient") navigate({ to: "/patient" });
       else if (role === "athlete") navigate({ to: "/today" });
     }
   }, [user, role, loading, navigate]);
@@ -54,15 +56,15 @@ function Landing() {
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:py-24">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-primary" />
-          Built for powerlifting coaches & their athletes
+          For coaches, athletes, physiotherapists & their patients
         </div>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          Stop guessing.{" "}
-          <span className="text-primary">Coach with EA Training System.</span>
+          Plan, track and{" "}
+          <span className="text-primary">monitor progress.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
-          Send weekly training plans, see every athlete's readiness in real time, and
-          catch junk volume before it costs them progress.
+          One professional platform to programme training, follow athlete readiness,
+          and monitor rehab sessions with patient-reported outcomes.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button asChild size="lg">
@@ -75,27 +77,32 @@ function Landing() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-20">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Feature
             icon={<Gauge className="h-5 w-5 text-primary" />}
-            title="Real-time readiness"
-            body="Every set logged converts to a Daily E1RM and EAkoefficient %. Athletes see Exhausted / Adapting / Peaking the moment they save a set."
+            title="Readiness in real time"
+            body="Every set logged converts to a Daily E1RM and EAkoefficient %, surfacing the athlete's current state instantly."
           />
           <Feature
             icon={<TrendingDown className="h-5 w-5 text-primary" />}
-            title="Catches junk volume"
-            body="Each set after set 1 is compared to the day's reference. ≥5% drop in E1RM flags Junk volume so the athlete knows when to stop."
+            title="Fatigue limit detection"
+            body="Each set is compared to the day's reference. A ≥5% drop in E1RM flags that the fatigue limit has been reached."
           />
           <Feature
             icon={<Users className="h-5 w-5 text-primary" />}
             title="Coach-first roster"
-            body="See all your athletes at a glance. Color-coded readiness, last-session warnings, and a full EAkoefficient log per athlete."
+            body="See every athlete at a glance with color-coded readiness and a full performance log per athlete."
+          />
+          <Feature
+            icon={<HeartPulse className="h-5 w-5 text-primary" />}
+            title="Rehab monitoring"
+            body="Physiotherapists prescribe rehab sessions with sets, load, ROM and pain (0–10). Patients log how each session felt."
           />
         </div>
       </section>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        EA Training System — autoregulation for serious lifters.
+        EA Training System — performance and rehab, in one place.
       </footer>
     </div>
   );

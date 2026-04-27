@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,
@@ -47,6 +48,7 @@ function AthleteLayout() {
           </Link>
           <div className="flex items-center gap-1">
             <NotificationsBell />
+            <ThemeToggle />
             <RoleSwitcher />
             <Button
               variant="ghost"

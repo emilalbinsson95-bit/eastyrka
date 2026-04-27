@@ -2,6 +2,21 @@ import { createRouter, useRouter } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { routeTree } from "./routeTree.gen";
 
+function isDatabaseConnectionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const code = typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code ?? "")
+    : "";
+
+  return (
+    code === "PGRST001" ||
+    code === "PGRST002" ||
+    message.includes("Database client error") ||
+    message.includes("schema cache") ||
+    message.includes("not accepting connections")
+  );
+}
+
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
 
@@ -48,6 +63,10 @@ export const getRouter = () => {
       queries: {
         staleTime: 30_000,
         refetchOnWindowFocus: false,
+        retry: (failureCount, error) => {
+          if (isDatabaseConnectionError(error)) return false;
+          return failureCount < 1;
+        },
       },
     },
   });

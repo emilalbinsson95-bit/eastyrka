@@ -133,6 +133,7 @@ export type Database = {
           athlete_id: string
           coach_id: string
           created_at: string
+          days_per_week: number
           goal: string | null
           id: string
           name: string
@@ -146,6 +147,7 @@ export type Database = {
           athlete_id: string
           coach_id: string
           created_at?: string
+          days_per_week?: number
           goal?: string | null
           id?: string
           name: string
@@ -159,6 +161,7 @@ export type Database = {
           athlete_id?: string
           coach_id?: string
           created_at?: string
+          days_per_week?: number
           goal?: string | null
           id?: string
           name?: string

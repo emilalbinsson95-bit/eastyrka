@@ -23,6 +23,7 @@ import { Route as AppMeRouteImport } from './routes/_app.me'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as CoachAthletesAthleteIdRouteImport } from './routes/coach.athletes.$athleteId'
 import { Route as CoachAthletesAthleteIdCyclesRouteImport } from './routes/coach.athletes.$athleteId.cycles'
+import { Route as CoachAthletesAthleteIdCyclesCycleIdRouteImport } from './routes/coach.athletes.$athleteId.cycles.$cycleId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -94,6 +95,12 @@ const CoachAthletesAthleteIdCyclesRoute =
     path: '/cycles',
     getParentRoute: () => CoachAthletesAthleteIdRoute,
   } as any)
+const CoachAthletesAthleteIdCyclesCycleIdRoute =
+  CoachAthletesAthleteIdCyclesCycleIdRouteImport.update({
+    id: '/$cycleId',
+    path: '/$cycleId',
+    getParentRoute: () => CoachAthletesAthleteIdCyclesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,7 +115,8 @@ export interface FileRoutesByFullPath {
   '/coach/templates': typeof CoachTemplatesRoute
   '/coach/': typeof CoachIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
-  '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRoute
+  '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
+  '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -122,7 +130,8 @@ export interface FileRoutesByTo {
   '/coach/templates': typeof CoachTemplatesRoute
   '/coach': typeof CoachIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
-  '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRoute
+  '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
+  '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -139,7 +148,8 @@ export interface FileRoutesById {
   '/coach/templates': typeof CoachTemplatesRoute
   '/coach/': typeof CoachIndexRoute
   '/coach/athletes/$athleteId': typeof CoachAthletesAthleteIdRouteWithChildren
-  '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRoute
+  '/coach/athletes/$athleteId/cycles': typeof CoachAthletesAthleteIdCyclesRouteWithChildren
+  '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/coach/'
     | '/coach/athletes/$athleteId'
     | '/coach/athletes/$athleteId/cycles'
+    | '/coach/athletes/$athleteId/cycles/$cycleId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/coach/athletes/$athleteId'
     | '/coach/athletes/$athleteId/cycles'
+    | '/coach/athletes/$athleteId/cycles/$cycleId'
   id:
     | '__root__'
     | '/'
@@ -187,6 +199,7 @@ export interface FileRouteTypes {
     | '/coach/'
     | '/coach/athletes/$athleteId'
     | '/coach/athletes/$athleteId/cycles'
+    | '/coach/athletes/$athleteId/cycles/$cycleId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachAthletesAthleteIdCyclesRouteImport
       parentRoute: typeof CoachAthletesAthleteIdRoute
     }
+    '/coach/athletes/$athleteId/cycles/$cycleId': {
+      id: '/coach/athletes/$athleteId/cycles/$cycleId'
+      path: '/$cycleId'
+      fullPath: '/coach/athletes/$athleteId/cycles/$cycleId'
+      preLoaderRoute: typeof CoachAthletesAthleteIdCyclesCycleIdRouteImport
+      parentRoute: typeof CoachAthletesAthleteIdCyclesRoute
+    }
   }
 }
 
@@ -314,13 +334,29 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface CoachAthletesAthleteIdCyclesRouteChildren {
+  CoachAthletesAthleteIdCyclesCycleIdRoute: typeof CoachAthletesAthleteIdCyclesCycleIdRoute
+}
+
+const CoachAthletesAthleteIdCyclesRouteChildren: CoachAthletesAthleteIdCyclesRouteChildren =
+  {
+    CoachAthletesAthleteIdCyclesCycleIdRoute:
+      CoachAthletesAthleteIdCyclesCycleIdRoute,
+  }
+
+const CoachAthletesAthleteIdCyclesRouteWithChildren =
+  CoachAthletesAthleteIdCyclesRoute._addFileChildren(
+    CoachAthletesAthleteIdCyclesRouteChildren,
+  )
+
 interface CoachAthletesAthleteIdRouteChildren {
-  CoachAthletesAthleteIdCyclesRoute: typeof CoachAthletesAthleteIdCyclesRoute
+  CoachAthletesAthleteIdCyclesRoute: typeof CoachAthletesAthleteIdCyclesRouteWithChildren
 }
 
 const CoachAthletesAthleteIdRouteChildren: CoachAthletesAthleteIdRouteChildren =
   {
-    CoachAthletesAthleteIdCyclesRoute: CoachAthletesAthleteIdCyclesRoute,
+    CoachAthletesAthleteIdCyclesRoute:
+      CoachAthletesAthleteIdCyclesRouteWithChildren,
   }
 
 const CoachAthletesAthleteIdRouteWithChildren =

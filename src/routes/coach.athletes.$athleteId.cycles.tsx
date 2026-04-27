@@ -67,6 +67,10 @@ function CyclesListPage() {
   const { athleteId } = useParams({
     from: "/coach/athletes/$athleteId/cycles",
   });
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
   const { user } = useAuth();
   const userId = user!.id;
   const qc = useQueryClient();

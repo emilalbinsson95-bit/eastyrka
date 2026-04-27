@@ -376,8 +376,10 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
           {existing.map((b) => (
             <BaselineRow
               key={b.id}
+              athleteId={athleteId}
               exercise={b.exercise}
               kg={Number(b.one_rm_kg)}
+              updatedAt={b.updated_at}
               onSave={(kg) => upsertMutation.mutate({ exercise: b.exercise, kg })}
               onDelete={() => deleteMutation.mutate(b.id)}
             />

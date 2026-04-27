@@ -339,6 +339,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
       toast.success("Baseline saved");
       queryClient.invalidateQueries({ queryKey: ["athlete-baselines-list", athleteId] });
       queryClient.invalidateQueries({ queryKey: ["athlete-baselines", athleteId] });
+      queryClient.invalidateQueries({ queryKey: ["baseline-history", athleteId] });
     },
     onError: (e) => toast.error((e as Error).message),
   });

@@ -120,8 +120,9 @@ function TodayPage() {
     "yyyy-MM-dd",
   );
 
+  // Fetch the most recent published week (calendar-independent: athlete advances day-by-day).
   const planQuery = useQuery({
-    queryKey: ["athlete-plan", userId, weekStart],
+    queryKey: ["athlete-plan", userId],
     queryFn: async (): Promise<WeekPlan | null> => {
       const { data, error } = await supabase
         .from("week_plans")
@@ -138,8 +139,9 @@ function TodayPage() {
            )`,
         )
         .eq("athlete_id", userId)
-        .eq("week_start_date", weekStart)
         .eq("status", "published")
+        .order("week_start_date", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data as WeekPlan | null;

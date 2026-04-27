@@ -67,7 +67,7 @@ function AthleteDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-2 mb-1">
             <Link to="/coach">
@@ -83,6 +83,14 @@ function AthleteDetailPage() {
             </p>
           )}
         </div>
+        <Button asChild>
+          <Link
+            to="/coach/athletes/$athleteId/cycles"
+            params={{ athleteId }}
+          >
+            <Calendar className="mr-1 h-4 w-4" /> Mesocycles
+          </Link>
+        </Button>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">

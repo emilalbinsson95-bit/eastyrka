@@ -581,6 +581,7 @@ function LogSetButton({
     onSuccess: () => {
       toast.success(`Set ${nextSet} logged`);
       queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
       setOpen(false);
       setComment("");
     },

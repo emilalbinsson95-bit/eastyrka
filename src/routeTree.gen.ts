@@ -22,6 +22,7 @@ import { Route as PhysioIndexRouteImport } from './routes/physio.index'
 import { Route as PatientIndexRouteImport } from './routes/patient.index'
 import { Route as CoachIndexRouteImport } from './routes/coach.index'
 import { Route as PhysioInvitesRouteImport } from './routes/physio.invites'
+import { Route as CoachMeRouteImport } from './routes/coach.me'
 import { Route as CoachInvitesRouteImport } from './routes/coach.invites'
 import { Route as CoachExercisesRouteImport } from './routes/coach.exercises'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
@@ -98,6 +99,11 @@ const PhysioInvitesRoute = PhysioInvitesRouteImport.update({
   id: '/invites',
   path: '/invites',
   getParentRoute: () => PhysioRoute,
+} as any)
+const CoachMeRoute = CoachMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => CoachRoute,
 } as any)
 const CoachInvitesRoute = CoachInvitesRouteImport.update({
   id: '/invites',
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof AppTodayRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
+  '/coach/me': typeof CoachMeRoute
   '/physio/invites': typeof PhysioInvitesRoute
   '/coach/': typeof CoachIndexRoute
   '/patient/': typeof PatientIndexRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/today': typeof AppTodayRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
+  '/coach/me': typeof CoachMeRoute
   '/physio/invites': typeof PhysioInvitesRoute
   '/coach': typeof CoachIndexRoute
   '/patient': typeof PatientIndexRoute
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/_app/today': typeof AppTodayRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
+  '/coach/me': typeof CoachMeRoute
   '/physio/invites': typeof PhysioInvitesRoute
   '/coach/': typeof CoachIndexRoute
   '/patient/': typeof PatientIndexRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/coach/exercises'
     | '/coach/invites'
+    | '/coach/me'
     | '/physio/invites'
     | '/coach/'
     | '/patient/'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/coach/exercises'
     | '/coach/invites'
+    | '/coach/me'
     | '/physio/invites'
     | '/coach'
     | '/patient'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/_app/today'
     | '/coach/exercises'
     | '/coach/invites'
+    | '/coach/me'
     | '/physio/invites'
     | '/coach/'
     | '/patient/'
@@ -425,6 +437,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/physio/invites'
       preLoaderRoute: typeof PhysioInvitesRouteImport
       parentRoute: typeof PhysioRoute
+    }
+    '/coach/me': {
+      id: '/coach/me'
+      path: '/me'
+      fullPath: '/coach/me'
+      preLoaderRoute: typeof CoachMeRouteImport
+      parentRoute: typeof CoachRoute
     }
     '/coach/invites': {
       id: '/coach/invites'
@@ -562,6 +581,7 @@ const CoachAthletesAthleteIdRouteWithChildren =
 interface CoachRouteChildren {
   CoachExercisesRoute: typeof CoachExercisesRoute
   CoachInvitesRoute: typeof CoachInvitesRoute
+  CoachMeRoute: typeof CoachMeRoute
   CoachIndexRoute: typeof CoachIndexRoute
   CoachAthletesAthleteIdRoute: typeof CoachAthletesAthleteIdRouteWithChildren
 }
@@ -569,6 +589,7 @@ interface CoachRouteChildren {
 const CoachRouteChildren: CoachRouteChildren = {
   CoachExercisesRoute: CoachExercisesRoute,
   CoachInvitesRoute: CoachInvitesRoute,
+  CoachMeRoute: CoachMeRoute,
   CoachIndexRoute: CoachIndexRoute,
   CoachAthletesAthleteIdRoute: CoachAthletesAthleteIdRouteWithChildren,
 }

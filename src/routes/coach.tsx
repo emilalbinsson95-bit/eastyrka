@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle } from "lucide-react";
+import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle, User } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,11 @@ function CoachLayout() {
               icon={<Mail className="h-4 w-4" />}
               label="Invites"
             />
+            <CoachNavLink
+              to="/coach/me"
+              icon={<User className="h-4 w-4" />}
+              label="Me"
+            />
           </nav>
           <div className="flex items-center gap-1">
             <NotificationsBell />
@@ -99,6 +104,11 @@ function CoachLayout() {
             icon={<Mail className="h-4 w-4" />}
             label="Invites"
           />
+          <CoachNavLink
+            to="/coach/me"
+            icon={<User className="h-4 w-4" />}
+            label="Me"
+          />
         </nav>
       </header>
 
@@ -115,7 +125,7 @@ function CoachNavLink({
   label,
   exact,
 }: {
-  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/messages";
+  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/messages";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

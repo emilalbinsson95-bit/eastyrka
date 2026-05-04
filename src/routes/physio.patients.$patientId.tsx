@@ -394,3 +394,52 @@ function PatientDetail() {
     </div>
   );
 }
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded bg-muted/50 px-2 py-1.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="font-medium">{value}</div>
+    </div>
+  );
+}
+
+function DeltaBadge({
+  current,
+  delta,
+  unit,
+}: {
+  current: number | null;
+  delta: number | null;
+  unit: string;
+}) {
+  if (current == null) {
+    return (
+      <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+        no load
+      </span>
+    );
+  }
+  const Icon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
+  const color =
+    delta == null || delta === 0
+      ? "border-border text-muted-foreground"
+      : delta > 0
+        ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+        : "border-destructive/30 bg-destructive/10 text-destructive";
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs ${color}`}>
+      <Icon className="mr-1 h-3 w-3" />
+      {current}
+      {unit}
+      {delta != null && delta !== 0 && (
+        <span className="ml-1 opacity-80">
+          ({delta > 0 ? "+" : ""}
+          {delta}
+          {unit})
+        </span>
+      )}
+    </span>
+  );
+}
+

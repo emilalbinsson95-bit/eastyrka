@@ -290,6 +290,65 @@ function PatientDetail() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" /> Exercise progression
+          </CardTitle>
+          <CardDescription>
+            Progressive-overload tracking per exercise — load, volume and pain over the full program.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {progressionQuery.isLoading && (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          )}
+          {!progressionQuery.isLoading && (progressionQuery.data ?? []).length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No exercises logged yet. Add prescribed exercises inside a session to start tracking.
+            </p>
+          )}
+          {(progressionQuery.data ?? []).map((ex) => (
+            <div key={ex.key} className="rounded-md border border-border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{ex.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {ex.days} day{ex.days === 1 ? "" : "s"} · {ex.sessions} log
+                    {ex.sessions === 1 ? "" : "s"} · since{" "}
+                    {new Date(ex.firstDate).toLocaleDateString()}
+                  </div>
+                </div>
+                <DeltaBadge current={ex.currentLoad} delta={ex.loadDelta} unit="kg" />
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                <Mini
+                  label="Load start→now"
+                  value={
+                    ex.startLoad != null && ex.currentLoad != null
+                      ? `${ex.startLoad}→${ex.currentLoad}kg`
+                      : "—"
+                  }
+                />
+                <Mini
+                  label="Volume Δ"
+                  value={
+                    ex.volumeDelta != null
+                      ? `${ex.volumeDelta >= 0 ? "+" : ""}${Math.round(ex.volumeDelta)}`
+                      : "—"
+                  }
+                />
+                <Mini
+                  label="Pain now"
+                  value={ex.currentPain != null ? `${ex.currentPain}/10` : "—"}
+                />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+
+        <CardHeader>
           <CardTitle>Session history</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">

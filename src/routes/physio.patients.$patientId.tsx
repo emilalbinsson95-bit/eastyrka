@@ -54,6 +54,101 @@ function PatientDetail() {
     },
   });
 
+  // Exercise-level progression: pulls every rehab_exercise across every session
+  // for this patient so we can show progressive-overload trends per exercise.
+  const progressionQuery = useQuery({
+    queryKey: ["physio-patient-progression", physioId, patientId],
+    queryFn: async () => {
+      const { data: sessions, error: sErr } = await supabase
+        .from("rehab_sessions")
+        .select("id, session_date")
+        .eq("patient_id", patientId)
+        .order("session_date", { ascending: true });
+      if (sErr) throw sErr;
+      const sessionIds = (sessions ?? []).map((s) => s.id);
+      if (sessionIds.length === 0) return [];
+      const dateById = new Map(sessions!.map((s) => [s.id, s.session_date]));
+      const { data: exs, error: eErr } = await supabase
+        .from("rehab_exercises")
+        .select("id, session_id, name, sets, reps, load_kg, hold_seconds, pain_rating, perceived_exertion")
+        .in("session_id", sessionIds);
+      if (eErr) throw eErr;
+
+      type Entry = {
+        date: string;
+        sets: number | null;
+        reps: number | null;
+        load_kg: number | null;
+        hold_seconds: number | null;
+        pain_rating: number | null;
+        perceived_exertion: number | null;
+        volume: number | null; // sets * reps * load
+      };
+      const grouped = new Map<string, Entry[]>();
+      for (const e of exs ?? []) {
+        const date = dateById.get(e.session_id);
+        if (!date) continue;
+        const volume =
+          e.sets != null && e.reps != null && e.load_kg != null
+            ? Number(e.sets) * Number(e.reps) * Number(e.load_kg)
+            : null;
+        const key = e.name.trim().toLowerCase();
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push({
+          date,
+          sets: e.sets,
+          reps: e.reps,
+          load_kg: e.load_kg != null ? Number(e.load_kg) : null,
+          hold_seconds: e.hold_seconds,
+          pain_rating: e.pain_rating,
+          perceived_exertion: e.perceived_exertion,
+          volume,
+        });
+      }
+      // For each exercise compute aggregates and trends.
+      return Array.from(grouped.entries())
+        .map(([key, entries]) => {
+          entries.sort((a, b) => a.date.localeCompare(b.date));
+          const days = new Set(entries.map((e) => e.date)).size;
+          const first = entries[0];
+          const last = entries[entries.length - 1];
+          const loadDelta =
+            first.load_kg != null && last.load_kg != null
+              ? last.load_kg - first.load_kg
+              : null;
+          const volumeDelta =
+            first.volume != null && last.volume != null
+              ? last.volume - first.volume
+              : null;
+          const painDelta =
+            first.pain_rating != null && last.pain_rating != null
+              ? last.pain_rating - first.pain_rating
+              : null;
+          // Display name = the most recent casing.
+          const displayName =
+            (exs ?? []).slice().reverse().find((e) => e.name.trim().toLowerCase() === key)?.name ??
+            key;
+          return {
+            key,
+            name: displayName,
+            sessions: entries.length,
+            days,
+            firstDate: first.date,
+            lastDate: last.date,
+            currentLoad: last.load_kg,
+            startLoad: first.load_kg,
+            loadDelta,
+            currentVolume: last.volume,
+            volumeDelta,
+            currentPain: last.pain_rating,
+            painDelta,
+            entries,
+          };
+        })
+        .sort((a, b) => b.sessions - a.sessions);
+    },
+  });
+
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [subjective, setSubjective] = useState("");

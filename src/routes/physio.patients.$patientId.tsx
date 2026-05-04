@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle, TrendingUp, TrendingDown, Minus, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -51,6 +51,101 @@ function PatientDetail() {
         .order("session_date", { ascending: false });
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  // Exercise-level progression: pulls every rehab_exercise across every session
+  // for this patient so we can show progressive-overload trends per exercise.
+  const progressionQuery = useQuery({
+    queryKey: ["physio-patient-progression", physioId, patientId],
+    queryFn: async () => {
+      const { data: sessions, error: sErr } = await supabase
+        .from("rehab_sessions")
+        .select("id, session_date")
+        .eq("patient_id", patientId)
+        .order("session_date", { ascending: true });
+      if (sErr) throw sErr;
+      const sessionIds = (sessions ?? []).map((s) => s.id);
+      if (sessionIds.length === 0) return [];
+      const dateById = new Map(sessions!.map((s) => [s.id, s.session_date]));
+      const { data: exs, error: eErr } = await supabase
+        .from("rehab_exercises")
+        .select("id, session_id, name, sets, reps, load_kg, hold_seconds, pain_rating, perceived_exertion")
+        .in("session_id", sessionIds);
+      if (eErr) throw eErr;
+
+      type Entry = {
+        date: string;
+        sets: number | null;
+        reps: number | null;
+        load_kg: number | null;
+        hold_seconds: number | null;
+        pain_rating: number | null;
+        perceived_exertion: number | null;
+        volume: number | null; // sets * reps * load
+      };
+      const grouped = new Map<string, Entry[]>();
+      for (const e of exs ?? []) {
+        const date = dateById.get(e.session_id);
+        if (!date) continue;
+        const volume =
+          e.sets != null && e.reps != null && e.load_kg != null
+            ? Number(e.sets) * Number(e.reps) * Number(e.load_kg)
+            : null;
+        const key = e.name.trim().toLowerCase();
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push({
+          date,
+          sets: e.sets,
+          reps: e.reps,
+          load_kg: e.load_kg != null ? Number(e.load_kg) : null,
+          hold_seconds: e.hold_seconds,
+          pain_rating: e.pain_rating,
+          perceived_exertion: e.perceived_exertion,
+          volume,
+        });
+      }
+      // For each exercise compute aggregates and trends.
+      return Array.from(grouped.entries())
+        .map(([key, entries]) => {
+          entries.sort((a, b) => a.date.localeCompare(b.date));
+          const days = new Set(entries.map((e) => e.date)).size;
+          const first = entries[0];
+          const last = entries[entries.length - 1];
+          const loadDelta =
+            first.load_kg != null && last.load_kg != null
+              ? last.load_kg - first.load_kg
+              : null;
+          const volumeDelta =
+            first.volume != null && last.volume != null
+              ? last.volume - first.volume
+              : null;
+          const painDelta =
+            first.pain_rating != null && last.pain_rating != null
+              ? last.pain_rating - first.pain_rating
+              : null;
+          // Display name = the most recent casing.
+          const displayName =
+            (exs ?? []).slice().reverse().find((e) => e.name.trim().toLowerCase() === key)?.name ??
+            key;
+          return {
+            key,
+            name: displayName,
+            sessions: entries.length,
+            days,
+            firstDate: first.date,
+            lastDate: last.date,
+            currentLoad: last.load_kg,
+            startLoad: first.load_kg,
+            loadDelta,
+            currentVolume: last.volume,
+            volumeDelta,
+            currentPain: last.pain_rating,
+            painDelta,
+            entries,
+          };
+        })
+        .sort((a, b) => b.sessions - a.sessions);
     },
   });
 
@@ -195,6 +290,65 @@ function PatientDetail() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" /> Exercise progression
+          </CardTitle>
+          <CardDescription>
+            Progressive-overload tracking per exercise — load, volume and pain over the full program.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {progressionQuery.isLoading && (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          )}
+          {!progressionQuery.isLoading && (progressionQuery.data ?? []).length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No exercises logged yet. Add prescribed exercises inside a session to start tracking.
+            </p>
+          )}
+          {(progressionQuery.data ?? []).map((ex) => (
+            <div key={ex.key} className="rounded-md border border-border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{ex.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {ex.days} day{ex.days === 1 ? "" : "s"} · {ex.sessions} log
+                    {ex.sessions === 1 ? "" : "s"} · since{" "}
+                    {new Date(ex.firstDate).toLocaleDateString()}
+                  </div>
+                </div>
+                <DeltaBadge current={ex.currentLoad} delta={ex.loadDelta} unit="kg" />
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                <Mini
+                  label="Load start→now"
+                  value={
+                    ex.startLoad != null && ex.currentLoad != null
+                      ? `${ex.startLoad}→${ex.currentLoad}kg`
+                      : "—"
+                  }
+                />
+                <Mini
+                  label="Volume Δ"
+                  value={
+                    ex.volumeDelta != null
+                      ? `${ex.volumeDelta >= 0 ? "+" : ""}${Math.round(ex.volumeDelta)}`
+                      : "—"
+                  }
+                />
+                <Mini
+                  label="Pain now"
+                  value={ex.currentPain != null ? `${ex.currentPain}/10` : "—"}
+                />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+
+        <CardHeader>
           <CardTitle>Session history</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -240,3 +394,52 @@ function PatientDetail() {
     </div>
   );
 }
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded bg-muted/50 px-2 py-1.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="font-medium">{value}</div>
+    </div>
+  );
+}
+
+function DeltaBadge({
+  current,
+  delta,
+  unit,
+}: {
+  current: number | null;
+  delta: number | null;
+  unit: string;
+}) {
+  if (current == null) {
+    return (
+      <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+        no load
+      </span>
+    );
+  }
+  const Icon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
+  const color =
+    delta == null || delta === 0
+      ? "border-border text-muted-foreground"
+      : delta > 0
+        ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+        : "border-destructive/30 bg-destructive/10 text-destructive";
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs ${color}`}>
+      <Icon className="mr-1 h-3 w-3" />
+      {current}
+      {unit}
+      {delta != null && delta !== 0 && (
+        <span className="ml-1 opacity-80">
+          ({delta > 0 ? "+" : ""}
+          {delta}
+          {unit})
+        </span>
+      )}
+    </span>
+  );
+}
+

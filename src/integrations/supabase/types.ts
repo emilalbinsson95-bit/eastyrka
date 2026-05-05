@@ -755,10 +755,13 @@ export type Database = {
           comment: string | null
           created_at: string
           date: string
+          edited_by_athlete_at: string | null
           exercise: string
           form_score: number | null
           id: string
           lengthened_partials: boolean
+          original_reps: number | null
+          original_rpe: number | null
           planned_exercise_id: string | null
           reps: number
           rir: number | null
@@ -773,10 +776,13 @@ export type Database = {
           comment?: string | null
           created_at?: string
           date: string
+          edited_by_athlete_at?: string | null
           exercise: string
           form_score?: number | null
           id?: string
           lengthened_partials?: boolean
+          original_reps?: number | null
+          original_rpe?: number | null
           planned_exercise_id?: string | null
           reps: number
           rir?: number | null
@@ -791,10 +797,13 @@ export type Database = {
           comment?: string | null
           created_at?: string
           date?: string
+          edited_by_athlete_at?: string | null
           exercise?: string
           form_score?: number | null
           id?: string
           lengthened_partials?: boolean
+          original_reps?: number | null
+          original_rpe?: number | null
           planned_exercise_id?: string | null
           reps?: number
           rir?: number | null

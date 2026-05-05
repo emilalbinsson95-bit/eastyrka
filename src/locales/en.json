@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "EA Training System",
+    "tagline": "Coaching & Rehab Monitoring Platform",
+    "loading": "Loading…"
+  },
+  "role": {
+    "coach": "Coach",
+    "athlete": "Athlete",
+    "physio": "Physio",
+    "patient": "Patient"
+  },
+  "nav": {
+    "today": "Today",
+    "history": "History",
+    "me": "Me",
+    "messages": "Messages",
+    "athletes": "Athletes",
+    "exercises": "Exercises",
+    "invites": "Invite",
+    "patients": "Patients",
+    "sessions": "Sessions",
+    "back": "Back",
+    "home": "Home"
+  },
+  "actions": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "send": "Send",
+    "continue": "Continue",
+    "submit": "Submit",
+    "viewDetails": "View details"
+  },
+  "common": {
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full name",
+    "name": "Name",
+    "language": "Language",
+    "theme": "Theme",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "settings": "Settings",
+    "account": "Account",
+    "search": "Search",
+    "noData": "No data yet",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account",
+    "haveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "forgotPassword": "Forgot password?",
+    "iAmA": "I am a",
+    "signingIn": "Signing in…",
+    "signingUp": "Signing up…",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "or": "or"
+  },
+  "me": {
+    "title": "Me",
+    "profile": "Profile",
+    "myRoles": "My roles",
+    "switchRole": "Switch role",
+    "preferences": "Preferences"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAllRead": "Mark all as read"
+  },
+  "messages": {
+    "title": "Messages",
+    "conversations": "Conversations",
+    "startNew": "Start new",
+    "selectConversation": "Select a conversation",
+    "noMessages": "No messages yet. Say hi.",
+    "typePlaceholder": "Type a message… (Enter to send)",
+    "noPartnersCoach": "Connect with athletes to start messaging.",
+    "noPartnersAthlete": "Your coach hasn't been added yet.",
+    "noPartnersPhysio": "Add patients to your roster to start messaging.",
+    "noPartnersPatient": "Your physio hasn't been added yet.",
+    "session": "session",
+    "failedToSend": "Failed to send",
+    "couldntStart": "Couldn't start thread"
+  },
+  "language": {
+    "english": "English",
+    "swedish": "Svenska"
+  }
+}

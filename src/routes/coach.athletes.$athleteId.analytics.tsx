@@ -924,6 +924,29 @@ function KpiCard({
   );
 }
 
+function ScoreCell({
+  value,
+  highIsGood,
+  muted,
+}: {
+  value: number | null;
+  highIsGood: boolean;
+  muted?: boolean;
+}) {
+  if (value == null) return <td className="px-2 py-2 text-center text-muted-foreground">—</td>;
+  // Normalize so higher = "better" for tone
+  const good = highIsGood ? value >= 7 : value <= 4;
+  const bad = highIsGood ? value <= 4 : value >= 7;
+  const tone = bad
+    ? "bg-status-exhausted/25 text-status-exhausted-foreground font-semibold"
+    : good
+      ? "bg-status-peaking/25 text-status-peaking-foreground font-semibold"
+      : muted
+        ? "text-muted-foreground"
+        : "";
+  return <td className={cn("px-2 py-2 text-center", tone)}>{value}</td>;
+}
+
 function ChartCard({
   title,
   description,

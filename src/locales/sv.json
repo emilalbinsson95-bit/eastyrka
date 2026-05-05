@@ -93,6 +93,88 @@
     "failedToSend": "Kunde inte skicka",
     "couldntStart": "Kunde inte starta tråden"
   },
+  "physio": {
+    "overviewTitle": "Patientöversikt",
+    "overviewDescription": "Långsiktig uppföljning av progressiv överbelastning och följsamhet för dina patienter.",
+    "invitePatient": "Bjud in patient",
+    "noPatientsTitle": "Inga patienter än",
+    "noPatientsDesc": "Bjud in en patient för att börja följa rehabprogress.",
+    "summary": {
+      "active": "Aktiva patienter",
+      "sessions": "Totalt antal pass",
+      "days": "Träningsdagar loggade",
+      "exercises": "Utförda övningar"
+    },
+    "card": {
+      "weekOf": "Vecka {{n}} i programmet",
+      "days": "Dagar",
+      "sessions": "Pass",
+      "exercises": "Övningar",
+      "last30": "Senaste 30d",
+      "lastSession": "Senaste pass {{date}}",
+      "noSessions": "Inga pass än",
+      "unnamed": "Namnlös patient"
+    },
+    "pain": {
+      "noData": "Ingen smärtdata",
+      "label": "Smärta {{value}}/10"
+    },
+    "patient": {
+      "back": "Patienter",
+      "message": "Meddelande",
+      "subtitle": "Rehabprogress, pass och patientrapporterade utfall.",
+      "newSession": "Nytt rehabpass",
+      "newSessionDesc": "Skapa ett pass och lägg sedan till de förskrivna övningarna.",
+      "date": "Datum",
+      "title": "Titel",
+      "titlePlaceholder": "t.ex. Vecka 3 — knästärkande",
+      "baselinePain": "Smärta vid start (0–10)",
+      "subjective": "Subjektivt (S)",
+      "subjectivePlaceholder": "Patientens berättelse, symtom, funktion…",
+      "objective": "Objektivt (O)",
+      "objectivePlaceholder": "ROM, styrka, specifika tester, observationer…",
+      "creating": "Skapar…",
+      "createSession": "Skapa pass",
+      "progressionTitle": "Övningsprogress",
+      "progressionDesc": "Progressiv överbelastning per övning — last, volym och smärta över hela programmet.",
+      "noExercises": "Inga övningar loggade än. Lägg till förskrivna övningar i ett pass för att börja följa utvecklingen.",
+      "loadChart": "Lastutveckling (kg)",
+      "loadStartNow": "Last start→nu",
+      "volumeDelta": "Volym Δ",
+      "painNow": "Smärta nu",
+      "daysCount_one": "{{count}} dag",
+      "daysCount_other": "{{count}} dagar",
+      "logsCount_one": "{{count}} loggning",
+      "logsCount_other": "{{count}} loggningar",
+      "since": "sedan {{date}}",
+      "noLoad": "ingen last",
+      "sessionHistory": "Passhistorik",
+      "noSessionsYet": "Inga pass än.",
+      "session": "Pass",
+      "sessionCreated": "Pass skapat",
+      "sessionRemoved": "Pass borttaget"
+    }
+  },
+  "patient": {
+    "greeting": "Hej 👋",
+    "subtitle": "Små steg varje dag gör skillnad. Här är vad som väntar.",
+    "stats": {
+      "streak": "Dagar i rad",
+      "done": "Pass genomförda",
+      "planned": "Totalt planerade"
+    },
+    "nextSession": "Ditt nästa pass",
+    "rehabSession": "Rehabpass",
+    "startSession": "Starta pass",
+    "noSessionsTitle": "Inga pass än",
+    "noSessionsDesc": "Din fysioterapeut lägger till pass här som du kan följa.",
+    "earlierSessions": "Tidigare pass",
+    "logged": "Loggat",
+    "notLogged": "Inte loggat",
+    "adherenceTitle": "Senaste 14 dagarna",
+    "adherenceDesc": "Dagar du loggat ett rehabpass.",
+    "sessionsLogged": "loggade pass"
+  },
   "language": {
     "english": "English",
     "swedish": "Svenska"

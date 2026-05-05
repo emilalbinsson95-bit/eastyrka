@@ -93,6 +93,88 @@
     "failedToSend": "Failed to send",
     "couldntStart": "Couldn't start thread"
   },
+  "physio": {
+    "overviewTitle": "Patient overview",
+    "overviewDescription": "Long-term progressive-overload tracking and adherence across your caseload.",
+    "invitePatient": "Invite patient",
+    "noPatientsTitle": "No patients yet",
+    "noPatientsDesc": "Invite a patient to start tracking their rehab progress.",
+    "summary": {
+      "active": "Active patients",
+      "sessions": "Total sessions",
+      "days": "Training days logged",
+      "exercises": "Exercises performed"
+    },
+    "card": {
+      "weekOf": "Week {{n}} of program",
+      "days": "Days",
+      "sessions": "Sessions",
+      "exercises": "Exercises",
+      "last30": "Last 30d",
+      "lastSession": "Last session {{date}}",
+      "noSessions": "No sessions yet",
+      "unnamed": "Unnamed patient"
+    },
+    "pain": {
+      "noData": "No pain data",
+      "label": "Pain {{value}}/10"
+    },
+    "patient": {
+      "back": "Patients",
+      "message": "Message",
+      "subtitle": "Rehab progress, sessions and patient-reported outcomes.",
+      "newSession": "New rehab session",
+      "newSessionDesc": "Create a session, then add the prescribed exercises inside it.",
+      "date": "Date",
+      "title": "Title",
+      "titlePlaceholder": "e.g. Week 3 — knee strengthening",
+      "baselinePain": "Baseline pain (0–10)",
+      "subjective": "Subjective (S)",
+      "subjectivePlaceholder": "Patient report, symptoms, function…",
+      "objective": "Objective (O)",
+      "objectivePlaceholder": "ROM, strength, special tests, observations…",
+      "creating": "Creating…",
+      "createSession": "Create session",
+      "progressionTitle": "Exercise progression",
+      "progressionDesc": "Progressive-overload tracking per exercise — load, volume and pain over the full program.",
+      "noExercises": "No exercises logged yet. Add prescribed exercises inside a session to start tracking.",
+      "loadChart": "Load progression (kg)",
+      "loadStartNow": "Load start→now",
+      "volumeDelta": "Volume Δ",
+      "painNow": "Pain now",
+      "daysCount_one": "{{count}} day",
+      "daysCount_other": "{{count}} days",
+      "logsCount_one": "{{count}} log",
+      "logsCount_other": "{{count}} logs",
+      "since": "since {{date}}",
+      "noLoad": "no load",
+      "sessionHistory": "Session history",
+      "noSessionsYet": "No sessions yet.",
+      "session": "Session",
+      "sessionCreated": "Session created",
+      "sessionRemoved": "Session removed"
+    }
+  },
+  "patient": {
+    "greeting": "Hi 👋",
+    "subtitle": "Small steps every day add up. Here's what's next.",
+    "stats": {
+      "streak": "Day streak",
+      "done": "Sessions done",
+      "planned": "Total planned"
+    },
+    "nextSession": "Your next session",
+    "rehabSession": "Rehab session",
+    "startSession": "Start session",
+    "noSessionsTitle": "No sessions yet",
+    "noSessionsDesc": "Your physiotherapist will add sessions here for you to follow.",
+    "earlierSessions": "Earlier sessions",
+    "logged": "Logged",
+    "notLogged": "Not logged",
+    "adherenceTitle": "Last 14 days",
+    "adherenceDesc": "Days you logged a rehab session.",
+    "sessionsLogged": "sessions logged"
+  },
   "language": {
     "english": "English",
     "swedish": "Svenska"

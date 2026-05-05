@@ -15,6 +15,7 @@ export const Route = createFileRoute("/patient")({
 
 function PatientLayout() {
   const { user, role, loading, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {

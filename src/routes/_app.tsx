@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_app")({
 
 function AthleteLayout() {
   const { user, role, loading, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 

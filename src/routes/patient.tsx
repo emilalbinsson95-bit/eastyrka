@@ -34,7 +34,7 @@ function PatientLayout() {
   if (loading || !user || role !== "patient") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <div className="text-sm text-muted-foreground">{t("app.loading")}</div>
       </div>
     );
   }
@@ -45,13 +45,14 @@ function PatientLayout() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link to="/patient" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EA Training System
+            {t("app.name")}
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              Patient
+              {t("role.patient")}
             </span>
           </Link>
           <div className="flex items-center gap-1">
             <NotificationsBell />
+            <LanguageToggle />
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -59,7 +60,7 @@ function PatientLayout() {
               onClick={() => signOut().then(() => navigate({ to: "/" }))}
             >
               <LogOut className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Sign out</span>
+              <span className="ml-1 hidden sm:inline">{t("actions.signOut")}</span>
             </Button>
           </div>
         </div>
@@ -74,9 +75,9 @@ function PatientLayout() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto grid max-w-3xl grid-cols-3">
-          <TabLink to="/patient" icon={<ClipboardList className="h-5 w-5" />} label="Sessions" />
-          <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label="Messages" />
-          <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label="Me" />
+          <TabLink to="/patient" icon={<ClipboardList className="h-5 w-5" />} label={t("nav.sessions")} />
+          <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
+          <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>
       </nav>
     </div>

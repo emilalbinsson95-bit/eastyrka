@@ -28,6 +28,7 @@ import { Route as CoachExercisesRouteImport } from './routes/coach.exercises'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
 import { Route as AppMeRouteImport } from './routes/_app.me'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
+import { Route as AppEnduranceRouteImport } from './routes/_app.endurance'
 import { Route as PhysioPatientsPatientIdRouteImport } from './routes/physio.patients.$patientId'
 import { Route as PatientSessionsSessionIdRouteImport } from './routes/patient.sessions.$sessionId'
 import { Route as CoachAthletesAthleteIdRouteImport } from './routes/coach.athletes.$athleteId'
@@ -130,6 +131,11 @@ const AppHistoryRoute = AppHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEnduranceRoute = AppEnduranceRouteImport.update({
+  id: '/endurance',
+  path: '/endurance',
+  getParentRoute: () => AppRoute,
+} as any)
 const PhysioPatientsPatientIdRoute = PhysioPatientsPatientIdRouteImport.update({
   id: '/patients/$patientId',
   path: '/patients/$patientId',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/patient': typeof PatientRouteWithChildren
   '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
+  '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
   '/today': typeof AppTodayRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
   '/today': typeof AppTodayRoute
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/patient': typeof PatientRouteWithChildren
   '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
+  '/_app/endurance': typeof AppEnduranceRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/me': typeof AppMeRoute
   '/_app/today': typeof AppTodayRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/patient'
     | '/physio'
     | '/signup'
+    | '/endurance'
     | '/history'
     | '/me'
     | '/today'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/onboarding'
     | '/signup'
+    | '/endurance'
     | '/history'
     | '/me'
     | '/today'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/patient'
     | '/physio'
     | '/signup'
+    | '/_app/endurance'
     | '/_app/history'
     | '/_app/me'
     | '/_app/today'
@@ -480,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/endurance': {
+      id: '/_app/endurance'
+      path: '/endurance'
+      fullPath: '/endurance'
+      preLoaderRoute: typeof AppEnduranceRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/physio/patients/$patientId': {
       id: '/physio/patients/$patientId'
       path: '/patients/$patientId'
@@ -533,12 +552,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppEnduranceRoute: typeof AppEnduranceRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppMeRoute: typeof AppMeRoute
   AppTodayRoute: typeof AppTodayRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppEnduranceRoute: AppEnduranceRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppMeRoute: AppMeRoute,
   AppTodayRoute: AppTodayRoute,

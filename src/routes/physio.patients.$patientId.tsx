@@ -1,8 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle, TrendingUp, TrendingDown, Minus, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,6 +34,7 @@ export const Route = createFileRoute("/physio/patients/$patientId")({
 function PatientDetail() {
   const { patientId } = Route.useParams();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const physioId = user!.id;
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -54,8 +65,6 @@ function PatientDetail() {
     },
   });
 
-  // Exercise-level progression: pulls every rehab_exercise across every session
-  // for this patient so we can show progressive-overload trends per exercise.
   const progressionQuery = useQuery({
     queryKey: ["physio-patient-progression", physioId, patientId],
     queryFn: async () => {
@@ -82,7 +91,7 @@ function PatientDetail() {
         hold_seconds: number | null;
         pain_rating: number | null;
         perceived_exertion: number | null;
-        volume: number | null; // sets * reps * load
+        volume: number | null;
       };
       const grouped = new Map<string, Entry[]>();
       for (const e of exs ?? []) {
@@ -105,7 +114,6 @@ function PatientDetail() {
           volume,
         });
       }
-      // For each exercise compute aggregates and trends.
       return Array.from(grouped.entries())
         .map(([key, entries]) => {
           entries.sort((a, b) => a.date.localeCompare(b.date));
@@ -124,10 +132,18 @@ function PatientDetail() {
             first.pain_rating != null && last.pain_rating != null
               ? last.pain_rating - first.pain_rating
               : null;
-          // Display name = the most recent casing.
           const displayName =
             (exs ?? []).slice().reverse().find((e) => e.name.trim().toLowerCase() === key)?.name ??
             key;
+          // Build per-day max load series for chart.
+          const byDay = new Map<string, number>();
+          for (const e of entries) {
+            if (e.load_kg == null) continue;
+            byDay.set(e.date, Math.max(byDay.get(e.date) ?? 0, e.load_kg));
+          }
+          const chart = Array.from(byDay.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([date, load]) => ({ date, load }));
           return {
             key,
             name: displayName,
@@ -142,6 +158,7 @@ function PatientDetail() {
             volumeDelta,
             currentPain: last.pain_rating,
             painDelta,
+            chart,
             entries,
           };
         })
@@ -175,7 +192,7 @@ function PatientDetail() {
       return data;
     },
     onSuccess: (d) => {
-      toast.success("Session created");
+      toast.success(t("physio.patient.sessionCreated"));
       qc.invalidateQueries({ queryKey: ["physio-patient-sessions", physioId, patientId] });
       qc.invalidateQueries({ queryKey: ["physio-roster", physioId] });
       setTitle("");
@@ -196,7 +213,7 @@ function PatientDetail() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Session removed");
+      toast.success(t("physio.patient.sessionRemoved"));
       qc.invalidateQueries({ queryKey: ["physio-patient-sessions", physioId, patientId] });
     },
   });
@@ -206,52 +223,48 @@ function PatientDetail() {
       <div className="flex items-center justify-between gap-4">
         <Button asChild variant="ghost" size="sm">
           <Link to="/physio">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Patients
+            <ArrowLeft className="mr-1 h-4 w-4" /> {t("physio.patient.back")}
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm">
           <Link to="/messages">
-            <MessageCircle className="mr-1 h-4 w-4" /> Message
+            <MessageCircle className="mr-1 h-4 w-4" /> {t("physio.patient.message")}
           </Link>
         </Button>
       </div>
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          {profileQuery.data?.full_name ?? "Patient"}
+          {profileQuery.data?.full_name ?? t("role.patient")}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Rehab progress, sessions and patient-reported outcomes.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("physio.patient.subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> New rehab session
+            <Plus className="h-5 w-5 text-primary" /> {t("physio.patient.newSession")}
           </CardTitle>
-          <CardDescription>
-            Create a session, then add the prescribed exercises inside it.
-          </CardDescription>
+          <CardDescription>{t("physio.patient.newSessionDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t("physio.patient.date")}</Label>
               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">{t("physio.patient.title")}</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Week 3 — knee strengthening"
+                placeholder={t("physio.patient.titlePlaceholder")}
               />
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="overallpain">Baseline pain (0–10)</Label>
+            <Label htmlFor="overallpain">{t("physio.patient.baselinePain")}</Label>
             <Input
               id="overallpain"
               type="number"
@@ -263,27 +276,27 @@ function PatientDetail() {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="subjective">Subjective (S)</Label>
+            <Label htmlFor="subjective">{t("physio.patient.subjective")}</Label>
             <Textarea
               id="subjective"
               value={subjective}
               onChange={(e) => setSubjective(e.target.value)}
-              placeholder="Patient report, symptoms, function…"
+              placeholder={t("physio.patient.subjectivePlaceholder")}
               rows={2}
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="objective">Objective (O)</Label>
+            <Label htmlFor="objective">{t("physio.patient.objective")}</Label>
             <Textarea
               id="objective"
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
-              placeholder="ROM, strength, special tests, observations…"
+              placeholder={t("physio.patient.objectivePlaceholder")}
               rows={2}
             />
           </div>
-          <Button onClick={() => create.mutate()} disabled={create.isPending}>
-            {create.isPending ? "Creating…" : "Create session"}
+          <Button onClick={() => create.mutate()} disabled={create.isPending} className="w-full sm:w-auto">
+            {create.isPending ? t("physio.patient.creating") : t("physio.patient.createSession")}
           </Button>
         </CardContent>
       </Card>
@@ -291,20 +304,16 @@ function PatientDetail() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Dumbbell className="h-5 w-5 text-primary" /> Exercise progression
+            <Dumbbell className="h-5 w-5 text-primary" /> {t("physio.patient.progressionTitle")}
           </CardTitle>
-          <CardDescription>
-            Progressive-overload tracking per exercise — load, volume and pain over the full program.
-          </CardDescription>
+          <CardDescription>{t("physio.patient.progressionDesc")}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
           {progressionQuery.isLoading && (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{t("app.loading")}</p>
           )}
           {!progressionQuery.isLoading && (progressionQuery.data ?? []).length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No exercises logged yet. Add prescribed exercises inside a session to start tracking.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("physio.patient.noExercises")}</p>
           )}
           {(progressionQuery.data ?? []).map((ex) => (
             <div key={ex.key} className="rounded-md border border-border p-3">
@@ -312,16 +321,48 @@ function PatientDetail() {
                 <div className="min-w-0">
                   <div className="truncate font-medium">{ex.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {ex.days} day{ex.days === 1 ? "" : "s"} · {ex.sessions} log
-                    {ex.sessions === 1 ? "" : "s"} · since{" "}
-                    {new Date(ex.firstDate).toLocaleDateString()}
+                    {t("physio.patient.daysCount", { count: ex.days })} ·{" "}
+                    {t("physio.patient.logsCount", { count: ex.sessions })} ·{" "}
+                    {t("physio.patient.since", { date: new Date(ex.firstDate).toLocaleDateString() })}
                   </div>
                 </div>
                 <DeltaBadge current={ex.currentLoad} delta={ex.loadDelta} unit="kg" />
               </div>
+              {ex.chart.length >= 2 && (
+                <div className="mt-3 h-32 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={ex.chart} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 6,
+                          fontSize: 12,
+                        }}
+                        labelFormatter={(d) => new Date(d).toLocaleDateString()}
+                        formatter={(v: number) => [`${v} kg`, t("physio.patient.loadChart")]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="load"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                 <Mini
-                  label="Load start→now"
+                  label={t("physio.patient.loadStartNow")}
                   value={
                     ex.startLoad != null && ex.currentLoad != null
                       ? `${ex.startLoad}→${ex.currentLoad}kg`
@@ -329,7 +370,7 @@ function PatientDetail() {
                   }
                 />
                 <Mini
-                  label="Volume Δ"
+                  label={t("physio.patient.volumeDelta")}
                   value={
                     ex.volumeDelta != null
                       ? `${ex.volumeDelta >= 0 ? "+" : ""}${Math.round(ex.volumeDelta)}`
@@ -337,7 +378,7 @@ function PatientDetail() {
                   }
                 />
                 <Mini
-                  label="Pain now"
+                  label={t("physio.patient.painNow")}
                   value={ex.currentPain != null ? `${ex.currentPain}/10` : "—"}
                 />
               </div>
@@ -347,16 +388,15 @@ function PatientDetail() {
       </Card>
 
       <Card>
-
         <CardHeader>
-          <CardTitle>Session history</CardTitle>
+          <CardTitle>{t("physio.patient.sessionHistory")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {sessionsQuery.isLoading && (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{t("app.loading")}</p>
           )}
           {!sessionsQuery.isLoading && (sessionsQuery.data ?? []).length === 0 && (
-            <p className="text-sm text-muted-foreground">No sessions yet.</p>
+            <p className="text-sm text-muted-foreground">{t("physio.patient.noSessionsYet")}</p>
           )}
           {(sessionsQuery.data ?? []).map((s) => (
             <div
@@ -366,19 +406,19 @@ function PatientDetail() {
               <Link
                 to="/physio/patients/$patientId/sessions/$sessionId"
                 params={{ patientId, sessionId: s.id }}
-                className="flex flex-1 items-center gap-3"
+                className="flex flex-1 items-center gap-3 min-w-0"
               >
-                <Activity className="h-4 w-4 text-primary" />
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{s.title ?? "Session"}</div>
-                  <div className="text-xs text-muted-foreground">
+                <Activity className="h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{s.title ?? t("physio.patient.session")}</div>
+                  <div className="truncate text-xs text-muted-foreground">
                     {new Date(s.session_date).toLocaleDateString()}
                     {s.overall_pain != null && ` · pain ${s.overall_pain}/10`}
                     {" · "}
                     {s.status}
                   </div>
                 </div>
-                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
               </Link>
               <Button
                 size="sm"
@@ -413,10 +453,11 @@ function DeltaBadge({
   delta: number | null;
   unit: string;
 }) {
+  const { t } = useTranslation();
   if (current == null) {
     return (
       <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-        no load
+        {t("physio.patient.noLoad")}
       </span>
     );
   }
@@ -442,4 +483,3 @@ function DeltaBadge({
     </span>
   );
 }
-

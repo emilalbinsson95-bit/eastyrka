@@ -241,8 +241,11 @@ function MessagesPage() {
 
   const startThreadWith = async (otherId: string) => {
     if (!user || !role) return;
-    const coachId = role === "coach" ? user.id : otherId;
-    const athleteId = role === "coach" ? otherId : user.id;
+    // For physio/patient direct chat we reuse coach_id/athlete_id columns:
+    // physio sits in coach_id, patient in athlete_id.
+    const initiatorIsLeftSide = role === "coach" || role === "physio";
+    const coachId = initiatorIsLeftSide ? user.id : otherId;
+    const athleteId = initiatorIsLeftSide ? otherId : user.id;
 
     // Try to find an existing general thread
     const existing = threadsQuery.data?.find(

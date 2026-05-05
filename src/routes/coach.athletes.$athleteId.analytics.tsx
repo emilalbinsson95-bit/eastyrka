@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { dailyE1RM } from "@/lib/eakoefficient";
 import { z } from "zod";
+import { cn } from "@/lib/utils";
 
 const analyticsSearchSchema = z.object({
   exercise: z.string().optional(),

@@ -330,6 +330,24 @@ function ReadinessSurveyForm({
           value={fatigue}
           onChange={setFatigue}
         />
+        <Slider10
+          label="Sleep quality"
+          help="1 = terrible, 10 = excellent"
+          value={sleepQuality}
+          onChange={setSleepQuality}
+        />
+        <Slider10
+          label="Nutrition"
+          help="1 = poor, 10 = dialed in"
+          value={nutrition}
+          onChange={setNutrition}
+        />
+        <Slider10
+          label="Stiffness"
+          help="1 = loose, 10 = very stiff"
+          value={stiffness}
+          onChange={setStiffness}
+        />
 
         <div className="space-y-1">
           <Label htmlFor="notes">Notes (optional)</Label>

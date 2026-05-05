@@ -12,6 +12,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import "@/lib/i18n";
 
 import appCss from "../styles.css?url";
 

@@ -998,7 +998,12 @@ interface ExportArgs {
     fatigue: number;
     work_stress: number;
     life_stress: number;
+    sleep_quality: number | null;
+    nutrition: number | null;
+    stiffness: number | null;
+    sleep_hours: number | null;
     bodyweight_kg: number | null;
+    notes: string | null;
   }>;
 }
 
@@ -1024,14 +1029,19 @@ function exportHistoryCsv({ athleteName, logs, surveys }: ExportArgs) {
   // Readiness surveys (separate file)
   if (surveys.length > 0) {
     const surveyRows: (string | number | null)[][] = [
-      ["date", "daily_form", "fatigue", "work_stress", "life_stress", "bodyweight_kg"],
+      ["date", "daily_form", "sleep_quality", "sleep_hours", "nutrition", "stiffness", "fatigue", "work_stress", "life_stress", "bodyweight_kg", "notes"],
       ...surveys.map((s) => [
         s.date,
         s.daily_form,
+        s.sleep_quality,
+        s.sleep_hours,
+        s.nutrition,
+        s.stiffness,
         s.fatigue,
         s.work_stress,
         s.life_stress,
         s.bodyweight_kg,
+        s.notes,
       ]),
     ];
     downloadCsv(`${safeName}-readiness-${today}.csv`, surveyRows);

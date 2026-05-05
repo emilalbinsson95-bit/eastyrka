@@ -36,7 +36,7 @@ function CoachLayout() {
   if (loading || !user || role !== "coach") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <div className="text-sm text-muted-foreground">{t("app.loading")}</div>
       </div>
     );
   }

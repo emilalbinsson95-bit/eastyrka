@@ -92,6 +92,124 @@ export type Database = {
         }
         Relationships: []
       }
+      endurance_sessions: {
+        Row: {
+          actual_total_seconds: number | null
+          athlete_id: string
+          coach_id: string | null
+          created_at: string
+          date: string
+          discipline: Database["public"]["Enums"]["endurance_discipline"]
+          id: string
+          mode: Database["public"]["Enums"]["endurance_mode"]
+          notes: string | null
+          overall_rpe: number | null
+          peak_rpe: number | null
+          planned_avg_rpe: number | null
+          planned_total_seconds: number | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_total_seconds?: number | null
+          athlete_id: string
+          coach_id?: string | null
+          created_at?: string
+          date?: string
+          discipline?: Database["public"]["Enums"]["endurance_discipline"]
+          id?: string
+          mode?: Database["public"]["Enums"]["endurance_mode"]
+          notes?: string | null
+          overall_rpe?: number | null
+          peak_rpe?: number | null
+          planned_avg_rpe?: number | null
+          planned_total_seconds?: number | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_total_seconds?: number | null
+          athlete_id?: string
+          coach_id?: string | null
+          created_at?: string
+          date?: string
+          discipline?: Database["public"]["Enums"]["endurance_discipline"]
+          id?: string
+          mode?: Database["public"]["Enums"]["endurance_mode"]
+          notes?: string | null
+          overall_rpe?: number | null
+          peak_rpe?: number | null
+          planned_avg_rpe?: number | null
+          planned_total_seconds?: number | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      endurance_steps: {
+        Row: {
+          created_at: string
+          discipline: Database["public"]["Enums"]["endurance_discipline"] | null
+          duration_seconds: number | null
+          id: string
+          is_group: boolean
+          notes: string | null
+          order_index: number
+          parent_id: string | null
+          repeat_count: number
+          session_id: string
+          target_rpe: number | null
+        }
+        Insert: {
+          created_at?: string
+          discipline?:
+            | Database["public"]["Enums"]["endurance_discipline"]
+            | null
+          duration_seconds?: number | null
+          id?: string
+          is_group?: boolean
+          notes?: string | null
+          order_index?: number
+          parent_id?: string | null
+          repeat_count?: number
+          session_id: string
+          target_rpe?: number | null
+        }
+        Update: {
+          created_at?: string
+          discipline?:
+            | Database["public"]["Enums"]["endurance_discipline"]
+            | null
+          duration_seconds?: number | null
+          id?: string
+          is_group?: boolean
+          notes?: string | null
+          order_index?: number
+          parent_id?: string | null
+          repeat_count?: number
+          session_id?: string
+          target_rpe?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "endurance_steps_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "endurance_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "endurance_steps_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "endurance_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           category: string | null
@@ -924,6 +1042,8 @@ export type Database = {
     Enums: {
       app_role: "coach" | "athlete" | "physio" | "patient"
       cycle_status: "draft" | "active" | "archived"
+      endurance_discipline: "run" | "bike" | "swim" | "other"
+      endurance_mode: "quick" | "structured"
       intensity_metric: "rpe" | "rir"
       plan_status: "draft" | "published"
     }
@@ -1055,6 +1175,8 @@ export const Constants = {
     Enums: {
       app_role: ["coach", "athlete", "physio", "patient"],
       cycle_status: ["draft", "active", "archived"],
+      endurance_discipline: ["run", "bike", "swim", "other"],
+      endurance_mode: ["quick", "structured"],
       intensity_metric: ["rpe", "rir"],
       plan_status: ["draft", "published"],
     },

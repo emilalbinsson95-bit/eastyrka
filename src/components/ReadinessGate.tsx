@@ -64,7 +64,7 @@ export function ReadinessGate({
       const { data, error } = await supabase
         .from("readiness_surveys")
         .select(
-          "id, date, bodyweight_kg, work_stress, life_stress, fatigue, sleep_hours, notes, daily_form",
+          "id, date, bodyweight_kg, work_stress, life_stress, fatigue, sleep_hours, sleep_quality, nutrition, stiffness, notes, daily_form",
         )
         .eq("athlete_id", athleteId)
         .eq("date", dateStr)

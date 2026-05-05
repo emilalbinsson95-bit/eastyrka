@@ -15,6 +15,7 @@ export const Route = createFileRoute("/physio")({
 
 function PhysioLayout() {
   const { user, role, loading, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {

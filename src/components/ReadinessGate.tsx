@@ -23,6 +23,9 @@ const surveySchema = z.object({
   life_stress: z.number().int().min(1).max(10),
   fatigue: z.number().int().min(1).max(10),
   sleep_hours: z.number().min(0).max(24).optional(),
+  sleep_quality: z.number().int().min(1).max(10),
+  nutrition: z.number().int().min(1).max(10),
+  stiffness: z.number().int().min(1).max(10),
   notes: z.string().trim().max(500).optional(),
   daily_form: z.number().int().min(1).max(10),
 });
@@ -35,6 +38,9 @@ interface ReadinessSurvey {
   life_stress: number;
   fatigue: number;
   sleep_hours: number | null;
+  sleep_quality: number | null;
+  nutrition: number | null;
+  stiffness: number | null;
   notes: string | null;
   daily_form: number;
 }
@@ -58,7 +64,7 @@ export function ReadinessGate({
       const { data, error } = await supabase
         .from("readiness_surveys")
         .select(
-          "id, date, bodyweight_kg, work_stress, life_stress, fatigue, sleep_hours, notes, daily_form",
+          "id, date, bodyweight_kg, work_stress, life_stress, fatigue, sleep_hours, sleep_quality, nutrition, stiffness, notes, daily_form",
         )
         .eq("athlete_id", athleteId)
         .eq("date", dateStr)
@@ -147,6 +153,15 @@ function ReadinessSummary({
           <Stat label="Work stress" value={survey.work_stress} />
           <Stat label="Life stress" value={survey.life_stress} />
           <Stat label="Fatigue" value={survey.fatigue} />
+          {survey.sleep_quality !== null && (
+            <Stat label="Sleep quality" value={survey.sleep_quality} />
+          )}
+          {survey.nutrition !== null && (
+            <Stat label="Nutrition" value={survey.nutrition} />
+          )}
+          {survey.stiffness !== null && (
+            <Stat label="Stiffness" value={survey.stiffness} />
+          )}
           {survey.bodyweight_kg !== null && (
             <Stat label="Bodyweight" value={`${survey.bodyweight_kg} kg`} />
           )}
@@ -192,13 +207,28 @@ function ReadinessSurveyForm({
   const [workStress, setWorkStress] = useState(5);
   const [lifeStress, setLifeStress] = useState(5);
   const [fatigue, setFatigue] = useState(5);
+  const [sleepQuality, setSleepQuality] = useState(5);
+  const [nutrition, setNutrition] = useState(5);
+  const [stiffness, setStiffness] = useState(5);
   const [notes, setNotes] = useState("");
 
   // Auto-derive a daily_form score so the coach gets a single index.
-  // Lower stress/fatigue → higher form. Range: 1..10.
+  // Combine stress, fatigue, stiffness (lower is better) with sleep & nutrition (higher is better).
   const dailyForm = Math.max(
     1,
-    Math.min(10, Math.round(11 - (workStress + lifeStress + fatigue) / 3)),
+    Math.min(
+      10,
+      Math.round(
+        (
+          (11 - workStress) +
+          (11 - lifeStress) +
+          (11 - fatigue) +
+          (11 - stiffness) +
+          sleepQuality +
+          nutrition
+        ) / 6,
+      ),
+    ),
   );
 
   const submit = useMutation({
@@ -209,6 +239,9 @@ function ReadinessSurveyForm({
         work_stress: workStress,
         life_stress: lifeStress,
         fatigue,
+        sleep_quality: sleepQuality,
+        nutrition,
+        stiffness,
         notes: notes || undefined,
         daily_form: dailyForm,
       });
@@ -220,6 +253,9 @@ function ReadinessSurveyForm({
         work_stress: parsed.work_stress,
         life_stress: parsed.life_stress,
         fatigue: parsed.fatigue,
+        sleep_quality: parsed.sleep_quality,
+        nutrition: parsed.nutrition,
+        stiffness: parsed.stiffness,
         notes: parsed.notes ?? null,
         daily_form: parsed.daily_form,
       });
@@ -293,6 +329,24 @@ function ReadinessSurveyForm({
           help="1 = fresh, 10 = wrecked"
           value={fatigue}
           onChange={setFatigue}
+        />
+        <Slider10
+          label="Sleep quality"
+          help="1 = terrible, 10 = excellent"
+          value={sleepQuality}
+          onChange={setSleepQuality}
+        />
+        <Slider10
+          label="Nutrition"
+          help="1 = poor, 10 = dialed in"
+          value={nutrition}
+          onChange={setNutrition}
+        />
+        <Slider10
+          label="Stiffness"
+          help="1 = loose, 10 = very stiff"
+          value={stiffness}
+          onChange={setStiffness}
         />
 
         <div className="space-y-1">

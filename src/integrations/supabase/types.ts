@@ -611,7 +611,10 @@ export type Database = {
           id: string
           life_stress: number
           notes: string | null
+          nutrition: number | null
           sleep_hours: number | null
+          sleep_quality: number | null
+          stiffness: number | null
           updated_at: string
           work_stress: number
         }
@@ -625,7 +628,10 @@ export type Database = {
           id?: string
           life_stress: number
           notes?: string | null
+          nutrition?: number | null
           sleep_hours?: number | null
+          sleep_quality?: number | null
+          stiffness?: number | null
           updated_at?: string
           work_stress: number
         }
@@ -639,7 +645,10 @@ export type Database = {
           id?: string
           life_stress?: number
           notes?: string | null
+          nutrition?: number | null
           sleep_hours?: number | null
+          sleep_quality?: number | null
+          stiffness?: number | null
           updated_at?: string
           work_stress?: number
         }

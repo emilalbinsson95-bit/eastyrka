@@ -487,7 +487,8 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </React.Fragment>
                   );
                 })}

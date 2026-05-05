@@ -76,27 +76,11 @@ function CoachLayout() {
         </div>
         {/* Mobile nav */}
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
-          <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label="Athletes" exact />
-          <CoachNavLink
-            to="/coach/exercises"
-            icon={<BookOpen className="h-4 w-4" />}
-            label="Exercises"
-          />
-          <CoachNavLink
-            to="/messages"
-            icon={<MessageCircle className="h-4 w-4" />}
-            label="Messages"
-          />
-          <CoachNavLink
-            to="/coach/invites"
-            icon={<Mail className="h-4 w-4" />}
-            label="Invites"
-          />
-          <CoachNavLink
-            to="/coach/me"
-            icon={<User className="h-4 w-4" />}
-            label="Me"
-          />
+          <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label={t("nav.athletes")} exact />
+          <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
+          <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
+          <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
+          <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
         </nav>
       </header>
 

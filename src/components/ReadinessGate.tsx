@@ -23,6 +23,9 @@ const surveySchema = z.object({
   life_stress: z.number().int().min(1).max(10),
   fatigue: z.number().int().min(1).max(10),
   sleep_hours: z.number().min(0).max(24).optional(),
+  sleep_quality: z.number().int().min(1).max(10),
+  nutrition: z.number().int().min(1).max(10),
+  stiffness: z.number().int().min(1).max(10),
   notes: z.string().trim().max(500).optional(),
   daily_form: z.number().int().min(1).max(10),
 });
@@ -35,6 +38,9 @@ interface ReadinessSurvey {
   life_stress: number;
   fatigue: number;
   sleep_hours: number | null;
+  sleep_quality: number | null;
+  nutrition: number | null;
+  stiffness: number | null;
   notes: string | null;
   daily_form: number;
 }

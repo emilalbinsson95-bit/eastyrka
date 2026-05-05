@@ -72,14 +72,14 @@ interface LogRow {
 }
 
 const CATEGORY_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--destructive))",
-  "hsl(var(--accent-foreground))",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
   "hsl(var(--status-peaking))",
   "hsl(var(--status-adapting))",
   "hsl(var(--status-undertrained))",
-  "hsl(var(--status-exhausted))",
-  "hsl(var(--muted-foreground))",
 ];
 
 function AnalyticsPage() {

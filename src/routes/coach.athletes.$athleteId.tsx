@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History } from "lucide-react";
 import { z } from "zod";
@@ -142,6 +142,9 @@ function AthleteDetailPage() {
 }
 
 function DashboardTable({ athleteId }: { athleteId: string }) {
+  const [exerciseFilter, setExerciseFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   const logsQuery = useQuery({
     queryKey: ["athlete-logs", athleteId],
     queryFn: async () => {
@@ -189,127 +192,269 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     );
   }, [logsQuery.data, baselinesQuery.data]);
 
+  const exercises = useMemo(
+    () => Array.from(new Set(processed.map((p) => p.source.exercise))).sort(),
+    [processed],
+  );
+
+  const filtered = useMemo(
+    () =>
+      processed.filter(
+        (p) =>
+          (exerciseFilter === "all" || p.source.exercise === exerciseFilter) &&
+          (statusFilter === "all" || p.status === statusFilter),
+      ),
+    [processed, exerciseFilter, statusFilter],
+  );
+
+  const summary = useMemo(() => {
+    const withEak = processed.filter((p) => p.eaKoefficient > 0);
+    const avg =
+      withEak.length > 0
+        ? withEak.reduce((a, p) => a + p.eaKoefficient, 0) / withEak.length
+        : 0;
+    const peak = withEak.reduce((a, p) => Math.max(a, p.eaKoefficient), 0);
+    const sessions = new Set(processed.map((p) => p.source.date)).size;
+    const counts: Record<string, number> = {
+      peaking: 0,
+      adapting: 0,
+      undertrained: 0,
+      exhausted: 0,
+    };
+    for (const p of withEak) {
+      if (counts[p.status] != null) counts[p.status] += 1;
+    }
+    const fatigueLimit = processed.filter((p) => p.volume === "fatigue_limit").length;
+    return { sessions, totalSets: processed.length, avg, peak, counts, withEakCount: withEak.length, fatigueLimit };
+  }, [processed]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof filtered>();
+    for (const p of filtered) {
+      const arr = map.get(p.source.date) ?? [];
+      arr.push(p);
+      map.set(p.source.date, arr);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Training log</CardTitle>
-        <CardDescription>
-          Each row is a logged set with EAkoefficient and volume quality applied.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto p-0">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Exercise</th>
-              <th className="px-4 py-3">Set / Rep / Wt / RPE</th>
-              <th className="bg-readiness-tint/30 px-4 py-3">Daily E1RM</th>
-              <th className="bg-readiness-tint/30 px-4 py-3">EAkoeff %</th>
-              <th className="bg-readiness-tint/30 px-4 py-3">Status</th>
-              <th className="bg-volume-tint/30 px-4 py-3">E1RM Drop</th>
-              <th className="bg-volume-tint/30 px-4 py-3">Volume</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {logsQuery.isLoading && (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!logsQuery.isLoading && processed.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                  No sets logged yet.
-                </td>
-              </tr>
-            )}
-            {processed.map((p) => (
-              <tr key={p.source.id} className="transition-colors hover:bg-muted/30">
-                <td className="px-4 py-3 text-muted-foreground">
-                  {format(parseISO(p.source.date), "MMM d")}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="font-semibold">{p.source.exercise}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {p.source.variation ?? "—"}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div>
-                    S:{p.source.set_number} ·{" "}
-                    <span className="font-semibold">
-                      {p.source.reps}×{p.source.weight_kg}kg
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    RPE {p.source.rpe}
-                  </div>
-                </td>
-                <td className="bg-readiness-tint/20 px-4 py-3 font-bold">
-                  {p.dailyE1RM.toFixed(1)} kg
-                </td>
-                <td className="bg-readiness-tint/20 px-4 py-3">
-                  <div className="font-bold">
-                    {p.eaKoefficient > 0 ? `${p.eaKoefficient.toFixed(1)}%` : "—"}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    Base: {p.baseline1RM || "—"}
-                  </div>
-                </td>
-                <td className="bg-readiness-tint/20 px-4 py-3">
-                  {p.eaKoefficient > 0 ? (
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-semibold",
-                        readinessClasses(p.status),
-                      )}
-                    >
-                      {readinessLabel(p.status)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="bg-volume-tint/20 px-4 py-3">
-                  {p.source.set_number > 1 && p.set1E1RM > 0 ? (
-                    <div className="flex items-center gap-1 font-semibold">
-                      <TrendingDown
-                        className={cn(
-                          "h-3.5 w-3.5",
-                          p.dropPercent >= 5
-                            ? "text-destructive"
-                            : "text-muted-foreground",
-                        )}
-                      />
-                      {p.dropPercent.toFixed(1)}%
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Set 1 ref</span>
-                  )}
-                </td>
-                <td className="bg-volume-tint/20 px-4 py-3">
-                  {p.source.set_number > 1 && p.set1E1RM > 0 ? (
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-semibold",
-                        volumeQualityClasses(p.volume),
-                      )}
-                    >
-                      {volumeQualityLabel(p.volume)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Sessions</div>
+            <div className="mt-1 text-2xl font-bold">{summary.sessions}</div>
+            <div className="text-[11px] text-muted-foreground">{summary.totalSets} sets logged</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Avg EAkoeff</div>
+            <div className="mt-1 text-2xl font-bold">
+              {summary.avg > 0 ? `${summary.avg.toFixed(1)}%` : "—"}
+            </div>
+            <div className="text-[11px] text-muted-foreground">Across {summary.withEakCount} sets</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Peak EAkoeff</div>
+            <div className="mt-1 text-2xl font-bold">
+              {summary.peak > 0 ? `${summary.peak.toFixed(1)}%` : "—"}
+            </div>
+            <div className="text-[11px] text-muted-foreground">Best E1RM vs baseline</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Fatigue-limit sets</div>
+            <div className="mt-1 text-2xl font-bold">{summary.fatigueLimit}</div>
+            <div className="text-[11px] text-muted-foreground">≥5% E1RM drop</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {summary.withEakCount > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium">Readiness distribution</span>
+              <span className="text-muted-foreground">{summary.withEakCount} sets</span>
+            </div>
+            <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+              {(["peaking", "adapting", "undertrained", "exhausted"] as const).map((s) => {
+                const pct = (summary.counts[s] / summary.withEakCount) * 100;
+                if (pct === 0) return null;
+                return (
+                  <div
+                    key={s}
+                    style={{ width: `${pct}%` }}
+                    className={cn("h-full", readinessClasses(s))}
+                    title={`${readinessLabel(s)}: ${summary.counts[s]} (${pct.toFixed(0)}%)`}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              {(["peaking", "adapting", "undertrained", "exhausted"] as const).map((s) => (
+                <span key={s} className="inline-flex items-center gap-1.5">
+                  <span className={cn("h-2 w-2 rounded-full", readinessClasses(s))} />
+                  <span className="text-muted-foreground">
+                    {readinessLabel(s)} · {summary.counts[s]}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <CardTitle>EAkoefficient log</CardTitle>
+            <CardDescription>
+              Sets grouped by session date with readiness and volume quality applied.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={exerciseFilter}
+              onChange={(e) => setExerciseFilter(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            >
+              <option value="all">All exercises</option>
+              {exercises.map((e) => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            >
+              <option value="all">All statuses</option>
+              <option value="peaking">Peaking</option>
+              <option value="adapting">Adapting</option>
+              <option value="undertrained">Undertrained</option>
+              <option value="exhausted">Exhausted</option>
+            </select>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          {logsQuery.isLoading && (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading…</div>
+          )}
+          {!logsQuery.isLoading && grouped.length === 0 && (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              {processed.length === 0 ? "No sets logged yet." : "No sets match your filters."}
+            </div>
+          )}
+          {grouped.length > 0 && (
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Exercise</th>
+                  <th className="px-4 py-3">Set · Rep · Wt · RPE</th>
+                  <th className="bg-readiness-tint/30 px-4 py-3">E1RM</th>
+                  <th className="bg-readiness-tint/30 px-4 py-3">EAk %</th>
+                  <th className="bg-readiness-tint/30 px-4 py-3">Status</th>
+                  <th className="bg-volume-tint/30 px-4 py-3">Drop</th>
+                  <th className="bg-volume-tint/30 px-4 py-3">Volume</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grouped.map(([date, rows]) => {
+                  const withEak = rows.filter((r) => r.eaKoefficient > 0);
+                  const dayAvg =
+                    withEak.length > 0
+                      ? withEak.reduce((a, r) => a + r.eaKoefficient, 0) / withEak.length
+                      : 0;
+                  return (
+                    <React.Fragment key={date}>
+                      <tr className="bg-muted/30">
+                        <td colSpan={7} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          <div className="flex items-center justify-between">
+                            <span>{format(parseISO(date), "EEEE · MMM d, yyyy")}</span>
+                            <span className="font-normal normal-case">
+                              {rows.length} sets{dayAvg > 0 ? ` · avg ${dayAvg.toFixed(1)}%` : ""}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {rows.map((p) => (
+                        <tr key={p.source.id} className="border-b border-border transition-colors hover:bg-muted/30">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold">{p.source.exercise}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {p.source.variation ?? "—"}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div>
+                              S:{p.source.set_number} ·{" "}
+                              <span className="font-semibold">
+                                {p.source.reps}×{p.source.weight_kg}kg
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">RPE {p.source.rpe}</div>
+                          </td>
+                          <td className="bg-readiness-tint/20 px-4 py-3 font-bold">
+                            {p.dailyE1RM.toFixed(1)} kg
+                          </td>
+                          <td className="bg-readiness-tint/20 px-4 py-3">
+                            <div className="font-bold">
+                              {p.eaKoefficient > 0 ? `${p.eaKoefficient.toFixed(1)}%` : "—"}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Base: {p.baseline1RM || "—"}
+                            </div>
+                          </td>
+                          <td className="bg-readiness-tint/20 px-4 py-3">
+                            {p.eaKoefficient > 0 ? (
+                              <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", readinessClasses(p.status))}>
+                                {readinessLabel(p.status)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="bg-volume-tint/20 px-4 py-3">
+                            {p.source.set_number > 1 && p.set1E1RM > 0 ? (
+                              <div className="flex items-center gap-1 font-semibold">
+                                <TrendingDown
+                                  className={cn(
+                                    "h-3.5 w-3.5",
+                                    p.dropPercent >= 5 ? "text-destructive" : "text-muted-foreground",
+                                  )}
+                                />
+                                {p.dropPercent.toFixed(1)}%
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Set 1 ref</span>
+                            )}
+                          </td>
+                          <td className="bg-volume-tint/20 px-4 py-3">
+                            {p.source.set_number > 1 && p.set1E1RM > 0 ? (
+                              <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", volumeQualityClasses(p.volume))}>
+                                {volumeQualityLabel(p.volume)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

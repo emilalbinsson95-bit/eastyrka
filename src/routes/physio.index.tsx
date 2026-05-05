@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Users, ChevronRight, TrendingUp, TrendingDown, Minus, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -22,16 +23,15 @@ type RosterPatient = {
   patient_id: string;
   full_name: string | null;
   created_at: string;
-  // Aggregates
   total_sessions: number;
   days_active: number;
   weeks_in_program: number;
   last_session_date: string | null;
   last_pain: number | null;
   avg_pain_recent: number | null;
-  pain_trend: "down" | "up" | "flat" | null; // down = improving
+  pain_trend: "down" | "up" | "flat" | null;
   exercises_logged: number;
-  adherence_30d: number; // sessions in last 30 days
+  adherence_30d: number;
 };
 
 function daysBetween(a: Date, b: Date) {
@@ -40,6 +40,7 @@ function daysBetween(a: Date, b: Date) {
 
 function PhysioRoster() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const physioId = user!.id;
 
   const rosterQuery = useQuery({
@@ -65,7 +66,6 @@ function PhysioRoster() {
           .select("id, session_id")
           .in(
             "session_id",
-            // Avoid an empty .in() — fall back to a sentinel.
             (await supabase
               .from("rehab_sessions")
               .select("id")
@@ -147,44 +147,40 @@ function PhysioRoster() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Patient overview</h1>
-          <p className="text-sm text-muted-foreground">
-            Long-term progressive-overload tracking and adherence across your caseload.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("physio.overviewTitle")}</h1>
+          <p className="text-sm text-muted-foreground">{t("physio.overviewDescription")}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/physio/invites">Invite patient</Link>
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <Link to="/physio/invites">{t("physio.invitePatient")}</Link>
         </Button>
       </div>
 
       {patients.length > 0 && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <SummaryStat label="Active patients" value={patients.length} />
-          <SummaryStat label="Total sessions" value={totals.sessions} />
-          <SummaryStat label="Training days logged" value={totals.days} />
-          <SummaryStat label="Exercises performed" value={totals.exercises} />
+          <SummaryStat label={t("physio.summary.active")} value={patients.length} />
+          <SummaryStat label={t("physio.summary.sessions")} value={totals.sessions} />
+          <SummaryStat label={t("physio.summary.days")} value={totals.days} />
+          <SummaryStat label={t("physio.summary.exercises")} value={totals.exercises} />
         </div>
       )}
 
       {rosterQuery.isLoading && (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t("app.loading")}</p>
       )}
 
       {!rosterQuery.isLoading && patients.length === 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" /> No patients yet
+              <Users className="h-5 w-5 text-primary" /> {t("physio.noPatientsTitle")}
             </CardTitle>
-            <CardDescription>
-              Invite a patient to start tracking their rehab progress.
-            </CardDescription>
+            <CardDescription>{t("physio.noPatientsDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link to="/physio/invites">Invite a patient</Link>
+              <Link to="/physio/invites">{t("physio.invitePatient")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -199,32 +195,34 @@ function PhysioRoster() {
             className="group"
           >
             <Card className="h-full transition-colors group-hover:border-primary">
-              <CardContent className="space-y-3 p-5">
+              <CardContent className="space-y-3 p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="truncate text-base font-semibold">
-                      {p.full_name ?? "Unnamed patient"}
+                      {p.full_name ?? t("physio.card.unnamed")}
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CalendarDays className="h-3.5 w-3.5" />
-                      Week {p.weeks_in_program} of program
+                      {t("physio.card.weekOf", { n: p.weeks_in_program })}
                     </div>
                   </div>
                   <PainTrendBadge trend={p.pain_trend} value={p.avg_pain_recent} />
                 </div>
 
                 <div className="grid grid-cols-4 gap-2 border-t border-border pt-3 text-center">
-                  <Stat label="Days" value={p.days_active} />
-                  <Stat label="Sessions" value={p.total_sessions} />
-                  <Stat label="Exercises" value={p.exercises_logged} />
-                  <Stat label="Last 30d" value={p.adherence_30d} />
+                  <Stat label={t("physio.card.days")} value={p.days_active} />
+                  <Stat label={t("physio.card.sessions")} value={p.total_sessions} />
+                  <Stat label={t("physio.card.exercises")} value={p.exercises_logged} />
+                  <Stat label={t("physio.card.last30")} value={p.adherence_30d} />
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
+                  <span className="truncate">
                     {p.last_session_date
-                      ? `Last session ${new Date(p.last_session_date).toLocaleDateString()}`
-                      : "No sessions yet"}
+                      ? t("physio.card.lastSession", {
+                          date: new Date(p.last_session_date).toLocaleDateString(),
+                        })
+                      : t("physio.card.noSessions")}
                   </span>
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </div>
@@ -240,8 +238,8 @@ function PhysioRoster() {
 function SummaryStat({ label, value }: { label: string; value: number }) {
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="p-3 sm:p-4">
+        <div className="text-xl font-bold sm:text-2xl">{value}</div>
         <div className="text-xs text-muted-foreground">{label}</div>
       </CardContent>
     </Card>
@@ -264,15 +262,15 @@ function PainTrendBadge({
   trend: "down" | "up" | "flat" | null;
   value: number | null;
 }) {
+  const { t } = useTranslation();
   if (value == null) {
     return (
       <Badge variant="outline" className="shrink-0">
-        No pain data
+        {t("physio.pain.noData")}
       </Badge>
     );
   }
   const Icon = trend === "down" ? TrendingDown : trend === "up" ? TrendingUp : Minus;
-  // Down = improving (lower pain is better) → green; up = worsening → red.
   const color =
     trend === "down"
       ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30"
@@ -282,7 +280,7 @@ function PainTrendBadge({
   return (
     <Badge variant="outline" className={`shrink-0 ${color}`}>
       <Icon className="mr-1 h-3 w-3" />
-      Pain {value.toFixed(1)}/10
+      {t("physio.pain.label", { value: value.toFixed(1) })}
     </Badge>
   );
 }

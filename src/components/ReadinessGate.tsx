@@ -153,6 +153,15 @@ function ReadinessSummary({
           <Stat label="Work stress" value={survey.work_stress} />
           <Stat label="Life stress" value={survey.life_stress} />
           <Stat label="Fatigue" value={survey.fatigue} />
+          {survey.sleep_quality !== null && (
+            <Stat label="Sleep quality" value={survey.sleep_quality} />
+          )}
+          {survey.nutrition !== null && (
+            <Stat label="Nutrition" value={survey.nutrition} />
+          )}
+          {survey.stiffness !== null && (
+            <Stat label="Stiffness" value={survey.stiffness} />
+          )}
           {survey.bodyweight_kg !== null && (
             <Stat label="Bodyweight" value={`${survey.bodyweight_kg} kg`} />
           )}

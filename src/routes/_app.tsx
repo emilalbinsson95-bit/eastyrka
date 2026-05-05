@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,

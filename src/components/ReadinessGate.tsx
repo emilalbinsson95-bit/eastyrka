@@ -207,13 +207,28 @@ function ReadinessSurveyForm({
   const [workStress, setWorkStress] = useState(5);
   const [lifeStress, setLifeStress] = useState(5);
   const [fatigue, setFatigue] = useState(5);
+  const [sleepQuality, setSleepQuality] = useState(5);
+  const [nutrition, setNutrition] = useState(5);
+  const [stiffness, setStiffness] = useState(5);
   const [notes, setNotes] = useState("");
 
   // Auto-derive a daily_form score so the coach gets a single index.
-  // Lower stress/fatigue → higher form. Range: 1..10.
+  // Combine stress, fatigue, stiffness (lower is better) with sleep & nutrition (higher is better).
   const dailyForm = Math.max(
     1,
-    Math.min(10, Math.round(11 - (workStress + lifeStress + fatigue) / 3)),
+    Math.min(
+      10,
+      Math.round(
+        (
+          (11 - workStress) +
+          (11 - lifeStress) +
+          (11 - fatigue) +
+          (11 - stiffness) +
+          sleepQuality +
+          nutrition
+        ) / 6,
+      ),
+    ),
   );
 
   const submit = useMutation({
@@ -224,6 +239,9 @@ function ReadinessSurveyForm({
         work_stress: workStress,
         life_stress: lifeStress,
         fatigue,
+        sleep_quality: sleepQuality,
+        nutrition,
+        stiffness,
         notes: notes || undefined,
         daily_form: dailyForm,
       });
@@ -235,6 +253,9 @@ function ReadinessSurveyForm({
         work_stress: parsed.work_stress,
         life_stress: parsed.life_stress,
         fatigue: parsed.fatigue,
+        sleep_quality: parsed.sleep_quality,
+        nutrition: parsed.nutrition,
+        stiffness: parsed.stiffness,
         notes: parsed.notes ?? null,
         daily_form: parsed.daily_form,
       });

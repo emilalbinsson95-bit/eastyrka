@@ -150,7 +150,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_logs")
-        .select("*")
+        .select("id, date, exercise, variation, set_number, reps, weight_kg, rpe, edited_by_athlete_at, original_reps, original_rpe, created_at")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: false })
         .order("created_at", { ascending: true })

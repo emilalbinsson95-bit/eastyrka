@@ -192,6 +192,18 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     );
   }, [logsQuery.data, baselinesQuery.data]);
 
+  const editsById = useMemo(() => {
+    const map = new Map<string, { editedAt: string | null; origReps: number | null; origRpe: number | null }>();
+    for (const l of logsQuery.data ?? []) {
+      map.set(l.id, {
+        editedAt: l.edited_by_athlete_at,
+        origReps: l.original_reps,
+        origRpe: l.original_rpe != null ? Number(l.original_rpe) : null,
+      });
+    }
+    return map;
+  }, [logsQuery.data]);
+
   const exercises = useMemo(
     () => Array.from(new Set(processed.map((p) => p.source.exercise))).sort(),
     [processed],

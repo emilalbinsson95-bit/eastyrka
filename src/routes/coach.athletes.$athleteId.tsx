@@ -110,6 +110,14 @@ function AthleteDetailPage() {
               <BarChart3 className="mr-1 h-4 w-4" /> Analytics
             </Link>
           </Button>
+          <Button asChild variant="outline">
+            <Link
+              to="/coach/athletes/$athleteId/endurance"
+              params={{ athleteId }}
+            >
+              <Activity className="mr-1 h-4 w-4" /> Endurance
+            </Link>
+          </Button>
           <Button asChild>
             <Link
               to="/coach/athletes/$athleteId/cycles"

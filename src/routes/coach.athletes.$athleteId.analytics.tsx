@@ -146,7 +146,7 @@ function AnalyticsPage() {
       since.setDate(since.getDate() - days);
       const { data, error } = await supabase
         .from("readiness_surveys")
-        .select("date, daily_form, fatigue, work_stress, life_stress, bodyweight_kg")
+        .select("date, daily_form, fatigue, work_stress, life_stress, sleep_quality, nutrition, stiffness, sleep_hours, bodyweight_kg, notes")
         .eq("athlete_id", athleteId)
         .gte("date", format(since, "yyyy-MM-dd"))
         .order("date", { ascending: true });

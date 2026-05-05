@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/_app")({
   component: AthleteLayout,
@@ -16,6 +18,7 @@ export const Route = createFileRoute("/_app")({
 
 function AthleteLayout() {
   const { user, role, loading, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -62,7 +65,7 @@ function AthleteLayout() {
   if (loading || !user || role !== "athlete") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <div className="text-sm text-muted-foreground">{t("app.loading")}</div>
       </div>
     );
   }
@@ -74,10 +77,11 @@ function AthleteLayout() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link to="/today" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EA Training System
+            {t("app.name")}
           </Link>
           <div className="flex items-center gap-1">
             <NotificationsBell />
+            <LanguageToggle />
             <ThemeToggle />
             <RoleSwitcher />
             <Button
@@ -86,7 +90,7 @@ function AthleteLayout() {
               onClick={() => signOut().then(() => navigate({ to: "/" }))}
             >
               <LogOut className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Sign out</span>
+              <span className="ml-1 hidden sm:inline">{t("actions.signOut")}</span>
             </Button>
           </div>
         </div>
@@ -102,10 +106,10 @@ function AthleteLayout() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto grid max-w-3xl grid-cols-4">
-          <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label="Today" />
-          <TabLink to="/history" icon={<History className="h-5 w-5" />} label="History" />
-          <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label="Messages" />
-          <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label="Me" />
+          <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label={t("nav.today")} />
+          <TabLink to="/history" icon={<History className="h-5 w-5" />} label={t("nav.history")} />
+          <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
+          <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>
       </nav>
     </div>

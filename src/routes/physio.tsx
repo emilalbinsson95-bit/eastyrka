@@ -1,11 +1,13 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Users, UserPlus, MessageCircle, LogOut, Activity } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/physio")({
   component: PhysioLayout,
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/physio")({
 
 function PhysioLayout() {
   const { user, role, loading, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,7 +35,7 @@ function PhysioLayout() {
   if (loading || !user || role !== "physio") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <div className="text-sm text-muted-foreground">{t("app.loading")}</div>
       </div>
     );
   }
@@ -43,18 +46,19 @@ function PhysioLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/physio" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EA Training System
+            {t("app.name")}
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              Physio
+              {t("role.physio")}
             </span>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
-            <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label="Patients" exact />
-            <PhysioNavLink to="/physio/invites" icon={<UserPlus className="h-4 w-4" />} label="Invite" />
-            <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label="Messages" />
+            <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label={t("nav.patients")} exact />
+            <PhysioNavLink to="/physio/invites" icon={<UserPlus className="h-4 w-4" />} label={t("nav.invites")} />
+            <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
           </nav>
           <div className="flex items-center gap-1">
             <NotificationsBell />
+            <LanguageToggle />
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -62,14 +66,14 @@ function PhysioLayout() {
               onClick={() => signOut().then(() => navigate({ to: "/" }))}
             >
               <LogOut className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Sign out</span>
+              <span className="ml-1 hidden sm:inline">{t("actions.signOut")}</span>
             </Button>
           </div>
         </div>
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
-          <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label="Patients" exact />
-          <PhysioNavLink to="/physio/invites" icon={<UserPlus className="h-4 w-4" />} label="Invite" />
-          <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label="Messages" />
+          <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label={t("nav.patients")} exact />
+          <PhysioNavLink to="/physio/invites" icon={<UserPlus className="h-4 w-4" />} label={t("nav.invites")} />
+          <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
         </nav>
       </header>
 

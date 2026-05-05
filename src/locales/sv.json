@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "EA Training System",
+    "tagline": "Plattform för coachning och rehabuppföljning",
+    "loading": "Laddar…"
+  },
+  "role": {
+    "coach": "Tränare",
+    "athlete": "Atlet",
+    "physio": "Fysioterapeut",
+    "patient": "Patient"
+  },
+  "nav": {
+    "today": "Idag",
+    "history": "Historik",
+    "me": "Jag",
+    "messages": "Meddelanden",
+    "athletes": "Atleter",
+    "exercises": "Övningar",
+    "invites": "Bjud in",
+    "patients": "Patienter",
+    "sessions": "Pass",
+    "back": "Tillbaka",
+    "home": "Hem"
+  },
+  "actions": {
+    "signIn": "Logga in",
+    "signUp": "Skapa konto",
+    "signOut": "Logga ut",
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "create": "Skapa",
+    "send": "Skicka",
+    "continue": "Fortsätt",
+    "submit": "Skicka in",
+    "viewDetails": "Visa detaljer"
+  },
+  "common": {
+    "email": "E-post",
+    "password": "Lösenord",
+    "fullName": "Fullständigt namn",
+    "name": "Namn",
+    "language": "Språk",
+    "theme": "Tema",
+    "lightMode": "Ljust läge",
+    "darkMode": "Mörkt läge",
+    "settings": "Inställningar",
+    "account": "Konto",
+    "search": "Sök",
+    "noData": "Ingen data än",
+    "yes": "Ja",
+    "no": "Nej"
+  },
+  "auth": {
+    "welcomeBack": "Välkommen tillbaka",
+    "createAccount": "Skapa ditt konto",
+    "haveAccount": "Har du redan ett konto?",
+    "noAccount": "Har du inget konto?",
+    "forgotPassword": "Glömt lösenord?",
+    "iAmA": "Jag är",
+    "signingIn": "Loggar in…",
+    "signingUp": "Skapar konto…",
+    "signInWithGoogle": "Logga in med Google",
+    "signUpWithGoogle": "Skapa konto med Google",
+    "or": "eller"
+  },
+  "me": {
+    "title": "Jag",
+    "profile": "Profil",
+    "myRoles": "Mina roller",
+    "switchRole": "Byt roll",
+    "preferences": "Inställningar"
+  },
+  "notifications": {
+    "title": "Notiser",
+    "empty": "Inga notiser",
+    "markAllRead": "Markera alla som lästa"
+  },
+  "messages": {
+    "title": "Meddelanden",
+    "conversations": "Konversationer",
+    "startNew": "Starta ny",
+    "selectConversation": "Välj en konversation",
+    "noMessages": "Inga meddelanden än. Säg hej.",
+    "typePlaceholder": "Skriv ett meddelande… (Enter för att skicka)",
+    "noPartnersCoach": "Koppla atleter för att börja chatta.",
+    "noPartnersAthlete": "Din tränare är inte tillagd än.",
+    "noPartnersPhysio": "Lägg till patienter för att börja chatta.",
+    "noPartnersPatient": "Din fysioterapeut är inte tillagd än.",
+    "session": "pass",
+    "failedToSend": "Kunde inte skicka",
+    "couldntStart": "Kunde inte starta tråden"
+  },
+  "language": {
+    "english": "English",
+    "swedish": "Svenska"
+  }
+}

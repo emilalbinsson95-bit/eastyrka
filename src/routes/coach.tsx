@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle, User } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/coach")({
   component: CoachLayout,
@@ -14,6 +16,7 @@ export const Route = createFileRoute("/coach")({
 
 function CoachLayout() {
   const { user, role, loading, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +36,7 @@ function CoachLayout() {
   if (loading || !user || role !== "coach") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <div className="text-sm text-muted-foreground">{t("app.loading")}</div>
       </div>
     );
   }
@@ -44,36 +47,21 @@ function CoachLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/coach" className="flex items-center gap-2 font-semibold">
             <Activity className="h-5 w-5 text-primary" />
-            EA Training System
+            {t("app.name")}
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              Coach
+              {t("role.coach")}
             </span>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
-            <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label="Athletes" exact />
-            <CoachNavLink
-              to="/coach/exercises"
-              icon={<BookOpen className="h-4 w-4" />}
-              label="Exercises"
-            />
-            <CoachNavLink
-              to="/messages"
-              icon={<MessageCircle className="h-4 w-4" />}
-              label="Messages"
-            />
-            <CoachNavLink
-              to="/coach/invites"
-              icon={<Mail className="h-4 w-4" />}
-              label="Invites"
-            />
-            <CoachNavLink
-              to="/coach/me"
-              icon={<User className="h-4 w-4" />}
-              label="Me"
-            />
+            <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label={t("nav.athletes")} exact />
+            <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
+            <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
+            <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
+            <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
           </nav>
           <div className="flex items-center gap-1">
             <NotificationsBell />
+            <LanguageToggle />
             <ThemeToggle />
             <RoleSwitcher />
             <Button
@@ -82,33 +70,17 @@ function CoachLayout() {
               onClick={() => signOut().then(() => navigate({ to: "/" }))}
             >
               <LogOut className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Sign out</span>
+              <span className="ml-1 hidden sm:inline">{t("actions.signOut")}</span>
             </Button>
           </div>
         </div>
         {/* Mobile nav */}
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
-          <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label="Athletes" exact />
-          <CoachNavLink
-            to="/coach/exercises"
-            icon={<BookOpen className="h-4 w-4" />}
-            label="Exercises"
-          />
-          <CoachNavLink
-            to="/messages"
-            icon={<MessageCircle className="h-4 w-4" />}
-            label="Messages"
-          />
-          <CoachNavLink
-            to="/coach/invites"
-            icon={<Mail className="h-4 w-4" />}
-            label="Invites"
-          />
-          <CoachNavLink
-            to="/coach/me"
-            icon={<User className="h-4 w-4" />}
-            label="Me"
-          />
+          <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label={t("nav.athletes")} exact />
+          <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
+          <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
+          <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
+          <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
         </nav>
       </header>
 

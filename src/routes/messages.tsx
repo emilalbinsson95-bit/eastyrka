@@ -123,30 +123,39 @@ function MessagesPage() {
     queryKey: ["message-partners", user?.id, role],
     enabled: !!user && !!role,
     queryFn: async () => {
+      const ids = new Set<string>();
       if (role === "coach") {
         const { data } = await supabase
           .from("coach_athletes")
           .select("athlete_id")
           .eq("coach_id", user!.id);
-        const ids = (data ?? []).map((r) => r.athlete_id);
-        if (ids.length === 0) return [] as Array<{ id: string; name: string }>;
-        const { data: ps } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", ids);
-        return (ps ?? []).map((p) => ({ id: p.id, name: p.full_name ?? "Athlete" }));
+        (data ?? []).forEach((r) => ids.add(r.athlete_id));
+      } else if (role === "athlete") {
+        const { data } = await supabase
+          .from("coach_athletes")
+          .select("coach_id")
+          .eq("athlete_id", user!.id);
+        (data ?? []).forEach((r) => ids.add(r.coach_id));
+      } else if (role === "physio") {
+        const { data } = await supabase
+          .from("physio_patients")
+          .select("patient_id")
+          .eq("physio_id", user!.id);
+        (data ?? []).forEach((r) => ids.add(r.patient_id));
+      } else if (role === "patient") {
+        const { data } = await supabase
+          .from("physio_patients")
+          .select("physio_id")
+          .eq("patient_id", user!.id);
+        (data ?? []).forEach((r) => ids.add(r.physio_id));
       }
-      const { data } = await supabase
-        .from("coach_athletes")
-        .select("coach_id")
-        .eq("athlete_id", user!.id);
-      const ids = (data ?? []).map((r) => r.coach_id);
-      if (ids.length === 0) return [] as Array<{ id: string; name: string }>;
+      const idArr = Array.from(ids);
+      if (idArr.length === 0) return [] as Array<{ id: string; name: string }>;
       const { data: ps } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", ids);
-      return (ps ?? []).map((p) => ({ id: p.id, name: p.full_name ?? "Coach" }));
+        .in("id", idArr);
+      return (ps ?? []).map((p) => ({ id: p.id, name: p.full_name ?? "User" }));
     },
   });
 
@@ -232,8 +241,11 @@ function MessagesPage() {
 
   const startThreadWith = async (otherId: string) => {
     if (!user || !role) return;
-    const coachId = role === "coach" ? user.id : otherId;
-    const athleteId = role === "coach" ? otherId : user.id;
+    // For physio/patient direct chat we reuse coach_id/athlete_id columns:
+    // physio sits in coach_id, patient in athlete_id.
+    const initiatorIsLeftSide = role === "coach" || role === "physio";
+    const coachId = initiatorIsLeftSide ? user.id : otherId;
+    const athleteId = initiatorIsLeftSide ? otherId : user.id;
 
     // Try to find an existing general thread
     const existing = threadsQuery.data?.find(

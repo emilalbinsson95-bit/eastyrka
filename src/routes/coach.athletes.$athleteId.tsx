@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History } from "lucide-react";
 import { z } from "zod";

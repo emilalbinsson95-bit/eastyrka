@@ -395,10 +395,31 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                           </div>
                         </td>
                       </tr>
-                      {rows.map((p) => (
-                        <tr key={p.source.id} className="border-b border-border transition-colors hover:bg-muted/30">
+                      {rows.map((p) => {
+                        const edit = editsById.get(p.source.id);
+                        const wasEdited = !!edit?.editedAt;
+                        const repsChanged = edit?.origReps != null && edit.origReps !== p.source.reps;
+                        const rpeChanged = edit?.origRpe != null && edit.origRpe !== p.source.rpe;
+                        return (
+                        <tr
+                          key={p.source.id}
+                          className={cn(
+                            "border-b border-border transition-colors hover:bg-muted/30",
+                            wasEdited && "bg-amber-500/5",
+                          )}
+                        >
                           <td className="px-4 py-3">
-                            <div className="font-semibold">{p.source.exercise}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{p.source.exercise}</span>
+                              {wasEdited && (
+                                <span
+                                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400"
+                                  title={`Athlete edited ${format(parseISO(edit!.editedAt!), "MMM d, HH:mm")}`}
+                                >
+                                  Edited
+                                </span>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {p.source.variation ?? "—"}
                             </div>
@@ -407,10 +428,19 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                             <div>
                               S:{p.source.set_number} ·{" "}
                               <span className="font-semibold">
-                                {p.source.reps}×{p.source.weight_kg}kg
+                                <span className={cn(repsChanged && "text-amber-700 dark:text-amber-400")}>{p.source.reps}</span>
+                                ×{p.source.weight_kg}kg
                               </span>
                             </div>
-                            <div className="text-xs text-muted-foreground">RPE {p.source.rpe}</div>
+                            <div className="text-xs text-muted-foreground">
+                              RPE <span className={cn(rpeChanged && "text-amber-700 dark:text-amber-400")}>{p.source.rpe}</span>
+                              {(repsChanged || rpeChanged) && (
+                                <span className="ml-1 text-[10px]">
+                                  (was{repsChanged ? ` ${edit!.origReps}r` : ""}
+                                  {rpeChanged ? ` RPE${edit!.origRpe}` : ""})
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="bg-readiness-tint/20 px-4 py-3 font-bold">
                             {p.dailyE1RM.toFixed(1)} kg

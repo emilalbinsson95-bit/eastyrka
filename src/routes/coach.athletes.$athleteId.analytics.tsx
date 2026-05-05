@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { dailyE1RM } from "@/lib/eakoefficient";
 import { z } from "zod";
+import { cn } from "@/lib/utils";
 
 const analyticsSearchSchema = z.object({
   exercise: z.string().optional(),
@@ -146,7 +147,7 @@ function AnalyticsPage() {
       since.setDate(since.getDate() - days);
       const { data, error } = await supabase
         .from("readiness_surveys")
-        .select("date, daily_form, fatigue, work_stress, life_stress, bodyweight_kg")
+        .select("date, daily_form, fatigue, work_stress, life_stress, sleep_quality, nutrition, stiffness, sleep_hours, bodyweight_kg, notes")
         .eq("athlete_id", athleteId)
         .gte("date", format(since, "yyyy-MM-dd"))
         .order("date", { ascending: true });
@@ -318,7 +319,14 @@ function AnalyticsPage() {
         label: format(parseISO(s.date), "MMM d"),
         daily_form: s.daily_form,
         fatigue: s.fatigue,
+        work_stress: s.work_stress,
+        life_stress: s.life_stress,
+        sleep_quality: s.sleep_quality,
+        nutrition: s.nutrition,
+        stiffness: s.stiffness,
+        sleep_hours: s.sleep_hours ? Number(s.sleep_hours) : null,
         bodyweight: s.bodyweight_kg ? Number(s.bodyweight_kg) : null,
+        notes: s.notes,
       })),
     [surveysQuery.data],
   );
@@ -821,19 +829,69 @@ function AnalyticsPage() {
             )}
 
             {formSeries.length > 0 && (
-              <ChartCard title="Daily form & fatigue" description="From the athlete's daily readiness surveys.">
-                <ResponsiveContainer width="100%" height={220}>
+              <ChartCard title="Daily check-in trends" description="All self-reported metrics from the athlete's pre-training survey (1–10).">
+                <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={formSeries}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <YAxis domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
                     <Legend />
-                    <Line type="monotone" dataKey="daily_form" name="Daily form" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="fatigue" name="Fatigue" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="daily_form" name="Daily form" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="fatigue" name="Fatigue" stroke="hsl(var(--destructive))" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="sleep_quality" name="Sleep quality" stroke="hsl(var(--chart-2))" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="nutrition" name="Nutrition" stroke="hsl(var(--chart-3))" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="stiffness" name="Stiffness" stroke="hsl(var(--chart-4))" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="work_stress" name="Work stress" stroke="hsl(var(--chart-5))" strokeWidth={1} strokeDasharray="4 3" dot={false} />
+                    <Line type="monotone" dataKey="life_stress" name="Life stress" stroke="hsl(var(--muted-foreground))" strokeWidth={1} strokeDasharray="4 3" dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>
+            )}
+
+            {formSeries.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Day-by-day check-in</CardTitle>
+                  <CardDescription>Color cells flag low metrics — quick scan for trends across days.</CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto p-0">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Date</th>
+                        <th className="px-2 py-2 text-center">Form</th>
+                        <th className="px-2 py-2 text-center">Sleep q.</th>
+                        <th className="px-2 py-2 text-center">Sleep h</th>
+                        <th className="px-2 py-2 text-center">Nutrition</th>
+                        <th className="px-2 py-2 text-center">Stiffness</th>
+                        <th className="px-2 py-2 text-center">Fatigue</th>
+                        <th className="px-2 py-2 text-center">Work</th>
+                        <th className="px-2 py-2 text-center">Life</th>
+                        <th className="px-2 py-2 text-center">BW kg</th>
+                        <th className="px-3 py-2 text-left">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...formSeries].reverse().map((s) => (
+                        <tr key={s.date} className="border-t border-border">
+                          <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d")}</td>
+                          <ScoreCell value={s.daily_form} highIsGood />
+                          <ScoreCell value={s.sleep_quality} highIsGood />
+                          <td className="px-2 py-2 text-center text-muted-foreground">{s.sleep_hours ?? "—"}</td>
+                          <ScoreCell value={s.nutrition} highIsGood />
+                          <ScoreCell value={s.stiffness} highIsGood={false} />
+                          <ScoreCell value={s.fatigue} highIsGood={false} />
+                          <ScoreCell value={s.work_stress} highIsGood={false} muted />
+                          <ScoreCell value={s.life_stress} highIsGood={false} muted />
+                          <td className="px-2 py-2 text-center text-muted-foreground">{s.bodyweight ?? "—"}</td>
+                          <td className="max-w-[260px] px-3 py-2 text-xs text-muted-foreground">{s.notes ?? ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
@@ -865,6 +923,29 @@ function KpiCard({
       </CardContent>
     </Card>
   );
+}
+
+function ScoreCell({
+  value,
+  highIsGood,
+  muted,
+}: {
+  value: number | null;
+  highIsGood: boolean;
+  muted?: boolean;
+}) {
+  if (value == null) return <td className="px-2 py-2 text-center text-muted-foreground">—</td>;
+  // Normalize so higher = "better" for tone
+  const good = highIsGood ? value >= 7 : value <= 4;
+  const bad = highIsGood ? value <= 4 : value >= 7;
+  const tone = bad
+    ? "bg-status-exhausted/25 text-status-exhausted-foreground font-semibold"
+    : good
+      ? "bg-status-peaking/25 text-status-peaking-foreground font-semibold"
+      : muted
+        ? "text-muted-foreground"
+        : "";
+  return <td className={cn("px-2 py-2 text-center", tone)}>{value}</td>;
 }
 
 function ChartCard({
@@ -917,7 +998,12 @@ interface ExportArgs {
     fatigue: number;
     work_stress: number;
     life_stress: number;
+    sleep_quality: number | null;
+    nutrition: number | null;
+    stiffness: number | null;
+    sleep_hours: number | null;
     bodyweight_kg: number | null;
+    notes: string | null;
   }>;
 }
 
@@ -943,14 +1029,19 @@ function exportHistoryCsv({ athleteName, logs, surveys }: ExportArgs) {
   // Readiness surveys (separate file)
   if (surveys.length > 0) {
     const surveyRows: (string | number | null)[][] = [
-      ["date", "daily_form", "fatigue", "work_stress", "life_stress", "bodyweight_kg"],
+      ["date", "daily_form", "sleep_quality", "sleep_hours", "nutrition", "stiffness", "fatigue", "work_stress", "life_stress", "bodyweight_kg", "notes"],
       ...surveys.map((s) => [
         s.date,
         s.daily_form,
+        s.sleep_quality,
+        s.sleep_hours,
+        s.nutrition,
+        s.stiffness,
         s.fatigue,
         s.work_stress,
         s.life_stress,
         s.bodyweight_kg,
+        s.notes,
       ]),
     ];
     downloadCsv(`${safeName}-readiness-${today}.csv`, surveyRows);

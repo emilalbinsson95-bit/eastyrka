@@ -137,6 +137,7 @@ function EndurancePage() {
                   <Badge>Planned {formatDuration(s.planned_total_seconds)}</Badge>
                 )}
                 {s.overall_rpe != null && <Badge variant="outline">RPE {s.overall_rpe}</Badge>}
+                {(() => { const d = sessionDrift(s); return d && d.tone !== "ok" ? <Badge className={driftBadgeClasses(d.tone)}>{d.label}</Badge> : null; })()}
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
             </button>

@@ -233,7 +233,7 @@ function SessionHeader({
               </div>
             </div>
 
-            <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
+            <Tabs value={mode} onValueChange={(v) => { if (v !== mode) setMode.mutate(v as Mode); }}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="quick">Quick (single block)</TabsTrigger>
                 <TabsTrigger value="structured">Structured (intervals)</TabsTrigger>

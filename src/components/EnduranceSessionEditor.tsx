@@ -135,7 +135,7 @@ function SessionHeader({
   const [title, setTitle] = useState(session.title ?? "");
   const [date, setDate] = useState(session.date);
   const [discipline, setDiscipline] = useState<Discipline>(session.discipline);
-  const [mode, setMode] = useState<Mode>(session.mode);
+  const mode = session.mode;
   const [plannedAvgRpe, setPlannedAvgRpe] = useState<string>(session.planned_avg_rpe?.toString() ?? "");
   const [plannedH, setPlannedH] = useState("");
   const [plannedM, setPlannedM] = useState("");
@@ -148,6 +148,22 @@ function SessionHeader({
     }
   }, [session.mode, session.planned_total_seconds]);
 
+  const setMode = useMutation({
+    mutationFn: async (next: Mode) => {
+      // When switching to structured, drop quick-mode planned totals so they
+      // get recomputed from steps. When switching to quick, leave them.
+      const patch: Record<string, unknown> = { mode: next };
+      if (next === "structured") {
+        patch.planned_total_seconds = null;
+        patch.planned_avg_rpe = null;
+      }
+      const { error } = await supabase.from("endurance_sessions").update(patch).eq("id", session.id);
+      if (error) throw error;
+    },
+    onSuccess: () => onChange(),
+    onError: (e) => toast.error((e as Error).message),
+  });
+
   const save = useMutation({
     mutationFn: async () => {
       const planned_total_seconds = mode === "quick"
@@ -158,7 +174,7 @@ function SessionHeader({
       const { error } = await supabase
         .from("endurance_sessions")
         .update({
-          title: title || null, date, discipline, mode,
+          title: title || null, date, discipline,
           planned_total_seconds, planned_avg_rpe,
         })
         .eq("id", session.id);

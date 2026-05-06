@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
+import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 
 export const Route = createFileRoute("/_app/endurance")({
   component: EndurancePage,
@@ -30,7 +31,7 @@ function EndurancePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_sessions")
-        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, status")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe, status")
         .eq("athlete_id", user!.id)
         .order("date", { ascending: false })
         .limit(60);

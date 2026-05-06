@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
+import { ReadinessGate } from "@/components/ReadinessGate";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 

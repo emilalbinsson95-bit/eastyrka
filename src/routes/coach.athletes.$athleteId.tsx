@@ -31,6 +31,7 @@ import {
   volumeQualityLabel,
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
+import { EnduranceSummaryCard } from "@/components/EnduranceSummary";
 
 const DEFAULT_EXERCISES = [
   "Knäböj",
@@ -137,7 +138,8 @@ function AthleteDetailPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard">
+        <TabsContent value="dashboard" className="space-y-4">
+          <EnduranceSummaryCard athleteId={athleteId} />
           <DashboardTable athleteId={athleteId} />
         </TabsContent>
 

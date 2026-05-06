@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
+import { ReadinessGate } from "@/components/ReadinessGate";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
+import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 
 export const Route = createFileRoute("/_app/endurance")({
   component: EndurancePage,
@@ -30,7 +32,7 @@ function EndurancePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_sessions")
-        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, status")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe, status")
         .eq("athlete_id", user!.id)
         .order("date", { ascending: false })
         .limit(60);
@@ -58,14 +60,20 @@ function EndurancePage() {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  if (!user) return null;
+
   if (openId) {
     return (
-      <div className="space-y-3">
-        <Button variant="ghost" size="sm" onClick={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Back to endurance log
-        </Button>
-        <EnduranceSessionEditor sessionId={openId} canEditPlan isAthlete onClose={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }} />
-      </div>
+      <ReadinessGate athleteId={user.id} dateStr={todayStr}>
+        <div className="space-y-3">
+          <Button variant="ghost" size="sm" onClick={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }}>
+            <ArrowLeft className="mr-1 h-4 w-4" /> Back to endurance log
+          </Button>
+          <EnduranceSessionEditor sessionId={openId} canEditPlan isAthlete onClose={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }} />
+        </div>
+      </ReadinessGate>
     );
   }
 
@@ -136,6 +144,7 @@ function EndurancePage() {
                   <Badge>Planned {formatDuration(s.planned_total_seconds)}</Badge>
                 )}
                 {s.overall_rpe != null && <Badge variant="outline">RPE {s.overall_rpe}</Badge>}
+                {(() => { const d = sessionDrift(s); return d && d.tone !== "ok" ? <Badge className={driftBadgeClasses(d.tone)}>{d.label}</Badge> : null; })()}
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
             </button>

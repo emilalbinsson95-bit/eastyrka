@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
+import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/endurance")({
   component: CoachEndurance,
@@ -112,7 +113,9 @@ function CoachEndurance() {
           {!list.isLoading && (list.data ?? []).length === 0 && (
             <p className="text-sm text-muted-foreground">No endurance sessions yet.</p>
           )}
-          {(list.data ?? []).map((s) => (
+          {(list.data ?? []).map((s) => {
+            const drift = sessionDrift(s);
+            return (
             <button key={s.id} onClick={() => setOpenId(s.id)}
               className="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-accent">
               <div className="flex items-center gap-3">
@@ -132,10 +135,14 @@ function CoachEndurance() {
                 )}
                 {s.overall_rpe != null && <Badge variant="outline">RPE {s.overall_rpe}</Badge>}
                 {s.peak_rpe != null && <Badge variant="outline">peak {s.peak_rpe}</Badge>}
+                {drift && drift.tone !== "ok" && (
+                  <Badge className={driftBadgeClasses(drift.tone)}>{drift.label}</Badge>
+                )}
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
             </button>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
     </div>

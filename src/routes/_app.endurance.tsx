@@ -60,14 +60,20 @@ function EndurancePage() {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  if (!user) return null;
+
   if (openId) {
     return (
-      <div className="space-y-3">
-        <Button variant="ghost" size="sm" onClick={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Back to endurance log
-        </Button>
-        <EnduranceSessionEditor sessionId={openId} canEditPlan isAthlete onClose={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }} />
-      </div>
+      <ReadinessGate athleteId={user.id} dateStr={todayStr}>
+        <div className="space-y-3">
+          <Button variant="ghost" size="sm" onClick={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }}>
+            <ArrowLeft className="mr-1 h-4 w-4" /> Back to endurance log
+          </Button>
+          <EnduranceSessionEditor sessionId={openId} canEditPlan isAthlete onClose={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["endurance-sessions", user?.id] }); }} />
+        </div>
+      </ReadinessGate>
     );
   }
 

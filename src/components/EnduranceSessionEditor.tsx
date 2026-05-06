@@ -150,9 +150,7 @@ function SessionHeader({
 
   const setMode = useMutation({
     mutationFn: async (next: Mode) => {
-      // When switching to structured, drop quick-mode planned totals so they
-      // get recomputed from steps. When switching to quick, leave them.
-      const patch: Record<string, unknown> = { mode: next };
+      const patch: { mode: Mode; planned_total_seconds?: number | null; planned_avg_rpe?: number | null } = { mode: next };
       if (next === "structured") {
         patch.planned_total_seconds = null;
         patch.planned_avg_rpe = null;

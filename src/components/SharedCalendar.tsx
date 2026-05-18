@@ -178,11 +178,18 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                   setCancelTarget(it);
                 }}
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
+                onPreview={(it) => setPreviewTarget(it)}
               />
             );
           })}
         </div>
       </div>
+
+      <SessionPreviewDialog
+        item={previewTarget}
+        open={!!previewTarget}
+        onOpenChange={(o) => !o && setPreviewTarget(null)}
+      />
 
       <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
         <DialogContent>

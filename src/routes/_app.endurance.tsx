@@ -33,7 +33,7 @@ function EndurancePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_sessions")
-        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe, status")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe, predicted_10k_seconds, status")
         .eq("athlete_id", user!.id)
         .eq("status", "done")
         .not("actual_total_seconds", "is", null)

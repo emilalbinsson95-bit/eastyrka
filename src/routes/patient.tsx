@@ -90,7 +90,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/patient" | "/messages" | "/me";
+  to: "/patient" | "/messages" | "/me" | "/patient/calendar";
   icon: React.ReactNode;
   label: string;
 }) {

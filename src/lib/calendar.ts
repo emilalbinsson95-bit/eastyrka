@@ -77,11 +77,13 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
     }
   }
 
-  // 2. Endurance sessions
+  // 2. Endurance sessions (exclude drafts — they're created on "Add session"
+  //    click but only become real once the athlete saves something)
   const { data: endSessions } = await supabase
     .from("endurance_sessions")
-    .select("id, date, title, discipline, coach_id, athlete_id")
+    .select("id, date, title, discipline, coach_id, athlete_id, status")
     .eq("athlete_id", ownerId)
+    .neq("status", "draft")
     .gte("date", rangeStart)
     .lte("date", rangeEnd);
 

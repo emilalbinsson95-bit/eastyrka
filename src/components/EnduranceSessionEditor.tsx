@@ -136,6 +136,7 @@ export function EnduranceSessionEditor({
           canEditPlan={canEditPlan}
           defaultDiscipline={session.discipline}
           benchmarks={benchmarks}
+          sessionStatus={session.status}
           onChange={() => {
             qc.invalidateQueries({ queryKey: ["endurance-steps", sessionId] });
             qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] });
@@ -195,12 +196,18 @@ function SessionHeader({
         : session.planned_total_seconds;
       const planned_avg_rpe = mode === "quick" && plannedAvgRpe
         ? Number(plannedAvgRpe) : (mode === "quick" ? null : session.planned_avg_rpe);
+      // Promote draft → planned so it surfaces on the calendar
+      const patch = {
+        title: title || null,
+        date,
+        discipline,
+        planned_total_seconds,
+        planned_avg_rpe,
+        ...(session.status === "draft" ? { status: "planned" } : {}),
+      };
       const { error } = await supabase
         .from("endurance_sessions")
-        .update({
-          title: title || null, date, discipline,
-          planned_total_seconds, planned_avg_rpe,
-        })
+        .update(patch)
         .eq("id", session.id);
       if (error) throw error;
     },
@@ -317,24 +324,28 @@ function Stat({ label, value }: { label: string; value: string }) {
 // ---------- Steps editor (structured mode) ----------
 
 function StepsEditor({
-  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, onChange,
+  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, sessionStatus, onChange,
 }: {
   sessionId: string;
   steps: StepRow[];
   canEditPlan: boolean;
   defaultDiscipline: Discipline;
   benchmarks: AthleteBenchmarks;
+  sessionStatus: string;
   onChange: () => void;
 }) {
   const totalSec = useMemo(() => totalPlannedSeconds(steps), [steps]);
   const avgRpe = useMemo(() => avgTargetRpe(steps), [steps]);
 
   useEffect(() => {
-    void supabase.from("endurance_sessions").update({
+    const patch: { planned_total_seconds: number | null; planned_avg_rpe: number | null; status?: string } = {
       planned_total_seconds: totalSec || null,
       planned_avg_rpe: avgRpe,
-    }).eq("id", sessionId);
-  }, [sessionId, totalSec, avgRpe]);
+    };
+    // Promote draft → planned once the structure has real content
+    if (sessionStatus === "draft" && totalSec > 0) patch.status = "planned";
+    void supabase.from("endurance_sessions").update(patch).eq("id", sessionId);
+  }, [sessionId, totalSec, avgRpe, sessionStatus]);
 
   const topLevel = steps.filter((s) => !s.parent_id).sort((a, b) => a.order_index - b.order_index);
 
@@ -732,6 +743,14 @@ function ActualStepInputs({
 function ActualLogger({ session, onChange }: { session: SessionRow; onChange: () => void }) {
   const [h, setH] = useState(session.actual_total_seconds ? String(Math.floor(session.actual_total_seconds / 3600)) : "");
   const [m, setM] = useState(session.actual_total_seconds ? String(Math.floor((session.actual_total_seconds % 3600) / 60)) : "");
+  const initDist = (session as SessionRow & { actual_distance_m?: number | null }).actual_distance_m ?? null;
+  // Show distance in km for run/bike, in metres for swim
+  const distUnit = session.discipline === "swim" ? "m" : "km";
+  const [dist, setDist] = useState<string>(
+    initDist != null
+      ? (session.discipline === "swim" ? String(initDist) : String(initDist / 1000))
+      : "",
+  );
   const [overall, setOverall] = useState<string>(session.overall_rpe?.toString() ?? "");
   const [peak, setPeak] = useState<string>(session.peak_rpe?.toString() ?? "");
   const [notes, setNotes] = useState(session.notes ?? "");
@@ -739,9 +758,19 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
   const [pred10kMin, setPred10kMin] = useState<string>(initPred ? String(Math.floor(initPred / 60)) : "");
   const [pred10kSec, setPred10kSec] = useState<string>(initPred ? String(initPred % 60).padStart(2, "0") : "");
 
+  // Derived live pace label
+  const liveSeconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
+  const liveDistanceM = dist
+    ? (session.discipline === "swim" ? Number(dist) : Number(dist) * 1000)
+    : null;
+  const livePace = paceLabelFromDistance(session.discipline, liveDistanceM, liveSeconds);
+
   const save = useMutation({
     mutationFn: async () => {
       const actual_total_seconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
+      const actual_distance_m = dist
+        ? Math.round(session.discipline === "swim" ? Number(dist) : Number(dist) * 1000)
+        : null;
       let predicted_10k_seconds: number | null = null;
       if (pred10kMin || pred10kSec) {
         const total = (Number(pred10kMin) || 0) * 60 + (Number(pred10kSec) || 0);
@@ -754,6 +783,7 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
       }
       const { error } = await supabase.from("endurance_sessions").update({
         actual_total_seconds,
+        actual_distance_m,
         overall_rpe: overall ? Number(overall) : null,
         peak_rpe: peak ? Number(peak) : null,
         predicted_10k_seconds,
@@ -770,7 +800,7 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Log how it actually went</CardTitle>
-        <CardDescription>RPE-based, no GPS or speed required.</CardDescription>
+        <CardDescription>RPE-based — add distance to auto-derive pace.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -783,6 +813,14 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
             <Input type="number" min={0} max={59} value={m} onChange={(e) => setM(e.target.value)} />
           </div>
           <div className="space-y-1">
+            <Label>Distance ({distUnit})</Label>
+            <Input
+              type="number" min={0} step={distUnit === "km" ? 0.01 : 25}
+              value={dist} onChange={(e) => setDist(e.target.value)}
+              placeholder={distUnit === "km" ? "e.g. 8.5" : "e.g. 1500"}
+            />
+          </div>
+          <div className="space-y-1">
             <Label>Overall RPE</Label>
             <Input type="number" min={1} max={10} value={overall} onChange={(e) => setOverall(e.target.value)} />
           </div>
@@ -791,6 +829,13 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
             <Input type="number" min={1} max={10} value={peak} onChange={(e) => setPeak(e.target.value)} />
           </div>
         </div>
+        {livePace && (
+          <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Your actual pace:</span>
+            <Badge variant="secondary" className="font-mono">{livePace}</Badge>
+          </div>
+        )}
         <div className="space-y-1">
           <Label>Predicted 10k time today</Label>
           <div className="flex items-center gap-2">

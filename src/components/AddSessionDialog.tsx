@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dumbbell, Footprints, Bike, Waves, Activity, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +31,6 @@ export function AddSessionDialog({
   onOpenChange: (o: boolean) => void;
   onOpenEditor: (target: OpenEditor) => void;
 }) {
-  const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
 
   const createEndurance = useMutation({
@@ -43,6 +42,9 @@ export function AddSessionDialog({
           date,
           discipline: opts.discipline,
           mode: opts.mode,
+          // Draft: doesn't show on the calendar until the athlete actually saves
+          // something (plan, a step, or the actual log).
+          status: "draft",
           title:
             opts.mode === "structured"
               ? `${disciplineLabel(opts.discipline)} intervals`
@@ -54,7 +56,6 @@ export function AddSessionDialog({
       return data.id as string;
     },
     onSuccess: (id) => {
-      qc.invalidateQueries({ queryKey: ["calendar-items", athleteId] });
       onOpenEditor({ kind: "endurance", sessionId: id });
       onOpenChange(false);
     },

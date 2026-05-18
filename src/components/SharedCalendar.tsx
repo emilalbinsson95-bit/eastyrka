@@ -33,6 +33,7 @@ import {
   setOverride,
   uncancelSession,
 } from "@/lib/calendar";
+import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 
 type Props = {
   ownerId: string;

@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CalendarItem } from "@/lib/calendar";
+import { estimateForRpe, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
+import type { Discipline } from "@/lib/endurance";
 import { cn } from "@/lib/utils";
 
 type Strain = "recovery" | "easy" | "moderate" | "hard" | "very hard";

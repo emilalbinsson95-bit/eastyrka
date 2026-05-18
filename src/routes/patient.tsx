@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Activity, ClipboardList, MessageCircle, User as UserIcon, LogOut } from "lucide-react";
+import { Activity, ClipboardList, MessageCircle, User as UserIcon, LogOut, CalendarDays } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

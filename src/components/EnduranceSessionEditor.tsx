@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import {
   DISCIPLINES, type Discipline, type Mode, type StepInput,
   formatDuration, parseHMS, totalPlannedSeconds, avgTargetRpe, rpeTone, rpeLabel, disciplineEmoji,
+  paceLabelFromDistance,
 } from "@/lib/endurance";
 import { estimateForRpe, hasAnyBenchmark, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
 
@@ -665,6 +666,63 @@ function StepRowItem({
           </div>
         );
       })()}
+      {canEditPlan && (
+        <ActualStepInputs step={step} defaultDiscipline={defaultDiscipline} onSaved={onChange} />
+      )}
+    </div>
+  );
+}
+
+function ActualStepInputs({
+  step, defaultDiscipline, onSaved,
+}: {
+  step: StepRow;
+  defaultDiscipline: Discipline;
+  onSaved: () => void;
+}) {
+  const initSec = step.actual_duration_seconds ?? null;
+  const [mm, setMm] = useState(initSec != null ? String(Math.floor(initSec / 60)) : "");
+  const [ss, setSs] = useState(initSec != null ? String(initSec % 60).padStart(2, "0") : "");
+  const [dist, setDist] = useState(step.actual_distance_m != null ? String(step.actual_distance_m) : "");
+  const [hr, setHr] = useState(step.actual_avg_hr != null ? String(step.actual_avg_hr) : "");
+  const [rpe, setRpe] = useState(step.actual_avg_rpe != null ? String(step.actual_avg_rpe) : "");
+
+  const disc = (step.discipline ?? defaultDiscipline) as Discipline;
+  const durationSec = (Number(mm) || 0) * 60 + (Number(ss) || 0);
+  const distM = Number(dist) || 0;
+  const paceLabel = paceLabelFromDistance(disc, distM || null, durationSec || null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const patch = {
+        actual_duration_seconds: durationSec > 0 ? durationSec : null,
+        actual_distance_m: distM > 0 ? distM : null,
+        actual_avg_hr: hr ? Number(hr) : null,
+        actual_avg_rpe: rpe ? Number(rpe) : null,
+      };
+      const { error } = await supabase.from("endurance_steps").update(patch).eq("id", step.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Rep logged"); onSaved(); },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded border border-dashed border-border bg-muted/30 p-1.5 text-[11px]">
+      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Actual</span>
+      <div className="flex items-center gap-1">
+        <Input type="number" min={0} className="h-7 w-12" value={mm} onChange={(e) => setMm(e.target.value)} placeholder="m" />
+        <span>:</span>
+        <Input type="number" min={0} max={59} className="h-7 w-12" value={ss} onChange={(e) => setSs(e.target.value)} placeholder="s" />
+      </div>
+      <Input type="number" min={0} className="h-7 w-20" value={dist} onChange={(e) => setDist(e.target.value)}
+        placeholder={disc === "swim" ? "m" : "metres"} />
+      <Input type="number" min={40} max={230} className="h-7 w-16" value={hr} onChange={(e) => setHr(e.target.value)} placeholder="bpm" />
+      <Input type="number" min={1} max={10} step={0.5} className="h-7 w-14" value={rpe} onChange={(e) => setRpe(e.target.value)} placeholder="RPE" />
+      {paceLabel && <Badge variant="secondary" className="font-mono">{paceLabel}</Badge>}
+      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => save.mutate()} disabled={save.isPending}>
+        <Save className="h-3 w-3" />
+      </Button>
     </div>
   );
 }

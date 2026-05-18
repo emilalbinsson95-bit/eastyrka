@@ -157,6 +157,10 @@ export type Database = {
       }
       endurance_steps: {
         Row: {
+          actual_avg_hr: number | null
+          actual_avg_rpe: number | null
+          actual_distance_m: number | null
+          actual_duration_seconds: number | null
           created_at: string
           discipline: Database["public"]["Enums"]["endurance_discipline"] | null
           duration_seconds: number | null
@@ -170,6 +174,10 @@ export type Database = {
           target_rpe: number | null
         }
         Insert: {
+          actual_avg_hr?: number | null
+          actual_avg_rpe?: number | null
+          actual_distance_m?: number | null
+          actual_duration_seconds?: number | null
           created_at?: string
           discipline?:
             | Database["public"]["Enums"]["endurance_discipline"]
@@ -185,6 +193,10 @@ export type Database = {
           target_rpe?: number | null
         }
         Update: {
+          actual_avg_hr?: number | null
+          actual_avg_rpe?: number | null
+          actual_distance_m?: number | null
+          actual_duration_seconds?: number | null
           created_at?: string
           discipline?:
             | Database["public"]["Enums"]["endurance_discipline"]

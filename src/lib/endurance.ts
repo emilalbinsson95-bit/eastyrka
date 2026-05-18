@@ -58,6 +58,34 @@ export interface StepInput {
   duration_seconds: number | null;
   target_rpe: number | null;
   notes: string | null;
+  actual_duration_seconds?: number | null;
+  actual_avg_hr?: number | null;
+  actual_distance_m?: number | null;
+  actual_avg_rpe?: number | null;
+}
+
+/** Pretty pace/speed label from distance (m) and duration (seconds). Returns null if missing. */
+export function paceLabelFromDistance(
+  discipline: Discipline | null | undefined,
+  distanceM: number | null | undefined,
+  durationSec: number | null | undefined,
+): string | null {
+  if (!distanceM || !durationSec || distanceM <= 0 || durationSec <= 0) return null;
+  if (discipline === "bike") {
+    const kmh = (distanceM / 1000) / (durationSec / 3600);
+    return `${kmh.toFixed(1)} km/h`;
+  }
+  if (discipline === "swim") {
+    const secPer100 = durationSec / (distanceM / 100);
+    const m = Math.floor(secPer100 / 60);
+    const s = Math.round(secPer100 % 60);
+    return `${m}:${String(s).padStart(2, "0")} /100m`;
+  }
+  // run/other → min/km
+  const secPerKm = durationSec / (distanceM / 1000);
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${m}:${String(s).padStart(2, "0")} /km`;
 }
 
 /** Sum total planned seconds across steps, expanding repeat groups. */

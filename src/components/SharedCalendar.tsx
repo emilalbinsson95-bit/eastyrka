@@ -10,7 +10,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,9 @@ import {
   uncancelSession,
 } from "@/lib/calendar";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
+import { AddSessionDialog } from "@/components/AddSessionDialog";
+import { AdhocStrengthEditor } from "@/components/AdhocStrengthEditor";
+import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 
 type Props = {
   ownerId: string;
@@ -91,6 +94,12 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
   const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
+  const [addForDate, setAddForDate] = useState<string | null>(null);
+  const [editorTarget, setEditorTarget] = useState<
+    | { kind: "endurance"; sessionId: string }
+    | { kind: "adhoc_strength"; date: string }
+    | null
+  >(null);
 
   const days = useMemo(() => monthGridDays(monthDate), [monthDate]);
 
@@ -178,12 +187,62 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                   setCancelTarget(it);
                 }}
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
-                onPreview={(it) => setPreviewTarget(it)}
+                onPreview={(it) => {
+                  // Athlete view: clicking ad-hoc strength or own endurance opens the editor.
+                  if (!readOnly && it.source === "adhoc_strength") {
+                    setEditorTarget({ kind: "adhoc_strength", date: it.sourceId });
+                    return;
+                  }
+                  if (!readOnly && it.source === "endurance") {
+                    setEditorTarget({ kind: "endurance", sessionId: it.sourceId });
+                    return;
+                  }
+                  setPreviewTarget(it);
+                }}
+                onAdd={readOnly ? undefined : (d) => setAddForDate(d)}
               />
             );
           })}
         </div>
       </div>
+
+      {addForDate && (
+        <AddSessionDialog
+          athleteId={ownerId}
+          date={addForDate}
+          open={!!addForDate}
+          onOpenChange={(o) => !o && setAddForDate(null)}
+          onOpenEditor={(target) => setEditorTarget(target)}
+        />
+      )}
+
+      <Dialog open={!!editorTarget} onOpenChange={(o) => !o && setEditorTarget(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editorTarget?.kind === "endurance" ? "Edit session" : "Strength workout"}
+            </DialogTitle>
+          </DialogHeader>
+          {editorTarget?.kind === "endurance" && (
+            <EnduranceSessionEditor
+              sessionId={editorTarget.sessionId}
+              canEditPlan
+              isAthlete
+              onClose={() => {
+                setEditorTarget(null);
+                qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+              }}
+            />
+          )}
+          {editorTarget?.kind === "adhoc_strength" && (
+            <AdhocStrengthEditor
+              athleteId={ownerId}
+              date={editorTarget.date}
+              onClose={() => setEditorTarget(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <SessionPreviewDialog
         item={previewTarget}
@@ -262,6 +321,7 @@ function DayCell({
   onRequestCancel,
   onUncancel,
   onPreview,
+  onAdd,
 }: {
   date: string;
   label: string;
@@ -274,13 +334,14 @@ function DayCell({
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
   onPreview: (it: CalendarItem) => void;
+  onAdd?: (date: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[110px] bg-card p-1.5 transition-colors",
+        "group/day relative min-h-[110px] bg-card p-1.5 transition-colors",
         !inMonth && "bg-muted/30 text-muted-foreground/60",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
       )}
@@ -294,7 +355,23 @@ function DayCell({
         >
           {label}
         </span>
-        {readiness != null && <ReadinessDot value={readiness} />}
+        <div className="flex items-center gap-1">
+          {readiness != null && <ReadinessDot value={readiness} />}
+          {onAdd && inMonth && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(date);
+              }}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-primary/10 hover:text-primary group-hover/day:opacity-100 focus:opacity-100"
+              aria-label="Add session"
+              title="Add session"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="mt-1 space-y-1">
         {items.map((it) => (

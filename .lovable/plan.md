@@ -1,66 +1,73 @@
-## Shared Calendar — Plan
+## Goal
 
-A single calendar surface visible to both sides of each relationship (athlete↔coach, patient↔physio). The coach/physio's deployed day shows as a **ghost** suggestion; the athlete/patient confirms or drags it to any date, which becomes the committed day. Both sides always see the same state.
+From the shared calendar, the athlete can click any day and add a **completed** session — either a run/bike/swim (with intervals and per-rep actuals: avg HR, pace/speed or distance, RPE, time) or a strength workout (exercises with sets × reps × weight × RPE). Everything feeds the existing strain/load aggregation.
 
-### Scope
-- Strength sessions (from `week_plans` → `planned_sessions`)
-- Endurance sessions (`endurance_sessions`)
-- Rehab sessions (`rehab_sessions`)
-- Readiness markers (small dot per day with `daily_form`)
+## 1. Calendar — "Add session" affordance
 
-### Routes
-- `/_app/calendar` — athlete's own calendar (also surfaces rehab if they're a patient)
-- `/patient/calendar` — patient's calendar
-- `/coach/athletes/$athleteId/calendar` — coach view of one athlete
-- `/physio/patients/$patientId/calendar` — physio view of one patient
+`SharedCalendar.tsx` / `DayCell`:
+- Add a small `+` button in the corner of each in-month day (athlete view only, hidden when `readOnly`).
+- Clicking it opens a new `AddSessionDialog` pre-filled with that date.
+- The dialog shows 3 paths:
+  - **Quick run / bike / swim** (single block: duration + RPE)
+  - **Structured run / bike / swim** (intervals — warmup / main / cooldown, repeat groups)
+  - **Strength workout** (ad-hoc, athlete-owned, no coach week plan needed)
+- On submit, create the row and either close (quick) or jump into the editor (structured/strength) to fill in details.
 
-All four routes render the same `<SharedCalendar />` component with a `readOnly` flag for the coach/physio side.
+The existing "click card → preview" behaviour stays untouched.
 
-### Data model
-New table `session_schedule_overrides` acts as a single source of truth for "where this session actually lives":
+## 2. Endurance — per-rep actuals
 
-```
-session_schedule_overrides
-  id uuid pk
-  owner_id uuid          -- athlete or patient
-  source_type text       -- 'planned' | 'endurance' | 'rehab'
-  source_id uuid
-  scheduled_date date
-  confirmed_at timestamptz   -- null = still a ghost suggestion
-  unique(source_type, source_id)
-```
+DB migration on `endurance_steps`:
+- `actual_duration_seconds int`
+- `actual_avg_hr smallint` (validate 40–230)
+- `actual_distance_m int` (validate 0–200000) — used to derive pace/speed
+- `actual_avg_rpe numeric(3,1)` (validate 1–10)
+- Extend the existing `validate_endurance_step` trigger to cover the new ranges.
 
-RLS:
-- owner can full CRUD where `owner_id = auth.uid()`
-- coach can SELECT where `is_coach_of(auth.uid(), owner_id)`
-- physio can SELECT where `is_physio_of(auth.uid(), owner_id)`
+In `EnduranceSessionEditor.tsx` (`StepRowItem`, leaf step, athlete view):
+- Add a second row of inputs labelled "Actual": time (mm:ss), distance (m/km depending on discipline), avg HR, RPE.
+- Live-derive avg pace (run/swim) or avg speed (bike) from distance ÷ duration and show as a badge next to the planned target.
+- For quick mode the existing `ActualLogger` already covers total time + RPE — leave it.
 
-Reads merge the override (if present + confirmed) with the source's "suggested date":
-- planned strength → `week_plans.week_start_date + planned_sessions.day_of_week`
-- endurance → `endurance_sessions.date`
-- rehab → `rehab_sessions.session_date`
+## 3. Strength — ad-hoc athlete workout
 
-A session with no override (or `confirmed_at IS NULL`) renders as a **ghost card** on the suggested day. After the athlete confirms/drags it, it renders solid on `scheduled_date`.
+The current strength path is coach-driven (`week_plans → planned_sessions → planned_exercises`). Athletes already have RLS to insert into `training_logs` with `planned_exercise_id = null`, so we don't need new tables.
 
-### UI
-- Month grid built with `date-fns` + `@dnd-kit/core` (already installed).
-- Day cell shows: readiness dot, ghost cards (dashed border, "Suggested"), confirmed cards (solid).
-- Athlete actions: drag card to another day → upsert override with `confirmed_at = now()`. "Accept" button on ghost cards → confirm in place.
-- Coach/physio view: same grid, but cards are not draggable; small "Suggested → Moved to {date}" hint shows on cards the athlete moved.
-- Click a card → opens the existing session detail.
+Add a lightweight `AdhocStrengthEditor` component:
+- Header: title (string), date (locked to the day picked from the calendar).
+- Add exercise rows: pick from `exercises` (existing autocomplete) or type freely → set count → list set inputs (reps, weight kg, RPE).
+- On save, write N rows into `training_logs` (one per set) with the chosen date + the same `exercise` string, leaving `planned_exercise_id` null.
+- A delete action removes all logs for that (`athlete_id`, `date`, `exercise`) tuple.
 
-### Files
-- `supabase/migrations/...sql` — table + RLS + trigger to enforce `source_id` existence
-- `src/lib/calendar.ts` — merge logic (suggested vs confirmed)
-- `src/components/SharedCalendar.tsx` — the month-view component
-- `src/components/CalendarSessionCard.tsx`
-- `src/routes/_app.calendar.tsx`
-- `src/routes/patient.calendar.tsx`
-- `src/routes/coach.athletes.$athleteId.calendar.tsx`
-- `src/routes/physio.patients.$patientId.calendar.tsx`
-- Nav link added in `_app.tsx`, `patient.tsx`, athlete + patient detail pages
+Calendar source:
+- Extend `fetchCalendarItems` (`src/lib/calendar.ts`) with a 4th source `"adhoc_strength"` derived from `training_logs` rows where `planned_exercise_id is null` (grouped by `date`, one card per day labelled "Strength — N exercises").
+- Clicking the card opens `AdhocStrengthEditor` in edit mode.
 
-### Out of scope (for this turn)
-- Approval workflow (athlete proposes → coach approves) — answered as "free move".
-- Recurring-event editing across a whole week in one drag.
-- iCal export / Google Calendar sync.
+## 4. Load / strain integration
+
+`enduranceLoad.ts` already aggregates by date + RPE + minutes. To keep ad-hoc strength visible in the existing weekly load chart, extend the data feed (in `EnduranceWeeklyOverview` and wherever the chart sources from) to also pull ad-hoc strength sessions:
+- Per day with ad-hoc strength logs: synthesize a `LoadSession` (`discipline: "strength"`, `overall_rpe: avg rpe across sets`, `actual_total_seconds: sets × 90s` as a simple heuristic) so it shows up in the same stacked bars and total load.
+- No change needed to `rpeWeight` / `sessionLoad`.
+
+`SessionPreviewDialog.tsx`:
+- Add a branch for the new `"adhoc_strength"` source that lists exercises + sets and shows strain via the same heuristic used for planned strength.
+
+## 5. Technical details
+
+- Files created:
+  - `src/components/AddSessionDialog.tsx` — chooser + create mutations
+  - `src/components/AdhocStrengthEditor.tsx` — sets editor backed by `training_logs`
+  - one new migration for `endurance_steps` columns + trigger update
+- Files modified:
+  - `src/components/SharedCalendar.tsx` — `+` button, dialog wiring, new source rendering
+  - `src/lib/calendar.ts` — add `adhoc_strength` source + types
+  - `src/components/EnduranceSessionEditor.tsx` — per-step actuals UI + mutations
+  - `src/components/SessionPreviewDialog.tsx` — handle `adhoc_strength`
+  - `src/components/EnduranceWeeklyOverview.tsx` — feed ad-hoc strength into load
+- All new writes are RLS-safe (athlete is `auth.uid()` on every insert).
+
+## Out of scope (ask if you want any of these)
+
+- Per-step HR zones / TSS-style scoring (we keep the existing RPE-weighted load).
+- Strength **planning** by the athlete (creating a future week_plan) — this only adds **after-the-fact logging**.
+- Bringing the new `+` button to the patient/rehab calendar.

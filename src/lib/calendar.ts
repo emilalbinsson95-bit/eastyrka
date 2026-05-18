@@ -1,7 +1,7 @@
 import { addDays, format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
-export type CalendarSource = "planned" | "endurance" | "rehab";
+export type CalendarSource = "planned" | "endurance" | "rehab" | "adhoc_strength";
 
 export type CalendarItem = {
   key: string;                // unique per source+id

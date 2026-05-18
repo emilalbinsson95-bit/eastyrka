@@ -788,15 +788,20 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
           predicted_10k_seconds = total;
         }
       }
-      const { error } = await supabase.from("endurance_sessions").update({
+      const hasAnyActual =
+        !!actual_total_seconds || !!actual_distance_m ||
+        !!overall || !!peak || !!notes.trim() || predicted_10k_seconds != null;
+      const patch: Record<string, unknown> = {
         actual_total_seconds,
         actual_distance_m,
         overall_rpe: overall ? Number(overall) : null,
         peak_rpe: peak ? Number(peak) : null,
         predicted_10k_seconds,
         notes: notes || null,
-        status: "completed",
-      }).eq("id", session.id);
+      };
+      // Only flip to completed if the athlete actually logged something.
+      if (hasAnyActual) patch.status = "completed";
+      const { error } = await supabase.from("endurance_sessions").update(patch).eq("id", session.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Logged"); onChange(); },

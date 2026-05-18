@@ -14,6 +14,7 @@ import {
   Legend,
   BarChart,
   Bar,
+  ComposedChart,
   ScatterChart,
   Scatter,
   ZAxis,

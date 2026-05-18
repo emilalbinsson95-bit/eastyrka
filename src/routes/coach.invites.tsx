@@ -149,6 +149,58 @@ function InvitesPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" /> Search registered athletes
+          </CardTitle>
+          <CardDescription>
+            Find an existing athlete by name and connect with one click.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="athlete-search">Name</Label>
+            <Input
+              id="athlete-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Start typing a name…"
+            />
+          </div>
+          {debounced.length >= 2 && (
+            <div className="space-y-1">
+              {searchQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Searching…</p>
+              )}
+              {!searchQuery.isLoading && (searchQuery.data ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No matching athletes.</p>
+              )}
+              {(searchQuery.data ?? []).map((a) => {
+                const linked = linkedIds.has(a.id);
+                return (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between rounded-md border border-border p-2 text-sm"
+                  >
+                    <span className="font-medium">{a.full_name ?? "Unnamed"}</span>
+                    <Button
+                      size="sm"
+                      variant={linked ? "ghost" : "default"}
+                      disabled={linked || connectMutation.isPending}
+                      onClick={() => connectMutation.mutate(a.id)}
+                    >
+                      <UserPlus className="mr-1 h-3.5 w-3.5" />
+                      {linked ? "Connected" : "Connect"}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" /> Connect by User ID
           </CardTitle>
           <CardDescription>

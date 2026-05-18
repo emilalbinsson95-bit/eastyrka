@@ -229,14 +229,21 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     [processed, exerciseFilter, statusFilter],
   );
 
+  const [windowKey, setWindowKey] = useState<"7d" | "30d" | "3m">("30d");
+  const windowDays = windowKey === "7d" ? 7 : windowKey === "30d" ? 30 : 90;
+
   const summary = useMemo(() => {
-    const withEak = processed.filter((p) => p.eaKoefficient > 0);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - windowDays);
+    const cutoffIso = cutoff.toISOString().slice(0, 10);
+    const inWindow = processed.filter((p) => p.source.date >= cutoffIso);
+    const withEak = inWindow.filter((p) => p.eaKoefficient > 0);
     const avg =
       withEak.length > 0
         ? withEak.reduce((a, p) => a + p.eaKoefficient, 0) / withEak.length
         : 0;
     const peak = withEak.reduce((a, p) => Math.max(a, p.eaKoefficient), 0);
-    const sessions = new Set(processed.map((p) => p.source.date)).size;
+    const sessions = new Set(inWindow.map((p) => p.source.date)).size;
     const counts: Record<string, number> = {
       peaking: 0,
       adapting: 0,
@@ -246,9 +253,11 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     for (const p of withEak) {
       if (counts[p.status] != null) counts[p.status] += 1;
     }
-    const fatigueLimit = processed.filter((p) => p.volume === "fatigue_limit").length;
-    return { sessions, totalSets: processed.length, avg, peak, counts, withEakCount: withEak.length, fatigueLimit };
-  }, [processed]);
+    const fatigueLimit = inWindow.filter((p) => p.volume === "fatigue_limit").length;
+    return { sessions, totalSets: inWindow.length, avg, peak, counts, withEakCount: withEak.length, fatigueLimit };
+  }, [processed, windowDays]);
+
+  const windowLabel = windowKey === "7d" ? "Last 7 days" : windowKey === "30d" ? "Last 30 days" : "Last 3 months";
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof filtered>();
@@ -262,6 +271,17 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium text-muted-foreground">{windowLabel}</div>
+        <Tabs value={windowKey} onValueChange={(v) => setWindowKey(v as "7d" | "30d" | "3m")}>
+          <TabsList className="h-8">
+            <TabsTrigger value="7d" className="text-xs px-2.5">7 days</TabsTrigger>
+            <TabsTrigger value="30d" className="text-xs px-2.5">30 days</TabsTrigger>
+            <TabsTrigger value="3m" className="text-xs px-2.5">3 months</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">

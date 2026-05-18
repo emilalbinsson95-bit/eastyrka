@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tansta
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle, Footprints } from "lucide-react";
+import { Calendar, CalendarDays, History, User as UserIcon, LogOut, Activity, MessageCircle, Footprints } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -105,8 +105,9 @@ function AthleteLayout() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto grid max-w-3xl grid-cols-5">
+        <div className="mx-auto grid max-w-3xl grid-cols-6">
           <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label={t("nav.today")} />
+          <TabLink to="/calendar" icon={<CalendarDays className="h-5 w-5" />} label="Calendar" />
           <TabLink to="/endurance" icon={<Footprints className="h-5 w-5" />} label="Endurance" />
           <TabLink to="/history" icon={<History className="h-5 w-5" />} label={t("nav.history")} />
           <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
@@ -122,7 +123,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/today" | "/history" | "/me" | "/messages" | "/endurance";
+  to: "/today" | "/history" | "/me" | "/messages" | "/endurance" | "/calendar";
   icon: React.ReactNode;
   label: string;
 }) {

@@ -894,6 +894,39 @@ export type Database = {
         }
         Relationships: []
       }
+      session_schedule_overrides: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          scheduled_date: string
+          source_id: string
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          scheduled_date: string
+          source_id: string
+          source_type: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          scheduled_date?: string
+          source_id?: string
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           athlete_id: string

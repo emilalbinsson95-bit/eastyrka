@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle, TrendingUp, TrendingDown, Minus, Dumbbell } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle, TrendingUp, TrendingDown, Minus, Dumbbell, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,
@@ -226,11 +226,18 @@ function PatientDetail() {
             <ArrowLeft className="mr-1 h-4 w-4" /> {t("physio.patient.back")}
           </Link>
         </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/messages">
-            <MessageCircle className="mr-1 h-4 w-4" /> {t("physio.patient.message")}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/physio/patients/$patientId/calendar" params={{ patientId }}>
+              <Calendar className="mr-1 h-4 w-4" /> Calendar
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/messages">
+              <MessageCircle className="mr-1 h-4 w-4" /> {t("physio.patient.message")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div>

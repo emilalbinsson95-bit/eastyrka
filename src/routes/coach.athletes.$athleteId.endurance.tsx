@@ -79,6 +79,8 @@ function CoachEndurance() {
         <ArrowLeft className="mr-1 h-4 w-4" /> Athlete overview
       </Link>
 
+      <EnduranceWeeklyOverview athleteId={athleteId} />
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">

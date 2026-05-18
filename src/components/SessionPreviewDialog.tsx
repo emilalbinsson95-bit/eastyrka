@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CalendarItem } from "@/lib/calendar";
+import { estimateForRpe, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
+import type { Discipline } from "@/lib/endurance";
 import { cn } from "@/lib/utils";
 
 type Strain = "recovery" | "easy" | "moderate" | "hard" | "very hard";
@@ -189,7 +191,7 @@ async function loadStrength(plannedSessionId: string): Promise<Detail> {
 async function loadEndurance(sessionId: string): Promise<Detail> {
   const { data: session } = await supabase
     .from("endurance_sessions")
-    .select("title, discipline, mode, planned_total_seconds, planned_avg_rpe, notes")
+    .select("title, discipline, mode, planned_total_seconds, planned_avg_rpe, notes, athlete_id")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -199,17 +201,40 @@ async function loadEndurance(sessionId: string): Promise<Detail> {
     .eq("session_id", sessionId)
     .order("order_index", { ascending: true });
 
+  let benchmarks: AthleteBenchmarks = {
+    ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+  };
+  if (session?.athlete_id) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("ten_k_pb_seconds, max_hr, resting_hr, ftp_watts, css_per_100m_seconds")
+      .eq("id", session.athlete_id as string)
+      .maybeSingle();
+    if (prof) benchmarks = prof as AthleteBenchmarks;
+  }
+  const sessionDiscipline = (session?.discipline ?? "run") as Discipline;
+
   const planned = session?.planned_total_seconds ?? 0;
   const totalFromSteps = sumStepSeconds(steps ?? []);
   const totalSeconds = planned || totalFromSteps;
   const avgRpe = session?.planned_avg_rpe ?? avgStepRpe(steps ?? []) ?? 5;
-  // Strain: minutes * RPE / 5 (45min @ RPE5 → 45; 60min @ RPE8 → 96; 90min @ RPE9 → 162)
   const strain = (totalSeconds / 60) * (avgRpe / 5);
 
   const chips: string[] = [];
   if (session?.discipline) chips.push(String(session.discipline));
   if (totalSeconds) chips.push(formatMin(totalSeconds));
   chips.push(`avg RPE ${Number(avgRpe).toFixed(1)}`);
+  const avgEst = estimateForRpe(sessionDiscipline, Number(avgRpe), benchmarks);
+  if (avgEst.paceLabel) chips.push(avgEst.paceLabel);
+  if (avgEst.wattLabel) chips.push(avgEst.wattLabel);
+  if (avgEst.hrLabel) chips.push(avgEst.hrLabel);
+
+  const tag = (disc: Discipline | null | undefined, rpe: number | null | undefined): string => {
+    if (rpe == null) return "";
+    const est = estimateForRpe((disc ?? sessionDiscipline) as Discipline, rpe, benchmarks);
+    const bits = [est.paceLabel, est.wattLabel, est.hrLabel].filter(Boolean);
+    return bits.length ? ` → ${bits.join(" · ")}` : "";
+  };
 
   const lines: string[] = [];
   if (session?.mode === "structured") {
@@ -217,14 +242,16 @@ async function loadEndurance(sessionId: string): Promise<Detail> {
     for (const s of tops) {
       if (s.is_group) {
         const kids = (steps ?? []).filter((k) => k.parent_id === s.id);
-        const kidStr = kids.map((k) => `${formatMM(k.duration_seconds)} @ RPE ${k.target_rpe ?? "-"}`).join(" + ");
+        const kidStr = kids
+          .map((k) => `${formatMM(k.duration_seconds)} @ RPE ${k.target_rpe ?? "-"}${tag(k.discipline as Discipline | null, k.target_rpe)}`)
+          .join(" + ");
         lines.push(`${s.repeat_count}× (${kidStr})`);
       } else {
-        lines.push(`${formatMM(s.duration_seconds)} @ RPE ${s.target_rpe ?? "-"}`);
+        lines.push(`${formatMM(s.duration_seconds)} @ RPE ${s.target_rpe ?? "-"}${tag(s.discipline as Discipline | null, s.target_rpe)}`);
       }
     }
   } else if (totalSeconds) {
-    lines.push(`${formatMin(totalSeconds)} steady · RPE ${Number(avgRpe).toFixed(1)}`);
+    lines.push(`${formatMin(totalSeconds)} steady · RPE ${Number(avgRpe).toFixed(1)}${tag(sessionDiscipline, Number(avgRpe))}`);
   }
 
   return { chips, lines, strain, notes: session?.notes ?? null };

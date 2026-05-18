@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
+import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/endurance")({
   component: CoachEndurance,

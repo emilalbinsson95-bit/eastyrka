@@ -200,9 +200,49 @@ export async function setOverride(args: {
         source_id: sourceId,
         scheduled_date: date,
         confirmed_at: new Date().toISOString(),
+        cancelled_at: null,
+        cancel_reason: null,
       },
       { onConflict: "source_type,source_id" },
     );
+  if (error) throw error;
+}
+
+/** Mark a session as cancelled by the owner (athlete/patient), with a reason. */
+export async function cancelSession(args: {
+  ownerId: string;
+  source: CalendarSource;
+  sourceId: string;
+  suggestedDate: string;
+  reason: string;
+}) {
+  const { ownerId, source, sourceId, suggestedDate, reason } = args;
+  const { error } = await supabase
+    .from("session_schedule_overrides")
+    .upsert(
+      {
+        owner_id: ownerId,
+        source_type: source,
+        source_id: sourceId,
+        scheduled_date: suggestedDate,
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason,
+      },
+      { onConflict: "source_type,source_id" },
+    );
+  if (error) throw error;
+}
+
+/** Undo a cancellation. */
+export async function uncancelSession(args: {
+  source: CalendarSource;
+  sourceId: string;
+}) {
+  const { error } = await supabase
+    .from("session_schedule_overrides")
+    .update({ cancelled_at: null, cancel_reason: null })
+    .eq("source_type", args.source)
+    .eq("source_id", args.sourceId);
   if (error) throw error;
 }
 

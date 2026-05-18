@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://set-smart-guide.lovable.app/sitemap.xml

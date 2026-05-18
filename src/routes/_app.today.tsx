@@ -286,10 +286,9 @@ function TodayPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>No session planned for today</CardTitle>
+                <CardTitle>No session accepted for today</CardTitle>
                 <CardDescription>
-                  You can still log freestyle sets below — they'll show up in your history
-                  and feed into your EAkoefficient.
+                  Open your <Link to="/calendar" className="underline">calendar</Link> and accept (or drag to today) a session your coach has suggested. You can still log freestyle sets below — they'll feed into your EAkoefficient.
                 </CardDescription>
               </CardHeader>
               <CardContent>

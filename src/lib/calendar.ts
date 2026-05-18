@@ -122,6 +122,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
       suggestedDate: suggested,
       effectiveDate: suggested,
       isGhost: !!s.physio_id,
+      isCancelled: false,
     };
   });
 

@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tansta
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, History, User as UserIcon, LogOut, Activity, MessageCircle, Footprints } from "lucide-react";
+import { Calendar, CalendarDays, History, User as UserIcon, LogOut, Activity, MessageCircle, Footprints } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";

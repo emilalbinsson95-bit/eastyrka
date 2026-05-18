@@ -36,6 +36,12 @@ function InvitesPage() {
   const coachId = user!.id;
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const linksQuery = useQuery({
     queryKey: ["coach-links", coachId],

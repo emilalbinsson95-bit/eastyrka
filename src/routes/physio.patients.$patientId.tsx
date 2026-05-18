@@ -226,11 +226,18 @@ function PatientDetail() {
             <ArrowLeft className="mr-1 h-4 w-4" /> {t("physio.patient.back")}
           </Link>
         </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/messages">
-            <MessageCircle className="mr-1 h-4 w-4" /> {t("physio.patient.message")}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/physio/patients/$patientId/calendar" params={{ patientId }}>
+              <Calendar className="mr-1 h-4 w-4" /> Calendar
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/messages">
+              <MessageCircle className="mr-1 h-4 w-4" /> {t("physio.patient.message")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div>

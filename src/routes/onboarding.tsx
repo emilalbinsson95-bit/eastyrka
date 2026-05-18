@@ -63,6 +63,31 @@ function OnboardingPage() {
     }
   }, [user, role, loading, navigate]);
 
+  // If the athlete has already onboarded (any readiness survey exists), don't
+  // loop them back through this flow — send them to today's session.
+  const alreadyOnboardedQuery = useQuery({
+    queryKey: ["already-onboarded", user?.id],
+    enabled: !!user && role === "athlete" && step !== "done",
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("readiness_surveys")
+        .select("id", { count: "exact", head: true })
+        .eq("athlete_id", user!.id);
+      if (error) return false;
+      return (count ?? 0) > 0;
+    },
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (alreadyOnboardedQuery.data === true && step !== "done") {
+      if (typeof window !== "undefined" && user) {
+        localStorage.setItem(`ea-onboarded-${user.id}`, "1");
+      }
+      navigate({ to: "/today" });
+    }
+  }, [alreadyOnboardedQuery.data, step, user, navigate]);
+
   // Pre-fill profile from existing record
   const profileQuery = useQuery({
     queryKey: ["profile", user?.id],

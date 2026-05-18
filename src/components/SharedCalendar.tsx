@@ -187,12 +187,62 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                   setCancelTarget(it);
                 }}
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
-                onPreview={(it) => setPreviewTarget(it)}
+                onPreview={(it) => {
+                  // Athlete view: clicking ad-hoc strength or own endurance opens the editor.
+                  if (!readOnly && it.source === "adhoc_strength") {
+                    setEditorTarget({ kind: "adhoc_strength", date: it.sourceId });
+                    return;
+                  }
+                  if (!readOnly && it.source === "endurance") {
+                    setEditorTarget({ kind: "endurance", sessionId: it.sourceId });
+                    return;
+                  }
+                  setPreviewTarget(it);
+                }}
+                onAdd={readOnly ? undefined : (d) => setAddForDate(d)}
               />
             );
           })}
         </div>
       </div>
+
+      {addForDate && (
+        <AddSessionDialog
+          athleteId={ownerId}
+          date={addForDate}
+          open={!!addForDate}
+          onOpenChange={(o) => !o && setAddForDate(null)}
+          onOpenEditor={(target) => setEditorTarget(target)}
+        />
+      )}
+
+      <Dialog open={!!editorTarget} onOpenChange={(o) => !o && setEditorTarget(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editorTarget?.kind === "endurance" ? "Edit session" : "Strength workout"}
+            </DialogTitle>
+          </DialogHeader>
+          {editorTarget?.kind === "endurance" && (
+            <EnduranceSessionEditor
+              sessionId={editorTarget.sessionId}
+              canEditPlan
+              isAthlete
+              onClose={() => {
+                setEditorTarget(null);
+                qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+              }}
+            />
+          )}
+          {editorTarget?.kind === "adhoc_strength" && (
+            <AdhocStrengthEditor
+              athleteId={ownerId}
+              date={editorTarget.date}
+              onClose={() => setEditorTarget(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <SessionPreviewDialog
         item={previewTarget}

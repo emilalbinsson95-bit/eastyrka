@@ -250,6 +250,8 @@ function DayCell({
   readiness,
   readOnly,
   onConfirm,
+  onRequestCancel,
+  onUncancel,
 }: {
   date: string;
   label: string;
@@ -259,6 +261,8 @@ function DayCell({
   readiness?: number;
   readOnly: boolean;
   onConfirm: (it: CalendarItem) => void;
+  onRequestCancel: (it: CalendarItem) => void;
+  onUncancel: (it: CalendarItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
@@ -283,7 +287,14 @@ function DayCell({
       </div>
       <div className="mt-1 space-y-1">
         {items.map((it) => (
-          <SessionCard key={it.key} item={it} readOnly={readOnly} onConfirm={onConfirm} />
+          <SessionCard
+            key={it.key}
+            item={it}
+            readOnly={readOnly}
+            onConfirm={onConfirm}
+            onRequestCancel={onRequestCancel}
+            onUncancel={onUncancel}
+          />
         ))}
       </div>
     </div>

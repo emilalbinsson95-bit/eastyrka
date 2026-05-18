@@ -133,16 +133,19 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
   if (sourceIds.length > 0) {
     const { data: overrides } = await supabase
       .from("session_schedule_overrides")
-      .select("id, source_type, source_id, scheduled_date, confirmed_at")
+      .select("id, source_type, source_id, scheduled_date, confirmed_at, cancelled_at, cancel_reason")
       .eq("owner_id", ownerId)
       .in("source_id", sourceIds);
 
-    const byKey = new Map<string, { id: string; scheduledDate: string; confirmedAt: string | null }>();
+    type Ov = { id: string; scheduledDate: string; confirmedAt: string | null; cancelledAt: string | null; cancelReason: string | null };
+    const byKey = new Map<string, Ov>();
     for (const o of overrides ?? []) {
       byKey.set(`${o.source_type}:${o.source_id}`, {
         id: o.id as string,
         scheduledDate: fmt(o.scheduled_date as string),
         confirmedAt: (o.confirmed_at as string | null) ?? null,
+        cancelledAt: (o.cancelled_at as string | null) ?? null,
+        cancelReason: (o.cancel_reason as string | null) ?? null,
       });
     }
 
@@ -153,6 +156,12 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
         if (ov.confirmedAt) {
           it.effectiveDate = ov.scheduledDate;
           it.isGhost = false;
+        }
+        if (ov.cancelledAt) {
+          it.isCancelled = true;
+          it.cancelReason = ov.cancelReason;
+          it.isGhost = false;
+          if (ov.scheduledDate) it.effectiveDate = ov.scheduledDate;
         }
       }
     }

@@ -258,9 +258,19 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
   }, [processed, windowDays]);
 
   const windowLabel = windowKey === "7d" ? "Last 7 days" : windowKey === "30d" ? "Last 30 days" : "Last 3 months";
-...
-      </div>
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof filtered>();
+    for (const p of filtered) {
+      const arr = map.get(p.source.date) ?? [];
+      arr.push(p);
+      map.set(p.source.date, arr);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  return (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="text-xs font-medium text-muted-foreground">{windowLabel}</div>
         <Tabs value={windowKey} onValueChange={(v) => setWindowKey(v as "7d" | "30d" | "3m")}>
@@ -270,6 +280,41 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
             <TabsTrigger value="3m" className="text-xs px-2.5">3 months</TabsTrigger>
           </TabsList>
         </Tabs>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Sessions</div>
+            <div className="mt-1 text-2xl font-bold">{summary.sessions}</div>
+            <div className="text-[11px] text-muted-foreground">{summary.totalSets} sets logged</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Avg EAkoeff</div>
+            <div className="mt-1 text-2xl font-bold">
+              {summary.avg > 0 ? `${summary.avg.toFixed(1)}%` : "—"}
+            </div>
+            <div className="text-[11px] text-muted-foreground">Across {summary.withEakCount} sets</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Peak EAkoeff</div>
+            <div className="mt-1 text-2xl font-bold">
+              {summary.peak > 0 ? `${summary.peak.toFixed(1)}%` : "—"}
+            </div>
+            <div className="text-[11px] text-muted-foreground">Best E1RM vs baseline</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Fatigue-limit sets</div>
+            <div className="mt-1 text-2xl font-bold">{summary.fatigueLimit}</div>
+            <div className="text-[11px] text-muted-foreground">≥5% E1RM drop</div>
+          </CardContent>
+        </Card>
       </div>
 
       {summary.withEakCount > 0 && (

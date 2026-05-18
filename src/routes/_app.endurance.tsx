@@ -13,6 +13,7 @@ import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 import { ReadinessGate } from "@/components/ReadinessGate";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
+import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
 
 export const Route = createFileRoute("/_app/endurance")({
   component: EndurancePage,
@@ -79,6 +80,7 @@ function EndurancePage() {
 
   return (
     <div className="space-y-4">
+      <EnduranceWeeklyOverview athleteId={user.id} />
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">

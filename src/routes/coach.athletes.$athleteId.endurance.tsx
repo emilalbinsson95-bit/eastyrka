@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
+import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/endurance")({
   component: CoachEndurance,
@@ -77,6 +78,8 @@ function CoachEndurance() {
       <Link to="/coach/athletes/$athleteId" params={{ athleteId }} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="mr-1 h-4 w-4" /> Athlete overview
       </Link>
+
+      <EnduranceWeeklyOverview athleteId={athleteId} />
 
       <Card>
         <CardHeader className="pb-3">

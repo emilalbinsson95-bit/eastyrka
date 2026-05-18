@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Copy, KeyRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Activity, Copy, KeyRound, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,6 +15,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { parseTimeToSeconds, secondsToTimeStr } from "@/lib/endurancePaceHr";
 
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
@@ -27,12 +31,13 @@ function MePage() {
   const { user } = useAuth();
   const userId = user!.id;
 
+  const qc = useQueryClient();
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, weight_class")
+        .select("full_name, weight_class, ten_k_pb_seconds, max_hr, resting_hr, ftp_watts, css_per_100m_seconds")
         .eq("id", userId)
         .maybeSingle();
       if (error) throw error;
@@ -143,6 +148,93 @@ function MePage() {
           )}
         </CardContent>
       </Card>
+
+      <EnduranceBenchmarksCard
+        userId={userId}
+        initial={profileQuery.data}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["profile", userId] })}
+      />
     </div>
+  );
+}
+
+function EnduranceBenchmarksCard({
+  userId, initial, onSaved,
+}: {
+  userId: string;
+  initial: { ten_k_pb_seconds: number | null; max_hr: number | null; resting_hr: number | null; ftp_watts: number | null; css_per_100m_seconds: number | null } | null | undefined;
+  onSaved: () => void;
+}) {
+  const [pb, setPb] = useState("");
+  const [maxHr, setMaxHr] = useState("");
+  const [restHr, setRestHr] = useState("");
+  const [ftp, setFtp] = useState("");
+  const [css, setCss] = useState("");
+
+  useEffect(() => {
+    if (!initial) return;
+    setPb(secondsToTimeStr(initial.ten_k_pb_seconds));
+    setMaxHr(initial.max_hr?.toString() ?? "");
+    setRestHr(initial.resting_hr?.toString() ?? "");
+    setFtp(initial.ftp_watts?.toString() ?? "");
+    setCss(secondsToTimeStr(initial.css_per_100m_seconds));
+  }, [initial]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const patch = {
+        ten_k_pb_seconds: pb ? parseTimeToSeconds(pb) : null,
+        max_hr: maxHr ? Number(maxHr) : null,
+        resting_hr: restHr ? Number(restHr) : null,
+        ftp_watts: ftp ? Number(ftp) : null,
+        css_per_100m_seconds: css ? parseTimeToSeconds(css) : null,
+      };
+      const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Endurance profile saved"); onSaved(); },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5 text-primary" /> Endurance benchmarks
+        </CardTitle>
+        <CardDescription>
+          Used to estimate pace and heart-rate zones for each RPE. Fill in what you have — leave the rest blank.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="space-y-1">
+            <Label>10k PB (mm:ss)</Label>
+            <Input placeholder="42:30" value={pb} onChange={(e) => setPb(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>Max HR (bpm)</Label>
+            <Input type="number" min={120} max={230} value={maxHr} onChange={(e) => setMaxHr(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>Resting HR (bpm)</Label>
+            <Input type="number" min={30} max={110} value={restHr} onChange={(e) => setRestHr(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>FTP (watts, bike)</Label>
+            <Input type="number" min={50} max={600} value={ftp} onChange={(e) => setFtp(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>CSS pace (m:ss / 100m, swim)</Label>
+            <Input placeholder="1:42" value={css} onChange={(e) => setCss(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+            <Save className="mr-1 h-4 w-4" /> Save benchmarks
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

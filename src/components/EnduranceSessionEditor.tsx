@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, Save, ChevronUp, ChevronDown, Repeat, Bike, Waves, Footprints, Activity,
+  Plus, Trash2, Save, ChevronUp, ChevronDown, Repeat, Bike, Waves, Footprints, Activity, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   DISCIPLINES, type Discipline, type Mode, type StepInput,
   formatDuration, parseHMS, totalPlannedSeconds, avgTargetRpe, rpeTone, rpeLabel, disciplineEmoji,
 } from "@/lib/endurance";
+import { estimateForRpe, hasAnyBenchmark, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
 
 const disciplineIcon = (d: Discipline | null | undefined) =>
   d === "run" ? <Footprints className="h-4 w-4" /> :
@@ -89,6 +90,25 @@ export function EnduranceSessionEditor({
 
   const session = sessionQuery.data;
 
+  const benchmarksQuery = useQuery({
+    queryKey: ["athlete-benchmarks", session?.athlete_id],
+    enabled: !!session?.athlete_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("ten_k_pb_seconds, max_hr, resting_hr, ftp_watts, css_per_100m_seconds")
+        .eq("id", session!.athlete_id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? {
+        ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+      }) as AthleteBenchmarks;
+    },
+  });
+  const benchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
+    ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+  };
+
   if (sessionQuery.isLoading) {
     return <Card><CardContent className="py-6 text-sm text-muted-foreground">Loading…</CardContent></Card>;
   }
@@ -104,12 +124,16 @@ export function EnduranceSessionEditor({
         onChange={() => qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] })}
         onClose={onClose}
       />
+      {session.mode === "quick" && (
+        <QuickEstimate discipline={session.discipline} rpe={session.planned_avg_rpe} benchmarks={benchmarks} />
+      )}
       {session.mode === "structured" && (
         <StepsEditor
           sessionId={sessionId}
           steps={stepsQuery.data ?? []}
           canEditPlan={canEditPlan}
           defaultDiscipline={session.discipline}
+          benchmarks={benchmarks}
           onChange={() => {
             qc.invalidateQueries({ queryKey: ["endurance-steps", sessionId] });
             qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] });
@@ -291,18 +315,18 @@ function Stat({ label, value }: { label: string; value: string }) {
 // ---------- Steps editor (structured mode) ----------
 
 function StepsEditor({
-  sessionId, steps, canEditPlan, defaultDiscipline, onChange,
+  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, onChange,
 }: {
   sessionId: string;
   steps: StepRow[];
   canEditPlan: boolean;
   defaultDiscipline: Discipline;
+  benchmarks: AthleteBenchmarks;
   onChange: () => void;
 }) {
   const totalSec = useMemo(() => totalPlannedSeconds(steps), [steps]);
   const avgRpe = useMemo(() => avgTargetRpe(steps), [steps]);
 
-  // Cache derived planned total back to session for fast list views
   useEffect(() => {
     void supabase.from("endurance_sessions").update({
       planned_total_seconds: totalSec || null,
@@ -332,6 +356,57 @@ function StepsEditor({
     onError: (e) => toast.error((e as Error).message),
   });
 
+  const applyTemplate = useMutation({
+    mutationFn: async (tpl: "warmup_main_cool" | "4x4_int" | "tempo20" | "long_easy") => {
+      // Wipe existing
+      await supabase.from("endurance_steps").delete().eq("session_id", sessionId);
+      type Insert = {
+        session_id: string; parent_id: string | null; order_index: number; is_group: boolean;
+        repeat_count: number; discipline: Discipline | null; duration_seconds: number | null; target_rpe: number | null; notes: string | null;
+      };
+      const mk = (over: Partial<Insert>): Insert => ({
+        session_id: sessionId, parent_id: null, order_index: 0, is_group: false,
+        repeat_count: 1, discipline: defaultDiscipline, duration_seconds: 600, target_rpe: 5, notes: null,
+        ...over,
+      });
+      if (tpl === "warmup_main_cool") {
+        await supabase.from("endurance_steps").insert([
+          mk({ order_index: 0, duration_seconds: 600, target_rpe: 3, notes: "Warm-up" }),
+          mk({ order_index: 1, duration_seconds: 1800, target_rpe: 6, notes: "Main" }),
+          mk({ order_index: 2, duration_seconds: 600, target_rpe: 2, notes: "Cool-down" }),
+        ]);
+      } else if (tpl === "tempo20") {
+        await supabase.from("endurance_steps").insert([
+          mk({ order_index: 0, duration_seconds: 600, target_rpe: 3, notes: "Warm-up" }),
+          mk({ order_index: 1, duration_seconds: 1200, target_rpe: 7, notes: "Tempo" }),
+          mk({ order_index: 2, duration_seconds: 600, target_rpe: 2, notes: "Cool-down" }),
+        ]);
+      } else if (tpl === "long_easy") {
+        await supabase.from("endurance_steps").insert([
+          mk({ order_index: 0, duration_seconds: 3600, target_rpe: 4, notes: "Base / long" }),
+        ]);
+      } else if (tpl === "4x4_int") {
+        const wu = await supabase.from("endurance_steps").insert(
+          mk({ order_index: 0, duration_seconds: 600, target_rpe: 3, notes: "Warm-up" }),
+        );
+        if (wu.error) throw wu.error;
+        const grp = await supabase.from("endurance_steps").insert(
+          mk({ order_index: 1, is_group: true, repeat_count: 4, discipline: null, duration_seconds: null, target_rpe: null, notes: "4 × (4min hard / 1min easy)" }),
+        ).select("id").single();
+        if (grp.error) throw grp.error;
+        await supabase.from("endurance_steps").insert([
+          mk({ parent_id: grp.data.id, order_index: 0, duration_seconds: 240, target_rpe: 8, notes: "Work" }),
+          mk({ parent_id: grp.data.id, order_index: 1, duration_seconds: 60, target_rpe: 3, notes: "Recovery" }),
+        ]);
+        await supabase.from("endurance_steps").insert(
+          mk({ order_index: 2, duration_seconds: 600, target_rpe: 2, notes: "Cool-down" }),
+        );
+      }
+    },
+    onSuccess: onChange,
+    onError: (e) => toast.error((e as Error).message),
+  });
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -344,10 +419,21 @@ function StepsEditor({
             )}
           </div>
         </div>
+        {canEditPlan && (
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground self-center mr-1">
+              <Sparkles className="inline h-3 w-3 mr-1" />Templates:
+            </span>
+            <Button size="sm" variant="outline" onClick={() => applyTemplate.mutate("long_easy")}>Long easy</Button>
+            <Button size="sm" variant="outline" onClick={() => applyTemplate.mutate("warmup_main_cool")}>WU / Main / CD</Button>
+            <Button size="sm" variant="outline" onClick={() => applyTemplate.mutate("tempo20")}>20min tempo</Button>
+            <Button size="sm" variant="outline" onClick={() => applyTemplate.mutate("4x4_int")}>4×4 intervals</Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {topLevel.length === 0 && (
-          <p className="text-sm text-muted-foreground">No steps yet — add one to start building the workout.</p>
+          <p className="text-sm text-muted-foreground">No steps yet — add one or pick a template above.</p>
         )}
         {topLevel.map((step) => (
           <StepRowItem
@@ -356,6 +442,7 @@ function StepsEditor({
             allSteps={steps}
             canEditPlan={canEditPlan}
             defaultDiscipline={defaultDiscipline}
+            benchmarks={benchmarks}
             onChange={onChange}
           />
         ))}
@@ -369,18 +456,44 @@ function StepsEditor({
             </Button>
           </div>
         )}
+        {!hasAnyBenchmark(benchmarks) && (
+          <p className="pt-2 text-[11px] text-muted-foreground">
+            Tip: add 10k PB, max HR, FTP or CSS in your profile to see pace and heart-rate estimates per step.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuickEstimate({ discipline, rpe, benchmarks }: { discipline: Discipline; rpe: number | null; benchmarks: AthleteBenchmarks }) {
+  if (rpe == null || !hasAnyBenchmark(benchmarks)) return null;
+  const est = estimateForRpe(discipline, rpe, benchmarks);
+  if (!est.paceLabel && !est.hrLabel && !est.wattLabel) return null;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Sparkles className="h-4 w-4 text-primary" /> Estimated target (RPE {rpe})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2 text-xs">
+        {est.paceLabel && <Badge variant="secondary">{est.paceLabel}</Badge>}
+        {est.wattLabel && <Badge variant="secondary">{est.wattLabel}</Badge>}
+        {est.hrLabel && <Badge variant="secondary">{est.hrLabel}</Badge>}
       </CardContent>
     </Card>
   );
 }
 
 function StepRowItem({
-  step, allSteps, canEditPlan, defaultDiscipline, onChange, depth = 0,
+  step, allSteps, canEditPlan, defaultDiscipline, benchmarks, onChange, depth = 0,
 }: {
   step: StepRow;
   allSteps: StepRow[];
   canEditPlan: boolean;
   defaultDiscipline: Discipline;
+  benchmarks: AthleteBenchmarks;
   onChange: () => void;
   depth?: number;
 }) {
@@ -473,7 +586,7 @@ function StepRowItem({
         <div className="space-y-2">
           {children.map((c) => (
             <StepRowItem key={c.id} step={c} allSteps={allSteps} canEditPlan={canEditPlan}
-              defaultDiscipline={defaultDiscipline} onChange={onChange} depth={depth + 1} />
+              defaultDiscipline={defaultDiscipline} benchmarks={benchmarks} onChange={onChange} depth={depth + 1} />
           ))}
         </div>
         {canEditPlan && (
@@ -539,6 +652,18 @@ function StepRowItem({
           </>
         )}
       </div>
+      {(() => {
+        const disc = (step.discipline ?? defaultDiscipline) as Discipline;
+        const est = estimateForRpe(disc, step.target_rpe ?? null, benchmarks);
+        if (!est.paceLabel && !est.hrLabel && !est.wattLabel) return null;
+        return (
+          <div className="mt-1.5 flex flex-wrap gap-1 pl-1 text-[11px]">
+            {est.paceLabel && <Badge variant="outline" className="font-mono">{est.paceLabel}</Badge>}
+            {est.wattLabel && <Badge variant="outline" className="font-mono">{est.wattLabel}</Badge>}
+            {est.hrLabel && <Badge variant="outline" className="font-mono">{est.hrLabel}</Badge>}
+          </div>
+        );
+      })()}
     </div>
   );
 }

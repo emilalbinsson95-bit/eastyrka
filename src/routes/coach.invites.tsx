@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Mail, UserPlus, Copy, Trash2 } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, UserPlus, Copy, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +36,12 @@ function InvitesPage() {
   const coachId = user!.id;
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const linksQuery = useQuery({
     queryKey: ["coach-links", coachId],
@@ -56,6 +62,23 @@ function InvitesPage() {
         ...l,
         full_name: profMap.get(l.athlete_id) ?? null,
       }));
+    },
+  });
+
+  const linkedIds = useMemo(
+    () => new Set((linksQuery.data ?? []).map((l) => l.athlete_id)),
+    [linksQuery.data],
+  );
+
+  const searchQuery = useQuery({
+    queryKey: ["athlete-search", debounced],
+    enabled: debounced.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_athlete_profiles", {
+        _query: debounced,
+      });
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null }[];
     },
   });
 
@@ -122,6 +145,58 @@ function InvitesPage() {
           here to connect.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" /> Search registered athletes
+          </CardTitle>
+          <CardDescription>
+            Find an existing athlete by name and connect with one click.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="athlete-search">Name</Label>
+            <Input
+              id="athlete-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Start typing a name…"
+            />
+          </div>
+          {debounced.length >= 2 && (
+            <div className="space-y-1">
+              {searchQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Searching…</p>
+              )}
+              {!searchQuery.isLoading && (searchQuery.data ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No matching athletes.</p>
+              )}
+              {(searchQuery.data ?? []).map((a) => {
+                const linked = linkedIds.has(a.id);
+                return (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between rounded-md border border-border p-2 text-sm"
+                  >
+                    <span className="font-medium">{a.full_name ?? "Unnamed"}</span>
+                    <Button
+                      size="sm"
+                      variant={linked ? "ghost" : "default"}
+                      disabled={linked || connectMutation.isPending}
+                      onClick={() => connectMutation.mutate(a.id)}
+                    >
+                      <UserPlus className="mr-1 h-3.5 w-3.5" />
+                      {linked ? "Connected" : "Connect"}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

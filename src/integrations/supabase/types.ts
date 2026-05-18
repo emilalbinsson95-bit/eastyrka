@@ -1089,6 +1089,20 @@ export type Database = {
         Args: { _patient_id: string; _physio_id: string }
         Returns: boolean
       }
+      search_athlete_profiles: {
+        Args: { _query: string }
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
+      search_patient_profiles: {
+        Args: { _query: string }
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "coach" | "athlete" | "physio" | "patient"

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
-import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download } from "lucide-react";
+import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download, Footprints } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -14,6 +14,7 @@ import {
   Legend,
   BarChart,
   Bar,
+  ComposedChart,
   ScatterChart,
   Scatter,
   ZAxis,
@@ -44,7 +45,7 @@ import { cn } from "@/lib/utils";
 const analyticsSearchSchema = z.object({
   exercise: z.string().optional(),
   days: z.coerce.number().int().min(7).max(365).optional(),
-  tab: z.enum(["exercise", "volume", "adherence", "readiness"]).optional(),
+  tab: z.enum(["exercise", "volume", "endurance", "adherence", "readiness"]).optional(),
 });
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/analytics")({
@@ -156,7 +157,61 @@ function AnalyticsPage() {
     },
   });
 
-  // Exercise library — for category mapping
+  const enduranceQuery = useQuery({
+    queryKey: ["analytics-endurance", athleteId, days],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const { data: sessions, error } = await supabase
+        .from("endurance_sessions")
+        .select("id, date, discipline, status, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, actual_distance_m, overall_rpe, peak_rpe")
+        .eq("athlete_id", athleteId)
+        .gte("date", format(since, "yyyy-MM-dd"))
+        .order("date", { ascending: true });
+      if (error) throw error;
+      const sList = sessions ?? [];
+      const ids = sList.map((s) => s.id);
+      let steps: Array<{ session_id: string; actual_duration_seconds: number | null; actual_distance_m: number | null; actual_avg_hr: number | null; actual_avg_rpe: number | null }> = [];
+      if (ids.length) {
+        const { data: stepData, error: sErr } = await supabase
+          .from("endurance_steps")
+          .select("session_id, actual_duration_seconds, actual_distance_m, actual_avg_hr, actual_avg_rpe")
+          .in("session_id", ids);
+        if (sErr) throw sErr;
+        steps = stepData ?? [];
+      }
+      // Aggregate step-derived totals per session as fallback
+      const stepAgg = new Map<string, { dur: number; dist: number; hrSum: number; hrCount: number; rpeSum: number; rpeCount: number }>();
+      for (const st of steps) {
+        const cur = stepAgg.get(st.session_id) ?? { dur: 0, dist: 0, hrSum: 0, hrCount: 0, rpeSum: 0, rpeCount: 0 };
+        if (st.actual_duration_seconds) cur.dur += st.actual_duration_seconds;
+        if (st.actual_distance_m) cur.dist += st.actual_distance_m;
+        if (st.actual_avg_hr) { cur.hrSum += st.actual_avg_hr; cur.hrCount += 1; }
+        if (st.actual_avg_rpe) { cur.rpeSum += Number(st.actual_avg_rpe); cur.rpeCount += 1; }
+        stepAgg.set(st.session_id, cur);
+      }
+      return sList.map((s) => {
+        const agg = stepAgg.get(s.id);
+        const dur = s.actual_total_seconds ?? agg?.dur ?? 0;
+        const dist = s.actual_distance_m ?? agg?.dist ?? 0;
+        const rpe = s.overall_rpe ?? s.peak_rpe ?? (agg && agg.rpeCount ? agg.rpeSum / agg.rpeCount : null);
+        const hr = agg && agg.hrCount ? Math.round(agg.hrSum / agg.hrCount) : null;
+        return {
+          id: s.id,
+          date: s.date,
+          discipline: s.discipline as string,
+          status: s.status as string,
+          title: s.title as string | null,
+          duration_s: dur,
+          distance_m: dist,
+          rpe: rpe != null ? Number(rpe) : null,
+          hr,
+          planned_s: s.planned_total_seconds ?? 0,
+          planned_rpe: s.planned_avg_rpe != null ? Number(s.planned_avg_rpe) : null,
+        };
+      });
+    },
+  });
   const exerciseLibQuery = useQuery({
     queryKey: ["analytics-exercise-lib"],
     queryFn: async () => {
@@ -494,8 +549,81 @@ function AnalyticsPage() {
     return { points, correlation };
   }, [surveysQuery.data, allLogs, baselines]);
 
+  // ---- Endurance ----
+  const enduranceData = enduranceQuery.data ?? [];
+  const enduranceStats = useMemo(() => {
+    const completed = enduranceData.filter((s) => s.status === "completed" || s.duration_s > 0 || s.distance_m > 0);
+    // Per-session series (sorted by date)
+    const series = completed.map((s) => {
+      const km = s.distance_m / 1000;
+      const min = s.duration_s / 60;
+      const paceSecPerKm = km > 0 && s.duration_s > 0 ? s.duration_s / km : null;
+      return {
+        date: s.date,
+        label: format(parseISO(s.date), "MMM d"),
+        discipline: s.discipline,
+        title: s.title,
+        km: Number(km.toFixed(2)),
+        minutes: Number(min.toFixed(1)),
+        rpe: s.rpe,
+        hr: s.hr,
+        pace_s_per_km: paceSecPerKm,
+        pace_label: paceSecPerKm ? `${Math.floor(paceSecPerKm / 60)}:${String(Math.round(paceSecPerKm % 60)).padStart(2, "0")}/km` : null,
+      };
+    });
+
+    // Weekly aggregates (per discipline)
+    const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
+    const disciplines = new Set<string>();
+    for (const s of completed) {
+      const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
+      disciplines.add(s.discipline);
+      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, rpeSum: 0, rpeCount: 0, sessions: 0 };
+      row.distance[s.discipline] = (row.distance[s.discipline] ?? 0) + s.distance_m / 1000;
+      row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + s.duration_s / 60;
+      if (s.rpe != null) { row.rpeSum += s.rpe; row.rpeCount += 1; }
+      row.sessions += 1;
+      weekMap.set(wk, row);
+    }
+    const weekly = Array.from(weekMap.values())
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .map((w) => {
+        const flat: Record<string, number | string> = { week: w.week, label: w.label, sessions: w.sessions, avgRPE: w.rpeCount > 0 ? Number((w.rpeSum / w.rpeCount).toFixed(2)) : 0 };
+        for (const d of disciplines) {
+          flat[`km_${d}`] = Number((w.distance[d] ?? 0).toFixed(2));
+          flat[`min_${d}`] = Number((w.minutes[d] ?? 0).toFixed(0));
+        }
+        flat.totalKm = Number(Object.values(w.distance).reduce((a, b) => a + b, 0).toFixed(2));
+        flat.totalMin = Number(Object.values(w.minutes).reduce((a, b) => a + b, 0).toFixed(0));
+        return flat;
+      });
+
+    // Totals
+    const totalKm = completed.reduce((a, s) => a + s.distance_m / 1000, 0);
+    const totalMin = completed.reduce((a, s) => a + s.duration_s / 60, 0);
+    const rpeVals = completed.map((s) => s.rpe).filter((v): v is number => v != null);
+    const avgRPE = rpeVals.length ? rpeVals.reduce((a, b) => a + b, 0) / rpeVals.length : null;
+    const runs = completed.filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0);
+    const avgRunPace = runs.length
+      ? runs.reduce((a, s) => a + s.duration_s / (s.distance_m / 1000), 0) / runs.length
+      : null;
+    return {
+      series,
+      weekly,
+      disciplines: Array.from(disciplines).sort(),
+      totals: {
+        sessions: completed.length,
+        totalKm,
+        totalMin,
+        avgRPE,
+        avgRunPace,
+      },
+    };
+  }, [enduranceData]);
+
   const isLoading =
-    logsQuery.isLoading || baselinesQuery.isLoading || surveysQuery.isLoading;
+    logsQuery.isLoading || baselinesQuery.isLoading || surveysQuery.isLoading || enduranceQuery.isLoading;
+
 
   return (
     <div className="space-y-6">
@@ -564,9 +692,10 @@ function AnalyticsPage() {
             navigate({ search: (prev) => ({ ...prev, tab: v as typeof tab }) })
           }
         >
-          <TabsList className="grid w-full grid-cols-2 md:w-auto md:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-5">
             <TabsTrigger value="exercise">Exercise</TabsTrigger>
             <TabsTrigger value="volume">Volume</TabsTrigger>
+            <TabsTrigger value="endurance">Endurance</TabsTrigger>
             <TabsTrigger value="adherence">Adherence</TabsTrigger>
             <TabsTrigger value="readiness">Readiness</TabsTrigger>
           </TabsList>
@@ -724,6 +853,117 @@ function AnalyticsPage() {
                 );
               })}
             </div>
+          </TabsContent>
+
+          {/* === ENDURANCE TAB === */}
+          <TabsContent value="endurance" className="mt-4 space-y-4">
+            {enduranceStats.totals.sessions === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                  No completed endurance sessions in this window.
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <KpiCard icon={<Footprints className="h-4 w-4" />} label="Sessions" value={String(enduranceStats.totals.sessions)} hint={enduranceStats.disciplines.join(", ")} />
+                  <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Total distance" value={`${enduranceStats.totals.totalKm.toFixed(1)} km`} />
+                  <KpiCard icon={<Activity className="h-4 w-4" />} label="Total time" value={`${Math.floor(enduranceStats.totals.totalMin / 60)}h ${Math.round(enduranceStats.totals.totalMin % 60)}m`} />
+                  <KpiCard
+                    icon={<Gauge className="h-4 w-4" />}
+                    label="Avg run pace"
+                    value={
+                      enduranceStats.totals.avgRunPace
+                        ? `${Math.floor(enduranceStats.totals.avgRunPace / 60)}:${String(Math.round(enduranceStats.totals.avgRunPace % 60)).padStart(2, "0")}/km`
+                        : "—"
+                    }
+                    hint={enduranceStats.totals.avgRPE != null ? `Avg RPE ${enduranceStats.totals.avgRPE.toFixed(1)}` : undefined}
+                  />
+                </div>
+
+                <ChartCard title="Weekly distance by discipline" description="Total km per ISO week, split by run / bike / swim.">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={enduranceStats.weekly}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Legend />
+                      {enduranceStats.disciplines.map((d, i) => (
+                        <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Weekly time & average RPE" description="Total minutes per week with average session RPE overlay.">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ComposedChart data={enduranceStats.weekly}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
+                      <YAxis yAxisId="right" orientation="right" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="totalMin" name="Minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Per-session RPE & distance" description="Each point is one session — track intensity trend over time.">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={enduranceStats.series}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis yAxisId="left" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Legend />
+                      <Line yAxisId="left" type="monotone" dataKey="rpe" name="Session RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      <Line yAxisId="right" type="monotone" dataKey="km" name="Distance (km)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Recent sessions</CardTitle>
+                    <CardDescription>Latest 15 completed endurance sessions with pace and HR.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto p-0">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Date</th>
+                          <th className="px-2 py-2 text-left">Type</th>
+                          <th className="px-2 py-2 text-left">Title</th>
+                          <th className="px-2 py-2 text-right">Distance</th>
+                          <th className="px-2 py-2 text-right">Time</th>
+                          <th className="px-2 py-2 text-right">Pace</th>
+                          <th className="px-2 py-2 text-right">RPE</th>
+                          <th className="px-2 py-2 text-right">Avg HR</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...enduranceStats.series].reverse().slice(0, 15).map((s, idx) => (
+                          <tr key={`${s.date}-${idx}`} className="border-t border-border">
+                            <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d")}</td>
+                            <td className="px-2 py-2 capitalize">{s.discipline}</td>
+                            <td className="px-2 py-2 text-muted-foreground">{s.title ?? "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.km > 0 ? `${s.km.toFixed(2)} km` : "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.minutes > 0 ? `${s.minutes.toFixed(0)} min` : "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.pace_label ?? "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.rpe != null ? s.rpe.toFixed(1) : "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.hr ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
 
           {/* === ADHERENCE TAB === */}

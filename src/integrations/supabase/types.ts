@@ -698,24 +698,39 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          css_per_100m_seconds: number | null
+          ftp_watts: number | null
           full_name: string | null
           id: string
+          max_hr: number | null
+          resting_hr: number | null
+          ten_k_pb_seconds: number | null
           updated_at: string
           weight_class: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          css_per_100m_seconds?: number | null
+          ftp_watts?: number | null
           full_name?: string | null
           id: string
+          max_hr?: number | null
+          resting_hr?: number | null
+          ten_k_pb_seconds?: number | null
           updated_at?: string
           weight_class?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          css_per_100m_seconds?: number | null
+          ftp_watts?: number | null
           full_name?: string | null
           id?: string
+          max_hr?: number | null
+          resting_hr?: number | null
+          ten_k_pb_seconds?: number | null
           updated_at?: string
           weight_class?: string | null
         }

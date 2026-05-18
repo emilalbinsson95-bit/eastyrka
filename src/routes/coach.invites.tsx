@@ -65,6 +65,23 @@ function InvitesPage() {
     },
   });
 
+  const linkedIds = useMemo(
+    () => new Set((linksQuery.data ?? []).map((l) => l.athlete_id)),
+    [linksQuery.data],
+  );
+
+  const searchQuery = useQuery({
+    queryKey: ["athlete-search", debounced],
+    enabled: debounced.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_athlete_profiles", {
+        _query: debounced,
+      });
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null }[];
+    },
+  });
+
   // Connect by email — looks up existing user by email via profiles. Since we
   // can't query auth.users from the client, we look up profiles whose owner has
   // a matching email by attempting a connect-by-id flow only after the athlete

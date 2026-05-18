@@ -110,6 +110,7 @@ export type Database = {
           peak_rpe: number | null
           planned_avg_rpe: number | null
           planned_total_seconds: number | null
+          predicted_10k_seconds: number | null
           status: string
           title: string | null
           updated_at: string
@@ -128,6 +129,7 @@ export type Database = {
           peak_rpe?: number | null
           planned_avg_rpe?: number | null
           planned_total_seconds?: number | null
+          predicted_10k_seconds?: number | null
           status?: string
           title?: string | null
           updated_at?: string
@@ -146,6 +148,7 @@ export type Database = {
           peak_rpe?: number | null
           planned_avg_rpe?: number | null
           planned_total_seconds?: number | null
+          predicted_10k_seconds?: number | null
           status?: string
           title?: string | null
           updated_at?: string

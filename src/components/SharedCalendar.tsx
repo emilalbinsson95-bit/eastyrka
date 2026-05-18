@@ -261,6 +261,7 @@ function DayCell({
   onConfirm,
   onRequestCancel,
   onUncancel,
+  onPreview,
 }: {
   date: string;
   label: string;
@@ -272,6 +273,7 @@ function DayCell({
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
+  onPreview: (it: CalendarItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
@@ -303,6 +305,7 @@ function DayCell({
             onConfirm={onConfirm}
             onRequestCancel={onRequestCancel}
             onUncancel={onUncancel}
+            onPreview={onPreview}
           />
         ))}
       </div>

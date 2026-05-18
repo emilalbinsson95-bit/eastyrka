@@ -124,12 +124,16 @@ export function EnduranceSessionEditor({
         onChange={() => qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] })}
         onClose={onClose}
       />
+      {session.mode === "quick" && (
+        <QuickEstimate discipline={session.discipline} rpe={session.planned_avg_rpe} benchmarks={benchmarks} />
+      )}
       {session.mode === "structured" && (
         <StepsEditor
           sessionId={sessionId}
           steps={stepsQuery.data ?? []}
           canEditPlan={canEditPlan}
           defaultDiscipline={session.discipline}
+          benchmarks={benchmarks}
           onChange={() => {
             qc.invalidateQueries({ queryKey: ["endurance-steps", sessionId] });
             qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] });

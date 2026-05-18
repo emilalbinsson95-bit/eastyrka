@@ -16,6 +16,9 @@ import {
   CATEGORIES,
   templateTotalSeconds,
   templateAvgRpe,
+  templatePeakRpe,
+  templateStrain,
+  strainBucket,
   templateInsertPlan,
   type RaceGoal,
   type AthleteLevel,
@@ -209,6 +212,9 @@ export function EnduranceLibrary({
           {filtered.map((t) => {
             const total = templateTotalSeconds(t);
             const avg = templateAvgRpe(t);
+            const peak = templatePeakRpe(t);
+            const strain = templateStrain(t);
+            const bucket = strainBucket(strain);
             return (
               <div
                 key={t.id}
@@ -222,8 +228,19 @@ export function EnduranceLibrary({
                 <div className="mb-3 flex flex-wrap gap-1">
                   <Badge variant="secondary" className="text-[10px]">{formatDuration(total)}</Badge>
                   {avg != null && (
-                    <Badge className={cn("text-[10px]", rpeTone(avg))}>avg RPE {avg}</Badge>
+                    <Badge className={cn("text-[10px]", rpeTone(avg))}>avg {avg}</Badge>
                   )}
+                  {peak != null && (
+                    <Badge className={cn("text-[10px]", rpeTone(peak))} title="Peak target RPE">
+                      peak {peak}
+                    </Badge>
+                  )}
+                  <Badge
+                    className={cn("text-[10px]", bucket.tone)}
+                    title="TRIMP-style strain score (minutes × RPE-weighting)"
+                  >
+                    strain {strain} · {bucket.label}
+                  </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     {CATEGORIES.find((c) => c.value === t.category)?.label}
                   </Badge>

@@ -602,3 +602,46 @@ export function templateAvgRpe(t: SessionTemplate): number | null {
   if (w === 0) return null;
   return Math.round((s / w) * 10) / 10;
 }
+
+/** Peak (highest) target RPE across all leaf steps. */
+export function templatePeakRpe(t: SessionTemplate): number | null {
+  let peak: number | null = null;
+  function walk(nodes: LibStep[]) {
+    for (const n of nodes) {
+      if (n.kind === "group") walk(n.children);
+      else if (peak == null || n.rpe > peak) peak = n.rpe;
+    }
+  }
+  walk(t.steps);
+  return peak;
+}
+
+/**
+ * Session strain — TRIMP-style load score using the same RPE-weighting
+ * curve as `sessionLoad` in enduranceLoad.ts so library previews are
+ * comparable to logged-session load.
+ */
+export function templateStrain(t: SessionTemplate): number {
+  let strain = 0;
+  function walk(nodes: LibStep[], mult: number) {
+    for (const n of nodes) {
+      if (n.kind === "group") walk(n.children, mult * n.repeat);
+      else {
+        const minutes = (n.sec * mult) / 60;
+        const expo = Math.exp(0.18 * (n.rpe - 5));
+        strain += minutes * n.rpe * expo * 0.55;
+      }
+    }
+  }
+  walk(t.steps, 1);
+  return Math.round(strain);
+}
+
+/** Qualitative strain bucket for badge styling. */
+export function strainBucket(strain: number): { label: string; tone: string } {
+  if (strain < 40) return { label: "Light", tone: "bg-status-peaking/30 text-status-peaking-foreground" };
+  if (strain < 90) return { label: "Moderate", tone: "bg-status-adapting/30 text-status-adapting-foreground" };
+  if (strain < 160) return { label: "Hard", tone: "bg-primary/20 text-primary" };
+  return { label: "Very hard", tone: "bg-status-exhausted/30 text-status-exhausted-foreground" };
+}
+

@@ -107,8 +107,15 @@ export function EnduranceSessionEditor({
       }) as AthleteBenchmarks;
     },
   });
-  const benchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
+  const profileBenchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
     ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+  };
+  // For pace estimates in this session, prefer the session's own predicted 10k
+  // (athlete's "feel today") over the all-time PB stored on the profile.
+  const benchmarks: AthleteBenchmarks = {
+    ...profileBenchmarks,
+    ten_k_pb_seconds:
+      sessionQuery.data?.predicted_10k_seconds ?? profileBenchmarks.ten_k_pb_seconds,
   };
 
   if (sessionQuery.isLoading) {

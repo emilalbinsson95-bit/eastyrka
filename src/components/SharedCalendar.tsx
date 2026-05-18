@@ -325,12 +325,14 @@ function SessionCard({
   onConfirm,
   onRequestCancel,
   onUncancel,
+  onPreview,
 }: {
   item: CalendarItem;
   readOnly: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
+  onPreview: (it: CalendarItem) => void;
 }) {
   const draggable = !readOnly && !item.isCancelled;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -346,6 +348,7 @@ function SessionCard({
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
+      onClick={() => { if (!isDragging) onPreview(item); }}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }

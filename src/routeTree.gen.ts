@@ -30,6 +30,7 @@ import { Route as AppTodayRouteImport } from './routes/_app.today'
 import { Route as AppMeRouteImport } from './routes/_app.me'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as AppEnduranceRouteImport } from './routes/_app.endurance'
+import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
 import { Route as PhysioPatientsPatientIdRouteImport } from './routes/physio.patients.$patientId'
 import { Route as PatientSessionsSessionIdRouteImport } from './routes/patient.sessions.$sessionId'
 import { Route as CoachAthletesAthleteIdRouteImport } from './routes/coach.athletes.$athleteId'
@@ -143,6 +144,11 @@ const AppEnduranceRoute = AppEnduranceRouteImport.update({
   path: '/endurance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
 const PhysioPatientsPatientIdRoute = PhysioPatientsPatientIdRouteImport.update({
   id: '/patients/$patientId',
   path: '/patients/$patientId',
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/calendar': typeof AppCalendarRoute
   '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/calendar': typeof AppCalendarRoute
   '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_app/calendar': typeof AppCalendarRoute
   '/_app/endurance': typeof AppEnduranceRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/me': typeof AppMeRoute
@@ -291,6 +300,7 @@ export interface FileRouteTypes {
     | '/physio'
     | '/signup'
     | '/sitemap.xml'
+    | '/calendar'
     | '/endurance'
     | '/history'
     | '/me'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/sitemap.xml'
+    | '/calendar'
     | '/endurance'
     | '/history'
     | '/me'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/physio'
     | '/signup'
     | '/sitemap.xml'
+    | '/_app/calendar'
     | '/_app/endurance'
     | '/_app/history'
     | '/_app/me'
@@ -532,6 +544,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEnduranceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/calendar': {
+      id: '/_app/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/physio/patients/$patientId': {
       id: '/physio/patients/$patientId'
       path: '/patients/$patientId'
@@ -592,6 +611,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppCalendarRoute: typeof AppCalendarRoute
   AppEnduranceRoute: typeof AppEnduranceRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppMeRoute: typeof AppMeRoute
@@ -599,6 +619,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCalendarRoute: AppCalendarRoute,
   AppEnduranceRoute: AppEnduranceRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppMeRoute: AppMeRoute,

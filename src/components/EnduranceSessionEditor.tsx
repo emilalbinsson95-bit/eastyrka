@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, Save, ChevronUp, ChevronDown, Repeat, Bike, Waves, Footprints, Activity,
+  Plus, Trash2, Save, ChevronUp, ChevronDown, Repeat, Bike, Waves, Footprints, Activity, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   DISCIPLINES, type Discipline, type Mode, type StepInput,
   formatDuration, parseHMS, totalPlannedSeconds, avgTargetRpe, rpeTone, rpeLabel, disciplineEmoji,
 } from "@/lib/endurance";
+import { estimateForRpe, hasAnyBenchmark, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
 
 const disciplineIcon = (d: Discipline | null | undefined) =>
   d === "run" ? <Footprints className="h-4 w-4" /> :

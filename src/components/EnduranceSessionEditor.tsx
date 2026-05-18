@@ -38,6 +38,7 @@ interface SessionRow {
   actual_total_seconds: number | null;
   peak_rpe: number | null;
   overall_rpe: number | null;
+  predicted_10k_seconds: number | null;
   notes: string | null;
   status: string;
 }
@@ -676,14 +677,28 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
   const [overall, setOverall] = useState<string>(session.overall_rpe?.toString() ?? "");
   const [peak, setPeak] = useState<string>(session.peak_rpe?.toString() ?? "");
   const [notes, setNotes] = useState(session.notes ?? "");
+  const initPred = session.predicted_10k_seconds;
+  const [pred10kMin, setPred10kMin] = useState<string>(initPred ? String(Math.floor(initPred / 60)) : "");
+  const [pred10kSec, setPred10kSec] = useState<string>(initPred ? String(initPred % 60).padStart(2, "0") : "");
 
   const save = useMutation({
     mutationFn: async () => {
       const actual_total_seconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
+      let predicted_10k_seconds: number | null = null;
+      if (pred10kMin || pred10kSec) {
+        const total = (Number(pred10kMin) || 0) * 60 + (Number(pred10kSec) || 0);
+        if (total > 0) {
+          if (total < 1500 || total > 14400) {
+            throw new Error("Predicted 10k must be between 25:00 and 4:00:00");
+          }
+          predicted_10k_seconds = total;
+        }
+      }
       const { error } = await supabase.from("endurance_sessions").update({
         actual_total_seconds,
         overall_rpe: overall ? Number(overall) : null,
         peak_rpe: peak ? Number(peak) : null,
+        predicted_10k_seconds,
         notes: notes || null,
         status: "completed",
       }).eq("id", session.id);
@@ -716,6 +731,27 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
           <div className="space-y-1">
             <Label>Hardest part RPE</Label>
             <Input type="number" min={1} max={10} value={peak} onChange={(e) => setPeak(e.target.value)} />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label>Predicted 10k time today</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number" min={0} max={240} placeholder="min"
+              className="w-24"
+              value={pred10kMin}
+              onChange={(e) => setPred10kMin(e.target.value)}
+            />
+            <span className="text-sm text-muted-foreground">:</span>
+            <Input
+              type="number" min={0} max={59} placeholder="sec"
+              className="w-24"
+              value={pred10kSec}
+              onChange={(e) => setPred10kSec(e.target.value)}
+            />
+            <span className="text-xs text-muted-foreground">
+              How fast you feel you could race a 10k today. Updates only this session — your all-time PB stays in your profile.
+            </span>
           </div>
         </div>
         <div className="space-y-1">

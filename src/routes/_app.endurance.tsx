@@ -33,7 +33,7 @@ function EndurancePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_sessions")
-        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe, status")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe, predicted_10k_seconds, status")
         .eq("athlete_id", user!.id)
         .eq("status", "done")
         .not("actual_total_seconds", "is", null)
@@ -148,6 +148,11 @@ function EndurancePage() {
                   <Badge>Planned {formatDuration(s.planned_total_seconds)}</Badge>
                 )}
                 {s.overall_rpe != null && <Badge variant="outline">RPE {s.overall_rpe}</Badge>}
+                {s.predicted_10k_seconds != null && (
+                  <Badge variant="outline" className="font-mono">
+                    10k ~{Math.floor(s.predicted_10k_seconds / 60)}:{String(s.predicted_10k_seconds % 60).padStart(2, "0")}
+                  </Badge>
+                )}
                 {(() => { const d = sessionDrift(s); return d && d.tone !== "ok" ? <Badge className={driftBadgeClasses(d.tone)}>{d.label}</Badge> : null; })()}
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>

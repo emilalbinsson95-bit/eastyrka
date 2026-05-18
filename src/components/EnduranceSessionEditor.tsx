@@ -136,6 +136,7 @@ export function EnduranceSessionEditor({
           canEditPlan={canEditPlan}
           defaultDiscipline={session.discipline}
           benchmarks={benchmarks}
+          sessionStatus={session.status}
           onChange={() => {
             qc.invalidateQueries({ queryKey: ["endurance-steps", sessionId] });
             qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] });

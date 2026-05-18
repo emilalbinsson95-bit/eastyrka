@@ -127,6 +127,7 @@ function CoachRosterPage() {
     },
   });
 
+  const athletes = rosterQuery.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
 

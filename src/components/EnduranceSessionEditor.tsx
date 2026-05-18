@@ -90,6 +90,25 @@ export function EnduranceSessionEditor({
 
   const session = sessionQuery.data;
 
+  const benchmarksQuery = useQuery({
+    queryKey: ["athlete-benchmarks", session?.athlete_id],
+    enabled: !!session?.athlete_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("ten_k_pb_seconds, max_hr, resting_hr, ftp_watts, css_per_100m_seconds")
+        .eq("id", session!.athlete_id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? {
+        ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+      }) as AthleteBenchmarks;
+    },
+  });
+  const benchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
+    ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+  };
+
   if (sessionQuery.isLoading) {
     return <Card><CardContent className="py-6 text-sm text-muted-foreground">Loading…</CardContent></Card>;
   }

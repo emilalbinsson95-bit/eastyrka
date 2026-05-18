@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle, TrendingUp, TrendingDown, Minus, Dumbbell } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronRight, Activity, MessageCircle, TrendingUp, TrendingDown, Minus, Dumbbell, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,

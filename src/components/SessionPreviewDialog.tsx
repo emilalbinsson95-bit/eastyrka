@@ -195,7 +195,7 @@ async function loadEndurance(sessionId: string): Promise<Detail> {
 
   const { data: steps } = await supabase
     .from("endurance_steps")
-    .select("order_index, parent_id, is_group, repeat_count, discipline, duration_seconds, target_rpe, notes")
+    .select("id, order_index, parent_id, is_group, repeat_count, discipline, duration_seconds, target_rpe, notes")
     .eq("session_id", sessionId)
     .order("order_index", { ascending: true });
 

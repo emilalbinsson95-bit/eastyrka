@@ -195,21 +195,41 @@ function TodayPage() {
     },
   });
 
+  // Only show a strength session today if it has been accepted/confirmed in
+  // the shared calendar (and not cancelled) for today's date.
+  const todaysAcceptedQuery = useQuery({
+    queryKey: ["today-accepted-planned", userId, todayStr],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase
+        .from("session_schedule_overrides")
+        .select("source_id, confirmed_at, cancelled_at, scheduled_date, source_type")
+        .eq("owner_id", userId)
+        .eq("source_type", "planned")
+        .eq("scheduled_date", todayStr);
+      if (error) throw error;
+      return (data ?? [])
+        .filter((o) => o.confirmed_at && !o.cancelled_at)
+        .map((o) => o.source_id as string);
+    },
+  });
+
   const todayPlanned: PlannedSession | undefined = useMemo(() => {
     if (!planQuery.data) return undefined;
+    const accepted = new Set(todaysAcceptedQuery.data ?? []);
+    if (accepted.size === 0) return undefined;
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
-    const orderedSessions = [...planQuery.data.planned_sessions].sort(
-      (a, b) => a.day_of_week - b.day_of_week,
-    );
-    // First session whose planned exercises are not all logged.
+    const orderedSessions = [...planQuery.data.planned_sessions]
+      .filter((s) => accepted.has(s.id))
+      .sort((a, b) => a.day_of_week - b.day_of_week);
+    if (orderedSessions.length === 0) return undefined;
+    // Prefer the first accepted session whose planned exercises are not all logged.
     const next = orderedSessions.find((s) =>
       s.planned_exercises.some((e) => !loggedSet.has(e.id)),
     );
-    // Fall back to the last session if every day is complete.
-    return next ?? orderedSessions[orderedSessions.length - 1];
-  }, [planQuery.data, weekLogsQuery.data]);
+    return next ?? orderedSessions[0];
+  }, [planQuery.data, weekLogsQuery.data, todaysAcceptedQuery.data]);
 
   const baselines = baselinesQuery.data ?? {};
   const logs = logsQuery.data ?? [];

@@ -94,16 +94,6 @@ function InvitesPage() {
       if (!/^[0-9a-f-]{36}$/i.test(trimmed)) {
         throw new Error("That doesn't look like a valid user ID (UUID)");
       }
-      // Verify athlete profile exists & has athlete role
-      const { data: rolesData, error: rolesErr } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", trimmed)
-        .eq("role", "athlete");
-      if (rolesErr) throw rolesErr;
-      if (!rolesData || rolesData.length === 0) {
-        throw new Error("No athlete account found with that ID");
-      }
       const { error } = await supabase
         .from("coach_athletes")
         .insert({ coach_id: coachId, athlete_id: trimmed });

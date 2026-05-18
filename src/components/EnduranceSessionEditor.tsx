@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import {
   DISCIPLINES, type Discipline, type Mode, type StepInput,
   formatDuration, parseHMS, totalPlannedSeconds, avgTargetRpe, rpeTone, rpeLabel, disciplineEmoji,
+  paceLabelFromDistance,
 } from "@/lib/endurance";
 import { estimateForRpe, hasAnyBenchmark, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
 

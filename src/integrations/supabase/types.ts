@@ -77,18 +77,21 @@ export type Database = {
           coach_id: string
           created_at: string
           id: string
+          tag: string | null
         }
         Insert: {
           athlete_id: string
           coach_id: string
           created_at?: string
           id?: string
+          tag?: string | null
         }
         Update: {
           athlete_id?: string
           coach_id?: string
           created_at?: string
           id?: string
+          tag?: string | null
         }
         Relationships: []
       }

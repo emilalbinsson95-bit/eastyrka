@@ -54,9 +54,7 @@ export const Route = createFileRoute("/coach/athletes/$athleteId")({
 function AthleteDetailPage() {
   const { athleteId } = useParams({ from: "/coach/athletes/$athleteId" });
   const childMatches = useChildMatches();
-  if (childMatches.length > 0) {
-    return <Outlet />;
-  }
+  const hasChild = childMatches.length > 0;
   const profileQuery = useQuery({
     queryKey: ["athlete-profile", athleteId],
     queryFn: async () => {
@@ -83,6 +81,8 @@ function AthleteDetailPage() {
       return data;
     },
   });
+
+  if (hasChild) return <Outlet />;
 
   return (
     <div className="space-y-6">

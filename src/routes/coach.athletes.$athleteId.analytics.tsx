@@ -156,7 +156,61 @@ function AnalyticsPage() {
     },
   });
 
-  // Exercise library — for category mapping
+  const enduranceQuery = useQuery({
+    queryKey: ["analytics-endurance", athleteId, days],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const { data: sessions, error } = await supabase
+        .from("endurance_sessions")
+        .select("id, date, discipline, status, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, actual_distance_m, overall_rpe, peak_rpe")
+        .eq("athlete_id", athleteId)
+        .gte("date", format(since, "yyyy-MM-dd"))
+        .order("date", { ascending: true });
+      if (error) throw error;
+      const sList = sessions ?? [];
+      const ids = sList.map((s) => s.id);
+      let steps: Array<{ session_id: string; actual_duration_seconds: number | null; actual_distance_m: number | null; actual_avg_hr: number | null; actual_avg_rpe: number | null }> = [];
+      if (ids.length) {
+        const { data: stepData, error: sErr } = await supabase
+          .from("endurance_steps")
+          .select("session_id, actual_duration_seconds, actual_distance_m, actual_avg_hr, actual_avg_rpe")
+          .in("session_id", ids);
+        if (sErr) throw sErr;
+        steps = stepData ?? [];
+      }
+      // Aggregate step-derived totals per session as fallback
+      const stepAgg = new Map<string, { dur: number; dist: number; hrSum: number; hrCount: number; rpeSum: number; rpeCount: number }>();
+      for (const st of steps) {
+        const cur = stepAgg.get(st.session_id) ?? { dur: 0, dist: 0, hrSum: 0, hrCount: 0, rpeSum: 0, rpeCount: 0 };
+        if (st.actual_duration_seconds) cur.dur += st.actual_duration_seconds;
+        if (st.actual_distance_m) cur.dist += st.actual_distance_m;
+        if (st.actual_avg_hr) { cur.hrSum += st.actual_avg_hr; cur.hrCount += 1; }
+        if (st.actual_avg_rpe) { cur.rpeSum += Number(st.actual_avg_rpe); cur.rpeCount += 1; }
+        stepAgg.set(st.session_id, cur);
+      }
+      return sList.map((s) => {
+        const agg = stepAgg.get(s.id);
+        const dur = s.actual_total_seconds ?? agg?.dur ?? 0;
+        const dist = s.actual_distance_m ?? agg?.dist ?? 0;
+        const rpe = s.overall_rpe ?? s.peak_rpe ?? (agg && agg.rpeCount ? agg.rpeSum / agg.rpeCount : null);
+        const hr = agg && agg.hrCount ? Math.round(agg.hrSum / agg.hrCount) : null;
+        return {
+          id: s.id,
+          date: s.date,
+          discipline: s.discipline as string,
+          status: s.status as string,
+          title: s.title as string | null,
+          duration_s: dur,
+          distance_m: dist,
+          rpe: rpe != null ? Number(rpe) : null,
+          hr,
+          planned_s: s.planned_total_seconds ?? 0,
+          planned_rpe: s.planned_avg_rpe != null ? Number(s.planned_avg_rpe) : null,
+        };
+      });
+    },
+  });
   const exerciseLibQuery = useQuery({
     queryKey: ["analytics-exercise-lib"],
     queryFn: async () => {

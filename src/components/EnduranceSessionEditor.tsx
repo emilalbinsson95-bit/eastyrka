@@ -324,24 +324,28 @@ function Stat({ label, value }: { label: string; value: string }) {
 // ---------- Steps editor (structured mode) ----------
 
 function StepsEditor({
-  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, onChange,
+  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, sessionStatus, onChange,
 }: {
   sessionId: string;
   steps: StepRow[];
   canEditPlan: boolean;
   defaultDiscipline: Discipline;
   benchmarks: AthleteBenchmarks;
+  sessionStatus: string;
   onChange: () => void;
 }) {
   const totalSec = useMemo(() => totalPlannedSeconds(steps), [steps]);
   const avgRpe = useMemo(() => avgTargetRpe(steps), [steps]);
 
   useEffect(() => {
-    void supabase.from("endurance_sessions").update({
+    const patch: { planned_total_seconds: number | null; planned_avg_rpe: number | null; status?: string } = {
       planned_total_seconds: totalSec || null,
       planned_avg_rpe: avgRpe,
-    }).eq("id", sessionId);
-  }, [sessionId, totalSec, avgRpe]);
+    };
+    // Promote draft → planned once the structure has real content
+    if (sessionStatus === "draft" && totalSec > 0) patch.status = "planned";
+    void supabase.from("endurance_sessions").update(patch).eq("id", sessionId);
+  }, [sessionId, totalSec, avgRpe, sessionStatus]);
 
   const topLevel = steps.filter((s) => !s.parent_id).sort((a, b) => a.order_index - b.order_index);
 

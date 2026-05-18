@@ -195,12 +195,15 @@ function SessionHeader({
         : session.planned_total_seconds;
       const planned_avg_rpe = mode === "quick" && plannedAvgRpe
         ? Number(plannedAvgRpe) : (mode === "quick" ? null : session.planned_avg_rpe);
+      // Promote draft → planned so it surfaces on the calendar
+      const patch: Record<string, unknown> = {
+        title: title || null, date, discipline,
+        planned_total_seconds, planned_avg_rpe,
+      };
+      if (session.status === "draft") patch.status = "planned";
       const { error } = await supabase
         .from("endurance_sessions")
-        .update({
-          title: title || null, date, discipline,
-          planned_total_seconds, planned_avg_rpe,
-        })
+        .update(patch)
         .eq("id", session.id);
       if (error) throw error;
     },

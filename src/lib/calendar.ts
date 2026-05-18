@@ -17,11 +17,16 @@ export type CalendarItem = {
     id: string;
     scheduledDate: string;
     confirmedAt: string | null;
+    cancelledAt: string | null;
+    cancelReason: string | null;
   };
   /** Final date to render the card on. */
   effectiveDate: string;
   /** True if the card is still a coach/physio suggestion that hasn't been confirmed/moved. */
   isGhost: boolean;
+  /** True if the athlete/patient cancelled this session. */
+  isCancelled: boolean;
+  cancelReason?: string | null;
   /** Link to detail page (optional). */
   href?: string;
 };

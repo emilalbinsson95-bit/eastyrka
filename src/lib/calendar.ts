@@ -157,7 +157,8 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
   }));
 
   const items = [...plannedItems, ...enduranceItems, ...rehabItems, ...adhocItems];
-  const sourceIds = items.map((i) => i.sourceId);
+  // Only items with uuid sourceIds can have schedule overrides (ad-hoc strength uses date as sourceId)
+  const sourceIds = items.filter((i) => i.source !== "adhoc_strength").map((i) => i.sourceId);
   if (sourceIds.length > 0) {
     const { data: overrides } = await supabase
       .from("session_schedule_overrides")

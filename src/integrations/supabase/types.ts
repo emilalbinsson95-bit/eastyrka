@@ -97,6 +97,7 @@ export type Database = {
       }
       endurance_sessions: {
         Row: {
+          actual_distance_m: number | null
           actual_total_seconds: number | null
           athlete_id: string
           coach_id: string | null
@@ -116,6 +117,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actual_distance_m?: number | null
           actual_total_seconds?: number | null
           athlete_id: string
           coach_id?: string | null
@@ -135,6 +137,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          actual_distance_m?: number | null
           actual_total_seconds?: number | null
           athlete_id?: string
           coach_id?: string | null

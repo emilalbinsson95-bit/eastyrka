@@ -548,8 +548,81 @@ function AnalyticsPage() {
     return { points, correlation };
   }, [surveysQuery.data, allLogs, baselines]);
 
+  // ---- Endurance ----
+  const enduranceData = enduranceQuery.data ?? [];
+  const enduranceStats = useMemo(() => {
+    const completed = enduranceData.filter((s) => s.status === "completed" || s.duration_s > 0 || s.distance_m > 0);
+    // Per-session series (sorted by date)
+    const series = completed.map((s) => {
+      const km = s.distance_m / 1000;
+      const min = s.duration_s / 60;
+      const paceSecPerKm = km > 0 && s.duration_s > 0 ? s.duration_s / km : null;
+      return {
+        date: s.date,
+        label: format(parseISO(s.date), "MMM d"),
+        discipline: s.discipline,
+        title: s.title,
+        km: Number(km.toFixed(2)),
+        minutes: Number(min.toFixed(1)),
+        rpe: s.rpe,
+        hr: s.hr,
+        pace_s_per_km: paceSecPerKm,
+        pace_label: paceSecPerKm ? `${Math.floor(paceSecPerKm / 60)}:${String(Math.round(paceSecPerKm % 60)).padStart(2, "0")}/km` : null,
+      };
+    });
+
+    // Weekly aggregates (per discipline)
+    const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
+    const disciplines = new Set<string>();
+    for (const s of completed) {
+      const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
+      disciplines.add(s.discipline);
+      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, rpeSum: 0, rpeCount: 0, sessions: 0 };
+      row.distance[s.discipline] = (row.distance[s.discipline] ?? 0) + s.distance_m / 1000;
+      row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + s.duration_s / 60;
+      if (s.rpe != null) { row.rpeSum += s.rpe; row.rpeCount += 1; }
+      row.sessions += 1;
+      weekMap.set(wk, row);
+    }
+    const weekly = Array.from(weekMap.values())
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .map((w) => {
+        const flat: Record<string, number | string> = { week: w.week, label: w.label, sessions: w.sessions, avgRPE: w.rpeCount > 0 ? Number((w.rpeSum / w.rpeCount).toFixed(2)) : 0 };
+        for (const d of disciplines) {
+          flat[`km_${d}`] = Number((w.distance[d] ?? 0).toFixed(2));
+          flat[`min_${d}`] = Number((w.minutes[d] ?? 0).toFixed(0));
+        }
+        flat.totalKm = Number(Object.values(w.distance).reduce((a, b) => a + b, 0).toFixed(2));
+        flat.totalMin = Number(Object.values(w.minutes).reduce((a, b) => a + b, 0).toFixed(0));
+        return flat;
+      });
+
+    // Totals
+    const totalKm = completed.reduce((a, s) => a + s.distance_m / 1000, 0);
+    const totalMin = completed.reduce((a, s) => a + s.duration_s / 60, 0);
+    const rpeVals = completed.map((s) => s.rpe).filter((v): v is number => v != null);
+    const avgRPE = rpeVals.length ? rpeVals.reduce((a, b) => a + b, 0) / rpeVals.length : null;
+    const runs = completed.filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0);
+    const avgRunPace = runs.length
+      ? runs.reduce((a, s) => a + s.duration_s / (s.distance_m / 1000), 0) / runs.length
+      : null;
+    return {
+      series,
+      weekly,
+      disciplines: Array.from(disciplines).sort(),
+      totals: {
+        sessions: completed.length,
+        totalKm,
+        totalMin,
+        avgRPE,
+        avgRunPace,
+      },
+    };
+  }, [enduranceData]);
+
   const isLoading =
-    logsQuery.isLoading || baselinesQuery.isLoading || surveysQuery.isLoading;
+    logsQuery.isLoading || baselinesQuery.isLoading || surveysQuery.isLoading || enduranceQuery.isLoading;
+
 
   return (
     <div className="space-y-6">

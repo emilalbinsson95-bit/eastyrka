@@ -791,7 +791,15 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
       const hasAnyActual =
         !!actual_total_seconds || !!actual_distance_m ||
         !!overall || !!peak || !!notes.trim() || predicted_10k_seconds != null;
-      const patch: Record<string, unknown> = {
+      const patch: {
+        actual_total_seconds: number | null;
+        actual_distance_m: number | null;
+        overall_rpe: number | null;
+        peak_rpe: number | null;
+        predicted_10k_seconds: number | null;
+        notes: string | null;
+        status?: string;
+      } = {
         actual_total_seconds,
         actual_distance_m,
         overall_rpe: overall ? Number(overall) : null,

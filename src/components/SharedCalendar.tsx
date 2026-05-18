@@ -10,16 +10,28 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
   CalendarItem,
+  cancelSession,
   fetchCalendarItems,
   fetchReadinessDots,
   monthGridDays,
   setOverride,
+  uncancelSession,
 } from "@/lib/calendar";
 
 type Props = {

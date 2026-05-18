@@ -38,6 +38,7 @@ interface SessionRow {
   actual_total_seconds: number | null;
   peak_rpe: number | null;
   overall_rpe: number | null;
+  predicted_10k_seconds: number | null;
   notes: string | null;
   status: string;
 }

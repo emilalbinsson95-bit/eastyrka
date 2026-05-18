@@ -898,7 +898,7 @@ function AnalyticsPage() {
 
                 <ChartCard title="Weekly time & average RPE" description="Total minutes per week with average session RPE overlay.">
                   <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={enduranceStats.weekly}>
+                    <ComposedChart data={enduranceStats.weekly}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                       <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
@@ -907,7 +907,7 @@ function AnalyticsPage() {
                       <Legend />
                       <Bar yAxisId="left" dataKey="totalMin" name="Minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                       <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
-                    </BarChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
 

@@ -321,6 +321,7 @@ function DayCell({
   onRequestCancel,
   onUncancel,
   onPreview,
+  onAdd,
 }: {
   date: string;
   label: string;
@@ -333,13 +334,14 @@ function DayCell({
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
   onPreview: (it: CalendarItem) => void;
+  onAdd?: (date: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[110px] bg-card p-1.5 transition-colors",
+        "group/day relative min-h-[110px] bg-card p-1.5 transition-colors",
         !inMonth && "bg-muted/30 text-muted-foreground/60",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
       )}
@@ -353,7 +355,23 @@ function DayCell({
         >
           {label}
         </span>
-        {readiness != null && <ReadinessDot value={readiness} />}
+        <div className="flex items-center gap-1">
+          {readiness != null && <ReadinessDot value={readiness} />}
+          {onAdd && inMonth && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(date);
+              }}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-primary/10 hover:text-primary group-hover/day:opacity-100 focus:opacity-100"
+              aria-label="Add session"
+              title="Add session"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="mt-1 space-y-1">
         {items.map((it) => (

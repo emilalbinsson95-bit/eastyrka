@@ -33,6 +33,7 @@ import {
   setOverride,
   uncancelSession,
 } from "@/lib/calendar";
+import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 
 type Props = {
   ownerId: string;
@@ -89,6 +90,7 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
 
   const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
 
   const days = useMemo(() => monthGridDays(monthDate), [monthDate]);
 
@@ -176,11 +178,18 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                   setCancelTarget(it);
                 }}
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
+                onPreview={(it) => setPreviewTarget(it)}
               />
             );
           })}
         </div>
       </div>
+
+      <SessionPreviewDialog
+        item={previewTarget}
+        open={!!previewTarget}
+        onOpenChange={(o) => !o && setPreviewTarget(null)}
+      />
 
       <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
         <DialogContent>
@@ -252,6 +261,7 @@ function DayCell({
   onConfirm,
   onRequestCancel,
   onUncancel,
+  onPreview,
 }: {
   date: string;
   label: string;
@@ -263,6 +273,7 @@ function DayCell({
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
+  onPreview: (it: CalendarItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
@@ -294,6 +305,7 @@ function DayCell({
             onConfirm={onConfirm}
             onRequestCancel={onRequestCancel}
             onUncancel={onUncancel}
+            onPreview={onPreview}
           />
         ))}
       </div>
@@ -313,12 +325,14 @@ function SessionCard({
   onConfirm,
   onRequestCancel,
   onUncancel,
+  onPreview,
 }: {
   item: CalendarItem;
   readOnly: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
+  onPreview: (it: CalendarItem) => void;
 }) {
   const draggable = !readOnly && !item.isCancelled;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -334,6 +348,7 @@ function SessionCard({
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
+      onClick={() => { if (!isDragging) onPreview(item); }}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }

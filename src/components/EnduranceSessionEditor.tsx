@@ -196,11 +196,14 @@ function SessionHeader({
       const planned_avg_rpe = mode === "quick" && plannedAvgRpe
         ? Number(plannedAvgRpe) : (mode === "quick" ? null : session.planned_avg_rpe);
       // Promote draft → planned so it surfaces on the calendar
-      const patch: Record<string, unknown> = {
-        title: title || null, date, discipline,
-        planned_total_seconds, planned_avg_rpe,
+      const patch = {
+        title: title || null,
+        date,
+        discipline,
+        planned_total_seconds,
+        planned_avg_rpe,
+        ...(session.status === "draft" ? { status: "planned" } : {}),
       };
-      if (session.status === "draft") patch.status = "planned";
       const { error } = await supabase
         .from("endurance_sessions")
         .update(patch)

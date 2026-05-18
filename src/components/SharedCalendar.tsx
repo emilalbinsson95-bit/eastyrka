@@ -94,6 +94,12 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
   const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
+  const [addForDate, setAddForDate] = useState<string | null>(null);
+  const [editorTarget, setEditorTarget] = useState<
+    | { kind: "endurance"; sessionId: string }
+    | { kind: "adhoc_strength"; date: string }
+    | null
+  >(null);
 
   const days = useMemo(() => monthGridDays(monthDate), [monthDate]);
 

@@ -854,6 +854,117 @@ function AnalyticsPage() {
             </div>
           </TabsContent>
 
+          {/* === ENDURANCE TAB === */}
+          <TabsContent value="endurance" className="mt-4 space-y-4">
+            {enduranceStats.totals.sessions === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                  No completed endurance sessions in this window.
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <KpiCard icon={<Footprints className="h-4 w-4" />} label="Sessions" value={String(enduranceStats.totals.sessions)} hint={enduranceStats.disciplines.join(", ")} />
+                  <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Total distance" value={`${enduranceStats.totals.totalKm.toFixed(1)} km`} />
+                  <KpiCard icon={<Activity className="h-4 w-4" />} label="Total time" value={`${Math.floor(enduranceStats.totals.totalMin / 60)}h ${Math.round(enduranceStats.totals.totalMin % 60)}m`} />
+                  <KpiCard
+                    icon={<Gauge className="h-4 w-4" />}
+                    label="Avg run pace"
+                    value={
+                      enduranceStats.totals.avgRunPace
+                        ? `${Math.floor(enduranceStats.totals.avgRunPace / 60)}:${String(Math.round(enduranceStats.totals.avgRunPace % 60)).padStart(2, "0")}/km`
+                        : "—"
+                    }
+                    hint={enduranceStats.totals.avgRPE != null ? `Avg RPE ${enduranceStats.totals.avgRPE.toFixed(1)}` : undefined}
+                  />
+                </div>
+
+                <ChartCard title="Weekly distance by discipline" description="Total km per ISO week, split by run / bike / swim.">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={enduranceStats.weekly}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Legend />
+                      {enduranceStats.disciplines.map((d, i) => (
+                        <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Weekly time & average RPE" description="Total minutes per week with average session RPE overlay.">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={enduranceStats.weekly}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
+                      <YAxis yAxisId="right" orientation="right" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="totalMin" name="Minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Per-session RPE & distance" description="Each point is one session — track intensity trend over time.">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={enduranceStats.series}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis yAxisId="left" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Legend />
+                      <Line yAxisId="left" type="monotone" dataKey="rpe" name="Session RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      <Line yAxisId="right" type="monotone" dataKey="km" name="Distance (km)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Recent sessions</CardTitle>
+                    <CardDescription>Latest 15 completed endurance sessions with pace and HR.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto p-0">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Date</th>
+                          <th className="px-2 py-2 text-left">Type</th>
+                          <th className="px-2 py-2 text-left">Title</th>
+                          <th className="px-2 py-2 text-right">Distance</th>
+                          <th className="px-2 py-2 text-right">Time</th>
+                          <th className="px-2 py-2 text-right">Pace</th>
+                          <th className="px-2 py-2 text-right">RPE</th>
+                          <th className="px-2 py-2 text-right">Avg HR</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...enduranceStats.series].reverse().slice(0, 15).map((s, idx) => (
+                          <tr key={`${s.date}-${idx}`} className="border-t border-border">
+                            <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d")}</td>
+                            <td className="px-2 py-2 capitalize">{s.discipline}</td>
+                            <td className="px-2 py-2 text-muted-foreground">{s.title ?? "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.km > 0 ? `${s.km.toFixed(2)} km` : "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.minutes > 0 ? `${s.minutes.toFixed(0)} min` : "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.pace_label ?? "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.rpe != null ? s.rpe.toFixed(1) : "—"}</td>
+                            <td className="px-2 py-2 text-right">{s.hr ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
           {/* === ADHERENCE TAB === */}
           <TabsContent value="adherence" className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

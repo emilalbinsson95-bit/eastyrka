@@ -98,6 +98,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
       effectiveDate: suggested,
       // Self-planned (no coach) endurance starts confirmed; coach-deployed is a ghost.
       isGhost: !!s.coach_id,
+      isCancelled: false,
     };
   });
 

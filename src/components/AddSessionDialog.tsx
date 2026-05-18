@@ -31,7 +31,7 @@ export function AddSessionDialog({
   onOpenChange: (o: boolean) => void;
   onOpenEditor: (target: OpenEditor) => void;
 }) {
-  const qc = useQueryClient();
+  const _qc = null;
   const [busy, setBusy] = useState(false);
 
   const createEndurance = useMutation({

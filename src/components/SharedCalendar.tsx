@@ -171,11 +171,72 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }
+                onRequestCancel={(it) => {
+                  setCancelReason("");
+                  setCancelTarget(it);
+                }}
+                onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
               />
             );
           })}
         </div>
       </div>
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel session</DialogTitle>
+            <DialogDescription>
+              Let your {ownerId ? "coach/physio" : ""} know why this session won&apos;t happen. They&apos;ll see it in red on their calendar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="cancel-reason">Reason</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {["Sick", "Injured", "No time", "Travel", "Low readiness"].map((preset) => (
+                <Button
+                  key={preset}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCancelReason(preset)}
+                >
+                  {preset}
+                </Button>
+              ))}
+            </div>
+            <Textarea
+              id="cancel-reason"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. Sick, couldn't fit it in, low energy…"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Back</Button>
+            <Button
+              variant="destructive"
+              disabled={!cancelReason.trim() || cancelMutation.isPending}
+              onClick={() => {
+                if (!cancelTarget) return;
+                cancelMutation.mutate(
+                  {
+                    ownerId,
+                    source: cancelTarget.source,
+                    sourceId: cancelTarget.sourceId,
+                    suggestedDate: cancelTarget.effectiveDate,
+                    reason: cancelReason.trim(),
+                  },
+                  { onSuccess: () => setCancelTarget(null) },
+                );
+              }}
+            >
+              Cancel session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DndContext>
   );
 }

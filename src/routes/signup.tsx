@@ -42,7 +42,14 @@ export const Route = createFileRoute("/signup")({
         content:
           "Create an account on EA Training System — for coaches, athletes, physiotherapists and patients.",
       },
+      { property: "og:title", content: "Sign up — EA Training System" },
+      {
+        property: "og:description",
+        content: "Get started in minutes. Pick your role and start tracking training or rehab.",
+      },
+      { property: "og:url", content: "https://set-smart-guide.lovable.app/signup" },
     ],
+    links: [{ rel: "canonical", href: "https://set-smart-guide.lovable.app/signup" }],
   }),
   component: SignupPage,
 });

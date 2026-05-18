@@ -29,6 +29,11 @@ export const Route = createFileRoute("/coach/")({
         name: "description",
         content: "Roster of your athletes with current readiness status.",
       },
+      { property: "og:title", content: "My Athletes — EA Training System Coach" },
+      {
+        property: "og:description",
+        content: "Manage your athlete roster, baselines and weekly programming.",
+      },
     ],
   }),
   component: CoachRosterPage,

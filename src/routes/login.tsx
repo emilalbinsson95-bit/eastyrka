@@ -12,8 +12,12 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — EA Training System" },
-      { name: "description", content: "Sign in to your coach or athlete account." },
+      { name: "description", content: "Sign in to your coach, athlete, physiotherapist or patient account." },
+      { property: "og:title", content: "Sign in — EA Training System" },
+      { property: "og:description", content: "Access your readiness dashboard, athlete roster or rehab sessions." },
+      { property: "og:url", content: "https://set-smart-guide.lovable.app/login" },
     ],
+    links: [{ rel: "canonical", href: "https://set-smart-guide.lovable.app/login" }],
   }),
   component: LoginPage,
 });
@@ -47,7 +51,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -92,6 +96,6 @@ function LoginPage() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }

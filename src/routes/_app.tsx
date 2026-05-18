@@ -123,7 +123,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/today" | "/history" | "/me" | "/messages" | "/endurance";
+  to: "/today" | "/history" | "/me" | "/messages" | "/endurance" | "/calendar";
   icon: React.ReactNode;
   label: string;
 }) {

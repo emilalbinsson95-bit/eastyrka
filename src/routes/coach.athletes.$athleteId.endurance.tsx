@@ -108,6 +108,12 @@ function CoachEndurance() {
         </CardContent>
       </Card>
 
+      <EnduranceLibrary
+        athleteId={athleteId}
+        coachId={user!.id}
+        onDeployed={(id) => setOpenId(id)}
+      />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Sessions</CardTitle>

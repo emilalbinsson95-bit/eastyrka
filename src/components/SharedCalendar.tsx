@@ -311,12 +311,16 @@ function SessionCard({
   item,
   readOnly,
   onConfirm,
+  onRequestCancel,
+  onUncancel,
 }: {
   item: CalendarItem;
   readOnly: boolean;
   onConfirm: (it: CalendarItem) => void;
+  onRequestCancel: (it: CalendarItem) => void;
+  onUncancel: (it: CalendarItem) => void;
 }) {
-  const draggable = !readOnly;
+  const draggable = !readOnly && !item.isCancelled;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${item.source}:${item.sourceId}`,
     disabled: !draggable,
@@ -337,23 +341,32 @@ function SessionCard({
       }
       className={cn(
         "group relative flex items-start gap-1 rounded-md border px-1.5 py-1 text-[11px] leading-tight",
-        item.isGhost
-          ? "border-dashed border-primary/60 bg-primary/5 text-foreground/80"
-          : "border-border bg-secondary text-secondary-foreground",
+        item.isCancelled
+          ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
+          : item.isGhost
+            ? "border-dashed border-primary/60 bg-primary/5 text-foreground/80"
+            : "border-border bg-secondary text-secondary-foreground",
         draggable && "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50",
       )}
       title={
-        item.isGhost
-          ? `Suggested ${item.subtitle ?? ""} — drag to move or tap ✓ to accept`
-          : moved
-            ? `Moved from ${format(parseISO(item.suggestedDate), "MMM d")}`
-            : item.subtitle
+        item.isCancelled
+          ? `Cancelled${item.cancelReason ? ` — ${item.cancelReason}` : ""}`
+          : item.isGhost
+            ? `Suggested ${item.subtitle ?? ""} — drag to move or tap ✓ to accept`
+            : moved
+              ? `Moved from ${format(parseISO(item.suggestedDate), "MMM d")}`
+              : item.subtitle
       }
     >
       <Icon className="mt-0.5 h-3 w-3 flex-shrink-0" />
-      <span className="flex-1 truncate">{item.title}</span>
-      {item.isGhost && !readOnly && (
+      <span className="flex-1 truncate">
+        {item.title}
+        {item.isCancelled && item.cancelReason && (
+          <span className="ml-1 font-medium no-underline">· {item.cancelReason}</span>
+        )}
+      </span>
+      {!readOnly && item.isGhost && !item.isCancelled && (
         <button
           type="button"
           onClick={(e) => {
@@ -364,6 +377,33 @@ function SessionCard({
           aria-label="Accept suggested day"
         >
           <Check className="h-3 w-3" />
+        </button>
+      )}
+      {!readOnly && !item.isCancelled && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestCancel(item);
+          }}
+          className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          aria-label="Cancel session"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+      {!readOnly && item.isCancelled && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUncancel(item);
+          }}
+          className="rounded p-0.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+          aria-label="Restore session"
+        >
+          <RotateCcw className="h-3 w-3" />
         </button>
       )}
     </div>

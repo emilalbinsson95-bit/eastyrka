@@ -191,7 +191,7 @@ async function loadStrength(plannedSessionId: string): Promise<Detail> {
 async function loadEndurance(sessionId: string): Promise<Detail> {
   const { data: session } = await supabase
     .from("endurance_sessions")
-    .select("title, discipline, mode, planned_total_seconds, planned_avg_rpe, notes, athlete_id")
+    .select("title, discipline, mode, planned_total_seconds, planned_avg_rpe, predicted_10k_seconds, notes, athlete_id")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -211,6 +211,10 @@ async function loadEndurance(sessionId: string): Promise<Detail> {
       .eq("id", session.athlete_id as string)
       .maybeSingle();
     if (prof) benchmarks = prof as AthleteBenchmarks;
+  }
+  // Per-session predicted 10k overrides the profile PB for this preview only
+  if (session?.predicted_10k_seconds) {
+    benchmarks = { ...benchmarks, ten_k_pb_seconds: session.predicted_10k_seconds as number };
   }
   const sessionDiscipline = (session?.discipline ?? "run") as Discipline;
 

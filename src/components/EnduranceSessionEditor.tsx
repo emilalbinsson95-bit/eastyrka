@@ -107,8 +107,15 @@ export function EnduranceSessionEditor({
       }) as AthleteBenchmarks;
     },
   });
-  const benchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
+  const profileBenchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
     ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
+  };
+  // For pace estimates in this session, prefer the session's own predicted 10k
+  // (athlete's "feel today") over the all-time PB stored on the profile.
+  const benchmarks: AthleteBenchmarks = {
+    ...profileBenchmarks,
+    ten_k_pb_seconds:
+      sessionQuery.data?.predicted_10k_seconds ?? profileBenchmarks.ten_k_pb_seconds,
   };
 
   if (sessionQuery.isLoading) {
@@ -781,15 +788,28 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
           predicted_10k_seconds = total;
         }
       }
-      const { error } = await supabase.from("endurance_sessions").update({
+      const hasAnyActual =
+        !!actual_total_seconds || !!actual_distance_m ||
+        !!overall || !!peak || !!notes.trim() || predicted_10k_seconds != null;
+      const patch: {
+        actual_total_seconds: number | null;
+        actual_distance_m: number | null;
+        overall_rpe: number | null;
+        peak_rpe: number | null;
+        predicted_10k_seconds: number | null;
+        notes: string | null;
+        status?: string;
+      } = {
         actual_total_seconds,
         actual_distance_m,
         overall_rpe: overall ? Number(overall) : null,
         peak_rpe: peak ? Number(peak) : null,
         predicted_10k_seconds,
         notes: notes || null,
-        status: "completed",
-      }).eq("id", session.id);
+      };
+      // Only flip to completed if the athlete actually logged something.
+      if (hasAnyActual) patch.status = "completed";
+      const { error } = await supabase.from("endurance_sessions").update(patch).eq("id", session.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Logged"); onChange(); },

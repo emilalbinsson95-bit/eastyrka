@@ -691,9 +691,10 @@ function AnalyticsPage() {
             navigate({ search: (prev) => ({ ...prev, tab: v as typeof tab }) })
           }
         >
-          <TabsList className="grid w-full grid-cols-2 md:w-auto md:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-5">
             <TabsTrigger value="exercise">Exercise</TabsTrigger>
             <TabsTrigger value="volume">Volume</TabsTrigger>
+            <TabsTrigger value="endurance">Endurance</TabsTrigger>
             <TabsTrigger value="adherence">Adherence</TabsTrigger>
             <TabsTrigger value="readiness">Readiness</TabsTrigger>
           </TabsList>

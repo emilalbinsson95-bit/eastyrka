@@ -119,6 +119,14 @@ function AthleteDetailPage() {
               <Activity className="mr-1 h-4 w-4" /> Endurance
             </Link>
           </Button>
+          <Button asChild variant="outline">
+            <Link
+              to="/coach/athletes/$athleteId/calendar"
+              params={{ athleteId }}
+            >
+              <Calendar className="mr-1 h-4 w-4" /> Calendar
+            </Link>
+          </Button>
           <Button asChild>
             <Link
               to="/coach/athletes/$athleteId/cycles"

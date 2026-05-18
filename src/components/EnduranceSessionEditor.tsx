@@ -487,12 +487,13 @@ function QuickEstimate({ discipline, rpe, benchmarks }: { discipline: Discipline
 }
 
 function StepRowItem({
-  step, allSteps, canEditPlan, defaultDiscipline, onChange, depth = 0,
+  step, allSteps, canEditPlan, defaultDiscipline, benchmarks, onChange, depth = 0,
 }: {
   step: StepRow;
   allSteps: StepRow[];
   canEditPlan: boolean;
   defaultDiscipline: Discipline;
+  benchmarks: AthleteBenchmarks;
   onChange: () => void;
   depth?: number;
 }) {
@@ -585,7 +586,7 @@ function StepRowItem({
         <div className="space-y-2">
           {children.map((c) => (
             <StepRowItem key={c.id} step={c} allSteps={allSteps} canEditPlan={canEditPlan}
-              defaultDiscipline={defaultDiscipline} onChange={onChange} depth={depth + 1} />
+              defaultDiscipline={defaultDiscipline} benchmarks={benchmarks} onChange={onChange} depth={depth + 1} />
           ))}
         </div>
         {canEditPlan && (
@@ -651,6 +652,18 @@ function StepRowItem({
           </>
         )}
       </div>
+      {(() => {
+        const disc = (step.discipline ?? defaultDiscipline) as Discipline;
+        const est = estimateForRpe(disc, step.target_rpe ?? null, benchmarks);
+        if (!est.paceLabel && !est.hrLabel && !est.wattLabel) return null;
+        return (
+          <div className="mt-1.5 flex flex-wrap gap-1 pl-1 text-[11px]">
+            {est.paceLabel && <Badge variant="outline" className="font-mono">{est.paceLabel}</Badge>}
+            {est.wattLabel && <Badge variant="outline" className="font-mono">{est.wattLabel}</Badge>}
+            {est.hrLabel && <Badge variant="outline" className="font-mono">{est.hrLabel}</Badge>}
+          </div>
+        );
+      })()}
     </div>
   );
 }

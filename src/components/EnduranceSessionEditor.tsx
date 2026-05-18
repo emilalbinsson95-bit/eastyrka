@@ -743,6 +743,14 @@ function ActualStepInputs({
 function ActualLogger({ session, onChange }: { session: SessionRow; onChange: () => void }) {
   const [h, setH] = useState(session.actual_total_seconds ? String(Math.floor(session.actual_total_seconds / 3600)) : "");
   const [m, setM] = useState(session.actual_total_seconds ? String(Math.floor((session.actual_total_seconds % 3600) / 60)) : "");
+  const initDist = (session as SessionRow & { actual_distance_m?: number | null }).actual_distance_m ?? null;
+  // Show distance in km for run/bike, in metres for swim
+  const distUnit = session.discipline === "swim" ? "m" : "km";
+  const [dist, setDist] = useState<string>(
+    initDist != null
+      ? (session.discipline === "swim" ? String(initDist) : String(initDist / 1000))
+      : "",
+  );
   const [overall, setOverall] = useState<string>(session.overall_rpe?.toString() ?? "");
   const [peak, setPeak] = useState<string>(session.peak_rpe?.toString() ?? "");
   const [notes, setNotes] = useState(session.notes ?? "");
@@ -750,9 +758,19 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
   const [pred10kMin, setPred10kMin] = useState<string>(initPred ? String(Math.floor(initPred / 60)) : "");
   const [pred10kSec, setPred10kSec] = useState<string>(initPred ? String(initPred % 60).padStart(2, "0") : "");
 
+  // Derived live pace label
+  const liveSeconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
+  const liveDistanceM = dist
+    ? (session.discipline === "swim" ? Number(dist) : Number(dist) * 1000)
+    : null;
+  const livePace = paceLabelFromDistance(session.discipline, liveDistanceM, liveSeconds);
+
   const save = useMutation({
     mutationFn: async () => {
       const actual_total_seconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
+      const actual_distance_m = dist
+        ? Math.round(session.discipline === "swim" ? Number(dist) : Number(dist) * 1000)
+        : null;
       let predicted_10k_seconds: number | null = null;
       if (pred10kMin || pred10kSec) {
         const total = (Number(pred10kMin) || 0) * 60 + (Number(pred10kSec) || 0);
@@ -765,6 +783,7 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
       }
       const { error } = await supabase.from("endurance_sessions").update({
         actual_total_seconds,
+        actual_distance_m,
         overall_rpe: overall ? Number(overall) : null,
         peak_rpe: peak ? Number(peak) : null,
         predicted_10k_seconds,

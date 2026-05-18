@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Copy, KeyRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Activity, Copy, KeyRound, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,6 +15,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { parseTimeToSeconds, secondsToTimeStr } from "@/lib/endurancePaceHr";
 
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
@@ -27,12 +31,13 @@ function MePage() {
   const { user } = useAuth();
   const userId = user!.id;
 
+  const qc = useQueryClient();
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, weight_class")
+        .select("full_name, weight_class, ten_k_pb_seconds, max_hr, resting_hr, ftp_watts, css_per_100m_seconds")
         .eq("id", userId)
         .maybeSingle();
       if (error) throw error;

@@ -13,6 +13,7 @@ import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
+import { EnduranceLibrary } from "@/components/EnduranceLibrary";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/endurance")({
   component: CoachEndurance,
@@ -106,6 +107,12 @@ function CoachEndurance() {
           </div>
         </CardContent>
       </Card>
+
+      <EnduranceLibrary
+        athleteId={athleteId}
+        coachId={user!.id}
+        onDeployed={(id) => setOpenId(id)}
+      />
 
       <Card>
         <CardHeader className="pb-2">

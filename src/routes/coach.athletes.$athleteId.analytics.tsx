@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 const analyticsSearchSchema = z.object({
   exercise: z.string().optional(),
   days: z.coerce.number().int().min(7).max(365).optional(),
-  tab: z.enum(["exercise", "volume", "adherence", "readiness"]).optional(),
+  tab: z.enum(["exercise", "volume", "endurance", "adherence", "readiness"]).optional(),
 });
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/analytics")({

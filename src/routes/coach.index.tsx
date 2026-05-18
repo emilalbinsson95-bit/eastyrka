@@ -56,14 +56,15 @@ function CoachRosterPage() {
   const rosterQuery = useQuery({
     queryKey: ["coach-roster", coachId],
     queryFn: async (): Promise<AthleteRow[]> => {
-      // 1. Get linked athletes
+      // 1. Get linked athletes with tags
       const { data: links, error: linkErr } = await supabase
         .from("coach_athletes")
-        .select("athlete_id")
+        .select("athlete_id, tag")
         .eq("coach_id", coachId);
       if (linkErr) throw linkErr;
       const athleteIds = (links ?? []).map((l) => l.athlete_id);
       if (athleteIds.length === 0) return [];
+      const tagMap = new Map((links ?? []).map((l) => [l.athlete_id, l.tag as string | null]));
 
       // 2. Profiles
       const { data: profiles } = await supabase
@@ -118,6 +119,7 @@ function CoachRosterPage() {
       return athleteIds.map((id) => ({
         athlete_id: id,
         full_name: profileMap.get(id) ?? null,
+        tag: tagMap.get(id) ?? null,
         last_log_date: latestByAthlete.get(id)?.date ?? null,
         last_eak: latestByAthlete.get(id)?.eak ?? null,
         last_form: latestByAthlete.get(id)?.form ?? null,

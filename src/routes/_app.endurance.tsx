@@ -148,6 +148,11 @@ function EndurancePage() {
                   <Badge>Planned {formatDuration(s.planned_total_seconds)}</Badge>
                 )}
                 {s.overall_rpe != null && <Badge variant="outline">RPE {s.overall_rpe}</Badge>}
+                {s.predicted_10k_seconds != null && (
+                  <Badge variant="outline" className="font-mono">
+                    10k ~{Math.floor(s.predicted_10k_seconds / 60)}:{String(s.predicted_10k_seconds % 60).padStart(2, "0")}
+                  </Badge>
+                )}
                 {(() => { const d = sessionDrift(s); return d && d.tone !== "ok" ? <Badge className={driftBadgeClasses(d.tone)}>{d.label}</Badge> : null; })()}
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>

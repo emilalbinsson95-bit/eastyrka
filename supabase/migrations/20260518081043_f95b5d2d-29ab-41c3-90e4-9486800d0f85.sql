@@ -1,0 +1,3 @@
+ALTER TABLE public.session_schedule_overrides
+  ADD COLUMN IF NOT EXISTS cancelled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS cancel_reason text;

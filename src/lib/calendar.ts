@@ -17,11 +17,16 @@ export type CalendarItem = {
     id: string;
     scheduledDate: string;
     confirmedAt: string | null;
+    cancelledAt: string | null;
+    cancelReason: string | null;
   };
   /** Final date to render the card on. */
   effectiveDate: string;
   /** True if the card is still a coach/physio suggestion that hasn't been confirmed/moved. */
   isGhost: boolean;
+  /** True if the athlete/patient cancelled this session. */
+  isCancelled: boolean;
+  cancelReason?: string | null;
   /** Link to detail page (optional). */
   href?: string;
 };
@@ -67,6 +72,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
         suggestedDate: suggested,
         effectiveDate: suggested,
         isGhost: true,
+        isCancelled: false,
       });
     }
   }
@@ -92,6 +98,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
       effectiveDate: suggested,
       // Self-planned (no coach) endurance starts confirmed; coach-deployed is a ghost.
       isGhost: !!s.coach_id,
+      isCancelled: false,
     };
   });
 
@@ -115,6 +122,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
       suggestedDate: suggested,
       effectiveDate: suggested,
       isGhost: !!s.physio_id,
+      isCancelled: false,
     };
   });
 
@@ -125,16 +133,19 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
   if (sourceIds.length > 0) {
     const { data: overrides } = await supabase
       .from("session_schedule_overrides")
-      .select("id, source_type, source_id, scheduled_date, confirmed_at")
+      .select("id, source_type, source_id, scheduled_date, confirmed_at, cancelled_at, cancel_reason")
       .eq("owner_id", ownerId)
       .in("source_id", sourceIds);
 
-    const byKey = new Map<string, { id: string; scheduledDate: string; confirmedAt: string | null }>();
+    type Ov = { id: string; scheduledDate: string; confirmedAt: string | null; cancelledAt: string | null; cancelReason: string | null };
+    const byKey = new Map<string, Ov>();
     for (const o of overrides ?? []) {
       byKey.set(`${o.source_type}:${o.source_id}`, {
         id: o.id as string,
         scheduledDate: fmt(o.scheduled_date as string),
         confirmedAt: (o.confirmed_at as string | null) ?? null,
+        cancelledAt: (o.cancelled_at as string | null) ?? null,
+        cancelReason: (o.cancel_reason as string | null) ?? null,
       });
     }
 
@@ -145,6 +156,12 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
         if (ov.confirmedAt) {
           it.effectiveDate = ov.scheduledDate;
           it.isGhost = false;
+        }
+        if (ov.cancelledAt) {
+          it.isCancelled = true;
+          it.cancelReason = ov.cancelReason;
+          it.isGhost = false;
+          if (ov.scheduledDate) it.effectiveDate = ov.scheduledDate;
         }
       }
     }
@@ -183,9 +200,49 @@ export async function setOverride(args: {
         source_id: sourceId,
         scheduled_date: date,
         confirmed_at: new Date().toISOString(),
+        cancelled_at: null,
+        cancel_reason: null,
       },
       { onConflict: "source_type,source_id" },
     );
+  if (error) throw error;
+}
+
+/** Mark a session as cancelled by the owner (athlete/patient), with a reason. */
+export async function cancelSession(args: {
+  ownerId: string;
+  source: CalendarSource;
+  sourceId: string;
+  suggestedDate: string;
+  reason: string;
+}) {
+  const { ownerId, source, sourceId, suggestedDate, reason } = args;
+  const { error } = await supabase
+    .from("session_schedule_overrides")
+    .upsert(
+      {
+        owner_id: ownerId,
+        source_type: source,
+        source_id: sourceId,
+        scheduled_date: suggestedDate,
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason,
+      },
+      { onConflict: "source_type,source_id" },
+    );
+  if (error) throw error;
+}
+
+/** Undo a cancellation. */
+export async function uncancelSession(args: {
+  source: CalendarSource;
+  sourceId: string;
+}) {
+  const { error } = await supabase
+    .from("session_schedule_overrides")
+    .update({ cancelled_at: null, cancel_reason: null })
+    .eq("source_type", args.source)
+    .eq("source_id", args.sourceId);
   if (error) throw error;
 }
 

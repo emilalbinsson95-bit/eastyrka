@@ -10,16 +10,28 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
   CalendarItem,
+  cancelSession,
   fetchCalendarItems,
   fetchReadinessDots,
   monthGridDays,
   setOverride,
+  uncancelSession,
 } from "@/lib/calendar";
 
 type Props = {
@@ -53,6 +65,30 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
       toast.error(e instanceof Error ? e.message : "Could not move session");
     },
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelSession,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      toast.success("Session cancelled");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not cancel session");
+    },
+  });
+
+  const uncancelMutation = useMutation({
+    mutationFn: uncancelSession,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not restore session");
+    },
+  });
+
+  const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   const days = useMemo(() => monthGridDays(monthDate), [monthDate]);
 
@@ -135,11 +171,72 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }
+                onRequestCancel={(it) => {
+                  setCancelReason("");
+                  setCancelTarget(it);
+                }}
+                onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
               />
             );
           })}
         </div>
       </div>
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel session</DialogTitle>
+            <DialogDescription>
+              Let your {ownerId ? "coach/physio" : ""} know why this session won&apos;t happen. They&apos;ll see it in red on their calendar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="cancel-reason">Reason</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {["Sick", "Injured", "No time", "Travel", "Low readiness"].map((preset) => (
+                <Button
+                  key={preset}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCancelReason(preset)}
+                >
+                  {preset}
+                </Button>
+              ))}
+            </div>
+            <Textarea
+              id="cancel-reason"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. Sick, couldn't fit it in, low energy…"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Back</Button>
+            <Button
+              variant="destructive"
+              disabled={!cancelReason.trim() || cancelMutation.isPending}
+              onClick={() => {
+                if (!cancelTarget) return;
+                cancelMutation.mutate(
+                  {
+                    ownerId,
+                    source: cancelTarget.source,
+                    sourceId: cancelTarget.sourceId,
+                    suggestedDate: cancelTarget.effectiveDate,
+                    reason: cancelReason.trim(),
+                  },
+                  { onSuccess: () => setCancelTarget(null) },
+                );
+              }}
+            >
+              Cancel session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DndContext>
   );
 }
@@ -153,6 +250,8 @@ function DayCell({
   readiness,
   readOnly,
   onConfirm,
+  onRequestCancel,
+  onUncancel,
 }: {
   date: string;
   label: string;
@@ -162,6 +261,8 @@ function DayCell({
   readiness?: number;
   readOnly: boolean;
   onConfirm: (it: CalendarItem) => void;
+  onRequestCancel: (it: CalendarItem) => void;
+  onUncancel: (it: CalendarItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
@@ -186,7 +287,14 @@ function DayCell({
       </div>
       <div className="mt-1 space-y-1">
         {items.map((it) => (
-          <SessionCard key={it.key} item={it} readOnly={readOnly} onConfirm={onConfirm} />
+          <SessionCard
+            key={it.key}
+            item={it}
+            readOnly={readOnly}
+            onConfirm={onConfirm}
+            onRequestCancel={onRequestCancel}
+            onUncancel={onUncancel}
+          />
         ))}
       </div>
     </div>
@@ -203,12 +311,16 @@ function SessionCard({
   item,
   readOnly,
   onConfirm,
+  onRequestCancel,
+  onUncancel,
 }: {
   item: CalendarItem;
   readOnly: boolean;
   onConfirm: (it: CalendarItem) => void;
+  onRequestCancel: (it: CalendarItem) => void;
+  onUncancel: (it: CalendarItem) => void;
 }) {
-  const draggable = !readOnly;
+  const draggable = !readOnly && !item.isCancelled;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${item.source}:${item.sourceId}`,
     disabled: !draggable,
@@ -229,23 +341,32 @@ function SessionCard({
       }
       className={cn(
         "group relative flex items-start gap-1 rounded-md border px-1.5 py-1 text-[11px] leading-tight",
-        item.isGhost
-          ? "border-dashed border-primary/60 bg-primary/5 text-foreground/80"
-          : "border-border bg-secondary text-secondary-foreground",
+        item.isCancelled
+          ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
+          : item.isGhost
+            ? "border-dashed border-primary/60 bg-primary/5 text-foreground/80"
+            : "border-border bg-secondary text-secondary-foreground",
         draggable && "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50",
       )}
       title={
-        item.isGhost
-          ? `Suggested ${item.subtitle ?? ""} — drag to move or tap ✓ to accept`
-          : moved
-            ? `Moved from ${format(parseISO(item.suggestedDate), "MMM d")}`
-            : item.subtitle
+        item.isCancelled
+          ? `Cancelled${item.cancelReason ? ` — ${item.cancelReason}` : ""}`
+          : item.isGhost
+            ? `Suggested ${item.subtitle ?? ""} — drag to move or tap ✓ to accept`
+            : moved
+              ? `Moved from ${format(parseISO(item.suggestedDate), "MMM d")}`
+              : item.subtitle
       }
     >
       <Icon className="mt-0.5 h-3 w-3 flex-shrink-0" />
-      <span className="flex-1 truncate">{item.title}</span>
-      {item.isGhost && !readOnly && (
+      <span className="flex-1 truncate">
+        {item.title}
+        {item.isCancelled && item.cancelReason && (
+          <span className="ml-1 font-medium no-underline">· {item.cancelReason}</span>
+        )}
+      </span>
+      {!readOnly && item.isGhost && !item.isCancelled && (
         <button
           type="button"
           onClick={(e) => {
@@ -256,6 +377,33 @@ function SessionCard({
           aria-label="Accept suggested day"
         >
           <Check className="h-3 w-3" />
+        </button>
+      )}
+      {!readOnly && !item.isCancelled && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestCancel(item);
+          }}
+          className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          aria-label="Cancel session"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+      {!readOnly && item.isCancelled && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUncancel(item);
+          }}
+          className="rounded p-0.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+          aria-label="Restore session"
+        >
+          <RotateCcw className="h-3 w-3" />
         </button>
       )}
     </div>

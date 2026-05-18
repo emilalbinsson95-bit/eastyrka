@@ -66,6 +66,30 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: cancelSession,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      toast.success("Session cancelled");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not cancel session");
+    },
+  });
+
+  const uncancelMutation = useMutation({
+    mutationFn: uncancelSession,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not restore session");
+    },
+  });
+
+  const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+
   const days = useMemo(() => monthGridDays(monthDate), [monthDate]);
 
   const itemsByDay = useMemo(() => {

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PhysioRouteImport } from './routes/physio'
 import { Route as PatientRouteImport } from './routes/patient'
@@ -38,6 +39,11 @@ import { Route as CoachAthletesAthleteIdAnalyticsRouteImport } from './routes/co
 import { Route as PhysioPatientsPatientIdSessionsSessionIdRouteImport } from './routes/physio.patients.$patientId.sessions.$sessionId'
 import { Route as CoachAthletesAthleteIdCyclesCycleIdRouteImport } from './routes/coach.athletes.$athleteId.cycles.$cycleId'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/patient': typeof PatientRouteWithChildren
   '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
   '/me': typeof AppMeRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/patient': typeof PatientRouteWithChildren
   '/physio': typeof PhysioRouteWithChildren
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_app/endurance': typeof AppEnduranceRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/me': typeof AppMeRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/patient'
     | '/physio'
     | '/signup'
+    | '/sitemap.xml'
     | '/endurance'
     | '/history'
     | '/me'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/onboarding'
     | '/signup'
+    | '/sitemap.xml'
     | '/endurance'
     | '/history'
     | '/me'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/patient'
     | '/physio'
     | '/signup'
+    | '/sitemap.xml'
     | '/_app/endurance'
     | '/_app/history'
     | '/_app/me'
@@ -368,10 +380,18 @@ export interface RootRouteChildren {
   PatientRoute: typeof PatientRouteWithChildren
   PhysioRoute: typeof PhysioRouteWithChildren
   SignupRoute: typeof SignupRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -692,6 +712,7 @@ const rootRouteChildren: RootRouteChildren = {
   PatientRoute: PatientRouteWithChildren,
   PhysioRoute: PhysioRouteWithChildren,
   SignupRoute: SignupRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

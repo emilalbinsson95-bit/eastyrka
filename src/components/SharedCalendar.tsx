@@ -90,6 +90,7 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
 
   const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
 
   const days = useMemo(() => monthGridDays(monthDate), [monthDate]);
 

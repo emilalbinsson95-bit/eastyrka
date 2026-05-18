@@ -15,14 +15,42 @@ export function EnduranceWeeklyOverview({ athleteId, weeks = 8 }: { athleteId: s
   const q = useQuery({
     queryKey: ["endurance-weekly", athleteId, sinceIso, weeks],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("endurance_sessions")
-        .select("date, discipline, actual_total_seconds, planned_total_seconds, overall_rpe, peak_rpe, planned_avg_rpe")
-        .eq("athlete_id", athleteId)
-        .gte("date", sinceIso)
-        .order("date", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as LoadSession[];
+      const [endRes, logRes] = await Promise.all([
+        supabase
+          .from("endurance_sessions")
+          .select("date, discipline, actual_total_seconds, planned_total_seconds, overall_rpe, peak_rpe, planned_avg_rpe")
+          .eq("athlete_id", athleteId)
+          .gte("date", sinceIso)
+          .order("date", { ascending: true }),
+        // Ad-hoc strength logs → synthesize a session: ~3min per set, RPE from log
+        supabase
+          .from("training_logs")
+          .select("date, rpe")
+          .eq("athlete_id", athleteId)
+          .is("planned_exercise_id", null)
+          .gte("date", sinceIso),
+      ]);
+      if (endRes.error) throw endRes.error;
+      const end = (endRes.data ?? []) as LoadSession[];
+      // Group strength logs by date → 1 synthesized session/day
+      const byDate = new Map<string, { sets: number; rpeSum: number }>();
+      for (const r of logRes.data ?? []) {
+        const d = String(r.date);
+        const b = byDate.get(d) ?? { sets: 0, rpeSum: 0 };
+        b.sets += 1;
+        b.rpeSum += Number(r.rpe) || 0;
+        byDate.set(d, b);
+      }
+      const strength: LoadSession[] = Array.from(byDate.entries()).map(([date, v]) => ({
+        date,
+        discipline: "strength",
+        actual_total_seconds: v.sets * 180, // ~3min/set incl. rest
+        planned_total_seconds: null,
+        overall_rpe: v.sets ? Math.round(v.rpeSum / v.sets) : null,
+        peak_rpe: null,
+        planned_avg_rpe: null,
+      }));
+      return [...end, ...strength];
     },
   });
 

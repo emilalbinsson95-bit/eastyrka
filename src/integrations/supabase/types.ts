@@ -896,6 +896,8 @@ export type Database = {
       }
       session_schedule_overrides: {
         Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
           confirmed_at: string | null
           created_at: string
           id: string
@@ -906,6 +908,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           confirmed_at?: string | null
           created_at?: string
           id?: string
@@ -916,6 +920,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           confirmed_at?: string | null
           created_at?: string
           id?: string

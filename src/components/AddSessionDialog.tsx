@@ -43,6 +43,9 @@ export function AddSessionDialog({
           date,
           discipline: opts.discipline,
           mode: opts.mode,
+          // Draft: doesn't show on the calendar until the athlete actually saves
+          // something (plan, a step, or the actual log).
+          status: "draft",
           title:
             opts.mode === "structured"
               ? `${disciplineLabel(opts.discipline)} intervals`
@@ -54,7 +57,6 @@ export function AddSessionDialog({
       return data.id as string;
     },
     onSuccess: (id) => {
-      qc.invalidateQueries({ queryKey: ["calendar-items", athleteId] });
       onOpenEditor({ kind: "endurance", sessionId: id });
       onOpenChange(false);
     },

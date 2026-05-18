@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { Users, AlertTriangle, Mail } from "lucide-react";
+import { Users, AlertTriangle, Mail, Search, Tag, Check, X } from "lucide-react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import {
@@ -12,10 +13,10 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   readinessClasses,
   readinessLabel,
-  dailyE1RM,
   eaKoefficient,
   readinessFromEAk,
 } from "@/lib/eakoefficient";
@@ -42,6 +43,7 @@ export const Route = createFileRoute("/coach/")({
 interface AthleteRow {
   athlete_id: string;
   full_name: string | null;
+  tag: string | null;
   last_log_date: string | null;
   last_eak: number | null;
   last_form: number | null;

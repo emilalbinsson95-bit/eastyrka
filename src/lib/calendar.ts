@@ -126,9 +126,37 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
     };
   });
 
-  const items = [...plannedItems, ...enduranceItems, ...rehabItems];
+  // 4. Ad-hoc strength sessions (athlete-logged training_logs without a planned session)
+  const { data: adhocLogs } = await supabase
+    .from("training_logs")
+    .select("date, exercise")
+    .eq("athlete_id", ownerId)
+    .is("planned_exercise_id", null)
+    .gte("date", rangeStart)
+    .lte("date", rangeEnd);
 
-  // 4. Apply overrides
+  const adhocByDate = new Map<string, Set<string>>();
+  for (const r of adhocLogs ?? []) {
+    const d = fmt(r.date as string);
+    if (!adhocByDate.has(d)) adhocByDate.set(d, new Set());
+    adhocByDate.get(d)!.add(String(r.exercise));
+  }
+  const adhocItems: CalendarItem[] = Array.from(adhocByDate.entries()).map(([date, exSet]) => ({
+    key: `adhoc_strength:${date}`,
+    source: "adhoc_strength" as const,
+    sourceId: date, // sourceId = date for ad-hoc strength (no parent row)
+    ownerId,
+    title: exSet.size === 1
+      ? Array.from(exSet)[0]
+      : `Strength · ${exSet.size} exercises`,
+    subtitle: "Strength",
+    suggestedDate: date,
+    effectiveDate: date,
+    isGhost: false,
+    isCancelled: false,
+  }));
+
+  const items = [...plannedItems, ...enduranceItems, ...rehabItems, ...adhocItems];
   const sourceIds = items.map((i) => i.sourceId);
   if (sourceIds.length > 0) {
     const { data: overrides } = await supabase

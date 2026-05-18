@@ -34,6 +34,9 @@ import {
   uncancelSession,
 } from "@/lib/calendar";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
+import { AddSessionDialog } from "@/components/AddSessionDialog";
+import { AdhocStrengthEditor } from "@/components/AdhocStrengthEditor";
+import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 
 type Props = {
   ownerId: string;

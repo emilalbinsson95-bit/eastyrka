@@ -800,7 +800,7 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Log how it actually went</CardTitle>
-        <CardDescription>RPE-based, no GPS or speed required.</CardDescription>
+        <CardDescription>RPE-based — add distance to auto-derive pace.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -813,6 +813,14 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
             <Input type="number" min={0} max={59} value={m} onChange={(e) => setM(e.target.value)} />
           </div>
           <div className="space-y-1">
+            <Label>Distance ({distUnit})</Label>
+            <Input
+              type="number" min={0} step={distUnit === "km" ? 0.01 : 25}
+              value={dist} onChange={(e) => setDist(e.target.value)}
+              placeholder={distUnit === "km" ? "e.g. 8.5" : "e.g. 1500"}
+            />
+          </div>
+          <div className="space-y-1">
             <Label>Overall RPE</Label>
             <Input type="number" min={1} max={10} value={overall} onChange={(e) => setOverall(e.target.value)} />
           </div>
@@ -821,6 +829,13 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
             <Input type="number" min={1} max={10} value={peak} onChange={(e) => setPeak(e.target.value)} />
           </div>
         </div>
+        {livePace && (
+          <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Your actual pace:</span>
+            <Badge variant="secondary" className="font-mono">{livePace}</Badge>
+          </div>
+        )}
         <div className="space-y-1">
           <Label>Predicted 10k time today</Label>
           <div className="flex items-center gap-2">

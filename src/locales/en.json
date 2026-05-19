@@ -21,7 +21,10 @@
     "patients": "Patients",
     "sessions": "Sessions",
     "back": "Back",
-    "home": "Home"
+    "home": "Home",
+    "calendar": "Calendar",
+    "endurance": "Endurance",
+    "analytics": "Analytics"
   },
   "actions": {
     "signIn": "Sign in",
@@ -35,7 +38,9 @@
     "send": "Send",
     "continue": "Continue",
     "submit": "Submit",
-    "viewDetails": "View details"
+    "viewDetails": "View details",
+    "confirm": "Confirm",
+    "back": "Back"
   },
   "common": {
     "email": "Email",
@@ -51,7 +56,72 @@
     "search": "Search",
     "noData": "No data yet",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "weekdaysShort": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  },
+  "calendar": {
+    "today": "Today",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "helperAthlete": "Dashed cards are coach/physio suggestions. Drag them onto any day to confirm, or tap the check to keep the suggested day.",
+    "addSession": "Add session",
+    "cancelSession": "Cancel session",
+    "cancelSessionTitle": "Cancel session",
+    "cancelSessionDesc": "Let your coach/physio know why this session won't happen. They'll see it in red on their calendar.",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. Sick, couldn't fit it in, low energy…",
+    "preset": {
+      "sick": "Sick",
+      "injured": "Injured",
+      "noTime": "No time",
+      "travel": "Travel",
+      "lowReadiness": "Low readiness"
+    },
+    "cancelled": "Cancelled",
+    "suggested": "Suggested",
+    "movedFrom": "Moved from {{date}}",
+    "acceptSuggested": "Accept suggested day",
+    "restoreSession": "Restore session",
+    "deleteSession": "Delete session",
+    "deleteSessionTitle": "Delete session permanently?",
+    "deleteSessionDesc": "This removes the session entirely — including any athlete cancellation. Cannot be undone.",
+    "deleted": "Session deleted",
+    "couldNotDelete": "Could not delete session",
+    "couldNotMove": "Could not move session",
+    "couldNotCancel": "Could not cancel session",
+    "couldNotRestore": "Could not restore session",
+    "sessionCancelled": "Session cancelled"
+  },
+  "endurance": {
+    "title": "Endurance training",
+    "subtitle": "RPE-based runs, rides and swims. No GPS or pace targets — just time and effort.",
+    "quickLog": "Quick log",
+    "buildStructured": "Build a structured workout",
+    "recentSessions": "Recent sessions",
+    "noSessionsYet": "No endurance sessions yet — log one above.",
+    "loading": "Loading…",
+    "weeklyLoad": "Weekly load",
+    "weeklyLoadDesc": "Time-under-load weighted by RPE — higher RPE counts more. Numbers are arbitrary load units (sRPE).",
+    "thisWeek": "This week",
+    "last7d": "Last 7 days",
+    "trend8w": "Trend (8w)",
+    "loadScore": "Load score",
+    "hardPlusMin": "Hard+ min",
+    "easyPct": "Easy %",
+    "vsLastWeek": "{{n}}% vs last week",
+    "back": "Back to endurance log",
+    "intervals": "intervals",
+    "noSession": "Session",
+    "done": "Done",
+    "planned": "Planned"
   },
   "auth": {
     "welcomeBack": "Welcome back",

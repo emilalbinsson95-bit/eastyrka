@@ -35,7 +35,7 @@ function PhysioLayout() {
   if (loading || !user || role !== "physio") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">{t("app.loading")}</div>
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" aria-label="Loading" />
       </div>
     );
   }

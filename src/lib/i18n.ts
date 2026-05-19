@@ -16,6 +16,9 @@ if (!i18n.isInitialized) {
       fallbackLng: "en",
       supportedLngs: ["en", "sv"],
       interpolation: { escapeValue: false },
+      // Avoid Suspense so SSR/CSR fallback text stays deterministic and we
+      // don't trigger React #418 hydration mismatches on transient loaders.
+      react: { useSuspense: false },
       detection: {
         order: ["localStorage", "navigator"],
         lookupLocalStorage: "ea.lang",

@@ -28,7 +28,7 @@ function CoachAthleteCalendarPage() {
           Read-only view of what your athlete sees. Dashed cards are sessions they haven&apos;t confirmed yet.
         </p>
       </div>
-      <SharedCalendar ownerId={athleteId} readOnly />
+      <SharedCalendar ownerId={athleteId} readOnly viewerRole="coach" />
     </div>
   );
 }

@@ -285,3 +285,53 @@ export async function clearOverride(args: { source: CalendarSource; sourceId: st
     .eq("source_id", args.sourceId);
   if (error) throw error;
 }
+
+/**
+ * Hard-delete a session from the calendar. Coach/physio only.
+ * Removes the source row (planned_session / endurance_session / rehab_session /
+ * training_logs for ad-hoc strength) plus any schedule override pointing at it.
+ */
+export async function deleteSessionHard(args: {
+  ownerId: string;
+  source: CalendarSource;
+  sourceId: string;
+}) {
+  const { ownerId, source, sourceId } = args;
+
+  // 1. Drop any schedule override (best-effort; no rows is OK)
+  if (source !== "adhoc_strength") {
+    await supabase
+      .from("session_schedule_overrides")
+      .delete()
+      .eq("source_type", source)
+      .eq("source_id", sourceId);
+  } else {
+    await supabase
+      .from("session_schedule_overrides")
+      .delete()
+      .eq("owner_id", ownerId)
+      .eq("source_type", source)
+      .eq("source_id", sourceId);
+  }
+
+  // 2. Drop the source row
+  if (source === "planned") {
+    const { error } = await supabase.from("planned_sessions").delete().eq("id", sourceId);
+    if (error) throw error;
+  } else if (source === "endurance") {
+    const { error } = await supabase.from("endurance_sessions").delete().eq("id", sourceId);
+    if (error) throw error;
+  } else if (source === "rehab") {
+    const { error } = await supabase.from("rehab_sessions").delete().eq("id", sourceId);
+    if (error) throw error;
+  } else if (source === "adhoc_strength") {
+    // sourceId == date; drop all ad-hoc logs for that athlete on that day
+    const { error } = await supabase
+      .from("training_logs")
+      .delete()
+      .eq("athlete_id", ownerId)
+      .eq("date", sourceId)
+      .is("planned_exercise_id", null);
+    if (error) throw error;
+  }
+}

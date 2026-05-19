@@ -28,7 +28,7 @@ function PhysioPatientCalendarPage() {
           Read-only view of what your patient sees. Dashed cards are sessions they haven&apos;t confirmed yet.
         </p>
       </div>
-      <SharedCalendar ownerId={patientId} readOnly />
+      <SharedCalendar ownerId={patientId} readOnly viewerRole="physio" />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   DndContext,
   DragEndEvent,
@@ -10,10 +11,20 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   CalendarItem,
   cancelSession,
+  deleteSessionHard,
   fetchCalendarItems,
   fetchReadinessDots,
   monthGridDays,
@@ -42,13 +54,18 @@ type Props = {
   ownerId: string;
   /** When true, the viewer cannot drag/confirm cards (coach/physio view). */
   readOnly?: boolean;
+  /** Role of the person looking at the calendar. Coach/physio gets hard-delete. */
+  viewerRole?: "coach" | "physio" | "athlete" | "patient";
 };
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
-export function SharedCalendar({ ownerId, readOnly = false }: Props) {
+export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props) {
+  const { t } = useTranslation();
   const [monthDate, setMonthDate] = useState<Date>(() => new Date());
   const qc = useQueryClient();
+
+  const canDelete = viewerRole === "coach" || viewerRole === "physio";
 
   const itemsQuery = useQuery({
     queryKey: ["calendar-items", ownerId, format(monthDate, "yyyy-MM")],
@@ -66,7 +83,7 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
       qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Could not move session");
+      toast.error(e instanceof Error ? e.message : t("calendar.couldNotMove"));
     },
   });
 
@@ -74,10 +91,10 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
     mutationFn: cancelSession,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
-      toast.success("Session cancelled");
+      toast.success(t("calendar.sessionCancelled"));
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Could not cancel session");
+      toast.error(e instanceof Error ? e.message : t("calendar.couldNotCancel"));
     },
   });
 
@@ -87,12 +104,24 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
       qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Could not restore session");
+      toast.error(e instanceof Error ? e.message : t("calendar.couldNotRestore"));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteSessionHard,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      toast.success(t("calendar.deleted"));
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : t("calendar.couldNotDelete"));
     },
   });
 
   const [cancelTarget, setCancelTarget] = useState<CalendarItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
   const [addForDate, setAddForDate] = useState<string | null>(null);
   const [editorTarget, setEditorTarget] = useState<
@@ -139,29 +168,29 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setMonthDate((d) => addMonths(d, -1))} aria-label="Previous month">
+            <Button variant="ghost" size="icon" onClick={() => setMonthDate((d) => addMonths(d, -1))} aria-label={t("calendar.prevMonth")}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-[10rem] text-center text-lg font-semibold">
               {format(monthDate, "MMMM yyyy")}
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setMonthDate((d) => addMonths(d, 1))} aria-label="Next month">
+            <Button variant="ghost" size="icon" onClick={() => setMonthDate((d) => addMonths(d, 1))} aria-label={t("calendar.nextMonth")}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>Today</Button>
+          <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
         </div>
 
         {!readOnly && (
           <p className="text-xs text-muted-foreground">
-            Dashed cards are coach/physio suggestions. Drag them onto any day to confirm, or tap the check to keep the suggested day.
+            {t("calendar.helperAthlete")}
           </p>
         )}
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">
-          {WEEKDAYS.map((d) => (
+          {WEEKDAY_KEYS.map((d) => (
             <div key={d} className="bg-muted/60 px-2 py-1.5 text-center font-medium text-muted-foreground">
-              {d}
+              {t(`common.weekdaysShort.${d}`)}
             </div>
           ))}
           {days.map((d) => {
@@ -179,6 +208,7 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                 items={items}
                 readiness={readiness}
                 readOnly={readOnly}
+                canDelete={canDelete}
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }
@@ -187,6 +217,7 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                   setCancelTarget(it);
                 }}
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
+                onRequestDelete={(it) => setDeleteTarget(it)}
                 onPreview={(it) => {
                   // Athlete view: clicking ad-hoc strength or own endurance opens the editor.
                   if (!readOnly && it.source === "adhoc_strength") {
@@ -253,23 +284,23 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
       <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel session</DialogTitle>
+            <DialogTitle>{t("calendar.cancelSessionTitle")}</DialogTitle>
             <DialogDescription>
-              Let your {ownerId ? "coach/physio" : ""} know why this session won&apos;t happen. They&apos;ll see it in red on their calendar.
+              {t("calendar.cancelSessionDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="cancel-reason">Reason</Label>
+            <Label htmlFor="cancel-reason">{t("calendar.reason")}</Label>
             <div className="flex flex-wrap gap-1.5">
-              {["Sick", "Injured", "No time", "Travel", "Low readiness"].map((preset) => (
+              {(["sick", "injured", "noTime", "travel", "lowReadiness"] as const).map((presetKey) => (
                 <Button
-                  key={preset}
+                  key={presetKey}
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setCancelReason(preset)}
+                  onClick={() => setCancelReason(t(`calendar.preset.${presetKey}`))}
                 >
-                  {preset}
+                  {t(`calendar.preset.${presetKey}`)}
                 </Button>
               ))}
             </div>
@@ -277,12 +308,12 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
               id="cancel-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="e.g. Sick, couldn't fit it in, low energy…"
+              placeholder={t("calendar.reasonPlaceholder")}
               rows={3}
             />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Back</Button>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>{t("actions.back")}</Button>
             <Button
               variant="destructive"
               disabled={!cancelReason.trim() || cancelMutation.isPending}
@@ -300,11 +331,37 @@ export function SharedCalendar({ ownerId, readOnly = false }: Props) {
                 );
               }}
             >
-              Cancel session
+              {t("calendar.cancelSession")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("calendar.deleteSessionTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.title} — {t("calendar.deleteSessionDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deleteTarget) return;
+                deleteMutation.mutate(
+                  { ownerId, source: deleteTarget.source, sourceId: deleteTarget.sourceId },
+                  { onSuccess: () => setDeleteTarget(null) },
+                );
+              }}
+            >
+              {t("calendar.deleteSession")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DndContext>
   );
 }
@@ -317,9 +374,11 @@ function DayCell({
   items,
   readiness,
   readOnly,
+  canDelete,
   onConfirm,
   onRequestCancel,
   onUncancel,
+  onRequestDelete,
   onPreview,
   onAdd,
 }: {
@@ -330,12 +389,15 @@ function DayCell({
   items: CalendarItem[];
   readiness?: number;
   readOnly: boolean;
+  canDelete: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
+  onRequestDelete: (it: CalendarItem) => void;
   onPreview: (it: CalendarItem) => void;
   onAdd?: (date: string) => void;
 }) {
+  const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
   return (
     <div
@@ -365,8 +427,8 @@ function DayCell({
                 onAdd(date);
               }}
               className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-primary/10 hover:text-primary group-hover/day:opacity-100 focus:opacity-100"
-              aria-label="Add session"
-              title="Add session"
+              aria-label={t("calendar.addSession")}
+              title={t("calendar.addSession")}
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
@@ -379,9 +441,11 @@ function DayCell({
             key={it.key}
             item={it}
             readOnly={readOnly}
+            canDelete={canDelete}
             onConfirm={onConfirm}
             onRequestCancel={onRequestCancel}
             onUncancel={onUncancel}
+            onRequestDelete={onRequestDelete}
             onPreview={onPreview}
           />
         ))}
@@ -399,18 +463,23 @@ function ReadinessDot({ value }: { value: number }) {
 function SessionCard({
   item,
   readOnly,
+  canDelete,
   onConfirm,
   onRequestCancel,
   onUncancel,
+  onRequestDelete,
   onPreview,
 }: {
   item: CalendarItem;
   readOnly: boolean;
+  canDelete: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
+  onRequestDelete: (it: CalendarItem) => void;
   onPreview: (it: CalendarItem) => void;
 }) {
+  const { t } = useTranslation();
   const draggable = !readOnly && !item.isCancelled;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${item.source}:${item.sourceId}`,
@@ -443,11 +512,11 @@ function SessionCard({
       )}
       title={
         item.isCancelled
-          ? `Cancelled${item.cancelReason ? ` — ${item.cancelReason}` : ""}`
+          ? `${t("calendar.cancelled")}${item.cancelReason ? ` — ${item.cancelReason}` : ""}`
           : item.isGhost
-            ? `Suggested ${item.subtitle ?? ""} — drag to move or tap ✓ to accept`
+            ? `${t("calendar.suggested")} ${item.subtitle ?? ""}`
             : moved
-              ? `Moved from ${format(parseISO(item.suggestedDate), "MMM d")}`
+              ? t("calendar.movedFrom", { date: format(parseISO(item.suggestedDate), "MMM d") })
               : item.subtitle
       }
     >
@@ -466,7 +535,7 @@ function SessionCard({
             onConfirm(item);
           }}
           className="rounded p-0.5 text-primary hover:bg-primary/10"
-          aria-label="Accept suggested day"
+          aria-label={t("calendar.acceptSuggested")}
         >
           <Check className="h-3 w-3" />
         </button>
@@ -480,7 +549,7 @@ function SessionCard({
             onRequestCancel(item);
           }}
           className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          aria-label="Cancel session"
+          aria-label={t("calendar.cancelSession")}
         >
           <X className="h-3 w-3" />
         </button>
@@ -493,9 +562,24 @@ function SessionCard({
             onUncancel(item);
           }}
           className="rounded p-0.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
-          aria-label="Restore session"
+          aria-label={t("calendar.restoreSession")}
         >
           <RotateCcw className="h-3 w-3" />
+        </button>
+      )}
+      {canDelete && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestDelete(item);
+          }}
+          className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          aria-label={t("calendar.deleteSession")}
+          title={t("calendar.deleteSession")}
+        >
+          <Trash2 className="h-3 w-3" />
         </button>
       )}
     </div>

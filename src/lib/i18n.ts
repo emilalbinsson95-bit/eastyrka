@@ -16,6 +16,12 @@ if (!i18n.isInitialized) {
       fallbackLng: "en",
       supportedLngs: ["en", "sv"],
       interpolation: { escapeValue: false },
+      // Avoid Suspense so SSR/CSR fallback text matches.
+      react: { useSuspense: false },
+      // Prevent SSR/CSR hydration mismatch: server has no localStorage, so it
+      // serves the fallback language (en). Force the same on initial client
+      // render too; LanguageDetector still updates after hydration.
+      lng: "en",
       detection: {
         order: ["localStorage", "navigator"],
         lookupLocalStorage: "ea.lang",

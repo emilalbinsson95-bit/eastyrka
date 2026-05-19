@@ -21,7 +21,10 @@
     "patients": "Patienter",
     "sessions": "Pass",
     "back": "Tillbaka",
-    "home": "Hem"
+    "home": "Hem",
+    "calendar": "Kalender",
+    "endurance": "Kondition",
+    "analytics": "Analys"
   },
   "actions": {
     "signIn": "Logga in",
@@ -35,7 +38,9 @@
     "send": "Skicka",
     "continue": "Fortsätt",
     "submit": "Skicka in",
-    "viewDetails": "Visa detaljer"
+    "viewDetails": "Visa detaljer",
+    "confirm": "Bekräfta",
+    "back": "Tillbaka"
   },
   "common": {
     "email": "E-post",
@@ -51,7 +56,87 @@
     "search": "Sök",
     "noData": "Ingen data än",
     "yes": "Ja",
-    "no": "Nej"
+    "no": "Nej",
+    "weekdaysShort": {
+      "mon": "Mån",
+      "tue": "Tis",
+      "wed": "Ons",
+      "thu": "Tor",
+      "fri": "Fre",
+      "sat": "Lör",
+      "sun": "Sön"
+    }
+  },
+  "calendar": {
+    "today": "Idag",
+    "prevMonth": "Föregående månad",
+    "nextMonth": "Nästa månad",
+    "helperAthlete": "Streckade kort är förslag från tränare/fysio. Dra dem till valfri dag för att bekräfta, eller tryck på bocken för att behålla föreslagen dag.",
+    "addSession": "Lägg till pass",
+    "cancelSession": "Avboka pass",
+    "cancelSessionTitle": "Avboka pass",
+    "cancelSessionDesc": "Berätta varför passet inte blir av. Det visas i rött på tränarens kalender.",
+    "reason": "Anledning",
+    "reasonPlaceholder": "t.ex. Sjuk, hann inte med, låg energi…",
+    "preset": {
+      "sick": "Sjuk",
+      "injured": "Skadad",
+      "noTime": "Hann inte",
+      "travel": "Resa",
+      "lowReadiness": "Låg readiness"
+    },
+    "cancelled": "Avbokad",
+    "suggested": "Föreslagen",
+    "movedFrom": "Flyttad från {{date}}",
+    "acceptSuggested": "Acceptera föreslagen dag",
+    "restoreSession": "Återställ pass",
+    "deleteSession": "Radera pass",
+    "deleteSessionTitle": "Radera pass permanent?",
+    "deleteSessionDesc": "Det här tar bort passet helt – inklusive eventuell avbokning av atleten. Går inte att ångra.",
+    "deleted": "Pass raderat",
+    "couldNotDelete": "Kunde inte radera passet",
+    "couldNotMove": "Kunde inte flytta passet",
+    "couldNotCancel": "Kunde inte avboka passet",
+    "couldNotRestore": "Kunde inte återställa passet",
+    "sessionCancelled": "Pass avbokat"
+  },
+  "endurance": {
+    "title": "Konditionsträning",
+    "subtitle": "RPE-baserade löp, cykel och simpass. Ingen GPS eller tempo-mål — bara tid och ansträngning.",
+    "quickLog": "Snabblogga",
+    "buildStructured": "Bygg ett strukturerat pass",
+    "recentSessions": "Senaste pass",
+    "noSessionsYet": "Inga konditionspass än – logga ett ovan.",
+    "loading": "Laddar…",
+    "weeklyLoad": "Veckobelastning",
+    "weeklyLoadDesc": "Tid-under-last viktad med RPE — högre RPE räknas mer. Siffror är godtyckliga belastningsenheter (sRPE).",
+    "thisWeek": "Denna vecka",
+    "last7d": "Senaste 7 dagar",
+    "trend8w": "Trend (8 v)",
+    "loadScore": "Lastpoäng",
+    "hardPlusMin": "Hård+ min",
+    "easyPct": "Lätt %",
+    "vsLastWeek": "{{n}}% mot förra veckan",
+    "back": "Tillbaka till konditionslogg",
+    "intervals": "intervaller",
+    "noSession": "Pass",
+    "done": "Klart",
+    "planned": "Planerad"
+  },
+  "messages": {
+    "title": "Meddelanden",
+    "conversations": "Konversationer",
+    "startNew": "Starta ny",
+    "selectConversation": "Välj en konversation",
+    "noMessages": "Inga meddelanden än. Säg hej.",
+    "typePlaceholder": "Skriv ett meddelande… (Enter för att skicka)",
+    "noPartnersCoach": "Koppla atleter för att börja chatta.",
+    "noPartnersAthlete": "Din tränare är inte tillagd än.",
+    "noPartnersPhysio": "Lägg till patienter för att börja chatta.",
+    "noPartnersPatient": "Din fysioterapeut är inte tillagd än.",
+    "session": "pass",
+    "failedToSend": "Kunde inte skicka",
+    "couldntStart": "Kunde inte starta tråden"
   },
   "auth": {
     "welcomeBack": "Välkommen tillbaka",
@@ -77,21 +162,6 @@
     "title": "Notiser",
     "empty": "Inga notiser",
     "markAllRead": "Markera alla som lästa"
-  },
-  "messages": {
-    "title": "Meddelanden",
-    "conversations": "Konversationer",
-    "startNew": "Starta ny",
-    "selectConversation": "Välj en konversation",
-    "noMessages": "Inga meddelanden än. Säg hej.",
-    "typePlaceholder": "Skriv ett meddelande… (Enter för att skicka)",
-    "noPartnersCoach": "Koppla atleter för att börja chatta.",
-    "noPartnersAthlete": "Din tränare är inte tillagd än.",
-    "noPartnersPhysio": "Lägg till patienter för att börja chatta.",
-    "noPartnersPatient": "Din fysioterapeut är inte tillagd än.",
-    "session": "pass",
-    "failedToSend": "Kunde inte skicka",
-    "couldntStart": "Kunde inte starta tråden"
   },
   "physio": {
     "overviewTitle": "Patientöversikt",

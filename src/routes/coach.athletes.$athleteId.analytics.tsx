@@ -85,6 +85,18 @@ const CATEGORY_COLORS = [
   "hsl(var(--status-undertrained))",
 ];
 
+// RPE band colors — use raw oklch tokens (not wrapped in hsl()) since
+// the design tokens are defined as oklch(...). Wrapping in hsl() would
+// produce invalid CSS and the bars/dots would render as black.
+const BAND_COLORS = {
+  easy: "var(--chart-2)", // green
+  mod: "var(--chart-4)",  // amber
+  hard: "var(--chart-1)", // blue
+  max: "var(--chart-3)",  // red/orange
+} as const;
+const BAND_ACCENT = "var(--chart-5)"; // purple accent for the avg-RPE line
+
+
 function AnalyticsPage() {
   const { athleteId } = useParams({
     from: "/coach/athletes/$athleteId/analytics",

@@ -184,11 +184,11 @@ function AnalyticsPage() {
       if (error) throw error;
       const sList = sessions ?? [];
       const ids = sList.map((s) => s.id);
-      let steps: Array<{ session_id: string; actual_duration_seconds: number | null; actual_distance_m: number | null; actual_avg_hr: number | null; actual_avg_rpe: number | null }> = [];
+      let steps: Array<{ session_id: string; discipline: string | null; actual_duration_seconds: number | null; actual_distance_m: number | null; actual_avg_hr: number | null; actual_avg_rpe: number | null }> = [];
       if (ids.length) {
         const { data: stepData, error: sErr } = await supabase
           .from("endurance_steps")
-          .select("session_id, actual_duration_seconds, actual_distance_m, actual_avg_hr, actual_avg_rpe")
+          .select("session_id, discipline, actual_duration_seconds, actual_distance_m, actual_avg_hr, actual_avg_rpe")
           .in("session_id", ids);
         if (sErr) throw sErr;
         steps = stepData ?? [];
@@ -203,7 +203,22 @@ function AnalyticsPage() {
         if (st.actual_avg_rpe) { cur.rpeSum += Number(st.actual_avg_rpe); cur.rpeCount += 1; }
         stepAgg.set(st.session_id, cur);
       }
-      return sList.map((s) => {
+      const sessionInfo = new Map(sList.map((s) => [s.id, { date: s.date as string, discipline: s.discipline as string }]));
+      // Per-step samples for run pace-by-intensity (sampled, not session avg)
+      const runSteps = steps
+        .map((st) => {
+          const info = sessionInfo.get(st.session_id);
+          if (!info) return null;
+          const disc = (st.discipline ?? info.discipline) as string;
+          if (disc !== "run") return null;
+          const sec = Number(st.actual_duration_seconds ?? 0);
+          const m = Number(st.actual_distance_m ?? 0);
+          const rpe = st.actual_avg_rpe != null ? Number(st.actual_avg_rpe) : null;
+          if (sec <= 0 || m <= 0 || rpe == null) return null;
+          return { date: info.date, sec, m, rpe };
+        })
+        .filter((x): x is { date: string; sec: number; m: number; rpe: number } => x !== null);
+      const sessions = sList.map((s) => {
         const agg = stepAgg.get(s.id);
         const dur = s.actual_total_seconds ?? agg?.dur ?? 0;
         const dist = s.actual_distance_m ?? agg?.dist ?? 0;
@@ -223,8 +238,10 @@ function AnalyticsPage() {
           planned_rpe: s.planned_avg_rpe != null ? Number(s.planned_avg_rpe) : null,
         };
       });
+      return { sessions, runSteps };
     },
   });
+
   const exerciseLibQuery = useQuery({
     queryKey: ["analytics-exercise-lib"],
     queryFn: async () => {

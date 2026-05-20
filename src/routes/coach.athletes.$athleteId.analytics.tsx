@@ -1008,7 +1008,7 @@ function AnalyticsPage() {
                       <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill="hsl(var(--status-adapting))" />
                       <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill="hsl(var(--primary))" />
                       <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill="hsl(var(--status-exhausted))" radius={[6, 6, 0, 0]} />
-                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--foreground))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--foreground))" }} connectNulls />
+                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--accent))" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--accent))", stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>

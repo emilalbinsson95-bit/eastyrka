@@ -664,7 +664,7 @@ function AnalyticsPage() {
       return {
         id,
         label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
-        fill: id === "easy" ? "hsl(var(--status-peaking))" : id === "mod" ? "hsl(var(--status-adapting))" : id === "hard" ? "hsl(var(--primary))" : "hsl(var(--status-exhausted))",
+        fill: BAND_COLORS[id],
         sessions: b.sessions,
         km: b.km,
         paceLabel: paceSec ? `${Math.floor(paceSec / 60)}:${String(Math.round(paceSec % 60)).padStart(2, "0")}/km` : null,

@@ -663,33 +663,78 @@ function AnalyticsPage() {
       scatterByBand[id].push(p);
     }
 
-    // --- Run pace by RPE band ---
-    const paceAgg: Record<string, { sec: number; km: number; sessions: number }> = {
-      easy: { sec: 0, km: 0, sessions: 0 },
-      mod: { sec: 0, km: 0, sessions: 0 },
-      hard: { sec: 0, km: 0, sessions: 0 },
-      max: { sec: 0, km: 0, sessions: 0 },
-    };
-    for (const s of completed) {
-      if (s.discipline !== "run") continue;
-      if (s.distance_m <= 0 || s.duration_s <= 0 || s.rpe == null) continue;
-      const id = s.rpe <= 4 ? "easy" : s.rpe <= 6 ? "mod" : s.rpe <= 8 ? "hard" : "max";
-      paceAgg[id].sec += s.duration_s;
-      paceAgg[id].km += s.distance_m / 1000;
-      paceAgg[id].sessions += 1;
+    // --- Run pace by RPE band (from sampled step intervals; falls back to session totals) ---
+    type PaceBucket = { sec: number; m: number; samples: number };
+    const empty = (): PaceBucket => ({ sec: 0, m: 0, samples: 0 });
+    const paceAgg: Record<string, PaceBucket> = { easy: empty(), mod: empty(), hard: empty(), max: empty() };
+    const bandOf = (r: number) => (r <= 4 ? "easy" : r <= 6 ? "mod" : r <= 8 ? "hard" : "max");
+
+    if (runStepsData.length > 0) {
+      // Use interval samples — much more accurate when a workout mixes intensities
+      for (const st of runStepsData) {
+        const id = bandOf(st.rpe);
+        paceAgg[id].sec += st.sec;
+        paceAgg[id].m += st.m;
+        paceAgg[id].samples += 1;
+      }
+    } else {
+      // Fallback: whole-session avg when no step data exists
+      for (const s of completed) {
+        if (s.discipline !== "run") continue;
+        if (s.distance_m <= 0 || s.duration_s <= 0 || s.rpe == null) continue;
+        const id = bandOf(s.rpe);
+        paceAgg[id].sec += s.duration_s;
+        paceAgg[id].m += s.distance_m;
+        paceAgg[id].samples += 1;
+      }
     }
     const paceByBand = (["easy", "mod", "hard", "max"] as const).map((id) => {
       const b = paceAgg[id];
-      const paceSec = b.km > 0 ? b.sec / b.km : null;
+      const km = b.m / 1000;
+      const paceSec = km > 0 ? b.sec / km : null;
       return {
         id,
         label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
         fill: BAND_COLORS[id],
-        sessions: b.sessions,
-        km: b.km,
+        sessions: b.samples,
+        km,
         paceLabel: paceSec ? `${Math.floor(paceSec / 60)}:${String(Math.round(paceSec % 60)).padStart(2, "0")}/km` : null,
       };
     });
+
+    // --- Weekly run pace by RPE band (sampled from intervals) ---
+    const paceWeekMap = new Map<string, { week: string; label: string; agg: Record<string, PaceBucket> }>();
+    const stepSource: Array<{ date: string; sec: number; m: number; rpe: number }> = runStepsData.length > 0
+      ? runStepsData
+      : completed
+          .filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0 && s.rpe != null)
+          .map((s) => ({ date: s.date, sec: s.duration_s, m: s.distance_m, rpe: s.rpe! }));
+    for (const st of stepSource) {
+      const wk = format(startOfWeek(parseISO(st.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
+      const row = paceWeekMap.get(wk) ?? {
+        week: wk,
+        label: format(parseISO(wk), "MMM d"),
+        agg: { easy: empty(), mod: empty(), hard: empty(), max: empty() },
+      };
+      const id = bandOf(st.rpe);
+      row.agg[id].sec += st.sec;
+      row.agg[id].m += st.m;
+      row.agg[id].samples += 1;
+      paceWeekMap.set(wk, row);
+    }
+    const paceByBandWeekly = Array.from(paceWeekMap.values())
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .map((w) => ({
+        week: w.week,
+        label: w.label,
+        easy: w.agg.easy.m > 0 ? Number((w.agg.easy.sec / (w.agg.easy.m / 1000)).toFixed(1)) : null,
+        mod: w.agg.mod.m > 0 ? Number((w.agg.mod.sec / (w.agg.mod.m / 1000)).toFixed(1)) : null,
+        hard: w.agg.hard.m > 0 ? Number((w.agg.hard.sec / (w.agg.hard.m / 1000)).toFixed(1)) : null,
+        max: w.agg.max.m > 0 ? Number((w.agg.max.sec / (w.agg.max.m / 1000)).toFixed(1)) : null,
+      }));
+    const paceSampledFromSteps = runStepsData.length > 0;
+
+
 
     // Weekly aggregates (per discipline + per RPE band)
     const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; band: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();

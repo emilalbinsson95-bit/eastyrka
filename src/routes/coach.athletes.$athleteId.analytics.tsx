@@ -1110,7 +1110,11 @@ function AnalyticsPage() {
 
                 <ChartCard
                   title="Run pace by intensity"
-                  description="Average pace and total volume per RPE band — see how tempo holds across efforts."
+                  description={
+                    enduranceStats.paceSampledFromSteps
+                      ? "Sampled from workout intervals — a 6×1 km tempo block at RPE 8 counts toward Hard, not blended with warm-up. Pace and km per RPE band over the whole window."
+                      : "Average pace and total volume per RPE band over the whole window. (No interval samples found — uses whole-session averages.)"
+                  }
                 >
                   {enduranceStats.paceByBand.every((b) => b.sessions === 0) ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
@@ -1124,13 +1128,51 @@ function AnalyticsPage() {
                           </div>
                           <div className="mt-1 text-2xl font-bold tracking-tight">{b.paceLabel ?? "—"}</div>
                           <div className="text-[11px] text-muted-foreground">
-                            {b.sessions} {b.sessions === 1 ? "run" : "runs"} · {b.km.toFixed(1)} km
+                            {b.sessions} {enduranceStats.paceSampledFromSteps ? (b.sessions === 1 ? "interval" : "intervals") : (b.sessions === 1 ? "run" : "runs")} · {b.km.toFixed(1)} km
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </ChartCard>
+
+                <ChartCard
+                  title="Run pace by intensity — weekly trend"
+                  description="Average pace per RPE band each week. Track whether your tempo (RPE 7–8) and easy (RPE 1–4) paces are improving over time."
+                >
+                  {enduranceStats.paceByBandWeekly.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={enduranceStats.paceByBandWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={11}
+                          reversed
+                          domain={["auto", "auto"]}
+                          tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
+                          label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                          formatter={(value: number | null, name: string) => {
+                            if (value == null) return ["—", name];
+                            const v = Number(value);
+                            return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, name];
+                          }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Line type="monotone" dataKey="easy" name="Easy (1–4)" stroke={BAND_COLORS.easy} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey="mod" name="Moderate (5–6)" stroke={BAND_COLORS.mod} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey="hard" name="Hard (7–8)" stroke={BAND_COLORS.hard} strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
+                        <Line type="monotone" dataKey="max" name="Max (9–10)" stroke={BAND_COLORS.max} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+
 
                 <ChartCard
                   title="Per-session intensity vs distance"

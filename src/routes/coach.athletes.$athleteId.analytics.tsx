@@ -702,36 +702,47 @@ function AnalyticsPage() {
       };
     });
 
-    // --- Weekly run pace by RPE band (sampled from intervals) ---
-    const paceWeekMap = new Map<string, { week: string; label: string; agg: Record<string, PaceBucket> }>();
-    const stepSource: Array<{ date: string; sec: number; m: number; rpe: number }> = runStepsData.length > 0
+    // --- Weekly run pace per individual RPE (1..10) + "no RPE" ---
+    const rpeKeys = ["r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","none"] as const;
+    type RpeKey = typeof rpeKeys[number];
+    const emptyRpeAgg = (): Record<RpeKey, PaceBucket> => ({
+      r1: empty(), r2: empty(), r3: empty(), r4: empty(), r5: empty(),
+      r6: empty(), r7: empty(), r8: empty(), r9: empty(), r10: empty(), none: empty(),
+    });
+    const keyOfRpe = (r: number | null | undefined): RpeKey => {
+      if (r == null) return "none";
+      const rounded = Math.max(1, Math.min(10, Math.round(r)));
+      return (`r${rounded}` as RpeKey);
+    };
+    const paceWeekMap = new Map<string, { week: string; label: string; agg: Record<RpeKey, PaceBucket> }>();
+    const stepSource: Array<{ date: string; sec: number; m: number; rpe: number | null }> = runStepsData.length > 0
       ? runStepsData
       : completed
-          .filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0 && s.rpe != null)
-          .map((s) => ({ date: s.date, sec: s.duration_s, m: s.distance_m, rpe: s.rpe! }));
+          .filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0)
+          .map((s) => ({ date: s.date, sec: s.duration_s, m: s.distance_m, rpe: s.rpe }));
     for (const st of stepSource) {
       const wk = format(startOfWeek(parseISO(st.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       const row = paceWeekMap.get(wk) ?? {
         week: wk,
         label: format(parseISO(wk), "MMM d"),
-        agg: { easy: empty(), mod: empty(), hard: empty(), max: empty() },
+        agg: emptyRpeAgg(),
       };
-      const id = bandOf(st.rpe);
+      const id = keyOfRpe(st.rpe);
       row.agg[id].sec += st.sec;
       row.agg[id].m += st.m;
       row.agg[id].samples += 1;
       paceWeekMap.set(wk, row);
     }
-    const paceByBandWeekly = Array.from(paceWeekMap.values())
+    const paceByRpeWeekly = Array.from(paceWeekMap.values())
       .sort((a, b) => a.week.localeCompare(b.week))
-      .map((w) => ({
-        week: w.week,
-        label: w.label,
-        easy: w.agg.easy.m > 0 ? Number((w.agg.easy.sec / (w.agg.easy.m / 1000)).toFixed(1)) : null,
-        mod: w.agg.mod.m > 0 ? Number((w.agg.mod.sec / (w.agg.mod.m / 1000)).toFixed(1)) : null,
-        hard: w.agg.hard.m > 0 ? Number((w.agg.hard.sec / (w.agg.hard.m / 1000)).toFixed(1)) : null,
-        max: w.agg.max.m > 0 ? Number((w.agg.max.sec / (w.agg.max.m / 1000)).toFixed(1)) : null,
-      }));
+      .map((w) => {
+        const row: Record<string, number | string | null> = { week: w.week, label: w.label };
+        for (const k of rpeKeys) {
+          const b = w.agg[k];
+          row[k] = b.m > 0 ? Number((b.sec / (b.m / 1000)).toFixed(1)) : null;
+        }
+        return row;
+      });
     const paceSampledFromSteps = runStepsData.length > 0;
 
 

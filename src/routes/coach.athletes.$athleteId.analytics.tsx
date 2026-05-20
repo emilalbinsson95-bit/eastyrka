@@ -1166,54 +1166,58 @@ function AnalyticsPage() {
                   {enduranceStats.paceByRpeWeekly.length === 0 ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">No runs recorded in this window.</p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <LineChart data={enduranceStats.paceByRpeWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                        <YAxis
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={11}
-                          reversed
-                          domain={["auto", "auto"]}
-                          tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
-                          label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                        />
-                        <Tooltip
-                          contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                          formatter={(value, name) => {
-                            if (value == null) return ["—", String(name)];
-                            const v = Number(value);
-                            if (!Number.isFinite(v)) return ["—", String(name)];
-                            return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
-                          }}
-                        />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {([
-                          { key: "r1", label: "RPE 1", color: "oklch(0.72 0.15 155)" },
-                          { key: "r2", label: "RPE 2", color: "oklch(0.74 0.16 135)" },
-                          { key: "r3", label: "RPE 3", color: "oklch(0.76 0.16 115)" },
-                          { key: "r4", label: "RPE 4", color: "oklch(0.78 0.16 95)" },
-                          { key: "r5", label: "RPE 5", color: "oklch(0.78 0.17 80)" },
-                          { key: "r6", label: "RPE 6", color: "oklch(0.74 0.18 60)" },
-                          { key: "r7", label: "RPE 7", color: "oklch(0.70 0.19 45)" },
-                          { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
-                          { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
-                          { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
-                          { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
-                        ] as const).map((s) => (
-                          <Line
-                            key={s.key}
-                            type="monotone"
-                            dataKey={s.key}
-                            name={s.label}
-                            stroke={s.color}
-                            strokeWidth={1.75}
-                            dot={{ r: 2.5 }}
-                            connectNulls
-                          />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <WeekWindow data={enduranceStats.paceByRpeWeekly}>
+                      {(slice) => (
+                        <ResponsiveContainer width="100%" height={320}>
+                          <LineChart data={slice} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                            <YAxis
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={11}
+                              reversed
+                              domain={["auto", "auto"]}
+                              tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
+                              label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                            />
+                            <Tooltip
+                              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                              formatter={(value, name) => {
+                                if (value == null) return ["—", String(name)];
+                                const v = Number(value);
+                                if (!Number.isFinite(v)) return ["—", String(name)];
+                                return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            {([
+                              { key: "r1", label: "RPE 1", color: "oklch(0.72 0.15 155)" },
+                              { key: "r2", label: "RPE 2", color: "oklch(0.74 0.16 135)" },
+                              { key: "r3", label: "RPE 3", color: "oklch(0.76 0.16 115)" },
+                              { key: "r4", label: "RPE 4", color: "oklch(0.78 0.16 95)" },
+                              { key: "r5", label: "RPE 5", color: "oklch(0.78 0.17 80)" },
+                              { key: "r6", label: "RPE 6", color: "oklch(0.74 0.18 60)" },
+                              { key: "r7", label: "RPE 7", color: "oklch(0.70 0.19 45)" },
+                              { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
+                              { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
+                              { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
+                              { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
+                            ] as const).map((s) => (
+                              <Line
+                                key={s.key}
+                                type="monotone"
+                                dataKey={s.key}
+                                name={s.label}
+                                stroke={s.color}
+                                strokeWidth={1.75}
+                                dot={{ r: 2.5 }}
+                                connectNulls
+                              />
+                            ))}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </WeekWindow>
                   )}
                 </ChartCard>
 

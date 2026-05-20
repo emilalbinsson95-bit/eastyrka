@@ -1157,11 +1157,13 @@ function AnalyticsPage() {
                         />
                         <Tooltip
                           contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                          formatter={(value: number | null, name: string) => {
-                            if (value == null) return ["—", name];
+                          formatter={(value, name) => {
+                            if (value == null) return ["—", String(name)];
                             const v = Number(value);
-                            return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, name];
+                            if (!Number.isFinite(v)) return ["—", String(name)];
+                            return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
                           }}
+
                         />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
                         <Line type="monotone" dataKey="easy" name="Easy (1–4)" stroke={BAND_COLORS.easy} strokeWidth={2} dot={{ r: 3 }} connectNulls />

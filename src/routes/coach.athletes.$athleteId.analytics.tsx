@@ -1149,13 +1149,13 @@ function AnalyticsPage() {
 
                 <ChartCard
                   title="Run pace by intensity — weekly trend"
-                  description="Average pace per RPE band each week. Track whether your tempo (RPE 7–8) and easy (RPE 1–4) paces are improving over time."
+                  description="Average pace per RPE (1–10, plus runs with no RPE) each week. Track whether your easy, tempo and threshold paces are improving over time."
                 >
-                  {enduranceStats.paceByBandWeekly.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
+                  {enduranceStats.paceByRpeWeekly.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">No runs recorded in this window.</p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <LineChart data={enduranceStats.paceByBandWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <LineChart data={enduranceStats.paceByRpeWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                         <YAxis
@@ -1174,13 +1174,32 @@ function AnalyticsPage() {
                             if (!Number.isFinite(v)) return ["—", String(name)];
                             return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
                           }}
-
                         />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" dataKey="easy" name="Easy (1–4)" stroke={BAND_COLORS.easy} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey="mod" name="Moderate (5–6)" stroke={BAND_COLORS.mod} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey="hard" name="Hard (7–8)" stroke={BAND_COLORS.hard} strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
-                        <Line type="monotone" dataKey="max" name="Max (9–10)" stroke={BAND_COLORS.max} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        {([
+                          { key: "r1", label: "RPE 1", color: "oklch(0.72 0.15 155)" },
+                          { key: "r2", label: "RPE 2", color: "oklch(0.74 0.16 135)" },
+                          { key: "r3", label: "RPE 3", color: "oklch(0.76 0.16 115)" },
+                          { key: "r4", label: "RPE 4", color: "oklch(0.78 0.16 95)" },
+                          { key: "r5", label: "RPE 5", color: "oklch(0.78 0.17 80)" },
+                          { key: "r6", label: "RPE 6", color: "oklch(0.74 0.18 60)" },
+                          { key: "r7", label: "RPE 7", color: "oklch(0.70 0.19 45)" },
+                          { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
+                          { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
+                          { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
+                          { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
+                        ] as const).map((s) => (
+                          <Line
+                            key={s.key}
+                            type="monotone"
+                            dataKey={s.key}
+                            name={s.label}
+                            stroke={s.color}
+                            strokeWidth={1.75}
+                            dot={{ r: 2.5 }}
+                            connectNulls
+                          />
+                        ))}
                       </LineChart>
                     </ResponsiveContainer>
                   )}

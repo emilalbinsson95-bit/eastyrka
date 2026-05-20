@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
-import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download, Footprints, Bike, Waves } from "lucide-react";
+import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download, Footprints, Bike, Waves, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -1007,24 +1007,28 @@ function AnalyticsPage() {
                 {volumeByCategory.data.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground">No data in window.</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={volumeByCategory.data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                      <Legend />
-                      {volumeByCategory.categories.map((cat, i) => (
-                        <Bar
-                          key={cat}
-                          dataKey={cat}
-                          stackId="vol"
-                          fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
-                          name={cat}
-                        />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <WeekWindow data={volumeByCategory.data}>
+                    {(slice) => (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={slice}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                          <Legend />
+                          {volumeByCategory.categories.map((cat, i) => (
+                            <Bar
+                              key={cat}
+                              dataKey={cat}
+                              stackId="vol"
+                              fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
+                              name={cat}
+                            />
+                          ))}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </WeekWindow>
                 )}
               </CardContent>
             </Card>
@@ -1077,45 +1081,53 @@ function AnalyticsPage() {
                 </div>
 
                 <ChartCard title="Weekly distance by discipline" description="Total km per ISO week, split by run / bike / swim.">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={enduranceStats.weekly}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                      <Legend />
-                      {enduranceStats.disciplines.map((d, i) => (
-                        <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <WeekWindow data={enduranceStats.weekly}>
+                    {(slice) => (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={slice}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                          <Legend />
+                          {enduranceStats.disciplines.map((d, i) => (
+                            <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                          ))}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </WeekWindow>
                 </ChartCard>
 
                 <ChartCard
                   title="Weekly minutes by intensity"
                   description="Stacked bars show how much time was spent in each RPE band per week. Line tracks the week's average session RPE."
                 >
-                  <ResponsiveContainer width="100%" height={300}>
-                    <ComposedChart data={enduranceStats.weekly} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
-                      <YAxis yAxisId="right" orientation="right" domain={[0, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                        formatter={(value: number, name: string) => {
-                          if (name === "Avg RPE") return [Number(value).toFixed(1), name];
-                          return [`${Math.round(Number(value))} min`, name];
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill={BAND_COLORS.easy} />
-                      <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill={BAND_COLORS.mod} />
-                      <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill={BAND_COLORS.hard} />
-                      <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill={BAND_COLORS.max} radius={[6, 6, 0, 0]} />
-                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
-                    </ComposedChart>
-                  </ResponsiveContainer>
+                  <WeekWindow data={enduranceStats.weekly}>
+                    {(slice) => (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <ComposedChart data={slice} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
+                          <YAxis yAxisId="right" orientation="right" domain={[0, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <Tooltip
+                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                            formatter={(value: number, name: string) => {
+                              if (name === "Avg RPE") return [Number(value).toFixed(1), name];
+                              return [`${Math.round(Number(value))} min`, name];
+                            }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill={BAND_COLORS.easy} />
+                          <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill={BAND_COLORS.mod} />
+                          <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill={BAND_COLORS.hard} />
+                          <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill={BAND_COLORS.max} radius={[6, 6, 0, 0]} />
+                          <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    )}
+                  </WeekWindow>
                 </ChartCard>
 
 
@@ -1154,54 +1166,58 @@ function AnalyticsPage() {
                   {enduranceStats.paceByRpeWeekly.length === 0 ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">No runs recorded in this window.</p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <LineChart data={enduranceStats.paceByRpeWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                        <YAxis
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={11}
-                          reversed
-                          domain={["auto", "auto"]}
-                          tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
-                          label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                        />
-                        <Tooltip
-                          contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                          formatter={(value, name) => {
-                            if (value == null) return ["—", String(name)];
-                            const v = Number(value);
-                            if (!Number.isFinite(v)) return ["—", String(name)];
-                            return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
-                          }}
-                        />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {([
-                          { key: "r1", label: "RPE 1", color: "oklch(0.72 0.15 155)" },
-                          { key: "r2", label: "RPE 2", color: "oklch(0.74 0.16 135)" },
-                          { key: "r3", label: "RPE 3", color: "oklch(0.76 0.16 115)" },
-                          { key: "r4", label: "RPE 4", color: "oklch(0.78 0.16 95)" },
-                          { key: "r5", label: "RPE 5", color: "oklch(0.78 0.17 80)" },
-                          { key: "r6", label: "RPE 6", color: "oklch(0.74 0.18 60)" },
-                          { key: "r7", label: "RPE 7", color: "oklch(0.70 0.19 45)" },
-                          { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
-                          { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
-                          { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
-                          { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
-                        ] as const).map((s) => (
-                          <Line
-                            key={s.key}
-                            type="monotone"
-                            dataKey={s.key}
-                            name={s.label}
-                            stroke={s.color}
-                            strokeWidth={1.75}
-                            dot={{ r: 2.5 }}
-                            connectNulls
-                          />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <WeekWindow data={enduranceStats.paceByRpeWeekly}>
+                      {(slice) => (
+                        <ResponsiveContainer width="100%" height={320}>
+                          <LineChart data={slice} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                            <YAxis
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={11}
+                              reversed
+                              domain={["auto", "auto"]}
+                              tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
+                              label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                            />
+                            <Tooltip
+                              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                              formatter={(value, name) => {
+                                if (value == null) return ["—", String(name)];
+                                const v = Number(value);
+                                if (!Number.isFinite(v)) return ["—", String(name)];
+                                return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            {([
+                              { key: "r1", label: "RPE 1", color: "oklch(0.72 0.15 155)" },
+                              { key: "r2", label: "RPE 2", color: "oklch(0.74 0.16 135)" },
+                              { key: "r3", label: "RPE 3", color: "oklch(0.76 0.16 115)" },
+                              { key: "r4", label: "RPE 4", color: "oklch(0.78 0.16 95)" },
+                              { key: "r5", label: "RPE 5", color: "oklch(0.78 0.17 80)" },
+                              { key: "r6", label: "RPE 6", color: "oklch(0.74 0.18 60)" },
+                              { key: "r7", label: "RPE 7", color: "oklch(0.70 0.19 45)" },
+                              { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
+                              { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
+                              { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
+                              { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
+                            ] as const).map((s) => (
+                              <Line
+                                key={s.key}
+                                type="monotone"
+                                dataKey={s.key}
+                                name={s.label}
+                                stroke={s.color}
+                                strokeWidth={1.75}
+                                dot={{ r: 2.5 }}
+                                connectNulls
+                              />
+                            ))}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </WeekWindow>
                   )}
                 </ChartCard>
 
@@ -1512,6 +1528,59 @@ function ScoreCell({
         ? "text-muted-foreground"
         : "";
   return <td className={cn("px-2 py-2 text-center", tone)}>{value}</td>;
+}
+
+function WeekWindow<T>({
+  data,
+  size = 30,
+  children,
+}: {
+  data: T[];
+  size?: number;
+  children: (slice: T[]) => React.ReactNode;
+}) {
+  const [offset, setOffset] = useState(0);
+  const total = data.length;
+  const maxOffset = Math.max(0, total - size);
+  const safeOffset = Math.min(offset, maxOffset);
+  const end = total - safeOffset;
+  const start = Math.max(0, end - size);
+  const slice = data.slice(start, end);
+  const canNewer = safeOffset > 0;
+  const canOlder = start > 0;
+
+  if (total <= size) return <>{children(data)}</>;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span>
+          Weeks {start + 1}–{end} of {total}
+        </span>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7"
+          disabled={!canOlder}
+          onClick={() => setOffset((o) => Math.min(maxOffset, o + size))}
+          aria-label="Older weeks"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7"
+          disabled={!canNewer}
+          onClick={() => setOffset((o) => Math.max(0, o - size))}
+          aria-label="Newer weeks"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      {children(slice)}
+    </div>
+  );
 }
 
 function ChartCard({

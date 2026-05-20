@@ -1,12 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   format,
-  parseISO,
-  addDays,
-  isToday,
-  isSameDay,
 } from "date-fns";
 import { Plus, CheckCircle2, Save, Calendar as CalendarIcon } from "lucide-react";
 import { z } from "zod";
@@ -46,6 +42,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 import { ReadinessGate } from "@/components/ReadinessGate";
+import { plannedSessionDate } from "@/lib/planned-session-dates";
 
 export const Route = createFileRoute("/_app/today")({
   head: () => ({
@@ -115,9 +112,9 @@ function TodayPage() {
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
 
-  // Fetch the most recent published week (calendar-independent: athlete advances day-by-day).
+  // Fetch the active published week, not a future week that was published early.
   const planQuery = useQuery({
-    queryKey: ["athlete-plan", userId],
+    queryKey: ["athlete-plan", userId, todayStr],
     queryFn: async (): Promise<WeekPlan | null> => {
       const { data, error } = await supabase
         .from("week_plans")
@@ -135,6 +132,7 @@ function TodayPage() {
         )
         .eq("athlete_id", userId)
         .eq("status", "published")
+        .lte("week_start_date", todayStr)
         .order("week_start_date", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -197,7 +195,7 @@ function TodayPage() {
 
   // A planned session shows up "today" when its effective date == today.
   // Effective date = override.scheduled_date (if an uncancelled override exists)
-  //                  OR week_start_date + (day_of_week - 1) as fallback.
+  //                  OR week_start_date + the plan's zero/one-based day offset.
   // This matches the shared calendar so athletes don't have to manually
   // "accept" suggested sessions before they can log them.
   const planSessionIds = useMemo(
@@ -222,7 +220,7 @@ function TodayPage() {
 
   const todayPlanned: PlannedSession | undefined = useMemo(() => {
     if (!planQuery.data) return undefined;
-    const weekStart = parseISO(planQuery.data.week_start_date);
+    const plan = planQuery.data;
     const ovByPlanId = new Map<
       string,
       { scheduledDate: string; cancelled: boolean }
@@ -236,13 +234,13 @@ function TodayPage() {
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
-    const candidates = planQuery.data.planned_sessions
+    const candidates = plan.planned_sessions
       .map((s) => {
         const ov = ovByPlanId.get(s.id);
         if (ov?.cancelled) return null;
         const effective = ov?.scheduledDate
           ? ov.scheduledDate
-          : format(addDays(weekStart, (s.day_of_week ?? 1) - 1), "yyyy-MM-dd");
+          : plannedSessionDate(plan.week_start_date, s, plan.planned_sessions);
         return effective === todayStr ? s : null;
       })
       .filter((s): s is PlannedSession => s !== null)

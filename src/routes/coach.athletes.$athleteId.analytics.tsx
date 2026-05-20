@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { plannedSessionDate } from "@/lib/planned-session-dates";
 import { dailyE1RM } from "@/lib/eakoefficient";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -251,7 +252,7 @@ function AnalyticsPage() {
 
       const { data: sessions, error: sErr } = await supabase
         .from("planned_sessions")
-        .select("id, day_of_week, week_plan_id")
+        .select("id, day_of_week, week_plan_id, title")
         .in("week_plan_id", weekIds);
       if (sErr) throw sErr;
 
@@ -272,10 +273,12 @@ function AnalyticsPage() {
       for (const s of sessions ?? []) {
         const week = weekById.get(s.week_plan_id);
         if (!week) continue;
-        const weekStart = parseISO(week.week_start_date);
-        // day_of_week: 1 = Monday ... 7 = Sunday
-        const sessionDate = addDays(weekStart, s.day_of_week - 1);
-        const dateStr = format(sessionDate, "yyyy-MM-dd");
+        const dateStr = plannedSessionDate(
+          week.week_start_date,
+          s,
+          (sessions ?? []).filter((candidate) => candidate.week_plan_id === s.week_plan_id),
+        );
+        const sessionDate = parseISO(dateStr);
         if (sessionDate >= since && sessionDate <= today) {
           plannedDays.push(dateStr);
           const sessTargets = targets.filter(

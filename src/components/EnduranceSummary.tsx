@@ -56,11 +56,21 @@ interface Row {
   discipline: Discipline;
   mode: string;
   title: string | null;
+  status: string;
   planned_total_seconds: number | null;
   planned_avg_rpe: number | null;
   actual_total_seconds: number | null;
   overall_rpe: number | null;
   peak_rpe: number | null;
+}
+
+function isCompleted(r: Row): boolean {
+  return (
+    r.status === "completed" ||
+    r.actual_total_seconds != null ||
+    r.overall_rpe != null ||
+    r.peak_rpe != null
+  );
 }
 
 type TotalsMap = Record<Discipline, { minutes: number; count: number; rpeSum: number; rpeN: number }>;

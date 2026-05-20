@@ -149,6 +149,7 @@ function AthleteDetailPage() {
 
         <TabsContent value="dashboard" className="space-y-4">
           <EnduranceSummaryCard athleteId={athleteId} />
+          <RpePaceEstimateCard athleteId={athleteId} />
           <DashboardTable athleteId={athleteId} />
         </TabsContent>
 

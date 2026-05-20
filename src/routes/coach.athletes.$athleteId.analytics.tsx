@@ -1081,18 +1081,22 @@ function AnalyticsPage() {
                 </div>
 
                 <ChartCard title="Weekly distance by discipline" description="Total km per ISO week, split by run / bike / swim.">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={enduranceStats.weekly}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                      <Legend />
-                      {enduranceStats.disciplines.map((d, i) => (
-                        <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <WeekWindow data={enduranceStats.weekly}>
+                    {(slice) => (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={slice}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                          <Legend />
+                          {enduranceStats.disciplines.map((d, i) => (
+                            <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                          ))}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </WeekWindow>
                 </ChartCard>
 
                 <ChartCard

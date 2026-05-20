@@ -56,11 +56,21 @@ interface Row {
   discipline: Discipline;
   mode: string;
   title: string | null;
+  status: string;
   planned_total_seconds: number | null;
   planned_avg_rpe: number | null;
   actual_total_seconds: number | null;
   overall_rpe: number | null;
   peak_rpe: number | null;
+}
+
+function isCompleted(r: Row): boolean {
+  return (
+    r.status === "completed" ||
+    r.actual_total_seconds != null ||
+    r.overall_rpe != null ||
+    r.peak_rpe != null
+  );
 }
 
 type TotalsMap = Record<Discipline, { minutes: number; count: number; rpeSum: number; rpeN: number }>;
@@ -86,7 +96,7 @@ export function EnduranceSummaryCard({ athleteId }: { athleteId: string }) {
       const { data, error } = await supabase
         .from("endurance_sessions")
         .select(
-          "id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe",
+          "id, date, discipline, mode, title, status, planned_total_seconds, planned_avg_rpe, actual_total_seconds, overall_rpe, peak_rpe",
         )
         .eq("athlete_id", athleteId)
         .gte("date", pastSinceIso)
@@ -103,8 +113,12 @@ export function EnduranceSummaryCard({ athleteId }: { athleteId: string }) {
   const past: Row[] = [];
   const upcoming: Row[] = [];
   for (const r of rows) {
-    if (r.date < todayIso) past.push(r);
-    else upcoming.push(r);
+    if (r.date < todayIso) {
+      // Past only counts sessions the athlete actually completed/logged.
+      if (isCompleted(r)) past.push(r);
+    } else {
+      upcoming.push(r);
+    }
   }
   // Past stays newest-first (query order). Upcoming should be soonest-first.
   upcoming.sort((a, b) => a.date.localeCompare(b.date));

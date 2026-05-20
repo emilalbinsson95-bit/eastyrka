@@ -802,7 +802,7 @@ function AnalyticsPage() {
       dailyThisWeek,
       scatterByBand,
       paceByBand,
-      paceByBandWeekly,
+      paceByRpeWeekly,
       paceSampledFromSteps,
       disciplines: Array.from(disciplines).sort(),
       totals: {

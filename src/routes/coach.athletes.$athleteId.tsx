@@ -32,6 +32,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 import { EnduranceSummaryCard } from "@/components/EnduranceSummary";
+import { RpePaceEstimateCard } from "@/components/RpePaceEstimateCard";
 
 const DEFAULT_EXERCISES = [
   "Knäböj",

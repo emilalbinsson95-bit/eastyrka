@@ -702,36 +702,47 @@ function AnalyticsPage() {
       };
     });
 
-    // --- Weekly run pace by RPE band (sampled from intervals) ---
-    const paceWeekMap = new Map<string, { week: string; label: string; agg: Record<string, PaceBucket> }>();
-    const stepSource: Array<{ date: string; sec: number; m: number; rpe: number }> = runStepsData.length > 0
+    // --- Weekly run pace per individual RPE (1..10) + "no RPE" ---
+    const rpeKeys = ["r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","none"] as const;
+    type RpeKey = typeof rpeKeys[number];
+    const emptyRpeAgg = (): Record<RpeKey, PaceBucket> => ({
+      r1: empty(), r2: empty(), r3: empty(), r4: empty(), r5: empty(),
+      r6: empty(), r7: empty(), r8: empty(), r9: empty(), r10: empty(), none: empty(),
+    });
+    const keyOfRpe = (r: number | null | undefined): RpeKey => {
+      if (r == null) return "none";
+      const rounded = Math.max(1, Math.min(10, Math.round(r)));
+      return (`r${rounded}` as RpeKey);
+    };
+    const paceWeekMap = new Map<string, { week: string; label: string; agg: Record<RpeKey, PaceBucket> }>();
+    const stepSource: Array<{ date: string; sec: number; m: number; rpe: number | null }> = runStepsData.length > 0
       ? runStepsData
       : completed
-          .filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0 && s.rpe != null)
-          .map((s) => ({ date: s.date, sec: s.duration_s, m: s.distance_m, rpe: s.rpe! }));
+          .filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0)
+          .map((s) => ({ date: s.date, sec: s.duration_s, m: s.distance_m, rpe: s.rpe }));
     for (const st of stepSource) {
       const wk = format(startOfWeek(parseISO(st.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       const row = paceWeekMap.get(wk) ?? {
         week: wk,
         label: format(parseISO(wk), "MMM d"),
-        agg: { easy: empty(), mod: empty(), hard: empty(), max: empty() },
+        agg: emptyRpeAgg(),
       };
-      const id = bandOf(st.rpe);
+      const id = keyOfRpe(st.rpe);
       row.agg[id].sec += st.sec;
       row.agg[id].m += st.m;
       row.agg[id].samples += 1;
       paceWeekMap.set(wk, row);
     }
-    const paceByBandWeekly = Array.from(paceWeekMap.values())
+    const paceByRpeWeekly = Array.from(paceWeekMap.values())
       .sort((a, b) => a.week.localeCompare(b.week))
-      .map((w) => ({
-        week: w.week,
-        label: w.label,
-        easy: w.agg.easy.m > 0 ? Number((w.agg.easy.sec / (w.agg.easy.m / 1000)).toFixed(1)) : null,
-        mod: w.agg.mod.m > 0 ? Number((w.agg.mod.sec / (w.agg.mod.m / 1000)).toFixed(1)) : null,
-        hard: w.agg.hard.m > 0 ? Number((w.agg.hard.sec / (w.agg.hard.m / 1000)).toFixed(1)) : null,
-        max: w.agg.max.m > 0 ? Number((w.agg.max.sec / (w.agg.max.m / 1000)).toFixed(1)) : null,
-      }));
+      .map((w) => {
+        const row: Record<string, number | string | null> = { week: w.week, label: w.label };
+        for (const k of rpeKeys) {
+          const b = w.agg[k];
+          row[k] = b.m > 0 ? Number((b.sec / (b.m / 1000)).toFixed(1)) : null;
+        }
+        return row;
+      });
     const paceSampledFromSteps = runStepsData.length > 0;
 
 
@@ -791,7 +802,7 @@ function AnalyticsPage() {
       dailyThisWeek,
       scatterByBand,
       paceByBand,
-      paceByBandWeekly,
+      paceByRpeWeekly,
       paceSampledFromSteps,
       disciplines: Array.from(disciplines).sort(),
       totals: {
@@ -1138,13 +1149,13 @@ function AnalyticsPage() {
 
                 <ChartCard
                   title="Run pace by intensity — weekly trend"
-                  description="Average pace per RPE band each week. Track whether your tempo (RPE 7–8) and easy (RPE 1–4) paces are improving over time."
+                  description="Average pace per RPE (1–10, plus runs with no RPE) each week. Track whether your easy, tempo and threshold paces are improving over time."
                 >
-                  {enduranceStats.paceByBandWeekly.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
+                  {enduranceStats.paceByRpeWeekly.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">No runs recorded in this window.</p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <LineChart data={enduranceStats.paceByBandWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <LineChart data={enduranceStats.paceByRpeWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                         <YAxis
@@ -1163,13 +1174,32 @@ function AnalyticsPage() {
                             if (!Number.isFinite(v)) return ["—", String(name)];
                             return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
                           }}
-
                         />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" dataKey="easy" name="Easy (1–4)" stroke={BAND_COLORS.easy} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey="mod" name="Moderate (5–6)" stroke={BAND_COLORS.mod} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey="hard" name="Hard (7–8)" stroke={BAND_COLORS.hard} strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
-                        <Line type="monotone" dataKey="max" name="Max (9–10)" stroke={BAND_COLORS.max} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        {([
+                          { key: "r1", label: "RPE 1", color: "oklch(0.72 0.15 155)" },
+                          { key: "r2", label: "RPE 2", color: "oklch(0.74 0.16 135)" },
+                          { key: "r3", label: "RPE 3", color: "oklch(0.76 0.16 115)" },
+                          { key: "r4", label: "RPE 4", color: "oklch(0.78 0.16 95)" },
+                          { key: "r5", label: "RPE 5", color: "oklch(0.78 0.17 80)" },
+                          { key: "r6", label: "RPE 6", color: "oklch(0.74 0.18 60)" },
+                          { key: "r7", label: "RPE 7", color: "oklch(0.70 0.19 45)" },
+                          { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
+                          { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
+                          { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
+                          { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
+                        ] as const).map((s) => (
+                          <Line
+                            key={s.key}
+                            type="monotone"
+                            dataKey={s.key}
+                            name={s.label}
+                            stroke={s.color}
+                            strokeWidth={1.75}
+                            dot={{ r: 2.5 }}
+                            connectNulls
+                          />
+                        ))}
                       </LineChart>
                     </ResponsiveContainer>
                   )}

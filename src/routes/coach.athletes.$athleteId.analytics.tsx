@@ -184,11 +184,11 @@ function AnalyticsPage() {
       if (error) throw error;
       const sList = sessions ?? [];
       const ids = sList.map((s) => s.id);
-      let steps: Array<{ session_id: string; actual_duration_seconds: number | null; actual_distance_m: number | null; actual_avg_hr: number | null; actual_avg_rpe: number | null }> = [];
+      let steps: Array<{ session_id: string; discipline: string | null; actual_duration_seconds: number | null; actual_distance_m: number | null; actual_avg_hr: number | null; actual_avg_rpe: number | null }> = [];
       if (ids.length) {
         const { data: stepData, error: sErr } = await supabase
           .from("endurance_steps")
-          .select("session_id, actual_duration_seconds, actual_distance_m, actual_avg_hr, actual_avg_rpe")
+          .select("session_id, discipline, actual_duration_seconds, actual_distance_m, actual_avg_hr, actual_avg_rpe")
           .in("session_id", ids);
         if (sErr) throw sErr;
         steps = stepData ?? [];
@@ -203,7 +203,22 @@ function AnalyticsPage() {
         if (st.actual_avg_rpe) { cur.rpeSum += Number(st.actual_avg_rpe); cur.rpeCount += 1; }
         stepAgg.set(st.session_id, cur);
       }
-      return sList.map((s) => {
+      const sessionInfo = new Map(sList.map((s) => [s.id, { date: s.date as string, discipline: s.discipline as string }]));
+      // Per-step samples for run pace-by-intensity (sampled, not session avg)
+      const runSteps = steps
+        .map((st) => {
+          const info = sessionInfo.get(st.session_id);
+          if (!info) return null;
+          const disc = (st.discipline ?? info.discipline) as string;
+          if (disc !== "run") return null;
+          const sec = Number(st.actual_duration_seconds ?? 0);
+          const m = Number(st.actual_distance_m ?? 0);
+          const rpe = st.actual_avg_rpe != null ? Number(st.actual_avg_rpe) : null;
+          if (sec <= 0 || m <= 0 || rpe == null) return null;
+          return { date: info.date, sec, m, rpe };
+        })
+        .filter((x): x is { date: string; sec: number; m: number; rpe: number } => x !== null);
+      const sessionsOut = sList.map((s) => {
         const agg = stepAgg.get(s.id);
         const dur = s.actual_total_seconds ?? agg?.dur ?? 0;
         const dist = s.actual_distance_m ?? agg?.dist ?? 0;
@@ -223,8 +238,11 @@ function AnalyticsPage() {
           planned_rpe: s.planned_avg_rpe != null ? Number(s.planned_avg_rpe) : null,
         };
       });
+      return { sessions: sessionsOut, runSteps };
+
     },
   });
+
   const exerciseLibQuery = useQuery({
     queryKey: ["analytics-exercise-lib"],
     queryFn: async () => {
@@ -565,9 +583,11 @@ function AnalyticsPage() {
   }, [surveysQuery.data, allLogs, baselines]);
 
   // ---- Endurance ----
-  const enduranceData = enduranceQuery.data ?? [];
+  const enduranceData = enduranceQuery.data?.sessions ?? [];
+  const runStepsData = enduranceQuery.data?.runSteps ?? [];
   const enduranceStats = useMemo(() => {
     const completed = enduranceData.filter((s) => s.status === "completed" || s.duration_s > 0 || s.distance_m > 0);
+
     // Per-session series (sorted by date)
     const series = completed.map((s) => {
       const km = s.distance_m / 1000;
@@ -643,33 +663,78 @@ function AnalyticsPage() {
       scatterByBand[id].push(p);
     }
 
-    // --- Run pace by RPE band ---
-    const paceAgg: Record<string, { sec: number; km: number; sessions: number }> = {
-      easy: { sec: 0, km: 0, sessions: 0 },
-      mod: { sec: 0, km: 0, sessions: 0 },
-      hard: { sec: 0, km: 0, sessions: 0 },
-      max: { sec: 0, km: 0, sessions: 0 },
-    };
-    for (const s of completed) {
-      if (s.discipline !== "run") continue;
-      if (s.distance_m <= 0 || s.duration_s <= 0 || s.rpe == null) continue;
-      const id = s.rpe <= 4 ? "easy" : s.rpe <= 6 ? "mod" : s.rpe <= 8 ? "hard" : "max";
-      paceAgg[id].sec += s.duration_s;
-      paceAgg[id].km += s.distance_m / 1000;
-      paceAgg[id].sessions += 1;
+    // --- Run pace by RPE band (from sampled step intervals; falls back to session totals) ---
+    type PaceBucket = { sec: number; m: number; samples: number };
+    const empty = (): PaceBucket => ({ sec: 0, m: 0, samples: 0 });
+    const paceAgg: Record<string, PaceBucket> = { easy: empty(), mod: empty(), hard: empty(), max: empty() };
+    const bandOf = (r: number) => (r <= 4 ? "easy" : r <= 6 ? "mod" : r <= 8 ? "hard" : "max");
+
+    if (runStepsData.length > 0) {
+      // Use interval samples — much more accurate when a workout mixes intensities
+      for (const st of runStepsData) {
+        const id = bandOf(st.rpe);
+        paceAgg[id].sec += st.sec;
+        paceAgg[id].m += st.m;
+        paceAgg[id].samples += 1;
+      }
+    } else {
+      // Fallback: whole-session avg when no step data exists
+      for (const s of completed) {
+        if (s.discipline !== "run") continue;
+        if (s.distance_m <= 0 || s.duration_s <= 0 || s.rpe == null) continue;
+        const id = bandOf(s.rpe);
+        paceAgg[id].sec += s.duration_s;
+        paceAgg[id].m += s.distance_m;
+        paceAgg[id].samples += 1;
+      }
     }
     const paceByBand = (["easy", "mod", "hard", "max"] as const).map((id) => {
       const b = paceAgg[id];
-      const paceSec = b.km > 0 ? b.sec / b.km : null;
+      const km = b.m / 1000;
+      const paceSec = km > 0 ? b.sec / km : null;
       return {
         id,
         label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
         fill: BAND_COLORS[id],
-        sessions: b.sessions,
-        km: b.km,
+        sessions: b.samples,
+        km,
         paceLabel: paceSec ? `${Math.floor(paceSec / 60)}:${String(Math.round(paceSec % 60)).padStart(2, "0")}/km` : null,
       };
     });
+
+    // --- Weekly run pace by RPE band (sampled from intervals) ---
+    const paceWeekMap = new Map<string, { week: string; label: string; agg: Record<string, PaceBucket> }>();
+    const stepSource: Array<{ date: string; sec: number; m: number; rpe: number }> = runStepsData.length > 0
+      ? runStepsData
+      : completed
+          .filter((s) => s.discipline === "run" && s.distance_m > 0 && s.duration_s > 0 && s.rpe != null)
+          .map((s) => ({ date: s.date, sec: s.duration_s, m: s.distance_m, rpe: s.rpe! }));
+    for (const st of stepSource) {
+      const wk = format(startOfWeek(parseISO(st.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
+      const row = paceWeekMap.get(wk) ?? {
+        week: wk,
+        label: format(parseISO(wk), "MMM d"),
+        agg: { easy: empty(), mod: empty(), hard: empty(), max: empty() },
+      };
+      const id = bandOf(st.rpe);
+      row.agg[id].sec += st.sec;
+      row.agg[id].m += st.m;
+      row.agg[id].samples += 1;
+      paceWeekMap.set(wk, row);
+    }
+    const paceByBandWeekly = Array.from(paceWeekMap.values())
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .map((w) => ({
+        week: w.week,
+        label: w.label,
+        easy: w.agg.easy.m > 0 ? Number((w.agg.easy.sec / (w.agg.easy.m / 1000)).toFixed(1)) : null,
+        mod: w.agg.mod.m > 0 ? Number((w.agg.mod.sec / (w.agg.mod.m / 1000)).toFixed(1)) : null,
+        hard: w.agg.hard.m > 0 ? Number((w.agg.hard.sec / (w.agg.hard.m / 1000)).toFixed(1)) : null,
+        max: w.agg.max.m > 0 ? Number((w.agg.max.sec / (w.agg.max.m / 1000)).toFixed(1)) : null,
+      }));
+    const paceSampledFromSteps = runStepsData.length > 0;
+
+
 
     // Weekly aggregates (per discipline + per RPE band)
     const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; band: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
@@ -726,6 +791,8 @@ function AnalyticsPage() {
       dailyThisWeek,
       scatterByBand,
       paceByBand,
+      paceByBandWeekly,
+      paceSampledFromSteps,
       disciplines: Array.from(disciplines).sort(),
       totals: {
         sessions: completed.length,
@@ -735,7 +802,8 @@ function AnalyticsPage() {
         avgRunPace,
       },
     };
-  }, [enduranceData]);
+  }, [enduranceData, runStepsData]);
+
 
   const isLoading =
     logsQuery.isLoading || baselinesQuery.isLoading || surveysQuery.isLoading || enduranceQuery.isLoading;
@@ -1042,7 +1110,11 @@ function AnalyticsPage() {
 
                 <ChartCard
                   title="Run pace by intensity"
-                  description="Average pace and total volume per RPE band — see how tempo holds across efforts."
+                  description={
+                    enduranceStats.paceSampledFromSteps
+                      ? "Sampled from workout intervals — a 6×1 km tempo block at RPE 8 counts toward Hard, not blended with warm-up. Pace and km per RPE band over the whole window."
+                      : "Average pace and total volume per RPE band over the whole window. (No interval samples found — uses whole-session averages.)"
+                  }
                 >
                   {enduranceStats.paceByBand.every((b) => b.sessions === 0) ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
@@ -1056,13 +1128,53 @@ function AnalyticsPage() {
                           </div>
                           <div className="mt-1 text-2xl font-bold tracking-tight">{b.paceLabel ?? "—"}</div>
                           <div className="text-[11px] text-muted-foreground">
-                            {b.sessions} {b.sessions === 1 ? "run" : "runs"} · {b.km.toFixed(1)} km
+                            {b.sessions} {enduranceStats.paceSampledFromSteps ? (b.sessions === 1 ? "interval" : "intervals") : (b.sessions === 1 ? "run" : "runs")} · {b.km.toFixed(1)} km
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </ChartCard>
+
+                <ChartCard
+                  title="Run pace by intensity — weekly trend"
+                  description="Average pace per RPE band each week. Track whether your tempo (RPE 7–8) and easy (RPE 1–4) paces are improving over time."
+                >
+                  {enduranceStats.paceByBandWeekly.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={enduranceStats.paceByBandWeekly} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={11}
+                          reversed
+                          domain={["auto", "auto"]}
+                          tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
+                          label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                          formatter={(value, name) => {
+                            if (value == null) return ["—", String(name)];
+                            const v = Number(value);
+                            if (!Number.isFinite(v)) return ["—", String(name)];
+                            return [`${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}/km`, String(name)];
+                          }}
+
+                        />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Line type="monotone" dataKey="easy" name="Easy (1–4)" stroke={BAND_COLORS.easy} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey="mod" name="Moderate (5–6)" stroke={BAND_COLORS.mod} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey="hard" name="Hard (7–8)" stroke={BAND_COLORS.hard} strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
+                        <Line type="monotone" dataKey="max" name="Max (9–10)" stroke={BAND_COLORS.max} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+
 
                 <ChartCard
                   title="Per-session intensity vs distance"

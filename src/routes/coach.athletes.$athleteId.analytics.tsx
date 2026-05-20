@@ -1224,47 +1224,9 @@ function AnalyticsPage() {
 
                 <ChartCard
                   title="Per-session intensity vs distance"
-                  description="Each dot is one session: vertical = distance, color = RPE band, bubble size = duration."
+                  description="Each dot is one session — only days with logged sessions are shown. Use the arrows to page through 30 days at a time."
                 >
-                  <ResponsiveContainer width="100%" height={320}>
-                    <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis
-                        dataKey="dateMs"
-                        type="number"
-                        domain={["dataMin", "dataMax"]}
-                        tickFormatter={(v: number) => format(new Date(v), "MMM d")}
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                      />
-                      <YAxis dataKey="km" type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
-                      <ZAxis dataKey="minutes" type="number" range={[60, 400]} name="Minutes" />
-                      <Tooltip
-                        cursor={{ strokeDasharray: "3 3" }}
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload || !payload.length) return null;
-                          const p = payload[0].payload as typeof enduranceStats.series[number];
-                          return (
-                            <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
-                              <div className="font-semibold">{format(parseISO(p.date), "EEE MMM d")}</div>
-                              <div className="capitalize text-muted-foreground">{p.discipline}{p.title ? ` · ${p.title}` : ""}</div>
-                              <div className="mt-1">{p.km.toFixed(2)} km · {Math.round(p.minutes)} min</div>
-                              {p.pace_label && <div>Pace {p.pace_label}</div>}
-                              {p.rpe != null && <div>RPE {p.rpe.toFixed(1)}</div>}
-                            </div>
-                          );
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Scatter name="Easy (1–4)" data={enduranceStats.scatterByBand.easy} fill={BAND_COLORS.easy} />
-                      <Scatter name="Moderate (5–6)" data={enduranceStats.scatterByBand.mod} fill={BAND_COLORS.mod} />
-                      <Scatter name="Hard (7–8)" data={enduranceStats.scatterByBand.hard} fill={BAND_COLORS.hard} />
-                      <Scatter name="Max (9–10)" data={enduranceStats.scatterByBand.max} fill={BAND_COLORS.max} />
-                      <Scatter name="No RPE" data={enduranceStats.scatterByBand.none} fill="hsl(var(--muted-foreground))" />
-
-                    </ScatterChart>
-                  </ResponsiveContainer>
+                  <SessionScatterWindow series={enduranceStats.series} scatterByBand={enduranceStats.scatterByBand} />
                 </ChartCard>
 
 

@@ -60,7 +60,6 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
 
   const plannedItems: CalendarItem[] = [];
   for (const wp of weekPlans ?? []) {
-    const weekStart = parseISO(wp.week_start_date as string);
     const sessions = (wp.planned_sessions ?? []) as { id: string; day_of_week: number; title: string | null }[];
     for (const ps of sessions) {
       const suggested = plannedSessionDate(wp.week_start_date as string, ps, sessions);

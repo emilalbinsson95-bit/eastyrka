@@ -659,15 +659,19 @@ function AnalyticsPage() {
       };
     });
 
-    // Weekly aggregates (per discipline)
-    const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
+    // Weekly aggregates (per discipline + per RPE band)
+    const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; band: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
     const disciplines = new Set<string>();
     for (const s of completed) {
       const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       disciplines.add(s.discipline);
-      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, rpeSum: 0, rpeCount: 0, sessions: 0 };
+      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, band: { easy: 0, mod: 0, hard: 0, max: 0 }, rpeSum: 0, rpeCount: 0, sessions: 0 };
       row.distance[s.discipline] = (row.distance[s.discipline] ?? 0) + s.distance_m / 1000;
-      row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + s.duration_s / 60;
+      const min = s.duration_s / 60;
+      row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + min;
+      const r = s.rpe;
+      const bandId = r == null ? "mod" : r <= 4 ? "easy" : r <= 6 ? "mod" : r <= 8 ? "hard" : "max";
+      row.band[bandId] += min;
       if (s.rpe != null) { row.rpeSum += s.rpe; row.rpeCount += 1; }
       row.sessions += 1;
       weekMap.set(wk, row);
@@ -675,7 +679,16 @@ function AnalyticsPage() {
     const weekly = Array.from(weekMap.values())
       .sort((a, b) => a.week.localeCompare(b.week))
       .map((w) => {
-        const flat: Record<string, number | string> = { week: w.week, label: w.label, sessions: w.sessions, avgRPE: w.rpeCount > 0 ? Number((w.rpeSum / w.rpeCount).toFixed(2)) : 0 };
+        const flat: Record<string, number | string> = {
+          week: w.week,
+          label: w.label,
+          sessions: w.sessions,
+          avgRPE: w.rpeCount > 0 ? Number((w.rpeSum / w.rpeCount).toFixed(2)) : 0,
+          min_easy: Math.round(w.band.easy),
+          min_mod: Math.round(w.band.mod),
+          min_hard: Math.round(w.band.hard),
+          min_max: Math.round(w.band.max),
+        };
         for (const d of disciplines) {
           flat[`km_${d}`] = Number((w.distance[d] ?? 0).toFixed(2));
           flat[`min_${d}`] = Number((w.minutes[d] ?? 0).toFixed(0));
@@ -684,6 +697,7 @@ function AnalyticsPage() {
         flat.totalMin = Number(Object.values(w.minutes).reduce((a, b) => a + b, 0).toFixed(0));
         return flat;
       });
+
 
     // Totals
     const totalKm = completed.reduce((a, s) => a + s.distance_m / 1000, 0);

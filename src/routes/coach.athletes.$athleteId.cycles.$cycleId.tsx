@@ -1215,34 +1215,180 @@ function AddExerciseRow({
   exerciseLib: ExerciseLib[];
   onAdd: (libId: string) => void;
 }) {
-  const [pick, setPick] = useState("");
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [newMetric, setNewMetric] = useState<IntensityMetric>("rpe");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return exerciseLib;
+    return exerciseLib.filter((e) =>
+      e.name.toLowerCase().includes(q) ||
+      (e.category ?? "").toLowerCase().includes(q),
+    );
+  }, [exerciseLib, query]);
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const name = newName.trim();
+      if (!name) throw new Error("Name is required");
+      if (!user) throw new Error("Not signed in");
+      const { data, error } = await supabase
+        .from("exercises")
+        .insert({
+          name,
+          category: newCategory.trim() || null,
+          default_intensity_metric: newMetric,
+          created_by: user.id,
+          is_global: false,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id as string;
+    },
+    onSuccess: async (id) => {
+      await qc.invalidateQueries({ queryKey: ["exercises"] });
+      toast.success("Exercise added to library");
+      setCreateOpen(false);
+      setNewName("");
+      setNewCategory("");
+      setNewMetric("rpe");
+      onAdd(id);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div
       className="flex gap-1"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <Select
-        value={pick}
-        onValueChange={(v) => {
-          setPick(v);
-          onAdd(v);
-          setPick("");
-        }}
-      >
-        <SelectTrigger className="h-8 text-xs">
-          <SelectValue placeholder="+ Add exercise" />
-        </SelectTrigger>
-        <SelectContent>
-          {exerciseLib.map((e) => (
-            <SelectItem key={e.id} value={e.id} className="text-xs">
-              {e.name}
-              {e.category ? (
-                <span className="ml-2 text-muted-foreground">· {e.category}</span>
-              ) : null}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            role="combobox"
+            aria-expanded={open}
+            className="h-8 flex-1 justify-between text-xs font-normal text-muted-foreground"
+          >
+            + Add exercise
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search exercises…"
+              value={query}
+              onValueChange={setQuery}
+              className="h-9"
+            />
+            <CommandList>
+              <CommandEmpty>No exercise found.</CommandEmpty>
+              <CommandGroup>
+                {filtered.map((e) => (
+                  <CommandItem
+                    key={e.id}
+                    value={e.id}
+                    onSelect={() => {
+                      onAdd(e.id);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className="text-xs"
+                  >
+                    <span className="truncate">{e.name}</span>
+                    {e.category ? (
+                      <span className="ml-2 text-muted-foreground">
+                        · {e.category}
+                      </span>
+                    ) : null}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 shrink-0 p-0"
+            title="Add new exercise to library"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New exercise</DialogTitle>
+            <DialogDescription>
+              Add a new exercise to your library. It will be available in all future sessions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="new-ex-name">Name</Label>
+              <Input
+                id="new-ex-name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g. Bulgarian Split Squat"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-ex-cat">Category (optional)</Label>
+              <Input
+                id="new-ex-cat"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="e.g. Legs, Push, Pull"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Default intensity metric</Label>
+              <Select
+                value={newMetric}
+                onValueChange={(v) => setNewMetric(v as IntensityMetric)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rpe">RPE</SelectItem>
+                  <SelectItem value="rir">RIR</SelectItem>
+                  <SelectItem value="percent_1rm">% of 1RM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending || !newName.trim()}
+            >
+              {createMutation.isPending ? "Adding…" : "Add to library"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

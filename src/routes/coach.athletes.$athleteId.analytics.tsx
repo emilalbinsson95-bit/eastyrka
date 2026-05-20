@@ -563,6 +563,7 @@ function AnalyticsPage() {
       const paceSecPerKm = km > 0 && s.duration_s > 0 ? s.duration_s / km : null;
       return {
         date: s.date,
+        dateMs: parseISO(s.date).getTime(),
         label: format(parseISO(s.date), "MMM d"),
         discipline: s.discipline,
         title: s.title,
@@ -572,6 +573,89 @@ function AnalyticsPage() {
         hr: s.hr,
         pace_s_per_km: paceSecPerKm,
         pace_label: paceSecPerKm ? `${Math.floor(paceSecPerKm / 60)}:${String(Math.round(paceSecPerKm % 60)).padStart(2, "0")}/km` : null,
+      };
+    });
+
+    // --- This week, per day (Mon-Sun) ---
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const dailyThisWeek = Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(weekStart, i);
+      const iso = format(d, "yyyy-MM-dd");
+      return {
+        date: iso,
+        label: format(d, "EEE"),
+        min_easy: 0,
+        min_mod: 0,
+        min_hard: 0,
+        min_max: 0,
+        totalMin: 0,
+        rpeSum: 0,
+        rpeCount: 0,
+        avgRPE: null as number | null,
+        sessions: 0,
+      };
+    });
+    for (const s of completed) {
+      const day = dailyThisWeek.find((d) => d.date === s.date);
+      if (!day) continue;
+      const min = s.duration_s / 60;
+      day.totalMin += min;
+      day.sessions += 1;
+      const rpe = s.rpe;
+      if (rpe != null) {
+        day.rpeSum += rpe;
+        day.rpeCount += 1;
+        if (rpe <= 4) day.min_easy += min;
+        else if (rpe <= 6) day.min_mod += min;
+        else if (rpe <= 8) day.min_hard += min;
+        else day.min_max += min;
+      } else {
+        day.min_mod += min; // unknown RPE -> moderate bucket
+      }
+    }
+    for (const d of dailyThisWeek) {
+      d.totalMin = Math.round(d.totalMin);
+      d.min_easy = Math.round(d.min_easy);
+      d.min_mod = Math.round(d.min_mod);
+      d.min_hard = Math.round(d.min_hard);
+      d.min_max = Math.round(d.min_max);
+      d.avgRPE = d.rpeCount > 0 ? Number((d.rpeSum / d.rpeCount).toFixed(1)) : null;
+    }
+
+    // --- Per-session scatter, grouped by RPE band ---
+    const scatterByBand: Record<string, typeof series> = { easy: [], mod: [], hard: [], max: [], none: [] };
+    for (const p of series) {
+      if (p.km <= 0) continue; // scatter is distance vs date, skip non-distance sessions
+      const r = p.rpe;
+      const id = r == null ? "none" : r <= 4 ? "easy" : r <= 6 ? "mod" : r <= 8 ? "hard" : "max";
+      scatterByBand[id].push(p);
+    }
+
+    // --- Run pace by RPE band ---
+    const paceAgg: Record<string, { sec: number; km: number; sessions: number }> = {
+      easy: { sec: 0, km: 0, sessions: 0 },
+      mod: { sec: 0, km: 0, sessions: 0 },
+      hard: { sec: 0, km: 0, sessions: 0 },
+      max: { sec: 0, km: 0, sessions: 0 },
+    };
+    for (const s of completed) {
+      if (s.discipline !== "run") continue;
+      if (s.distance_m <= 0 || s.duration_s <= 0 || s.rpe == null) continue;
+      const id = s.rpe <= 4 ? "easy" : s.rpe <= 6 ? "mod" : s.rpe <= 8 ? "hard" : "max";
+      paceAgg[id].sec += s.duration_s;
+      paceAgg[id].km += s.distance_m / 1000;
+      paceAgg[id].sessions += 1;
+    }
+    const paceByBand = (["easy", "mod", "hard", "max"] as const).map((id) => {
+      const b = paceAgg[id];
+      const paceSec = b.km > 0 ? b.sec / b.km : null;
+      return {
+        id,
+        label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
+        fill: id === "easy" ? "hsl(var(--status-peaking))" : id === "mod" ? "hsl(var(--status-adapting))" : id === "hard" ? "hsl(var(--primary))" : "hsl(var(--status-exhausted))",
+        sessions: b.sessions,
+        km: b.km,
+        paceLabel: paceSec ? `${Math.floor(paceSec / 60)}:${String(Math.round(paceSec % 60)).padStart(2, "0")}/km` : null,
       };
     });
 
@@ -613,6 +697,9 @@ function AnalyticsPage() {
     return {
       series,
       weekly,
+      dailyThisWeek,
+      scatterByBand,
+      paceByBand,
       disciplines: Array.from(disciplines).sort(),
       totals: {
         sessions: completed.length,

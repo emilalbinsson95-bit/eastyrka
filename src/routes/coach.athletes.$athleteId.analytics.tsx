@@ -583,9 +583,11 @@ function AnalyticsPage() {
   }, [surveysQuery.data, allLogs, baselines]);
 
   // ---- Endurance ----
-  const enduranceData = enduranceQuery.data ?? [];
+  const enduranceData = enduranceQuery.data?.sessions ?? [];
+  const runStepsData = enduranceQuery.data?.runSteps ?? [];
   const enduranceStats = useMemo(() => {
     const completed = enduranceData.filter((s) => s.status === "completed" || s.duration_s > 0 || s.distance_m > 0);
+
     // Per-session series (sorted by date)
     const series = completed.map((s) => {
       const km = s.distance_m / 1000;

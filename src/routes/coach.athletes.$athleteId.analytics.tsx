@@ -1013,11 +1013,11 @@ function AnalyticsPage() {
                 </ChartCard>
 
                 <ChartCard
-                  title="This week — minutes per day by intensity"
-                  description="Stacked bars show how much time was spent in each RPE band each day. Line tracks average session RPE."
+                  title="Weekly minutes by intensity"
+                  description="Stacked bars show how much time was spent in each RPE band per week. Line tracks the week's average session RPE."
                 >
-                  <ResponsiveContainer width="100%" height={280}>
-                    <ComposedChart data={enduranceStats.dailyThisWeek} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={enduranceStats.weekly} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                       <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
@@ -1030,14 +1030,15 @@ function AnalyticsPage() {
                         }}
                       />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill="hsl(var(--status-peaking))" />
-                      <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill="hsl(var(--status-adapting))" />
-                      <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill="hsl(var(--primary))" />
-                      <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill="hsl(var(--status-exhausted))" radius={[6, 6, 0, 0]} />
-                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--accent))" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--accent))", stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
+                      <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill={BAND_COLORS.easy} />
+                      <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill={BAND_COLORS.mod} />
+                      <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill={BAND_COLORS.hard} />
+                      <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill={BAND_COLORS.max} radius={[6, 6, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
+
 
                 <ChartCard
                   title="Run pace by intensity"

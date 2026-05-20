@@ -1492,6 +1492,118 @@ function ScoreCell({
   return <td className={cn("px-2 py-2 text-center", tone)}>{value}</td>;
 }
 
+interface SessionPoint {
+  date: string;
+  dateMs: number;
+  discipline: string;
+  title?: string | null;
+  km: number;
+  minutes: number;
+  pace_label?: string | null;
+  rpe?: number | null;
+}
+
+function SessionScatterWindow({
+  series,
+  scatterByBand,
+}: {
+  series: SessionPoint[];
+  scatterByBand: Record<"easy" | "mod" | "hard" | "max" | "none", SessionPoint[]>;
+}) {
+  const SIZE = 30;
+  const [offset, setOffset] = useState(0);
+
+  // Unique dates that actually have sessions, sorted ascending
+  const uniqueDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of series) set.add(p.date);
+    return Array.from(set).sort();
+  }, [series]);
+
+  const total = uniqueDates.length;
+  const maxOffset = Math.max(0, total - SIZE);
+  const safeOffset = Math.min(offset, maxOffset);
+  const end = total - safeOffset;
+  const start = Math.max(0, end - SIZE);
+  const windowDates = uniqueDates.slice(start, end);
+  const windowSet = new Set(windowDates);
+
+  const filtered = {
+    easy: scatterByBand.easy.filter((p) => windowSet.has(p.date)),
+    mod: scatterByBand.mod.filter((p) => windowSet.has(p.date)),
+    hard: scatterByBand.hard.filter((p) => windowSet.has(p.date)),
+    max: scatterByBand.max.filter((p) => windowSet.has(p.date)),
+    none: scatterByBand.none.filter((p) => windowSet.has(p.date)),
+  };
+
+  const canNewer = safeOffset > 0;
+  const canOlder = start > 0;
+  const showPager = total > SIZE;
+
+  if (total === 0) {
+    return <p className="py-6 text-center text-sm text-muted-foreground">No sessions in this window.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {showPager && (
+        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+          <span>
+            Days {start + 1}–{end} of {total}
+          </span>
+          <Button variant="outline" size="icon" className="h-7 w-7" disabled={!canOlder} onClick={() => setOffset((o) => Math.min(maxOffset, o + SIZE))} aria-label="Older days">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-7 w-7" disabled={!canNewer} onClick={() => setOffset((o) => Math.max(0, o - SIZE))} aria-label="Newer days">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      <ResponsiveContainer width="100%" height={320}>
+        <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis
+            dataKey="date"
+            type="category"
+            allowDuplicatedCategory={false}
+            ticks={windowDates}
+            domain={windowDates}
+            tickFormatter={(v: string) => format(parseISO(v), "MMM d")}
+            stroke="hsl(var(--muted-foreground))"
+            fontSize={11}
+            interval="preserveStartEnd"
+          />
+          <YAxis dataKey="km" type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+          <ZAxis dataKey="minutes" type="number" range={[60, 400]} name="Minutes" />
+          <Tooltip
+            cursor={{ strokeDasharray: "3 3" }}
+            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+            content={({ active, payload }) => {
+              if (!active || !payload || !payload.length) return null;
+              const p = payload[0].payload as SessionPoint;
+              return (
+                <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                  <div className="font-semibold">{format(parseISO(p.date), "EEE MMM d")}</div>
+                  <div className="capitalize text-muted-foreground">{p.discipline}{p.title ? ` · ${p.title}` : ""}</div>
+                  <div className="mt-1">{p.km.toFixed(2)} km · {Math.round(p.minutes)} min</div>
+                  {p.pace_label && <div>Pace {p.pace_label}</div>}
+                  {p.rpe != null && <div>RPE {p.rpe.toFixed(1)}</div>}
+                </div>
+              );
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Scatter name="Easy (1–4)" data={filtered.easy} fill={BAND_COLORS.easy} />
+          <Scatter name="Moderate (5–6)" data={filtered.mod} fill={BAND_COLORS.mod} />
+          <Scatter name="Hard (7–8)" data={filtered.hard} fill={BAND_COLORS.hard} />
+          <Scatter name="Max (9–10)" data={filtered.max} fill={BAND_COLORS.max} />
+          <Scatter name="No RPE" data={filtered.none} fill="hsl(var(--muted-foreground))" />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function WeekWindow<T>({
   data,
   size = 30,

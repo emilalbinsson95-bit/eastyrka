@@ -563,6 +563,7 @@ function AnalyticsPage() {
       const paceSecPerKm = km > 0 && s.duration_s > 0 ? s.duration_s / km : null;
       return {
         date: s.date,
+        dateMs: parseISO(s.date).getTime(),
         label: format(parseISO(s.date), "MMM d"),
         discipline: s.discipline,
         title: s.title,
@@ -572,6 +573,89 @@ function AnalyticsPage() {
         hr: s.hr,
         pace_s_per_km: paceSecPerKm,
         pace_label: paceSecPerKm ? `${Math.floor(paceSecPerKm / 60)}:${String(Math.round(paceSecPerKm % 60)).padStart(2, "0")}/km` : null,
+      };
+    });
+
+    // --- This week, per day (Mon-Sun) ---
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const dailyThisWeek = Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(weekStart, i);
+      const iso = format(d, "yyyy-MM-dd");
+      return {
+        date: iso,
+        label: format(d, "EEE"),
+        min_easy: 0,
+        min_mod: 0,
+        min_hard: 0,
+        min_max: 0,
+        totalMin: 0,
+        rpeSum: 0,
+        rpeCount: 0,
+        avgRPE: null as number | null,
+        sessions: 0,
+      };
+    });
+    for (const s of completed) {
+      const day = dailyThisWeek.find((d) => d.date === s.date);
+      if (!day) continue;
+      const min = s.duration_s / 60;
+      day.totalMin += min;
+      day.sessions += 1;
+      const rpe = s.rpe;
+      if (rpe != null) {
+        day.rpeSum += rpe;
+        day.rpeCount += 1;
+        if (rpe <= 4) day.min_easy += min;
+        else if (rpe <= 6) day.min_mod += min;
+        else if (rpe <= 8) day.min_hard += min;
+        else day.min_max += min;
+      } else {
+        day.min_mod += min; // unknown RPE -> moderate bucket
+      }
+    }
+    for (const d of dailyThisWeek) {
+      d.totalMin = Math.round(d.totalMin);
+      d.min_easy = Math.round(d.min_easy);
+      d.min_mod = Math.round(d.min_mod);
+      d.min_hard = Math.round(d.min_hard);
+      d.min_max = Math.round(d.min_max);
+      d.avgRPE = d.rpeCount > 0 ? Number((d.rpeSum / d.rpeCount).toFixed(1)) : null;
+    }
+
+    // --- Per-session scatter, grouped by RPE band ---
+    const scatterByBand: Record<string, typeof series> = { easy: [], mod: [], hard: [], max: [], none: [] };
+    for (const p of series) {
+      if (p.km <= 0) continue; // scatter is distance vs date, skip non-distance sessions
+      const r = p.rpe;
+      const id = r == null ? "none" : r <= 4 ? "easy" : r <= 6 ? "mod" : r <= 8 ? "hard" : "max";
+      scatterByBand[id].push(p);
+    }
+
+    // --- Run pace by RPE band ---
+    const paceAgg: Record<string, { sec: number; km: number; sessions: number }> = {
+      easy: { sec: 0, km: 0, sessions: 0 },
+      mod: { sec: 0, km: 0, sessions: 0 },
+      hard: { sec: 0, km: 0, sessions: 0 },
+      max: { sec: 0, km: 0, sessions: 0 },
+    };
+    for (const s of completed) {
+      if (s.discipline !== "run") continue;
+      if (s.distance_m <= 0 || s.duration_s <= 0 || s.rpe == null) continue;
+      const id = s.rpe <= 4 ? "easy" : s.rpe <= 6 ? "mod" : s.rpe <= 8 ? "hard" : "max";
+      paceAgg[id].sec += s.duration_s;
+      paceAgg[id].km += s.distance_m / 1000;
+      paceAgg[id].sessions += 1;
+    }
+    const paceByBand = (["easy", "mod", "hard", "max"] as const).map((id) => {
+      const b = paceAgg[id];
+      const paceSec = b.km > 0 ? b.sec / b.km : null;
+      return {
+        id,
+        label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
+        fill: id === "easy" ? "hsl(var(--status-peaking))" : id === "mod" ? "hsl(var(--status-adapting))" : id === "hard" ? "hsl(var(--primary))" : "hsl(var(--status-exhausted))",
+        sessions: b.sessions,
+        km: b.km,
+        paceLabel: paceSec ? `${Math.floor(paceSec / 60)}:${String(Math.round(paceSec % 60)).padStart(2, "0")}/km` : null,
       };
     });
 
@@ -613,6 +697,9 @@ function AnalyticsPage() {
     return {
       series,
       weekly,
+      dailyThisWeek,
+      scatterByBand,
+      paceByBand,
       disciplines: Array.from(disciplines).sort(),
       totals: {
         sessions: completed.length,
@@ -899,45 +986,101 @@ function AnalyticsPage() {
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Weekly time & average RPE" description="Total minutes per week with average session RPE overlay.">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart data={enduranceStats.weekly}>
+                <ChartCard
+                  title="This week — minutes per day by intensity"
+                  description="Stacked bars show how much time was spent in each RPE band each day. Line tracks average session RPE."
+                >
+                  <ResponsiveContainer width="100%" height={280}>
+                    <ComposedChart data={enduranceStats.dailyThisWeek} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                       <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
-                      <YAxis yAxisId="right" orientation="right" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                      <Legend />
-                      <Bar yAxisId="left" dataKey="totalMin" name="Minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+                      <YAxis yAxisId="right" orientation="right" domain={[0, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                        formatter={(value: number, name: string) => {
+                          if (name === "Avg RPE") return [Number(value).toFixed(1), name];
+                          return [`${Math.round(Number(value))} min`, name];
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill="hsl(var(--status-peaking))" />
+                      <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill="hsl(var(--status-adapting))" />
+                      <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill="hsl(var(--primary))" />
+                      <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill="hsl(var(--status-exhausted))" radius={[6, 6, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--foreground))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--foreground))" }} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Per-session RPE & distance" description="Each point is one session — track intensity trend over time.">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={enduranceStats.series}>
+                <ChartCard
+                  title="Run pace by intensity"
+                  description="Average pace and total volume per RPE band — see how tempo holds across efforts."
+                >
+                  {enduranceStats.paceByBand.every((b) => b.sessions === 0) ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                      {enduranceStats.paceByBand.map((b) => (
+                        <div key={b.id} className="rounded-lg border border-border bg-muted/20 p-3">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: b.fill }} />
+                            <span>{b.label}</span>
+                          </div>
+                          <div className="mt-1 text-2xl font-bold tracking-tight">{b.paceLabel ?? "—"}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {b.sessions} {b.sessions === 1 ? "run" : "runs"} · {b.km.toFixed(1)} km
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ChartCard>
+
+                <ChartCard
+                  title="Per-session intensity vs distance"
+                  description="Each dot is one session: vertical = distance, color = RPE band, bubble size = duration."
+                >
+                  <ResponsiveContainer width="100%" height={320}>
+                    <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <YAxis yAxisId="left" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} unit=" km" />
+                      <XAxis
+                        dataKey="dateMs"
+                        type="number"
+                        domain={["dataMin", "dataMax"]}
+                        tickFormatter={(v: number) => format(new Date(v), "MMM d")}
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={11}
+                      />
+                      <YAxis dataKey="km" type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+                      <ZAxis dataKey="minutes" type="number" range={[60, 400]} name="Minutes" />
                       <Tooltip
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                        formatter={(value: number, name: string) => {
-                          if (name === "Distance (km)") return [`${Number(value).toFixed(2)} km`, name];
-                          if (name === "Session RPE") return [Number(value).toFixed(1), name];
-                          return [value, name];
+                        cursor={{ strokeDasharray: "3 3" }}
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                        content={({ active, payload }) => {
+                          if (!active || !payload || !payload.length) return null;
+                          const p = payload[0].payload as typeof enduranceStats.series[number];
+                          return (
+                            <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                              <div className="font-semibold">{format(parseISO(p.date), "EEE MMM d")}</div>
+                              <div className="capitalize text-muted-foreground">{p.discipline}{p.title ? ` · ${p.title}` : ""}</div>
+                              <div className="mt-1">{p.km.toFixed(2)} km · {Math.round(p.minutes)} min</div>
+                              {p.pace_label && <div>Pace {p.pace_label}</div>}
+                              {p.rpe != null && <div>RPE {p.rpe.toFixed(1)}</div>}
+                            </div>
+                          );
                         }}
                       />
-                      <Legend />
-                      {enduranceStats.totals.avgRPE != null && (
-                        <ReferenceLine yAxisId="left" y={enduranceStats.totals.avgRPE} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: `Avg RPE ${enduranceStats.totals.avgRPE.toFixed(1)}`, position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                      )}
-                      <Line yAxisId="left" type="monotone" dataKey="rpe" name="Session RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                      <Line yAxisId="right" type="monotone" dataKey="km" name="Distance (km)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                    </LineChart>
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Scatter name="Easy (1–4)" data={enduranceStats.scatterByBand.easy} fill="hsl(var(--status-peaking))" />
+                      <Scatter name="Moderate (5–6)" data={enduranceStats.scatterByBand.mod} fill="hsl(var(--status-adapting))" />
+                      <Scatter name="Hard (7–8)" data={enduranceStats.scatterByBand.hard} fill="hsl(var(--primary))" />
+                      <Scatter name="Max (9–10)" data={enduranceStats.scatterByBand.max} fill="hsl(var(--status-exhausted))" />
+                      <Scatter name="No RPE" data={enduranceStats.scatterByBand.none} fill="hsl(var(--muted-foreground))" />
+                    </ScatterChart>
                   </ResponsiveContainer>
                 </ChartCard>
+
 
                 <Card>
                   <CardHeader className="pb-2">

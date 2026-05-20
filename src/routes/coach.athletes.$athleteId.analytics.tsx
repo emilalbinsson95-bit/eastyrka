@@ -1099,11 +1099,12 @@ function AnalyticsPage() {
                         }}
                       />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Scatter name="Easy (1–4)" data={enduranceStats.scatterByBand.easy} fill="hsl(var(--status-peaking))" />
-                      <Scatter name="Moderate (5–6)" data={enduranceStats.scatterByBand.mod} fill="hsl(var(--status-adapting))" />
-                      <Scatter name="Hard (7–8)" data={enduranceStats.scatterByBand.hard} fill="hsl(var(--primary))" />
-                      <Scatter name="Max (9–10)" data={enduranceStats.scatterByBand.max} fill="hsl(var(--status-exhausted))" />
+                      <Scatter name="Easy (1–4)" data={enduranceStats.scatterByBand.easy} fill={BAND_COLORS.easy} />
+                      <Scatter name="Moderate (5–6)" data={enduranceStats.scatterByBand.mod} fill={BAND_COLORS.mod} />
+                      <Scatter name="Hard (7–8)" data={enduranceStats.scatterByBand.hard} fill={BAND_COLORS.hard} />
+                      <Scatter name="Max (9–10)" data={enduranceStats.scatterByBand.max} fill={BAND_COLORS.max} />
                       <Scatter name="No RPE" data={enduranceStats.scatterByBand.none} fill="hsl(var(--muted-foreground))" />
+
                     </ScatterChart>
                   </ResponsiveContainer>
                 </ChartCard>

@@ -218,7 +218,7 @@ function AnalyticsPage() {
           return { date: info.date, sec, m, rpe };
         })
         .filter((x): x is { date: string; sec: number; m: number; rpe: number } => x !== null);
-      const sessions = sList.map((s) => {
+      const sessionsOut = sList.map((s) => {
         const agg = stepAgg.get(s.id);
         const dur = s.actual_total_seconds ?? agg?.dur ?? 0;
         const dist = s.actual_distance_m ?? agg?.dist ?? 0;
@@ -238,7 +238,8 @@ function AnalyticsPage() {
           planned_rpe: s.planned_avg_rpe != null ? Number(s.planned_avg_rpe) : null,
         };
       });
-      return { sessions, runSteps };
+      return { sessions: sessionsOut, runSteps };
+
     },
   });
 

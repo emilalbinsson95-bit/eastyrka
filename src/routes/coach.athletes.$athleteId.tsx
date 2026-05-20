@@ -32,6 +32,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 import { EnduranceSummaryCard } from "@/components/EnduranceSummary";
+import { RpePaceEstimateCard } from "@/components/RpePaceEstimateCard";
 
 const DEFAULT_EXERCISES = [
   "Knäböj",
@@ -148,6 +149,7 @@ function AthleteDetailPage() {
 
         <TabsContent value="dashboard" className="space-y-4">
           <EnduranceSummaryCard athleteId={athleteId} />
+          <RpePaceEstimateCard athleteId={athleteId} />
           <DashboardTable athleteId={athleteId} />
         </TabsContent>
 

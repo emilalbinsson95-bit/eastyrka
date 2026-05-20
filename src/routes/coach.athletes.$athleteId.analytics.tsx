@@ -915,11 +915,21 @@ function AnalyticsPage() {
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={enduranceStats.series}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis yAxisId="left" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis yAxisId="left" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} unit=" km" />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                        formatter={(value: number, name: string) => {
+                          if (name === "Distance (km)") return [`${Number(value).toFixed(2)} km`, name];
+                          if (name === "Session RPE") return [Number(value).toFixed(1), name];
+                          return [value, name];
+                        }}
+                      />
                       <Legend />
+                      {enduranceStats.totals.avgRPE != null && (
+                        <ReferenceLine yAxisId="left" y={enduranceStats.totals.avgRPE} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: `Avg RPE ${enduranceStats.totals.avgRPE.toFixed(1)}`, position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      )}
                       <Line yAxisId="left" type="monotone" dataKey="rpe" name="Session RPE" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       <Line yAxisId="right" type="monotone" dataKey="km" name="Distance (km)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     </LineChart>

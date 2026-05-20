@@ -195,41 +195,64 @@ function TodayPage() {
     },
   });
 
-  // Only show a strength session today if it has been accepted/confirmed in
-  // the shared calendar (and not cancelled) for today's date.
-  const todaysAcceptedQuery = useQuery({
-    queryKey: ["today-accepted-planned", userId, todayStr],
-    queryFn: async (): Promise<string[]> => {
+  // A planned session shows up "today" when its effective date == today.
+  // Effective date = override.scheduled_date (if an uncancelled override exists)
+  //                  OR week_start_date + (day_of_week - 1) as fallback.
+  // This matches the shared calendar so athletes don't have to manually
+  // "accept" suggested sessions before they can log them.
+  const planSessionIds = useMemo(
+    () => (planQuery.data?.planned_sessions ?? []).map((s) => s.id),
+    [planQuery.data],
+  );
+
+  const overridesQuery = useQuery({
+    queryKey: ["today-overrides-planned", userId, planQuery.data?.id],
+    enabled: !!planQuery.data && planSessionIds.length > 0,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("session_schedule_overrides")
-        .select("source_id, confirmed_at, cancelled_at, scheduled_date, source_type")
+        .select("source_id, scheduled_date, confirmed_at, cancelled_at")
         .eq("owner_id", userId)
         .eq("source_type", "planned")
-        .eq("scheduled_date", todayStr);
+        .in("source_id", planSessionIds);
       if (error) throw error;
-      return (data ?? [])
-        .filter((o) => o.confirmed_at && !o.cancelled_at)
-        .map((o) => o.source_id as string);
+      return data ?? [];
     },
   });
 
   const todayPlanned: PlannedSession | undefined = useMemo(() => {
     if (!planQuery.data) return undefined;
-    const accepted = new Set(todaysAcceptedQuery.data ?? []);
-    if (accepted.size === 0) return undefined;
+    const weekStart = parseISO(planQuery.data.week_start_date);
+    const ovByPlanId = new Map<
+      string,
+      { scheduledDate: string; cancelled: boolean }
+    >();
+    for (const o of overridesQuery.data ?? []) {
+      ovByPlanId.set(o.source_id as string, {
+        scheduledDate: String(o.scheduled_date).slice(0, 10),
+        cancelled: !!o.cancelled_at,
+      });
+    }
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
-    const orderedSessions = [...planQuery.data.planned_sessions]
-      .filter((s) => accepted.has(s.id))
+    const candidates = planQuery.data.planned_sessions
+      .map((s) => {
+        const ov = ovByPlanId.get(s.id);
+        if (ov?.cancelled) return null;
+        const effective = ov?.scheduledDate
+          ? ov.scheduledDate
+          : format(addDays(weekStart, (s.day_of_week ?? 1) - 1), "yyyy-MM-dd");
+        return effective === todayStr ? s : null;
+      })
+      .filter((s): s is PlannedSession => s !== null)
       .sort((a, b) => a.day_of_week - b.day_of_week);
-    if (orderedSessions.length === 0) return undefined;
-    // Prefer the first accepted session whose planned exercises are not all logged.
-    const next = orderedSessions.find((s) =>
+    if (candidates.length === 0) return undefined;
+    const next = candidates.find((s) =>
       s.planned_exercises.some((e) => !loggedSet.has(e.id)),
     );
-    return next ?? orderedSessions[0];
-  }, [planQuery.data, weekLogsQuery.data, todaysAcceptedQuery.data]);
+    return next ?? candidates[0];
+  }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
 
   const baselines = baselinesQuery.data ?? {};
   const logs = logsQuery.data ?? [];
@@ -286,9 +309,9 @@ function TodayPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>No session accepted for today</CardTitle>
+                <CardTitle>No session scheduled for today</CardTitle>
                 <CardDescription>
-                  Open your <Link to="/calendar" className="underline">calendar</Link> and accept (or drag to today) a session your coach has suggested. You can still log freestyle sets below — they'll feed into your EAkoefficient.
+                  Your coach hasn't scheduled a strength session for today, or it's been moved. Check your <Link to="/calendar" className="underline">calendar</Link>. You can still log freestyle sets below — they'll feed into your EAkoefficient.
                 </CardDescription>
               </CardHeader>
               <CardContent>

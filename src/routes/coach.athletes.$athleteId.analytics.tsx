@@ -1514,6 +1514,59 @@ function ScoreCell({
   return <td className={cn("px-2 py-2 text-center", tone)}>{value}</td>;
 }
 
+function WeekWindow<T>({
+  data,
+  size = 30,
+  children,
+}: {
+  data: T[];
+  size?: number;
+  children: (slice: T[]) => React.ReactNode;
+}) {
+  const [offset, setOffset] = useState(0);
+  const total = data.length;
+  const maxOffset = Math.max(0, total - size);
+  const safeOffset = Math.min(offset, maxOffset);
+  const end = total - safeOffset;
+  const start = Math.max(0, end - size);
+  const slice = data.slice(start, end);
+  const canNewer = safeOffset > 0;
+  const canOlder = start > 0;
+
+  if (total <= size) return <>{children(data)}</>;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span>
+          Weeks {start + 1}–{end} of {total}
+        </span>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7"
+          disabled={!canOlder}
+          onClick={() => setOffset((o) => Math.min(maxOffset, o + size))}
+          aria-label="Older weeks"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7"
+          disabled={!canNewer}
+          onClick={() => setOffset((o) => Math.max(0, o - size))}
+          aria-label="Newer weeks"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      {children(slice)}
+    </div>
+  );
+}
+
 function ChartCard({
   title,
   description,

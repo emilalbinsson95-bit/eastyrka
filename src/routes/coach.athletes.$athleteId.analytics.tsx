@@ -1396,20 +1396,20 @@ function AnalyticsPage() {
 
             {formSeries.length > 0 && (
               <ChartCard title="Daily check-in trends" description="All self-reported metrics from the athlete's pre-training survey (1–10).">
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={formSeries}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <YAxis domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                    <Legend />
-                    <Line type="monotone" dataKey="daily_form" name="Daily form" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="fatigue" name="Fatigue" stroke="hsl(var(--destructive))" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="sleep_quality" name="Sleep quality" stroke="hsl(var(--chart-2))" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="nutrition" name="Nutrition" stroke="hsl(var(--chart-3))" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="stiffness" name="Stiffness" stroke="hsl(var(--chart-4))" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="work_stress" name="Work stress" stroke="hsl(var(--chart-5))" strokeWidth={1} strokeDasharray="4 3" dot={false} />
-                    <Line type="monotone" dataKey="life_stress" name="Life stress" stroke="hsl(var(--muted-foreground))" strokeWidth={1} strokeDasharray="4 3" dot={false} />
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={formSeries} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                    <YAxis domain={[1, 10]} stroke="var(--muted-foreground)" fontSize={11} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--card-foreground)" }} />
+                    <Legend wrapperStyle={{ paddingTop: 8 }} iconType="line" />
+                    <Line type="monotone" dataKey="daily_form" name="Daily form" stroke="var(--chart-1)" strokeWidth={3} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="fatigue" name="Fatigue" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="sleep_quality" name="Sleep quality" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="nutrition" name="Nutrition" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="stiffness" name="Stiffness" stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="work_stress" name="Work stress" stroke="var(--chart-5)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                    <Line type="monotone" dataKey="life_stress" name="Life stress" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>

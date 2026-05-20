@@ -230,13 +230,32 @@ function MessagesPage() {
     const body = draft.trim();
     if (!body || !selectedId || !user) return;
     setDraft("");
+    // Optimistic insert into the cache so sender sees the message instantly.
+    const optimistic: MessageRow = {
+      id: `tmp-${Date.now()}`,
+      thread_id: selectedId,
+      sender_id: user.id,
+      body,
+      read_at: null,
+      created_at: new Date().toISOString(),
+    };
+    qc.setQueryData<MessageRow[]>(["thread-messages", selectedId], (prev) =>
+      prev ? [...prev, optimistic] : [optimistic],
+    );
     const { error } = await supabase
       .from("messages")
       .insert({ thread_id: selectedId, sender_id: user.id, body });
     if (error) {
       toast.error("Failed to send: " + error.message);
       setDraft(body);
+      qc.setQueryData<MessageRow[]>(["thread-messages", selectedId], (prev) =>
+        (prev ?? []).filter((m) => m.id !== optimistic.id),
+      );
+      return;
     }
+    // Realtime INSERT will refetch and replace the optimistic row.
+    qc.invalidateQueries({ queryKey: ["thread-messages", selectedId] });
+    qc.invalidateQueries({ queryKey: ["message-threads", user.id] });
   };
 
   const startThreadWith = async (otherId: string) => {

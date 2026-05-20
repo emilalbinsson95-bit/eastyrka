@@ -112,9 +112,9 @@ function TodayPage() {
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
 
-  // Fetch the most recent published week (calendar-independent: athlete advances day-by-day).
+  // Fetch the active published week, not a future week that was published early.
   const planQuery = useQuery({
-    queryKey: ["athlete-plan", userId],
+    queryKey: ["athlete-plan", userId, todayStr],
     queryFn: async (): Promise<WeekPlan | null> => {
       const { data, error } = await supabase
         .from("week_plans")
@@ -132,6 +132,7 @@ function TodayPage() {
         )
         .eq("athlete_id", userId)
         .eq("status", "published")
+        .lte("week_start_date", todayStr)
         .order("week_start_date", { ascending: false })
         .limit(1)
         .maybeSingle();

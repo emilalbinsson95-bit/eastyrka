@@ -1545,39 +1545,47 @@ function WeekWindow<T>({
   const safeOffset = Math.min(offset, maxOffset);
   const end = total - safeOffset;
   const start = Math.max(0, end - size);
-  const slice = data.slice(start, end);
+  const raw = data.slice(start, end);
+
+  // Always pad the slice to exactly `size` slots so axis spacing stays
+  // constant — bars/lines never auto-stretch to fill the chart width.
+  const padCount = Math.max(0, size - raw.length);
+  const pad: T[] = Array.from({ length: padCount }, (_, i) => ({ label: ` `.repeat(i + 1) } as unknown as T));
+  const slice = [...raw, ...pad];
+
   const canNewer = safeOffset > 0;
   const canOlder = start > 0;
-
-  if (total <= size) return <>{children(data)}</>;
+  const showPager = total > size;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-        <span>
-          Weeks {start + 1}–{end} of {total}
-        </span>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-7 w-7"
-          disabled={!canOlder}
-          onClick={() => setOffset((o) => Math.min(maxOffset, o + size))}
-          aria-label="Older weeks"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-7 w-7"
-          disabled={!canNewer}
-          onClick={() => setOffset((o) => Math.max(0, o - size))}
-          aria-label="Newer weeks"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {showPager && (
+        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+          <span>
+            Weeks {start + 1}–{end} of {total}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            disabled={!canOlder}
+            onClick={() => setOffset((o) => Math.min(maxOffset, o + size))}
+            aria-label="Older weeks"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            disabled={!canNewer}
+            onClick={() => setOffset((o) => Math.max(0, o - size))}
+            aria-label="Newer weeks"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       {children(slice)}
     </div>
   );

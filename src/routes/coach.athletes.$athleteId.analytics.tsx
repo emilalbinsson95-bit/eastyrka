@@ -85,6 +85,18 @@ const CATEGORY_COLORS = [
   "hsl(var(--status-undertrained))",
 ];
 
+// RPE band colors — use raw oklch tokens (not wrapped in hsl()) since
+// the design tokens are defined as oklch(...). Wrapping in hsl() would
+// produce invalid CSS and the bars/dots would render as black.
+const BAND_COLORS = {
+  easy: "var(--chart-2)", // green
+  mod: "var(--chart-4)",  // amber
+  hard: "var(--chart-1)", // blue
+  max: "var(--chart-3)",  // red/orange
+} as const;
+const BAND_ACCENT = "var(--chart-5)"; // purple accent for the avg-RPE line
+
+
 function AnalyticsPage() {
   const { athleteId } = useParams({
     from: "/coach/athletes/$athleteId/analytics",
@@ -652,22 +664,26 @@ function AnalyticsPage() {
       return {
         id,
         label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
-        fill: id === "easy" ? "hsl(var(--status-peaking))" : id === "mod" ? "hsl(var(--status-adapting))" : id === "hard" ? "hsl(var(--primary))" : "hsl(var(--status-exhausted))",
+        fill: BAND_COLORS[id],
         sessions: b.sessions,
         km: b.km,
         paceLabel: paceSec ? `${Math.floor(paceSec / 60)}:${String(Math.round(paceSec % 60)).padStart(2, "0")}/km` : null,
       };
     });
 
-    // Weekly aggregates (per discipline)
-    const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
+    // Weekly aggregates (per discipline + per RPE band)
+    const weekMap = new Map<string, { week: string; label: string; distance: Record<string, number>; minutes: Record<string, number>; band: Record<string, number>; rpeSum: number; rpeCount: number; sessions: number }>();
     const disciplines = new Set<string>();
     for (const s of completed) {
       const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       disciplines.add(s.discipline);
-      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, rpeSum: 0, rpeCount: 0, sessions: 0 };
+      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, band: { easy: 0, mod: 0, hard: 0, max: 0 }, rpeSum: 0, rpeCount: 0, sessions: 0 };
       row.distance[s.discipline] = (row.distance[s.discipline] ?? 0) + s.distance_m / 1000;
-      row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + s.duration_s / 60;
+      const min = s.duration_s / 60;
+      row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + min;
+      const r = s.rpe;
+      const bandId = r == null ? "mod" : r <= 4 ? "easy" : r <= 6 ? "mod" : r <= 8 ? "hard" : "max";
+      row.band[bandId] += min;
       if (s.rpe != null) { row.rpeSum += s.rpe; row.rpeCount += 1; }
       row.sessions += 1;
       weekMap.set(wk, row);
@@ -675,7 +691,16 @@ function AnalyticsPage() {
     const weekly = Array.from(weekMap.values())
       .sort((a, b) => a.week.localeCompare(b.week))
       .map((w) => {
-        const flat: Record<string, number | string> = { week: w.week, label: w.label, sessions: w.sessions, avgRPE: w.rpeCount > 0 ? Number((w.rpeSum / w.rpeCount).toFixed(2)) : 0 };
+        const flat: Record<string, number | string> = {
+          week: w.week,
+          label: w.label,
+          sessions: w.sessions,
+          avgRPE: w.rpeCount > 0 ? Number((w.rpeSum / w.rpeCount).toFixed(2)) : 0,
+          min_easy: Math.round(w.band.easy),
+          min_mod: Math.round(w.band.mod),
+          min_hard: Math.round(w.band.hard),
+          min_max: Math.round(w.band.max),
+        };
         for (const d of disciplines) {
           flat[`km_${d}`] = Number((w.distance[d] ?? 0).toFixed(2));
           flat[`min_${d}`] = Number((w.minutes[d] ?? 0).toFixed(0));
@@ -684,6 +709,7 @@ function AnalyticsPage() {
         flat.totalMin = Number(Object.values(w.minutes).reduce((a, b) => a + b, 0).toFixed(0));
         return flat;
       });
+
 
     // Totals
     const totalKm = completed.reduce((a, s) => a + s.distance_m / 1000, 0);
@@ -987,11 +1013,11 @@ function AnalyticsPage() {
                 </ChartCard>
 
                 <ChartCard
-                  title="This week — minutes per day by intensity"
-                  description="Stacked bars show how much time was spent in each RPE band each day. Line tracks average session RPE."
+                  title="Weekly minutes by intensity"
+                  description="Stacked bars show how much time was spent in each RPE band per week. Line tracks the week's average session RPE."
                 >
-                  <ResponsiveContainer width="100%" height={280}>
-                    <ComposedChart data={enduranceStats.dailyThisWeek} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={enduranceStats.weekly} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                       <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
@@ -1004,14 +1030,15 @@ function AnalyticsPage() {
                         }}
                       />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill="hsl(var(--status-peaking))" />
-                      <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill="hsl(var(--status-adapting))" />
-                      <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill="hsl(var(--primary))" />
-                      <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill="hsl(var(--status-exhausted))" radius={[6, 6, 0, 0]} />
-                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke="hsl(var(--accent))" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--accent))", stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
+                      <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill={BAND_COLORS.easy} />
+                      <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill={BAND_COLORS.mod} />
+                      <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill={BAND_COLORS.hard} />
+                      <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill={BAND_COLORS.max} radius={[6, 6, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
+
 
                 <ChartCard
                   title="Run pace by intensity"
@@ -1072,11 +1099,12 @@ function AnalyticsPage() {
                         }}
                       />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Scatter name="Easy (1–4)" data={enduranceStats.scatterByBand.easy} fill="hsl(var(--status-peaking))" />
-                      <Scatter name="Moderate (5–6)" data={enduranceStats.scatterByBand.mod} fill="hsl(var(--status-adapting))" />
-                      <Scatter name="Hard (7–8)" data={enduranceStats.scatterByBand.hard} fill="hsl(var(--primary))" />
-                      <Scatter name="Max (9–10)" data={enduranceStats.scatterByBand.max} fill="hsl(var(--status-exhausted))" />
+                      <Scatter name="Easy (1–4)" data={enduranceStats.scatterByBand.easy} fill={BAND_COLORS.easy} />
+                      <Scatter name="Moderate (5–6)" data={enduranceStats.scatterByBand.mod} fill={BAND_COLORS.mod} />
+                      <Scatter name="Hard (7–8)" data={enduranceStats.scatterByBand.hard} fill={BAND_COLORS.hard} />
+                      <Scatter name="Max (9–10)" data={enduranceStats.scatterByBand.max} fill={BAND_COLORS.max} />
                       <Scatter name="No RPE" data={enduranceStats.scatterByBand.none} fill="hsl(var(--muted-foreground))" />
+
                     </ScatterChart>
                   </ResponsiveContainer>
                 </ChartCard>

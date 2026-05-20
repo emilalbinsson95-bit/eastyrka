@@ -219,6 +219,7 @@ function TodayPage() {
 
   const todayPlanned: PlannedSession | undefined = useMemo(() => {
     if (!planQuery.data) return undefined;
+    const plan = planQuery.data;
     const ovByPlanId = new Map<
       string,
       { scheduledDate: string; cancelled: boolean }
@@ -232,13 +233,13 @@ function TodayPage() {
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
-    const candidates = planQuery.data.planned_sessions
+    const candidates = plan.planned_sessions
       .map((s) => {
         const ov = ovByPlanId.get(s.id);
         if (ov?.cancelled) return null;
         const effective = ov?.scheduledDate
           ? ov.scheduledDate
-          : plannedSessionDate(planQuery.data.week_start_date, s, planQuery.data.planned_sessions);
+          : plannedSessionDate(plan.week_start_date, s, plan.planned_sessions);
         return effective === todayStr ? s : null;
       })
       .filter((s): s is PlannedSession => s !== null)

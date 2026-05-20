@@ -693,11 +693,11 @@ function AnalyticsPage() {
           }
         >
           <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-5">
-            <TabsTrigger value="exercise">Exercise</TabsTrigger>
-            <TabsTrigger value="volume">Volume</TabsTrigger>
-            <TabsTrigger value="endurance">Endurance</TabsTrigger>
-            <TabsTrigger value="adherence">Adherence</TabsTrigger>
-            <TabsTrigger value="readiness">Readiness</TabsTrigger>
+            <TabsTrigger value="exercise"><Dumbbell className="mr-1 h-3.5 w-3.5" />Exercise</TabsTrigger>
+            <TabsTrigger value="volume"><TrendingUp className="mr-1 h-3.5 w-3.5" />Volume</TabsTrigger>
+            <TabsTrigger value="endurance"><Footprints className="mr-1 h-3.5 w-3.5" />Endurance</TabsTrigger>
+            <TabsTrigger value="adherence"><CalendarCheck className="mr-1 h-3.5 w-3.5" />Adherence</TabsTrigger>
+            <TabsTrigger value="readiness"><Heart className="mr-1 h-3.5 w-3.5" />Readiness</TabsTrigger>
           </TabsList>
 
           {/* === EXERCISE TAB === */}

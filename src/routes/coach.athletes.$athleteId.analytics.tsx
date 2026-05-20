@@ -791,6 +791,8 @@ function AnalyticsPage() {
       dailyThisWeek,
       scatterByBand,
       paceByBand,
+      paceByBandWeekly,
+      paceSampledFromSteps,
       disciplines: Array.from(disciplines).sort(),
       totals: {
         sessions: completed.length,
@@ -800,7 +802,8 @@ function AnalyticsPage() {
         avgRunPace,
       },
     };
-  }, [enduranceData]);
+  }, [enduranceData, runStepsData]);
+
 
   const isLoading =
     logsQuery.isLoading || baselinesQuery.isLoading || surveysQuery.isLoading || enduranceQuery.isLoading;

@@ -252,6 +252,37 @@ function TodayPage() {
     return next ?? candidates[0];
   }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
 
+  // Other planned sessions in the week that aren't done yet and aren't scheduled for today.
+  const pendingSessions = useMemo(() => {
+    if (!planQuery.data) return [] as { session: PlannedSession; effective: string }[];
+    const plan = planQuery.data;
+    const ovByPlanId = new Map<string, { scheduledDate: string; cancelled: boolean }>();
+    for (const o of overridesQuery.data ?? []) {
+      ovByPlanId.set(o.source_id as string, {
+        scheduledDate: String(o.scheduled_date).slice(0, 10),
+        cancelled: !!o.cancelled_at,
+      });
+    }
+    const loggedSet = new Set(
+      (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
+    );
+    return plan.planned_sessions
+      .map((s) => {
+        const ov = ovByPlanId.get(s.id);
+        if (ov?.cancelled) return null;
+        const effective = ov?.scheduledDate
+          ? ov.scheduledDate
+          : plannedSessionDate(plan.week_start_date, s, plan.planned_sessions);
+        if (effective === todayStr) return null;
+        const allDone = s.planned_exercises.length > 0
+          && s.planned_exercises.every((e) => loggedSet.has(e.id));
+        if (allDone) return null;
+        return { session: s, effective };
+      })
+      .filter((x): x is { session: PlannedSession; effective: string } => x !== null)
+      .sort((a, b) => a.session.day_of_week - b.session.day_of_week);
+  }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
+
   const baselines = baselinesQuery.data ?? {};
   const logs = logsQuery.data ?? [];
 
@@ -312,7 +343,23 @@ function TodayPage() {
                   Your coach hasn't scheduled a strength session for today, or it's been moved. Check your <Link to="/calendar" className="underline">calendar</Link>. You can still log freestyle sets below — they'll feed into your EAkoefficient.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {pendingSessions.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Or start one of your week's sessions today
+                    </div>
+                    {pendingSessions.map(({ session, effective }) => (
+                      <StartTodayRow
+                        key={session.id}
+                        session={session}
+                        plannedDate={effective}
+                        athleteId={userId}
+                        todayStr={todayStr}
+                      />
+                    ))}
+                  </div>
+                )}
                 <FreestyleQuickLog
                   athleteId={userId}
                   dateStr={todayStr}
@@ -849,6 +896,87 @@ function NumField({
           +
         </Button>
       </div>
+    </div>
+  );
+}
+
+function StartTodayRow({
+  session,
+  plannedDate,
+  athleteId,
+  todayStr,
+}: {
+  session: PlannedSession;
+  plannedDate: string;
+  athleteId: string;
+  todayStr: string;
+}) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async () => {
+      // Find an existing override for this planned session (any source_type='planned').
+      const { data: existing, error: selErr } = await supabase
+        .from("session_schedule_overrides")
+        .select("id")
+        .eq("owner_id", athleteId)
+        .eq("source_type", "planned")
+        .eq("source_id", session.id)
+        .maybeSingle();
+      if (selErr) throw selErr;
+
+      if (existing) {
+        const { error } = await supabase
+          .from("session_schedule_overrides")
+          .update({
+            scheduled_date: todayStr,
+            cancelled_at: null,
+            cancel_reason: null,
+            confirmed_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("session_schedule_overrides")
+          .insert({
+            owner_id: athleteId,
+            source_type: "planned",
+            source_id: session.id,
+            scheduled_date: todayStr,
+            confirmed_at: new Date().toISOString(),
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Session moved to today — start logging!");
+      queryClient.invalidateQueries({ queryKey: ["today-overrides-planned", athleteId] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-plan", athleteId] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const niceDate = format(new Date(plannedDate + "T00:00:00"), "EEE, MMM d");
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold">
+          {session.title ?? `Day ${session.day_of_week} session`}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Scheduled: {niceDate} · {session.planned_exercises.length} exercises
+        </div>
+      </div>
+      <Button
+        size="sm"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+      >
+        <Plus className="mr-1 h-3.5 w-3.5" />
+        {mutation.isPending ? "Moving…" : "Start today"}
+      </Button>
     </div>
   );
 }

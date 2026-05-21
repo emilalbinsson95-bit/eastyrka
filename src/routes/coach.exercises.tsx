@@ -181,6 +181,35 @@ function ExerciseLibraryPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const adminUpdate = useServerFn(adminUpdateExercise);
+  const adminUpdateMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string;
+      password: string;
+      name: string;
+      category?: string;
+      description?: string;
+      default_intensity_metric: "rpe" | "rir";
+    }) =>
+      adminUpdate({
+        data: {
+          exerciseId: vars.id,
+          password: vars.password,
+          name: vars.name,
+          category: vars.category || null,
+          description: vars.description || null,
+          default_intensity_metric: vars.default_intensity_metric,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Exercise updated (admin)");
+      qc.invalidateQueries({ queryKey: ["exercises"] });
+      setOpen(false);
+      setEditing(null);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   function promptAdminDelete(ex: Exercise) {
     const pw = window.prompt(
       `Admin password to delete "${ex.name}":`,
@@ -188,6 +217,29 @@ function ExerciseLibraryPage() {
     );
     if (!pw) return;
     adminDeleteMutation.mutate({ id: ex.id, password: pw });
+  }
+
+  function handleSave(values: {
+    name: string;
+    category?: string;
+    description?: string;
+    default_intensity_metric: "rpe" | "rir";
+  }) {
+    if (!editing) {
+      upsertMutation.mutate({ ...values });
+      return;
+    }
+    const mine = editing.created_by === userId && !editing.is_global;
+    if (mine) {
+      upsertMutation.mutate({ id: editing.id, ...values });
+    } else {
+      const pw = window.prompt(
+        `Admin password to edit "${editing.name}":`,
+        "",
+      );
+      if (!pw) return;
+      adminUpdateMutation.mutate({ id: editing.id, password: pw, ...values });
+    }
   }
 
   return (
@@ -217,13 +269,12 @@ function ExerciseLibraryPage() {
           <ExerciseDialog
             key={editing?.id ?? "new"}
             editing={editing}
-            onSubmit={(values) =>
-              upsertMutation.mutate({ id: editing?.id, ...values })
-            }
-            saving={upsertMutation.isPending}
+            onSubmit={handleSave}
+            saving={upsertMutation.isPending || adminUpdateMutation.isPending}
           />
         </Dialog>
       </div>
+
 
       {duplicateGroups.length > 0 && (
         <Card className="border-amber-500/40 bg-amber-500/5">

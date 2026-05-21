@@ -143,19 +143,24 @@ export function NotificationsBell() {
               {notifications.map((n) => (
                 <li key={n.id} className="group relative">
                   {n.link ? (
-                    <Link
-                      to={n.link}
+                    <button
+                      type="button"
                       onClick={() => {
+                        const [pathname, qs] = n.link!.split("?");
+                        const search = qs
+                          ? Object.fromEntries(new URLSearchParams(qs))
+                          : undefined;
                         markRead(n.id);
                         setOpen(false);
+                        navigate({ to: pathname, search: search as never });
                       }}
                       className={cn(
-                        "block px-3 py-2 pr-9 transition-colors hover:bg-accent",
+                        "block w-full px-3 py-2 pr-9 text-left transition-colors hover:bg-accent",
                         !n.read && "bg-primary/5",
                       )}
                     >
                       <NotificationItem n={n} />
-                    </Link>
+                    </button>
                   ) : (
                     <button
                       type="button"

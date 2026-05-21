@@ -84,6 +84,18 @@ export function NotificationsBell() {
     qc.invalidateQueries({ queryKey: ["notifications", user!.id] });
   };
 
+  const deleteOne = async (id: string) => {
+    await supabase.from("notifications").delete().eq("id", id);
+    qc.invalidateQueries({ queryKey: ["notifications", user!.id] });
+  };
+
+  const deleteAll = async () => {
+    if (!user || notifications.length === 0) return;
+    if (!confirm("Clear all notifications?")) return;
+    await supabase.from("notifications").delete().eq("user_id", user.id);
+    qc.invalidateQueries({ queryKey: ["notifications", user.id] });
+  };
+
   if (!user) return null;
 
   return (
@@ -99,13 +111,26 @@ export function NotificationsBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
           <span className="text-sm font-semibold">Notifications</span>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={markAllRead} className="h-7 text-xs">
-              Mark all read
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={markAllRead} className="h-7 text-xs">
+                Mark all read
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={deleteAll}
+                className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                aria-label="Clear all notifications"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-96">
           {notifications.length === 0 ? (
@@ -115,7 +140,7 @@ export function NotificationsBell() {
           ) : (
             <ul className="divide-y divide-border">
               {notifications.map((n) => (
-                <li key={n.id}>
+                <li key={n.id} className="group relative">
                   {n.link ? (
                     <Link
                       to={n.link}
@@ -124,7 +149,7 @@ export function NotificationsBell() {
                         setOpen(false);
                       }}
                       className={cn(
-                        "block px-3 py-2 transition-colors hover:bg-accent",
+                        "block px-3 py-2 pr-9 transition-colors hover:bg-accent",
                         !n.read && "bg-primary/5",
                       )}
                     >
@@ -135,13 +160,25 @@ export function NotificationsBell() {
                       type="button"
                       onClick={() => markRead(n.id)}
                       className={cn(
-                        "block w-full px-3 py-2 text-left transition-colors hover:bg-accent",
+                        "block w-full px-3 py-2 pr-9 text-left transition-colors hover:bg-accent",
                         !n.read && "bg-primary/5",
                       )}
                     >
                       <NotificationItem n={n} />
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      deleteOne(n.id);
+                    }}
+                    className="absolute right-1.5 top-1.5 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus:opacity-100"
+                    aria-label="Delete notification"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </li>
               ))}
             </ul>

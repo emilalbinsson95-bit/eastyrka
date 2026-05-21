@@ -222,6 +222,60 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     onError: (e: Error) => toast.error(e.message || "Failed to delete set"),
   });
 
+  // Coach-side set editor
+  const [editingSet, setEditingSet] = useState<null | {
+    id: string;
+    exercise: string;
+    variation: string | null;
+    reps: number;
+    weight_kg: number;
+    rpe: number;
+  }>(null);
+
+  // Distinct exercise names the coach can pick from (from exercises library +
+  // baselines + already-logged names) — lets coach swap freestyle entries
+  // onto a canonical exercise.
+  const exerciseOptionsQuery = useQuery({
+    queryKey: ["exercise-options-for-edit", athleteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exercises")
+        .select("name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return Array.from(new Set((data ?? []).map((e) => e.name))).sort();
+    },
+  });
+
+  const updateSet = useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      exercise: string;
+      variation: string | null;
+      reps: number;
+      weight_kg: number;
+      rpe: number;
+    }) => {
+      const { error } = await supabase
+        .from("training_logs")
+        .update({
+          exercise: payload.exercise,
+          variation: payload.variation,
+          reps: payload.reps,
+          weight_kg: payload.weight_kg,
+          rpe: payload.rpe,
+        })
+        .eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Set updated");
+      setEditingSet(null);
+      qc.invalidateQueries({ queryKey: ["athlete-logs", athleteId] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update set"),
+  });
+
   const processed = useMemo(() => {
     const logs = logsQuery.data ?? [];
     const baselines = baselinesQuery.data ?? {};

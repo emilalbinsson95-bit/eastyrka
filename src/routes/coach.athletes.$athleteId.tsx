@@ -447,7 +447,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                   return (
                     <React.Fragment key={date}>
                       <tr className="bg-muted/30">
-                        <td colSpan={7} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <td colSpan={8} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           <div className="flex items-center justify-between">
                             <span>{format(parseISO(date), "EEEE · MMM d, yyyy")}</span>
                             <span className="font-normal normal-case">

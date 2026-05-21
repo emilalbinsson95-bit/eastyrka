@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tans
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History, Activity, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History, Activity, Trash2, Pencil } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { LineChart, Line, ResponsiveContainer, Tooltip, YAxis } from "recharts";
@@ -23,6 +23,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   processLogs,
   readinessClasses,
@@ -212,6 +220,60 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
       qc.invalidateQueries({ queryKey: ["athlete-logs", athleteId] });
     },
     onError: (e: Error) => toast.error(e.message || "Failed to delete set"),
+  });
+
+  // Coach-side set editor
+  const [editingSet, setEditingSet] = useState<null | {
+    id: string;
+    exercise: string;
+    variation: string | null;
+    reps: number;
+    weight_kg: number;
+    rpe: number;
+  }>(null);
+
+  // Distinct exercise names the coach can pick from (from exercises library +
+  // baselines + already-logged names) — lets coach swap freestyle entries
+  // onto a canonical exercise.
+  const exerciseOptionsQuery = useQuery({
+    queryKey: ["exercise-options-for-edit", athleteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exercises")
+        .select("name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return Array.from(new Set((data ?? []).map((e) => e.name))).sort();
+    },
+  });
+
+  const updateSet = useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      exercise: string;
+      variation: string | null;
+      reps: number;
+      weight_kg: number;
+      rpe: number;
+    }) => {
+      const { error } = await supabase
+        .from("training_logs")
+        .update({
+          exercise: payload.exercise,
+          variation: payload.variation,
+          reps: payload.reps,
+          weight_kg: payload.weight_kg,
+          rpe: payload.rpe,
+        })
+        .eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Set updated");
+      setEditingSet(null);
+      qc.invalidateQueries({ queryKey: ["athlete-logs", athleteId] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update set"),
   });
 
   const processed = useMemo(() => {
@@ -548,25 +610,46 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                             )}
                           </td>
                           <td className="px-2 py-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              disabled={deleteSet.isPending}
-                              onClick={() => {
-                                if (
-                                  confirm(
-                                    `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
-                                  )
-                                ) {
-                                  deleteSet.mutate(p.source.id);
+                            <div className="flex items-center justify-end gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                onClick={() =>
+                                  setEditingSet({
+                                    id: p.source.id,
+                                    exercise: p.source.exercise,
+                                    variation: p.source.variation,
+                                    reps: p.source.reps,
+                                    weight_kg: p.source.weight_kg,
+                                    rpe: p.source.rpe,
+                                  })
                                 }
-                              }}
-                              aria-label="Delete set"
-                              title="Delete misslogged set"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                                aria-label="Edit set"
+                                title="Edit set (e.g. fix exercise name)"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                disabled={deleteSet.isPending}
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
+                                    )
+                                  ) {
+                                    deleteSet.mutate(p.source.id);
+                                  }
+                                }}
+                                aria-label="Delete set"
+                                title="Delete misslogged set"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                         );
@@ -579,7 +662,171 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
           )}
         </CardContent>
       </Card>
+
+      <EditSetDialog
+        editingSet={editingSet}
+        onClose={() => setEditingSet(null)}
+        onSave={(payload) => updateSet.mutate(payload)}
+        isPending={updateSet.isPending}
+        exerciseOptions={exerciseOptionsQuery.data ?? []}
+      />
     </div>
+  );
+}
+
+function EditSetDialog({
+  editingSet,
+  onClose,
+  onSave,
+  isPending,
+  exerciseOptions,
+}: {
+  editingSet: null | {
+    id: string;
+    exercise: string;
+    variation: string | null;
+    reps: number;
+    weight_kg: number;
+    rpe: number;
+  };
+  onClose: () => void;
+  onSave: (payload: {
+    id: string;
+    exercise: string;
+    variation: string | null;
+    reps: number;
+    weight_kg: number;
+    rpe: number;
+  }) => void;
+  isPending: boolean;
+  exerciseOptions: string[];
+}) {
+  const [exercise, setExercise] = useState("");
+  const [variation, setVariation] = useState("");
+  const [reps, setReps] = useState(0);
+  const [weight, setWeight] = useState(0);
+  const [rpe, setRpe] = useState(0);
+
+  React.useEffect(() => {
+    if (editingSet) {
+      setExercise(editingSet.exercise);
+      setVariation(editingSet.variation ?? "");
+      setReps(editingSet.reps);
+      setWeight(editingSet.weight_kg);
+      setRpe(editingSet.rpe);
+    }
+  }, [editingSet]);
+
+  if (!editingSet) return null;
+
+  const datalistId = "exercise-options-datalist";
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit logged set</DialogTitle>
+          <DialogDescription>
+            Fix mis-logged data — for example, swap a freestyle entry onto a
+            canonical exercise.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-exercise">Exercise</Label>
+            <Input
+              id="edit-exercise"
+              list={datalistId}
+              value={exercise}
+              onChange={(e) => setExercise(e.target.value)}
+              placeholder="e.g. Bench Press"
+            />
+            <datalist id={datalistId}>
+              {exerciseOptions.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+            <p className="text-[11px] text-muted-foreground">
+              Pick from suggestions or type a custom name.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-variation">Variation</Label>
+            <Input
+              id="edit-variation"
+              value={variation}
+              onChange={(e) => setVariation(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-reps">Reps</Label>
+              <Input
+                id="edit-reps"
+                type="number"
+                min={1}
+                max={50}
+                value={reps}
+                onChange={(e) => setReps(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-weight">Weight (kg)</Label>
+              <Input
+                id="edit-weight"
+                type="number"
+                min={0}
+                max={1000}
+                step="0.5"
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-rpe">RPE</Label>
+              <Input
+                id="edit-rpe"
+                type="number"
+                min={1}
+                max={10}
+                step="0.5"
+                value={rpe}
+                onChange={(e) => setRpe(Number(e.target.value))}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button
+            disabled={
+              isPending ||
+              !exercise.trim() ||
+              reps < 1 ||
+              reps > 50 ||
+              rpe < 1 ||
+              rpe > 10 ||
+              weight < 0
+            }
+            onClick={() =>
+              onSave({
+                id: editingSet.id,
+                exercise: exercise.trim(),
+                variation: variation.trim() ? variation.trim() : null,
+                reps,
+                weight_kg: weight,
+                rpe,
+              })
+            }
+          >
+            {isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

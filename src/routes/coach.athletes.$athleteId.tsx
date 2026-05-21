@@ -610,25 +610,46 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                             )}
                           </td>
                           <td className="px-2 py-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              disabled={deleteSet.isPending}
-                              onClick={() => {
-                                if (
-                                  confirm(
-                                    `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
-                                  )
-                                ) {
-                                  deleteSet.mutate(p.source.id);
+                            <div className="flex items-center justify-end gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                onClick={() =>
+                                  setEditingSet({
+                                    id: p.source.id,
+                                    exercise: p.source.exercise,
+                                    variation: p.source.variation,
+                                    reps: p.source.reps,
+                                    weight_kg: p.source.weight_kg,
+                                    rpe: p.source.rpe,
+                                  })
                                 }
-                              }}
-                              aria-label="Delete set"
-                              title="Delete misslogged set"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                                aria-label="Edit set"
+                                title="Edit set (e.g. fix exercise name)"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                disabled={deleteSet.isPending}
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
+                                    )
+                                  ) {
+                                    deleteSet.mutate(p.source.id);
+                                  }
+                                }}
+                                aria-label="Delete set"
+                                title="Delete misslogged set"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                         );

@@ -94,6 +94,57 @@ function PreviewBody({
   onClose: () => void;
 }) {
   const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const isToday = item.effectiveDate === todayStr;
+  // Only strength planned sessions support "start today" via override (rehab/endurance route differently).
+  const showStart = canStartToday && item.source === "planned" && !item.isCancelled;
+
+  const startMutation = useMutation({
+    mutationFn: async () => {
+      const { data: existing, error: selErr } = await supabase
+        .from("session_schedule_overrides")
+        .select("id")
+        .eq("owner_id", item.ownerId)
+        .eq("source_type", "planned")
+        .eq("source_id", item.sourceId)
+        .maybeSingle();
+      if (selErr) throw selErr;
+      if (existing) {
+        const { error } = await supabase
+          .from("session_schedule_overrides")
+          .update({
+            scheduled_date: todayStr,
+            cancelled_at: null,
+            cancel_reason: null,
+            confirmed_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("session_schedule_overrides")
+          .insert({
+            owner_id: item.ownerId,
+            source_type: "planned",
+            source_id: item.sourceId,
+            scheduled_date: todayStr,
+            confirmed_at: new Date().toISOString(),
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Session moved to today — let's go!");
+      qc.invalidateQueries({ queryKey: ["calendar-items", item.ownerId] });
+      qc.invalidateQueries({ queryKey: ["today-overrides-planned", item.ownerId] });
+      qc.invalidateQueries({ queryKey: ["athlete-plan", item.ownerId] });
+      onClose();
+      navigate({ to: "/today" });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
 
   const detailQuery = useQuery({
     queryKey: ["calendar-preview", item.source, item.sourceId],

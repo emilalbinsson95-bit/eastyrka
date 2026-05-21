@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tans
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History, Activity } from "lucide-react";
+import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History, Activity, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { LineChart, Line, ResponsiveContainer, Tooltip, YAxis } from "recharts";
@@ -199,6 +199,19 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
       for (const b of data ?? []) map[b.exercise] = Number(b.one_rm_kg);
       return map;
     },
+  });
+
+  const qc = useQueryClient();
+  const deleteSet = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("training_logs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Set deleted");
+      qc.invalidateQueries({ queryKey: ["athlete-logs", athleteId] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to delete set"),
   });
 
   const processed = useMemo(() => {
@@ -421,6 +434,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                   <th className="bg-readiness-tint/30 px-4 py-3">Status</th>
                   <th className="bg-volume-tint/30 px-4 py-3">Drop</th>
                   <th className="bg-volume-tint/30 px-4 py-3">Volume</th>
+                  <th className="px-2 py-3 sr-only">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -433,7 +447,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                   return (
                     <React.Fragment key={date}>
                       <tr className="bg-muted/30">
-                        <td colSpan={7} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <td colSpan={8} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           <div className="flex items-center justify-between">
                             <span>{format(parseISO(date), "EEEE · MMM d, yyyy")}</span>
                             <span className="font-normal normal-case">
@@ -532,6 +546,27 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                             ) : (
                               <span className="text-xs text-muted-foreground">—</span>
                             )}
+                          </td>
+                          <td className="px-2 py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              disabled={deleteSet.isPending}
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
+                                  )
+                                ) {
+                                  deleteSet.mutate(p.source.id);
+                                }
+                              }}
+                              aria-label="Delete set"
+                              title="Delete misslogged set"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </td>
                         </tr>
                         );

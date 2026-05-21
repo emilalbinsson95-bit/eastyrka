@@ -432,13 +432,33 @@ function PlannedSessionCard({
   athleteId: string;
   dateStr: string;
 }) {
+  // Session progress: count exercises that have at least one logged set today.
+  const exercisesWithLogs = session.planned_exercises.filter((ex) =>
+    logs.some((l) => l.planned_exercise_id === ex.id || l.exercise === ex.exercise),
+  ).length;
+  const totalEx = session.planned_exercises.length;
+  const allDone = totalEx > 0 && exercisesWithLogs >= totalEx;
+  const inProgress = exercisesWithLogs > 0 && !allDone;
+  const notStarted = exercisesWithLogs === 0;
+
+  const statusBadge = allDone
+    ? { label: "Complete", cls: "bg-status-adapting text-status-adapting-foreground" }
+    : inProgress
+      ? { label: `In progress · ${exercisesWithLogs}/${totalEx}`, cls: "bg-status-peaking text-status-peaking-foreground animate-pulse" }
+      : { label: "Not started", cls: "bg-muted text-muted-foreground" };
+
   return (
-    <Card>
+    <Card className={cn(inProgress && "ring-2 ring-status-peaking/40", notStarted && "border-dashed")}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-primary" />
-          {session.title ?? "Today's session"}
-        </CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-primary" />
+            {session.title ?? "Today's session"}
+          </CardTitle>
+          <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap", statusBadge.cls)}>
+            {statusBadge.label}
+          </span>
+        </div>
         {session.notes && (
           <CardDescription>{session.notes}</CardDescription>
         )}

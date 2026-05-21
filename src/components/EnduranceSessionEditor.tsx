@@ -510,11 +510,12 @@ function QuickEstimate({ discipline, rpe, benchmarks }: { discipline: Discipline
 }
 
 function StepRowItem({
-  step, allSteps, canEditPlan, defaultDiscipline, benchmarks, onChange, depth = 0,
+  step, allSteps, canEditPlan, canLogActuals = false, defaultDiscipline, benchmarks, onChange, depth = 0,
 }: {
   step: StepRow;
   allSteps: StepRow[];
   canEditPlan: boolean;
+  canLogActuals?: boolean;
   defaultDiscipline: Discipline;
   benchmarks: AthleteBenchmarks;
   onChange: () => void;

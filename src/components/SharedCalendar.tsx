@@ -279,6 +279,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         item={previewTarget}
         open={!!previewTarget}
         onOpenChange={(o) => !o && setPreviewTarget(null)}
+        canStartToday={!readOnly}
       />
 
       <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>

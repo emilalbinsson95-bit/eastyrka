@@ -399,22 +399,12 @@ function ExerciseLibraryPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        title={
-                          mine && !ex.is_global
-                            ? "Delete"
-                            : "Delete (admin password required)"
-                        }
-                        onClick={() => {
-                          if (mine && !ex.is_global) {
-                            if (confirm(`Delete "${ex.name}"?`))
-                              deleteMutation.mutate(ex.id);
-                          } else {
-                            promptAdminDelete(ex);
-                          }
-                        }}
+                        title="Delete (admin password required)"
+                        onClick={() => promptAdminDelete(ex)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
+
                     </div>
                   </li>
                 );

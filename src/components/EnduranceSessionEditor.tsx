@@ -609,7 +609,7 @@ function StepRowItem({
         </div>
         <div className="space-y-2">
           {children.map((c) => (
-            <StepRowItem key={c.id} step={c} allSteps={allSteps} canEditPlan={canEditPlan}
+            <StepRowItem key={c.id} step={c} allSteps={allSteps} canEditPlan={canEditPlan} canLogActuals={canLogActuals}
               defaultDiscipline={defaultDiscipline} benchmarks={benchmarks} onChange={onChange} depth={depth + 1} />
           ))}
         </div>

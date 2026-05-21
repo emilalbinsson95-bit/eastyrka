@@ -434,6 +434,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                   <th className="bg-readiness-tint/30 px-4 py-3">Status</th>
                   <th className="bg-volume-tint/30 px-4 py-3">Drop</th>
                   <th className="bg-volume-tint/30 px-4 py-3">Volume</th>
+                  <th className="px-2 py-3 sr-only">Actions</th>
                 </tr>
               </thead>
               <tbody>

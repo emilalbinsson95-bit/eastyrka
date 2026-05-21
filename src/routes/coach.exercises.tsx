@@ -394,18 +394,22 @@ function ExerciseLibraryPage() {
                       )}
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      {mine && !ex.is_global && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setEditing(ex);
-                            setOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title={
+                          mine && !ex.is_global
+                            ? "Edit"
+                            : "Edit (admin password required)"
+                        }
+                        onClick={() => {
+                          setEditing(ex);
+                          setOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+
                       <Button
                         variant="ghost"
                         size="icon"

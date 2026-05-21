@@ -214,6 +214,28 @@ function PreviewBody({
           )}
         </div>
       )}
+
+      {showStart && (
+        <DialogFooter>
+          {isToday ? (
+            <Button
+              onClick={() => { onClose(); navigate({ to: "/today" }); }}
+              className="w-full sm:w-auto"
+            >
+              <Play className="mr-1 h-4 w-4" /> Start workout
+            </Button>
+          ) : (
+            <Button
+              onClick={() => startMutation.mutate()}
+              disabled={startMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              <Play className="mr-1 h-4 w-4" />
+              {startMutation.isPending ? "Moving…" : "Start workout today"}
+            </Button>
+          )}
+        </DialogFooter>
+      )}
     </>
   );
 }

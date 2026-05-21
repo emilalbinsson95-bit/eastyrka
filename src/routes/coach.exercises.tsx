@@ -309,21 +309,11 @@ function ExerciseLibraryPage() {
                           type="button"
                           aria-label={`Delete ${ex.name}`}
                           className="text-destructive hover:text-destructive/80"
-                          onClick={() => {
-                            if (mine) {
-                              if (
-                                confirm(
-                                  `Delete "${ex.name}"? Existing logs that reference this name keep the text.`,
-                                )
-                              )
-                                deleteMutation.mutate(ex.id);
-                            } else {
-                              promptAdminDelete(ex);
-                            }
-                          }}
+                          onClick={() => promptAdminDelete(ex)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
+
                       </div>
                     );
                   })}

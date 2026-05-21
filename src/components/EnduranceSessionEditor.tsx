@@ -332,11 +332,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 // ---------- Steps editor (structured mode) ----------
 
 function StepsEditor({
-  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, sessionStatus, onChange,
+  sessionId, steps, canEditPlan, canLogActuals, defaultDiscipline, benchmarks, sessionStatus, onChange,
 }: {
   sessionId: string;
   steps: StepRow[];
   canEditPlan: boolean;
+  canLogActuals: boolean;
   defaultDiscipline: Discipline;
   benchmarks: AthleteBenchmarks;
   sessionStatus: string;

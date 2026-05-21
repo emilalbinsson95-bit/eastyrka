@@ -229,18 +229,14 @@ function ExerciseLibraryPage() {
       upsertMutation.mutate({ ...values });
       return;
     }
-    const mine = editing.created_by === userId && !editing.is_global;
-    if (mine) {
-      upsertMutation.mutate({ id: editing.id, ...values });
-    } else {
-      const pw = window.prompt(
-        `Admin password to edit "${editing.name}":`,
-        "",
-      );
-      if (!pw) return;
-      adminUpdateMutation.mutate({ id: editing.id, password: pw, ...values });
-    }
+    const pw = window.prompt(
+      `Admin password to edit "${editing.name}":`,
+      "",
+    );
+    if (!pw) return;
+    adminUpdateMutation.mutate({ id: editing.id, password: pw, ...values });
   }
+
 
   return (
     <div className="space-y-4">
@@ -313,21 +309,11 @@ function ExerciseLibraryPage() {
                           type="button"
                           aria-label={`Delete ${ex.name}`}
                           className="text-destructive hover:text-destructive/80"
-                          onClick={() => {
-                            if (mine) {
-                              if (
-                                confirm(
-                                  `Delete "${ex.name}"? Existing logs that reference this name keep the text.`,
-                                )
-                              )
-                                deleteMutation.mutate(ex.id);
-                            } else {
-                              promptAdminDelete(ex);
-                            }
-                          }}
+                          onClick={() => promptAdminDelete(ex)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
+
                       </div>
                     );
                   })}
@@ -413,22 +399,12 @@ function ExerciseLibraryPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        title={
-                          mine && !ex.is_global
-                            ? "Delete"
-                            : "Delete (admin password required)"
-                        }
-                        onClick={() => {
-                          if (mine && !ex.is_global) {
-                            if (confirm(`Delete "${ex.name}"?`))
-                              deleteMutation.mutate(ex.id);
-                          } else {
-                            promptAdminDelete(ex);
-                          }
-                        }}
+                        title="Delete (admin password required)"
+                        onClick={() => promptAdminDelete(ex)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
+
                     </div>
                   </li>
                 );

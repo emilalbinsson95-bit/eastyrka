@@ -662,7 +662,171 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
           )}
         </CardContent>
       </Card>
+
+      <EditSetDialog
+        editingSet={editingSet}
+        onClose={() => setEditingSet(null)}
+        onSave={(payload) => updateSet.mutate(payload)}
+        isPending={updateSet.isPending}
+        exerciseOptions={exerciseOptionsQuery.data ?? []}
+      />
     </div>
+  );
+}
+
+function EditSetDialog({
+  editingSet,
+  onClose,
+  onSave,
+  isPending,
+  exerciseOptions,
+}: {
+  editingSet: null | {
+    id: string;
+    exercise: string;
+    variation: string | null;
+    reps: number;
+    weight_kg: number;
+    rpe: number;
+  };
+  onClose: () => void;
+  onSave: (payload: {
+    id: string;
+    exercise: string;
+    variation: string | null;
+    reps: number;
+    weight_kg: number;
+    rpe: number;
+  }) => void;
+  isPending: boolean;
+  exerciseOptions: string[];
+}) {
+  const [exercise, setExercise] = useState("");
+  const [variation, setVariation] = useState("");
+  const [reps, setReps] = useState(0);
+  const [weight, setWeight] = useState(0);
+  const [rpe, setRpe] = useState(0);
+
+  React.useEffect(() => {
+    if (editingSet) {
+      setExercise(editingSet.exercise);
+      setVariation(editingSet.variation ?? "");
+      setReps(editingSet.reps);
+      setWeight(editingSet.weight_kg);
+      setRpe(editingSet.rpe);
+    }
+  }, [editingSet]);
+
+  if (!editingSet) return null;
+
+  const datalistId = "exercise-options-datalist";
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit logged set</DialogTitle>
+          <DialogDescription>
+            Fix mis-logged data — for example, swap a freestyle entry onto a
+            canonical exercise.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-exercise">Exercise</Label>
+            <Input
+              id="edit-exercise"
+              list={datalistId}
+              value={exercise}
+              onChange={(e) => setExercise(e.target.value)}
+              placeholder="e.g. Bench Press"
+            />
+            <datalist id={datalistId}>
+              {exerciseOptions.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+            <p className="text-[11px] text-muted-foreground">
+              Pick from suggestions or type a custom name.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-variation">Variation</Label>
+            <Input
+              id="edit-variation"
+              value={variation}
+              onChange={(e) => setVariation(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-reps">Reps</Label>
+              <Input
+                id="edit-reps"
+                type="number"
+                min={1}
+                max={50}
+                value={reps}
+                onChange={(e) => setReps(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-weight">Weight (kg)</Label>
+              <Input
+                id="edit-weight"
+                type="number"
+                min={0}
+                max={1000}
+                step="0.5"
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-rpe">RPE</Label>
+              <Input
+                id="edit-rpe"
+                type="number"
+                min={1}
+                max={10}
+                step="0.5"
+                value={rpe}
+                onChange={(e) => setRpe(Number(e.target.value))}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button
+            disabled={
+              isPending ||
+              !exercise.trim() ||
+              reps < 1 ||
+              reps > 50 ||
+              rpe < 1 ||
+              rpe > 10 ||
+              weight < 0
+            }
+            onClick={() =>
+              onSave({
+                id: editingSet.id,
+                exercise: exercise.trim(),
+                variation: variation.trim() ? variation.trim() : null,
+                reps,
+                weight_kg: weight,
+                rpe,
+              })
+            }
+          >
+            {isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

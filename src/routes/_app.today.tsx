@@ -343,7 +343,23 @@ function TodayPage() {
                   Your coach hasn't scheduled a strength session for today, or it's been moved. Check your <Link to="/calendar" className="underline">calendar</Link>. You can still log freestyle sets below — they'll feed into your EAkoefficient.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {pendingSessions.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Or start one of your week's sessions today
+                    </div>
+                    {pendingSessions.map(({ session, effective }) => (
+                      <StartTodayRow
+                        key={session.id}
+                        session={session}
+                        plannedDate={effective}
+                        athleteId={userId}
+                        todayStr={todayStr}
+                      />
+                    ))}
+                  </div>
+                )}
                 <FreestyleQuickLog
                   athleteId={userId}
                   dateStr={todayStr}

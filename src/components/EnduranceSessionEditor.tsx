@@ -141,6 +141,7 @@ export function EnduranceSessionEditor({
           sessionId={sessionId}
           steps={stepsQuery.data ?? []}
           canEditPlan={canEditPlan}
+          canLogActuals={canEditPlan || isAthlete}
           defaultDiscipline={session.discipline}
           benchmarks={benchmarks}
           sessionStatus={session.status}
@@ -331,11 +332,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 // ---------- Steps editor (structured mode) ----------
 
 function StepsEditor({
-  sessionId, steps, canEditPlan, defaultDiscipline, benchmarks, sessionStatus, onChange,
+  sessionId, steps, canEditPlan, canLogActuals, defaultDiscipline, benchmarks, sessionStatus, onChange,
 }: {
   sessionId: string;
   steps: StepRow[];
   canEditPlan: boolean;
+  canLogActuals: boolean;
   defaultDiscipline: Discipline;
   benchmarks: AthleteBenchmarks;
   sessionStatus: string;
@@ -461,6 +463,7 @@ function StepsEditor({
             step={step}
             allSteps={steps}
             canEditPlan={canEditPlan}
+            canLogActuals={canLogActuals}
             defaultDiscipline={defaultDiscipline}
             benchmarks={benchmarks}
             onChange={onChange}
@@ -507,11 +510,12 @@ function QuickEstimate({ discipline, rpe, benchmarks }: { discipline: Discipline
 }
 
 function StepRowItem({
-  step, allSteps, canEditPlan, defaultDiscipline, benchmarks, onChange, depth = 0,
+  step, allSteps, canEditPlan, canLogActuals = false, defaultDiscipline, benchmarks, onChange, depth = 0,
 }: {
   step: StepRow;
   allSteps: StepRow[];
   canEditPlan: boolean;
+  canLogActuals?: boolean;
   defaultDiscipline: Discipline;
   benchmarks: AthleteBenchmarks;
   onChange: () => void;
@@ -605,7 +609,7 @@ function StepRowItem({
         </div>
         <div className="space-y-2">
           {children.map((c) => (
-            <StepRowItem key={c.id} step={c} allSteps={allSteps} canEditPlan={canEditPlan}
+            <StepRowItem key={c.id} step={c} allSteps={allSteps} canEditPlan={canEditPlan} canLogActuals={canLogActuals}
               defaultDiscipline={defaultDiscipline} benchmarks={benchmarks} onChange={onChange} depth={depth + 1} />
           ))}
         </div>
@@ -684,7 +688,7 @@ function StepRowItem({
           </div>
         );
       })()}
-      {canEditPlan && (
+      {(canEditPlan || canLogActuals) && (
         <ActualStepInputs step={step} defaultDiscipline={defaultDiscipline} onSaved={onChange} />
       )}
     </div>

@@ -688,7 +688,7 @@ function StepRowItem({
           </div>
         );
       })()}
-      {canEditPlan && (
+      {(canEditPlan || canLogActuals) && (
         <ActualStepInputs step={step} defaultDiscipline={defaultDiscipline} onSaved={onChange} />
       )}
     </div>

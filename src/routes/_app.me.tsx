@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Copy, KeyRound, Save } from "lucide-react";
+import { Activity, Copy, History, KeyRound, Save } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -152,7 +153,10 @@ function MePage() {
       <EnduranceBenchmarksCard
         userId={userId}
         initial={profileQuery.data}
-        onSaved={() => qc.invalidateQueries({ queryKey: ["profile", userId] })}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ["profile", userId] });
+          qc.invalidateQueries({ queryKey: ["pb-history", userId] });
+        }}
       />
     </div>
   );
@@ -180,6 +184,20 @@ function EnduranceBenchmarksCard({
     setCss(secondsToTimeStr(initial.css_per_100m_seconds));
   }, [initial]);
 
+  const pbHistory = useQuery({
+    queryKey: ["pb-history", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_pb_history")
+        .select("id, ten_k_pb_seconds, recorded_at")
+        .eq("athlete_id", userId)
+        .order("recorded_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const save = useMutation({
     mutationFn: async () => {
       const patch = {
@@ -203,10 +221,11 @@ function EnduranceBenchmarksCard({
           <Activity className="h-5 w-5 text-primary" /> Endurance benchmarks
         </CardTitle>
         <CardDescription>
-          Used to estimate pace and heart-rate zones for each RPE. Fill in what you have — leave the rest blank.
+          Used to estimate pace and heart-rate zones for each RPE. Update Max HR
+          and Resting HR after a fresh field test for accurate Karvonen zones.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-1">
             <Label>10k PB (mm:ss)</Label>
@@ -233,6 +252,54 @@ function EnduranceBenchmarksCard({
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
             <Save className="mr-1 h-4 w-4" /> Save benchmarks
           </Button>
+        </div>
+
+        {/* 10k PB history */}
+        <div className="rounded-md border border-border bg-muted/20 p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <History className="h-3.5 w-3.5" /> 10k PB history
+          </div>
+          {pbHistory.isLoading ? (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          ) : (pbHistory.data ?? []).length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No history yet — save a 10k PB above and it will be recorded here.
+            </p>
+          ) : (
+            <ol className="space-y-1 text-sm">
+              {(pbHistory.data ?? []).map((h, i) => {
+                const prev = (pbHistory.data ?? [])[i + 1];
+                const delta = prev ? h.ten_k_pb_seconds - prev.ten_k_pb_seconds : null;
+                return (
+                  <li
+                    key={h.id}
+                    className="flex items-center justify-between gap-3 rounded border border-border/60 bg-background px-2 py-1.5"
+                  >
+                    <span className="font-mono font-semibold tabular-nums">
+                      {secondsToTimeStr(h.ten_k_pb_seconds)}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {delta != null && (
+                        <span
+                          className={
+                            delta < 0
+                              ? "font-medium text-status-peaking"
+                              : delta > 0
+                              ? "font-medium text-status-exhausted"
+                              : ""
+                          }
+                        >
+                          {delta < 0 ? "−" : delta > 0 ? "+" : "±"}
+                          {secondsToTimeStr(Math.abs(delta))}
+                        </span>
+                      )}
+                      <span>{format(parseISO(h.recorded_at), "MMM d, yyyy")}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </div>
       </CardContent>
     </Card>

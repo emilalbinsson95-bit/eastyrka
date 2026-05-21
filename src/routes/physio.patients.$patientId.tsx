@@ -343,13 +343,13 @@ function PatientDetail() {
                       <XAxis
                         dataKey="date"
                         tickFormatter={(d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                        tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                        tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                       />
-                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
                       <Tooltip
                         contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
+                          background: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: 6,
                           fontSize: 12,
                         }}
@@ -359,7 +359,7 @@ function PatientDetail() {
                       <Line
                         type="monotone"
                         dataKey="load"
-                        stroke="hsl(var(--primary))"
+                        stroke="var(--primary)"
                         strokeWidth={2}
                         dot={{ r: 3 }}
                       />

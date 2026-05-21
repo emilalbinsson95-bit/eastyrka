@@ -813,8 +813,8 @@ function BaselineRow({
                     />
                     <Tooltip
                       contentStyle={{
-                        background: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
+                        background: "var(--popover)",
+                        border: "1px solid var(--border)",
                         borderRadius: 6,
                         fontSize: 12,
                       }}
@@ -824,7 +824,7 @@ function BaselineRow({
                     <Line
                       type="monotone"
                       dataKey="kg"
-                      stroke="hsl(var(--primary))"
+                      stroke="var(--primary)"
                       strokeWidth={2}
                       dot={{ r: 3 }}
                     />

@@ -80,9 +80,9 @@ const CATEGORY_COLORS = [
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
-  "hsl(var(--status-peaking))",
-  "hsl(var(--status-adapting))",
-  "hsl(var(--status-undertrained))",
+  "var(--status-peaking)",
+  "var(--status-adapting)",
+  "var(--status-undertrained)",
 ];
 
 // RPE band colors — use raw oklch tokens (not wrapped in hsl()) since
@@ -940,15 +940,15 @@ function AnalyticsPage() {
                 >
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={dailyStats}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis yAxisId="right" orientation="right" stroke="var(--muted-foreground)" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
                       {baselines[exercise] && (
-                        <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff %" stroke="hsl(var(--accent-foreground))" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff %" stroke="var(--accent-foreground)" strokeWidth={2} dot={{ r: 3 }} />
                       )}
                     </LineChart>
                   </ResponsiveContainer>
@@ -957,11 +957,11 @@ function AnalyticsPage() {
                 <ChartCard title="Volume per session" description="Total tonnage (reps × weight) for each training day.">
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={dailyStats}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                      <Bar dataKey="volume" name="Volume (kg)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
+                      <Bar dataKey="volume" name="Volume (kg)" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -970,10 +970,10 @@ function AnalyticsPage() {
                   <ChartCard title="Top lifts — E1RM overlay" description="Best daily E1RM for the most-trained lifts in this window.">
                     <ResponsiveContainer width="100%" height={260}>
                       <LineChart data={multiLiftSeries.data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                        <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                         <Legend />
                         {multiLiftSeries.lifts.map((lift, i) => (
                           <Line
@@ -1011,10 +1011,10 @@ function AnalyticsPage() {
                     {(slice) => (
                       <ResponsiveContainer width="100%" height={320}>
                         <BarChart data={slice}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                          <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                           <Legend />
                           {volumeByCategory.categories.map((cat, i) => (
                             <Bar
@@ -1085,10 +1085,10 @@ function AnalyticsPage() {
                     {(slice) => (
                       <ResponsiveContainer width="100%" height={280}>
                         <BarChart data={slice}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
-                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                          <YAxis stroke="var(--muted-foreground)" fontSize={11} unit=" km" />
+                          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                           <Legend />
                           {enduranceStats.disciplines.map((d, i) => (
                             <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
@@ -1107,12 +1107,12 @@ function AnalyticsPage() {
                     {(slice) => (
                       <ResponsiveContainer width="100%" height={300}>
                         <ComposedChart data={slice} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                          <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" min" />
-                          <YAxis yAxisId="right" orientation="right" domain={[0, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                          <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} unit=" min" />
+                          <YAxis yAxisId="right" orientation="right" domain={[0, 10]} stroke="var(--muted-foreground)" fontSize={11} />
                           <Tooltip
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                            contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
                             formatter={(value: number, name: string) => {
                               if (name === "Avg RPE") return [Number(value).toFixed(1), name];
                               return [`${Math.round(Number(value))} min`, name];
@@ -1123,7 +1123,7 @@ function AnalyticsPage() {
                           <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill={BAND_COLORS.mod} />
                           <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill={BAND_COLORS.hard} />
                           <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill={BAND_COLORS.max} radius={[6, 6, 0, 0]} />
-                          <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "hsl(var(--card))", strokeWidth: 1.5 }} connectNulls />
+                          <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "var(--card)", strokeWidth: 1.5 }} connectNulls />
                         </ComposedChart>
                       </ResponsiveContainer>
                     )}
@@ -1170,18 +1170,18 @@ function AnalyticsPage() {
                       {(slice) => (
                         <ResponsiveContainer width="100%" height={320}>
                           <LineChart data={slice} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
                             <YAxis
-                              stroke="hsl(var(--muted-foreground))"
+                              stroke="var(--muted-foreground)"
                               fontSize={11}
                               reversed
                               domain={["auto", "auto"]}
                               tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`}
-                              label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                              label={{ value: "min/km (lower = faster)", angle: -90, position: "insideLeft", fontSize: 10, fill: "var(--muted-foreground)" }}
                             />
                             <Tooltip
-                              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
                               formatter={(value, name) => {
                                 if (value == null) return ["—", String(name)];
                                 const v = Number(value);
@@ -1290,13 +1290,13 @@ function AnalyticsPage() {
                 <ChartCard title="Target vs actual RPE" description="Average prescribed RPE per day vs the athlete's logged RPE.">
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={adherence.rpeSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <YAxis domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis domain={[1, 10]} stroke="var(--muted-foreground)" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
-                      <Line type="monotone" dataKey="target" name="Target RPE" stroke="hsl(var(--accent-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} connectNulls />
-                      <Line type="monotone" dataKey="actual" name="Actual RPE" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      <Line type="monotone" dataKey="target" name="Target RPE" stroke="var(--accent-foreground)" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} connectNulls />
+                      <Line type="monotone" dataKey="actual" name="Actual RPE" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -1356,17 +1356,17 @@ function AnalyticsPage() {
               >
                 <ResponsiveContainer width="100%" height={320}>
                   <ScatterChart>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" dataKey="form" name="Daily form" domain={[1, 10]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <YAxis type="number" dataKey="eak" name="EAk %" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis type="number" dataKey="form" name="Daily form" domain={[1, 10]} stroke="var(--muted-foreground)" fontSize={11} />
+                    <YAxis type="number" dataKey="eak" name="EAk %" stroke="var(--muted-foreground)" fontSize={11} />
                     <ZAxis range={[60, 60]} />
                     <Tooltip
                       cursor={{ strokeDasharray: "3 3" }}
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
                       formatter={(value, name) => [value, name]}
                     />
-                    <ReferenceLine y={100} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: "Baseline", fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                    <Scatter data={readinessScatter.points} fill="hsl(var(--primary))" />
+                    <ReferenceLine y={100} stroke="var(--muted-foreground)" strokeDasharray="3 3" label={{ value: "Baseline", fill: "var(--muted-foreground)", fontSize: 10 }} />
+                    <Scatter data={readinessScatter.points} fill="var(--primary)" />
                   </ScatterChart>
                 </ResponsiveContainer>
               </ChartCard>
@@ -1561,7 +1561,7 @@ function SessionScatterWindow({
       )}
       <ResponsiveContainer width="100%" height={320}>
         <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="date"
             type="category"
@@ -1569,15 +1569,15 @@ function SessionScatterWindow({
             ticks={windowDates}
             domain={windowDates}
             tickFormatter={(v: string) => format(parseISO(v), "MMM d")}
-            stroke="hsl(var(--muted-foreground))"
+            stroke="var(--muted-foreground)"
             fontSize={11}
             interval="preserveStartEnd"
           />
-          <YAxis dataKey="km" type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" km" />
+          <YAxis dataKey="km" type="number" stroke="var(--muted-foreground)" fontSize={11} unit=" km" />
           <ZAxis dataKey="minutes" type="number" range={[60, 400]} name="Minutes" />
           <Tooltip
             cursor={{ strokeDasharray: "3 3" }}
-            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+            contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
             content={({ active, payload }) => {
               if (!active || !payload || !payload.length) return null;
               const p = payload[0].payload as SessionPoint;
@@ -1597,7 +1597,7 @@ function SessionScatterWindow({
           <Scatter name="Moderate (5–6)" data={filtered.mod} fill={BAND_COLORS.mod} />
           <Scatter name="Hard (7–8)" data={filtered.hard} fill={BAND_COLORS.hard} />
           <Scatter name="Max (9–10)" data={filtered.max} fill={BAND_COLORS.max} />
-          <Scatter name="No RPE" data={filtered.none} fill="hsl(var(--muted-foreground))" />
+          <Scatter name="No RPE" data={filtered.none} fill="var(--muted-foreground)" />
         </ScatterChart>
       </ResponsiveContainer>
     </div>

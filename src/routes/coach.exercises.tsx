@@ -168,6 +168,26 @@ function ExerciseLibraryPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const adminDelete = useServerFn(adminDeleteExercise);
+  const adminDeleteMutation = useMutation({
+    mutationFn: async (vars: { id: string; password: string }) =>
+      adminDelete({ data: { exerciseId: vars.id, password: vars.password } }),
+    onSuccess: () => {
+      toast.success("Exercise removed (admin)");
+      qc.invalidateQueries({ queryKey: ["exercises"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  function promptAdminDelete(ex: Exercise) {
+    const pw = window.prompt(
+      `Admin password to delete "${ex.name}":`,
+      "",
+    );
+    if (!pw) return;
+    adminDeleteMutation.mutate({ id: ex.id, password: pw });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">

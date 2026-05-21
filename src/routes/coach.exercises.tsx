@@ -95,6 +95,25 @@ function ExerciseLibraryPage() {
     );
   }, [exercisesQuery.data, search]);
 
+  const duplicateGroups = useMemo(() => {
+    const list = exercisesQuery.data ?? [];
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[^a-z0-9]+/g, "")
+        .replace(/(machine|barbell|dumbbell|db|bb|cable)/g, "");
+    const map = new Map<string, Exercise[]>();
+    for (const ex of list) {
+      const k = norm(ex.name);
+      if (!k) continue;
+      const arr = map.get(k) ?? [];
+      arr.push(ex);
+      map.set(k, arr);
+    }
+    return Array.from(map.values()).filter((g) => g.length > 1);
+  }, [exercisesQuery.data]);
+
   const upsertMutation = useMutation({
     mutationFn: async (input: {
       id?: string;

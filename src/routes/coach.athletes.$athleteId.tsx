@@ -150,7 +150,12 @@ function AthleteDetailPage() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
+          <MesocycleProgressCard athleteId={athleteId} />
           <EnduranceSummaryCard athleteId={athleteId} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <E1rmPrCard athleteId={athleteId} />
+            <RpePaceTrendCard athleteId={athleteId} />
+          </div>
           <RpePaceEstimateCard athleteId={athleteId} />
           <DashboardTable athleteId={athleteId} />
         </TabsContent>

@@ -252,6 +252,37 @@ function TodayPage() {
     return next ?? candidates[0];
   }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
 
+  // Other planned sessions in the week that aren't done yet and aren't scheduled for today.
+  const pendingSessions = useMemo(() => {
+    if (!planQuery.data) return [] as PlannedSession[];
+    const plan = planQuery.data;
+    const ovByPlanId = new Map<string, { scheduledDate: string; cancelled: boolean }>();
+    for (const o of overridesQuery.data ?? []) {
+      ovByPlanId.set(o.source_id as string, {
+        scheduledDate: String(o.scheduled_date).slice(0, 10),
+        cancelled: !!o.cancelled_at,
+      });
+    }
+    const loggedSet = new Set(
+      (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
+    );
+    return plan.planned_sessions
+      .map((s) => {
+        const ov = ovByPlanId.get(s.id);
+        if (ov?.cancelled) return null;
+        const effective = ov?.scheduledDate
+          ? ov.scheduledDate
+          : plannedSessionDate(plan.week_start_date, s, plan.planned_sessions);
+        if (effective === todayStr) return null;
+        const allDone = s.planned_exercises.length > 0
+          && s.planned_exercises.every((e) => loggedSet.has(e.id));
+        if (allDone) return null;
+        return { session: s, effective };
+      })
+      .filter((x): x is { session: PlannedSession; effective: string } => x !== null)
+      .sort((a, b) => a.session.day_of_week - b.session.day_of_week);
+  }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
+
   const baselines = baselinesQuery.data ?? {};
   const logs = logsQuery.data ?? [];
 

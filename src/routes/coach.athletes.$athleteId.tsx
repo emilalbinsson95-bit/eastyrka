@@ -547,6 +547,27 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                               <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
+                          <td className="px-2 py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              disabled={deleteSet.isPending}
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
+                                  )
+                                ) {
+                                  deleteSet.mutate(p.source.id);
+                                }
+                              }}
+                              aria-label="Delete set"
+                              title="Delete misslogged set"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
                         </tr>
                         );
                       })}

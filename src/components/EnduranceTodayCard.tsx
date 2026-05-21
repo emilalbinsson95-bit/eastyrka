@@ -19,6 +19,7 @@ import {
   formatDuration,
   totalPlannedSeconds,
 } from "@/lib/endurance";
+import { estimateForRpe, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
 
 interface Session {
   id: string;

@@ -254,7 +254,7 @@ function TodayPage() {
 
   // Other planned sessions in the week that aren't done yet and aren't scheduled for today.
   const pendingSessions = useMemo(() => {
-    if (!planQuery.data) return [] as PlannedSession[];
+    if (!planQuery.data) return [] as { session: PlannedSession; effective: string }[];
     const plan = planQuery.data;
     const ovByPlanId = new Map<string, { scheduledDate: string; cancelled: boolean }>();
     for (const o of overridesQuery.data ?? []) {

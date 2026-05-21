@@ -372,6 +372,8 @@ function TodayPage() {
         </ReadinessGate>
       )}
 
+      {!isLoading && <EnduranceTodayCard athleteId={userId} dateStr={todayStr} />}
+
       {/* Always show today's logged sets */}
       {processed.length > 0 && (
         <Card>

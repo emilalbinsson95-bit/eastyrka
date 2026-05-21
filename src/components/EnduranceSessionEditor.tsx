@@ -463,6 +463,7 @@ function StepsEditor({
             step={step}
             allSteps={steps}
             canEditPlan={canEditPlan}
+            canLogActuals={canLogActuals}
             defaultDiscipline={defaultDiscipline}
             benchmarks={benchmarks}
             onChange={onChange}

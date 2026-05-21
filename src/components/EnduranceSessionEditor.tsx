@@ -141,6 +141,7 @@ export function EnduranceSessionEditor({
           sessionId={sessionId}
           steps={stepsQuery.data ?? []}
           canEditPlan={canEditPlan}
+          canLogActuals={canEditPlan || isAthlete}
           defaultDiscipline={session.discipline}
           benchmarks={benchmarks}
           sessionStatus={session.status}

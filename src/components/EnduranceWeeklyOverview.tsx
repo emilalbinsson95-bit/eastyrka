@@ -120,19 +120,26 @@ export function EnduranceWeeklyOverview({ athleteId, weeks = 8 }: { athleteId: s
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Bar chart */}
-        <div className="flex h-32 items-end gap-1">
+        <div className="flex h-40 items-end gap-1">
           {buckets.map((b) => {
-            const h = (b.load / maxLoad) * 100;
+            const h = maxLoad > 0 ? (b.load / maxLoad) * 100 : 0;
             const totalMin = Math.round(b.totalMinutes);
             return (
-              <div key={b.weekStart} className="group relative flex flex-1 flex-col items-center gap-1">
-                <div className="flex h-full w-full flex-col-reverse overflow-hidden rounded-sm bg-muted/40">
-                  {RPE_BANDS.map((band) => {
-                    const bm = b.perBand[band.id];
-                    if (!bm || b.totalMinutes === 0) return null;
-                    const segH = (bm / b.totalMinutes) * h;
-                    return <div key={band.id} className={cn(band.color, "w-full")} style={{ height: `${segH}%` }} />;
-                  })}
+              <div key={b.weekStart} className="group relative flex h-full flex-1 flex-col items-center gap-1">
+                <div className="relative w-full flex-1 overflow-hidden rounded-sm bg-muted/40">
+                  <div
+                    className="absolute inset-x-0 bottom-0 flex flex-col-reverse"
+                    style={{ height: `${Math.max(h, b.load > 0 ? 4 : 0)}%` }}
+                  >
+                    {b.totalMinutes > 0
+                      ? RPE_BANDS.map((band) => {
+                          const bm = b.perBand[band.id];
+                          if (!bm) return null;
+                          const segH = (bm / b.totalMinutes) * 100;
+                          return <div key={band.id} className={cn(band.color, "w-full")} style={{ height: `${segH}%` }} />;
+                        })
+                      : b.load > 0 && <div className={cn(RPE_BANDS[1].color, "h-full w-full")} />}
+                  </div>
                 </div>
                 <div className="text-[10px] text-muted-foreground">
                   {format(parseISO(b.weekStart), "MMM d")}

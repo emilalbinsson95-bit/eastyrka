@@ -229,18 +229,14 @@ function ExerciseLibraryPage() {
       upsertMutation.mutate({ ...values });
       return;
     }
-    const mine = editing.created_by === userId && !editing.is_global;
-    if (mine) {
-      upsertMutation.mutate({ id: editing.id, ...values });
-    } else {
-      const pw = window.prompt(
-        `Admin password to edit "${editing.name}":`,
-        "",
-      );
-      if (!pw) return;
-      adminUpdateMutation.mutate({ id: editing.id, password: pw, ...values });
-    }
+    const pw = window.prompt(
+      `Admin password to edit "${editing.name}":`,
+      "",
+    );
+    if (!pw) return;
+    adminUpdateMutation.mutate({ id: editing.id, password: pw, ...values });
   }
+
 
   return (
     <div className="space-y-4">

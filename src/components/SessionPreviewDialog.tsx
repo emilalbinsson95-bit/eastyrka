@@ -61,21 +61,38 @@ export function SessionPreviewDialog({
   item,
   open,
   onOpenChange,
+  canStartToday = false,
 }: {
   item: CalendarItem | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** Show "Start workout today" button (athlete viewing own calendar). */
+  canStartToday?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
-        {item && <PreviewBody item={item} />}
+        {item && (
+          <PreviewBody
+            item={item}
+            canStartToday={canStartToday}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
-function PreviewBody({ item }: { item: CalendarItem }) {
+function PreviewBody({
+  item,
+  canStartToday,
+  onClose,
+}: {
+  item: CalendarItem;
+  canStartToday: boolean;
+  onClose: () => void;
+}) {
   const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
 
   const detailQuery = useQuery({

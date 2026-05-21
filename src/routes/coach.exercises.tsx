@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus, Search, Trash2, Pencil, Save, X, BookOpen } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Save, X, BookOpen, Copy } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,6 +95,25 @@ function ExerciseLibraryPage() {
     );
   }, [exercisesQuery.data, search]);
 
+  const duplicateGroups = useMemo(() => {
+    const list = exercisesQuery.data ?? [];
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[^a-z0-9]+/g, "")
+        .replace(/(machine|barbell|dumbbell|db|bb|cable)/g, "");
+    const map = new Map<string, Exercise[]>();
+    for (const ex of list) {
+      const k = norm(ex.name);
+      if (!k) continue;
+      const arr = map.get(k) ?? [];
+      arr.push(ex);
+      map.set(k, arr);
+    }
+    return Array.from(map.values()).filter((g) => g.length > 1);
+  }, [exercisesQuery.data]);
+
   const upsertMutation = useMutation({
     mutationFn: async (input: {
       id?: string;
@@ -183,6 +202,66 @@ function ExerciseLibraryPage() {
           />
         </Dialog>
       </div>
+
+      {duplicateGroups.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Copy className="h-4 w-4 text-amber-600" />
+              Possible duplicates ({duplicateGroups.length})
+            </CardTitle>
+            <CardDescription>
+              Names that look the same after stripping casing, punctuation and
+              common equipment words. Delete the redundant entry — your custom
+              ones only.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {duplicateGroups.map((group, i) => (
+              <div
+                key={i}
+                className="rounded-md border border-border bg-background p-2"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {group.map((ex) => {
+                    const mine = ex.created_by === userId && !ex.is_global;
+                    return (
+                      <div
+                        key={ex.id}
+                        className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs"
+                      >
+                        <span className="font-medium">{ex.name}</span>
+                        {ex.is_global && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Standard
+                          </Badge>
+                        )}
+                        {mine && (
+                          <button
+                            type="button"
+                            aria-label={`Delete ${ex.name}`}
+                            className="text-destructive hover:text-destructive/80"
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  `Delete "${ex.name}"? Existing logs that reference this name keep the text.`,
+                                )
+                              )
+                                deleteMutation.mutate(ex.id);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-3">

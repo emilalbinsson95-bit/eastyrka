@@ -42,6 +42,7 @@ import {
 } from "@/lib/eakoefficient";
 import { cn } from "@/lib/utils";
 import { ReadinessGate } from "@/components/ReadinessGate";
+import { EnduranceTodayCard } from "@/components/EnduranceTodayCard";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 
 export const Route = createFileRoute("/_app/today")({

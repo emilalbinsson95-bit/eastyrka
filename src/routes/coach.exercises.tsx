@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminDeleteExercise } from "@/lib/admin.functions";
 import { useMemo, useState } from "react";
 import { Plus, Search, Trash2, Pencil, Save, X, BookOpen, Copy } from "lucide-react";
 import { z } from "zod";
@@ -168,6 +170,26 @@ function ExerciseLibraryPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const adminDelete = useServerFn(adminDeleteExercise);
+  const adminDeleteMutation = useMutation({
+    mutationFn: async (vars: { id: string; password: string }) =>
+      adminDelete({ data: { exerciseId: vars.id, password: vars.password } }),
+    onSuccess: () => {
+      toast.success("Exercise removed (admin)");
+      qc.invalidateQueries({ queryKey: ["exercises"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  function promptAdminDelete(ex: Exercise) {
+    const pw = window.prompt(
+      `Admin password to delete "${ex.name}":`,
+      "",
+    );
+    if (!pw) return;
+    adminDeleteMutation.mutate({ id: ex.id, password: pw });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -236,23 +258,25 @@ function ExerciseLibraryPage() {
                             Standard
                           </Badge>
                         )}
-                        {mine && (
-                          <button
-                            type="button"
-                            aria-label={`Delete ${ex.name}`}
-                            className="text-destructive hover:text-destructive/80"
-                            onClick={() => {
+                        <button
+                          type="button"
+                          aria-label={`Delete ${ex.name}`}
+                          className="text-destructive hover:text-destructive/80"
+                          onClick={() => {
+                            if (mine) {
                               if (
                                 confirm(
                                   `Delete "${ex.name}"? Existing logs that reference this name keep the text.`,
                                 )
                               )
                                 deleteMutation.mutate(ex.id);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
+                            } else {
+                              promptAdminDelete(ex);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
                     );
                   })}
@@ -318,8 +342,8 @@ function ExerciseLibraryPage() {
                         </p>
                       )}
                     </div>
-                    {mine && !ex.is_global && (
-                      <div className="flex shrink-0 gap-1">
+                    <div className="flex shrink-0 gap-1">
+                      {mine && !ex.is_global && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -330,18 +354,27 @@ function ExerciseLibraryPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title={
+                          mine && !ex.is_global
+                            ? "Delete"
+                            : "Delete (admin password required)"
+                        }
+                        onClick={() => {
+                          if (mine && !ex.is_global) {
                             if (confirm(`Delete "${ex.name}"?`))
                               deleteMutation.mutate(ex.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                          } else {
+                            promptAdminDelete(ex);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </li>
                 );
               })}

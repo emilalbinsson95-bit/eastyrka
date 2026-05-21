@@ -33,6 +33,8 @@ import {
 import { cn } from "@/lib/utils";
 import { EnduranceSummaryCard } from "@/components/EnduranceSummary";
 import { RpePaceEstimateCard } from "@/components/RpePaceEstimateCard";
+import { MesocycleProgressCard } from "@/components/MesocycleProgressCard";
+import { E1rmPrCard, RpePaceTrendCard } from "@/components/StrengthTrendCards";
 
 const DEFAULT_EXERCISES = [
   "Knäböj",
@@ -148,7 +150,12 @@ function AthleteDetailPage() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
+          <MesocycleProgressCard athleteId={athleteId} />
           <EnduranceSummaryCard athleteId={athleteId} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <E1rmPrCard athleteId={athleteId} />
+            <RpePaceTrendCard athleteId={athleteId} />
+          </div>
           <RpePaceEstimateCard athleteId={athleteId} />
           <DashboardTable athleteId={athleteId} />
         </TabsContent>

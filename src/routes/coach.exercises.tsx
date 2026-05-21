@@ -342,8 +342,8 @@ function ExerciseLibraryPage() {
                         </p>
                       )}
                     </div>
-                    {mine && !ex.is_global && (
-                      <div className="flex shrink-0 gap-1">
+                    <div className="flex shrink-0 gap-1">
+                      {mine && !ex.is_global && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -354,18 +354,27 @@ function ExerciseLibraryPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title={
+                          mine && !ex.is_global
+                            ? "Delete"
+                            : "Delete (admin password required)"
+                        }
+                        onClick={() => {
+                          if (mine && !ex.is_global) {
                             if (confirm(`Delete "${ex.name}"?`))
                               deleteMutation.mutate(ex.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                          } else {
+                            promptAdminDelete(ex);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </li>
                 );
               })}

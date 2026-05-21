@@ -38,64 +38,7 @@ interface Step extends StepInput {
   parent_id: string | null;
 }
 
-interface Profile {
-  max_hr: number | null;
-  resting_hr: number | null;
-  ten_k_pb_seconds: number | null;
-  css_per_100m_seconds: number | null;
-  ftp_watts: number | null;
-}
-
-/** Karvonen-style HR target from RPE 1..10 → ±5 bpm window. */
-function hrWindow(
-  rpe: number | null,
-  maxHr: number | null,
-  rest: number | null,
-): string | null {
-  if (rpe == null || !maxHr) return null;
-  const resting = rest ?? 60;
-  const reserve = maxHr - resting;
-  if (reserve <= 0) return null;
-  // RPE 1 ≈ 50% HRR, RPE 10 ≈ 100% HRR
-  const frac = Math.min(1, Math.max(0, 0.5 + (rpe - 1) * (0.5 / 9)));
-  const hr = Math.round(resting + reserve * frac);
-  return `${hr - 4}–${hr + 4} bpm`;
-}
-
-/** Simple pace estimate from athlete's 10k PB scaled by RPE.
- *  Returns seconds per km (run) / per 100m (swim) / km/h (bike, as string) etc. */
-function paceFromRpe(
-  discipline: Discipline,
-  rpe: number | null,
-  prof: Profile,
-): string | null {
-  if (rpe == null) return null;
-  if (discipline === "run" && prof.ten_k_pb_seconds) {
-    // pb pace is sec/km
-    const pbPace = prof.ten_k_pb_seconds / 10;
-    // RPE 9 ≈ ~10k race effort. Slower for easier.
-    // multiplier: at RPE 9 → 1.0, RPE 3 → 1.45, RPE 6 → 1.18
-    const mult = 1 + (9 - rpe) * 0.05;
-    const secPerKm = pbPace * mult;
-    const m = Math.floor(secPerKm / 60);
-    const s = Math.round(secPerKm % 60);
-    return `${m}:${String(s).padStart(2, "0")}/km`;
-  }
-  if (discipline === "swim" && prof.css_per_100m_seconds) {
-    const css = prof.css_per_100m_seconds;
-    const mult = 1 + (8 - rpe) * 0.04;
-    const sec = css * mult;
-    const m = Math.floor(sec / 60);
-    const s = Math.round(sec % 60);
-    return `${m}:${String(s).padStart(2, "0")}/100m`;
-  }
-  if (discipline === "bike" && prof.ftp_watts) {
-    // map RPE→%FTP roughly
-    const pct = Math.min(1.2, Math.max(0.45, 0.45 + (rpe - 1) * 0.08));
-    return `${Math.round(prof.ftp_watts * pct)} W`;
-  }
-  return null;
-}
+type Profile = AthleteBenchmarks;
 
 interface RowLine {
   kind: "warmup" | "main" | "cooldown" | "work" | "recovery" | "group";
@@ -165,13 +108,14 @@ function buildRows(
       } else {
         const kind = classifyStep(k, i, kids.length);
         const stepDisc = (k.discipline ?? discipline) as Discipline;
+        const est = estimateForRpe(stepDisc, k.target_rpe, prof);
         out.push({
           kind,
           label: k.notes ?? defaultLabel(kind),
           duration: k.duration_seconds,
           rpe: k.target_rpe,
-          pace: paceFromRpe(stepDisc, k.target_rpe, prof),
-          hr: hrWindow(k.target_rpe, prof.max_hr, prof.resting_hr),
+          pace: est.paceLabel ?? est.wattLabel ?? null,
+          hr: est.hrLabel ?? null,
           notes: null,
           depth,
         });

@@ -95,6 +95,33 @@ export type Database = {
         }
         Relationships: []
       }
+      endurance_pb_history: {
+        Row: {
+          athlete_id: string
+          id: string
+          note: string | null
+          recorded_at: string
+          recorded_by: string | null
+          ten_k_pb_seconds: number
+        }
+        Insert: {
+          athlete_id: string
+          id?: string
+          note?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          ten_k_pb_seconds: number
+        }
+        Update: {
+          athlete_id?: string
+          id?: string
+          note?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          ten_k_pb_seconds?: number
+        }
+        Relationships: []
+      }
       endurance_sessions: {
         Row: {
           actual_distance_m: number | null

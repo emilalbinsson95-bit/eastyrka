@@ -201,6 +201,19 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     },
   });
 
+  const qc = useQueryClient();
+  const deleteSet = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("training_logs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Set deleted");
+      qc.invalidateQueries({ queryKey: ["athlete-logs", athleteId] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to delete set"),
+  });
+
   const processed = useMemo(() => {
     const logs = logsQuery.data ?? [];
     const baselines = baselinesQuery.data ?? {};

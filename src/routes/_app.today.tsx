@@ -116,7 +116,25 @@ function TodayPage() {
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
 
-  // Fetch the active published week, not a future week that was published early.
+  // 1. Find any planned-session overrides landing on today (across any week_plan).
+  //    This catches sessions moved/dragged from a different week into today.
+  const todayOverridesQuery = useQuery({
+    queryKey: ["today-overrides-any", userId, todayStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("session_schedule_overrides")
+        .select("source_id, scheduled_date, cancelled_at")
+        .eq("owner_id", userId)
+        .eq("source_type", "planned")
+        .eq("scheduled_date", todayStr)
+        .is("cancelled_at", null);
+      if (error) throw error;
+      return (data ?? []) as { source_id: string; scheduled_date: string; cancelled_at: string | null }[];
+    },
+  });
+
+  // 2. Fetch the active published week (for default-scheduled sessions today
+  //    and the "Or start one of your week's sessions today" list).
   const planQuery = useQuery({
     queryKey: ["athlete-plan", userId, todayStr],
     queryFn: async (): Promise<WeekPlan | null> => {
@@ -141,7 +159,67 @@ function TodayPage() {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data as WeekPlan | null;
+      if (!data) return null;
+      const wp = data as {
+        id: string; week_start_date: string; status: string;
+        planned_sessions: Omit<PlannedSession, "week_plan_id" | "week_start_date">[];
+      };
+      return {
+        ...wp,
+        planned_sessions: wp.planned_sessions.map((s) => ({
+          ...s,
+          week_plan_id: wp.id,
+          week_start_date: wp.week_start_date,
+        })),
+      };
+    },
+  });
+
+  // 3. Fetch the cross-week planned sessions referenced by today's overrides
+  //    (i.e. sessions belonging to OTHER week_plans that were dragged to today).
+  const crossWeekSessionIds = useMemo(() => {
+    const ids = (todayOverridesQuery.data ?? []).map((o) => o.source_id);
+    const inCurrent = new Set(
+      (planQuery.data?.planned_sessions ?? []).map((s) => s.id),
+    );
+    return ids.filter((id) => !inCurrent.has(id));
+  }, [todayOverridesQuery.data, planQuery.data]);
+
+  const crossWeekSessionsQuery = useQuery({
+    queryKey: ["today-crossweek-sessions", userId, crossWeekSessionIds.join(",")],
+    enabled: crossWeekSessionIds.length > 0,
+    queryFn: async (): Promise<PlannedSession[]> => {
+      const { data, error } = await supabase
+        .from("planned_sessions")
+        .select(
+          `id, day_of_week, title, notes, week_plan_id,
+           week_plans!inner(id, week_start_date, status, athlete_id),
+           planned_exercises (
+             id, exercise, variation, target_sets, target_reps,
+             target_rpe, target_rir, intensity_metric,
+             target_weight_kg, lengthened_partials, last_set_to_failure,
+             notes, order_index
+           )`,
+        )
+        .in("id", crossWeekSessionIds);
+      if (error) throw error;
+      type Row = {
+        id: string; day_of_week: number; title: string | null; notes: string | null;
+        week_plan_id: string;
+        week_plans: { id: string; week_start_date: string; status: string; athlete_id: string };
+        planned_exercises: PlannedExercise[];
+      };
+      return (data as Row[] ?? [])
+        .filter((r) => r.week_plans?.status === "published" && r.week_plans?.athlete_id === userId)
+        .map((r) => ({
+          id: r.id,
+          day_of_week: r.day_of_week,
+          title: r.title,
+          notes: r.notes,
+          planned_exercises: r.planned_exercises ?? [],
+          week_plan_id: r.week_plan_id,
+          week_start_date: r.week_plans.week_start_date,
+        }));
     },
   });
 
@@ -173,19 +251,21 @@ function TodayPage() {
     },
   });
 
-  // Pick the next uncompleted day in the published week.
-  // A session is "completed" when every planned exercise has at least one logged set
-  // (any date — since days are abstract slots, not calendar dates).
-  const weekPlannedExerciseIds = useMemo(() => {
-    if (!planQuery.data) return [] as string[];
-    return planQuery.data.planned_sessions.flatMap((s) =>
-      s.planned_exercises.map((e) => e.id),
-    );
-  }, [planQuery.data]);
+  // All planned sessions we care about today = current week's sessions + cross-week sessions overridden to today.
+  const allRelevantSessions = useMemo<PlannedSession[]>(() => {
+    const current = planQuery.data?.planned_sessions ?? [];
+    const cross = crossWeekSessionsQuery.data ?? [];
+    return [...current, ...cross];
+  }, [planQuery.data, crossWeekSessionsQuery.data]);
+
+  const weekPlannedExerciseIds = useMemo(
+    () => allRelevantSessions.flatMap((s) => s.planned_exercises.map((e) => e.id)),
+    [allRelevantSessions],
+  );
 
   const weekLogsQuery = useQuery({
-    queryKey: ["week-logs", userId, planQuery.data?.id],
-    enabled: !!planQuery.data && weekPlannedExerciseIds.length > 0,
+    queryKey: ["week-logs", userId, weekPlannedExerciseIds.join(",")],
+    enabled: weekPlannedExerciseIds.length > 0,
     queryFn: async (): Promise<{ planned_exercise_id: string }[]> => {
       const { data, error } = await supabase
         .from("training_logs")
@@ -197,54 +277,60 @@ function TodayPage() {
     },
   });
 
-  // A planned session shows up "today" when its effective date == today.
-  // Effective date = override.scheduled_date (if an uncancelled override exists)
-  //                  OR week_start_date + the plan's zero/one-based day offset.
-  // This matches the shared calendar so athletes don't have to manually
-  // "accept" suggested sessions before they can log them.
-  const planSessionIds = useMemo(
-    () => (planQuery.data?.planned_sessions ?? []).map((s) => s.id),
-    [planQuery.data],
+  // Overrides for ALL relevant sessions (current-week + cross-week).
+  const allRelevantSessionIds = useMemo(
+    () => allRelevantSessions.map((s) => s.id),
+    [allRelevantSessions],
   );
 
   const overridesQuery = useQuery({
-    queryKey: ["today-overrides-planned", userId, planQuery.data?.id],
-    enabled: !!planQuery.data && planSessionIds.length > 0,
+    queryKey: ["today-overrides-planned", userId, allRelevantSessionIds.join(",")],
+    enabled: allRelevantSessionIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("session_schedule_overrides")
         .select("source_id, scheduled_date, confirmed_at, cancelled_at")
         .eq("owner_id", userId)
         .eq("source_type", "planned")
-        .in("source_id", planSessionIds);
+        .in("source_id", allRelevantSessionIds);
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  const todayPlanned: PlannedSession | undefined = useMemo(() => {
-    if (!planQuery.data) return undefined;
-    const plan = planQuery.data;
-    const ovByPlanId = new Map<
-      string,
-      { scheduledDate: string; cancelled: boolean }
-    >();
+  const ovByPlanId = useMemo(() => {
+    const m = new Map<string, { scheduledDate: string; cancelled: boolean }>();
     for (const o of overridesQuery.data ?? []) {
-      ovByPlanId.set(o.source_id as string, {
+      m.set(o.source_id as string, {
         scheduledDate: String(o.scheduled_date).slice(0, 10),
         cancelled: !!o.cancelled_at,
       });
     }
+    return m;
+  }, [overridesQuery.data]);
+
+  // A planned session shows up "today" when its effective date == today.
+  // Effective date = override.scheduled_date (uncancelled) OR
+  //                  week_start_date + day-offset (per plannedSessionDate).
+  const todayPlanned: PlannedSession | undefined = useMemo(() => {
+    if (allRelevantSessions.length === 0) return undefined;
+    // group siblings by week_plan_id so plannedSessionDate's zero/one-based detection still works
+    const siblingsByPlan = new Map<string, PlannedSession[]>();
+    for (const s of allRelevantSessions) {
+      const arr = siblingsByPlan.get(s.week_plan_id) ?? [];
+      arr.push(s);
+      siblingsByPlan.set(s.week_plan_id, arr);
+    }
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
-    const candidates = plan.planned_sessions
+    const candidates = allRelevantSessions
       .map((s) => {
         const ov = ovByPlanId.get(s.id);
         if (ov?.cancelled) return null;
         const effective = ov?.scheduledDate
           ? ov.scheduledDate
-          : plannedSessionDate(plan.week_start_date, s, plan.planned_sessions);
+          : plannedSessionDate(s.week_start_date, s, siblingsByPlan.get(s.week_plan_id) ?? [s]);
         return effective === todayStr ? s : null;
       })
       .filter((s): s is PlannedSession => s !== null)
@@ -254,19 +340,12 @@ function TodayPage() {
       s.planned_exercises.some((e) => !loggedSet.has(e.id)),
     );
     return next ?? candidates[0];
-  }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
+  }, [allRelevantSessions, ovByPlanId, weekLogsQuery.data, todayStr]);
 
-  // Other planned sessions in the week that aren't done yet and aren't scheduled for today.
+  // Other planned sessions in the current week that aren't done yet and aren't scheduled for today.
   const pendingSessions = useMemo(() => {
     if (!planQuery.data) return [] as { session: PlannedSession; effective: string }[];
     const plan = planQuery.data;
-    const ovByPlanId = new Map<string, { scheduledDate: string; cancelled: boolean }>();
-    for (const o of overridesQuery.data ?? []) {
-      ovByPlanId.set(o.source_id as string, {
-        scheduledDate: String(o.scheduled_date).slice(0, 10),
-        cancelled: !!o.cancelled_at,
-      });
-    }
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
@@ -285,7 +364,8 @@ function TodayPage() {
       })
       .filter((x): x is { session: PlannedSession; effective: string } => x !== null)
       .sort((a, b) => a.session.day_of_week - b.session.day_of_week);
-  }, [planQuery.data, overridesQuery.data, weekLogsQuery.data, todayStr]);
+  }, [planQuery.data, ovByPlanId, weekLogsQuery.data, todayStr]);
+
 
   const baselines = baselinesQuery.data ?? {};
   const logs = logsQuery.data ?? [];

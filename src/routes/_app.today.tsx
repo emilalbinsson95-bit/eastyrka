@@ -84,6 +84,9 @@ interface PlannedSession {
   title: string | null;
   notes: string | null;
   planned_exercises: PlannedExercise[];
+  /** Week-plan context for computing the default (un-overridden) date. */
+  week_plan_id: string;
+  week_start_date: string;
 }
 
 interface WeekPlan {

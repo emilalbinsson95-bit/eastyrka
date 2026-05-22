@@ -1057,6 +1057,8 @@ function StartTodayRow({
     onSuccess: () => {
       toast.success("Session moved to today — start logging!");
       queryClient.invalidateQueries({ queryKey: ["today-overrides-planned", athleteId] });
+      queryClient.invalidateQueries({ queryKey: ["today-overrides-any", athleteId] });
+      queryClient.invalidateQueries({ queryKey: ["today-crossweek-sessions", athleteId] });
       queryClient.invalidateQueries({ queryKey: ["athlete-plan", athleteId] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
     },

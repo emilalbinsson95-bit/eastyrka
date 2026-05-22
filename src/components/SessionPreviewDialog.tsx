@@ -139,6 +139,8 @@ function PreviewBody({
       toast.success("Session moved to today — let's go!");
       qc.invalidateQueries({ queryKey: ["calendar-items", item.ownerId] });
       qc.invalidateQueries({ queryKey: ["today-overrides-planned", item.ownerId] });
+      qc.invalidateQueries({ queryKey: ["today-overrides-any", item.ownerId] });
+      qc.invalidateQueries({ queryKey: ["today-crossweek-sessions", item.ownerId] });
       qc.invalidateQueries({ queryKey: ["athlete-plan", item.ownerId] });
       onClose();
       navigate({ to: "/today" });

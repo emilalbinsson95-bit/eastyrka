@@ -342,20 +342,26 @@ function TodayPage() {
     return next ?? candidates[0];
   }, [allRelevantSessions, ovByPlanId, weekLogsQuery.data, todayStr]);
 
-  // Other planned sessions in the current week that aren't done yet and aren't scheduled for today.
+  // Other planned sessions that aren't done yet and aren't scheduled for today.
+  // Includes current-week sessions AND any cross-week session moved into view via an override.
   const pendingSessions = useMemo(() => {
-    if (!planQuery.data) return [] as { session: PlannedSession; effective: string }[];
-    const plan = planQuery.data;
+    if (allRelevantSessions.length === 0) return [] as { session: PlannedSession; effective: string }[];
+    const siblingsByPlan = new Map<string, PlannedSession[]>();
+    for (const s of allRelevantSessions) {
+      const arr = siblingsByPlan.get(s.week_plan_id) ?? [];
+      arr.push(s);
+      siblingsByPlan.set(s.week_plan_id, arr);
+    }
     const loggedSet = new Set(
       (weekLogsQuery.data ?? []).map((l) => l.planned_exercise_id),
     );
-    return plan.planned_sessions
+    return allRelevantSessions
       .map((s) => {
         const ov = ovByPlanId.get(s.id);
         if (ov?.cancelled) return null;
         const effective = ov?.scheduledDate
           ? ov.scheduledDate
-          : plannedSessionDate(plan.week_start_date, s, plan.planned_sessions);
+          : plannedSessionDate(s.week_start_date, s, siblingsByPlan.get(s.week_plan_id) ?? [s]);
         if (effective === todayStr) return null;
         const allDone = s.planned_exercises.length > 0
           && s.planned_exercises.every((e) => loggedSet.has(e.id));
@@ -363,8 +369,8 @@ function TodayPage() {
         return { session: s, effective };
       })
       .filter((x): x is { session: PlannedSession; effective: string } => x !== null)
-      .sort((a, b) => a.session.day_of_week - b.session.day_of_week);
-  }, [planQuery.data, ovByPlanId, weekLogsQuery.data, todayStr]);
+      .sort((a, b) => a.effective.localeCompare(b.effective));
+  }, [allRelevantSessions, ovByPlanId, weekLogsQuery.data, todayStr]);
 
 
   const baselines = baselinesQuery.data ?? {};

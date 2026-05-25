@@ -880,11 +880,11 @@ function RepRowInputs({
 
 // ---------- Actual logging (athlete) ----------
 
-function ActualLogger({ session, onChange }: { session: SessionRow; onChange: () => void }) {
+function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps: StepRow[]; onChange: () => void }) {
+  const isStructured = session.mode === "structured";
   const [h, setH] = useState(session.actual_total_seconds ? String(Math.floor(session.actual_total_seconds / 3600)) : "");
   const [m, setM] = useState(session.actual_total_seconds ? String(Math.floor((session.actual_total_seconds % 3600) / 60)) : "");
   const initDist = (session as SessionRow & { actual_distance_m?: number | null }).actual_distance_m ?? null;
-  // Show distance in km for run/bike, in metres for swim
   const distUnit = session.discipline === "swim" ? "m" : "km";
   const [dist, setDist] = useState<string>(
     initDist != null
@@ -898,19 +898,64 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
   const [pred10kMin, setPred10kMin] = useState<string>(initPred ? String(Math.floor(initPred / 60)) : "");
   const [pred10kSec, setPred10kSec] = useState<string>(initPred ? String(initPred % 60).padStart(2, "0") : "");
 
-  // Derived live pace label
-  const liveSeconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
-  const liveDistanceM = dist
-    ? (session.discipline === "swim" ? Number(dist) : Number(dist) * 1000)
-    : null;
+  // For structured mode: sum actuals from steps + reps to derive session totals.
+  const sessionId = session.id;
+  const stepIds = useMemo(() => steps.filter((s) => !s.is_group).map((s) => s.id), [steps]);
+  const repsQuery = useQuery({
+    queryKey: ["endurance-session-reps", sessionId],
+    enabled: isStructured && stepIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_step_reps")
+        .select("step_id, actual_duration_seconds, actual_distance_m")
+        .in("step_id", stepIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const derivedTotals = useMemo(() => {
+    if (!isStructured) return null;
+    let sec = 0;
+    let m = 0;
+    const repsByStep = new Map<string, { d: number; m: number }>();
+    for (const r of repsQuery.data ?? []) {
+      const cur = repsByStep.get(r.step_id) ?? { d: 0, m: 0 };
+      cur.d += r.actual_duration_seconds ?? 0;
+      cur.m += r.actual_distance_m ?? 0;
+      repsByStep.set(r.step_id, cur);
+    }
+    for (const st of steps) {
+      if (st.is_group) continue;
+      const fromReps = repsByStep.get(st.id);
+      if (fromReps && (fromReps.d > 0 || fromReps.m > 0)) {
+        sec += fromReps.d;
+        m += fromReps.m;
+      } else {
+        sec += st.actual_duration_seconds ?? 0;
+        m += st.actual_distance_m ?? 0;
+      }
+    }
+    return { seconds: sec, meters: m };
+  }, [isStructured, steps, repsQuery.data]);
+
+  // Derived live pace label (quick mode uses entered values; structured uses derived)
+  const liveSeconds = isStructured
+    ? (derivedTotals?.seconds || null)
+    : ((h || m) ? parseHMS(h || "0", m || "0", "0") : null);
+  const liveDistanceM = isStructured
+    ? (derivedTotals?.meters || null)
+    : (dist ? (session.discipline === "swim" ? Number(dist) : Number(dist) * 1000) : null);
   const livePace = paceLabelFromDistance(session.discipline, liveDistanceM, liveSeconds);
 
   const save = useMutation({
     mutationFn: async () => {
-      const actual_total_seconds = (h || m) ? parseHMS(h || "0", m || "0", "0") : null;
-      const actual_distance_m = dist
-        ? Math.round(session.discipline === "swim" ? Number(dist) : Number(dist) * 1000)
-        : null;
+      const actual_total_seconds = isStructured
+        ? (derivedTotals?.seconds ? derivedTotals.seconds : null)
+        : ((h || m) ? parseHMS(h || "0", m || "0", "0") : null);
+      const actual_distance_m = isStructured
+        ? (derivedTotals?.meters ? derivedTotals.meters : null)
+        : (dist ? Math.round(session.discipline === "swim" ? Number(dist) : Number(dist) * 1000) : null);
       let predicted_10k_seconds: number | null = null;
       if (pred10kMin || pred10kSec) {
         const total = (Number(pred10kMin) || 0) * 60 + (Number(pred10kSec) || 0);
@@ -940,7 +985,6 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
         predicted_10k_seconds,
         notes: notes || null,
       };
-      // Only flip to completed if the athlete actually logged something.
       if (hasAnyActual) patch.status = "completed";
       const { error } = await supabase.from("endurance_sessions").update(patch).eq("id", session.id);
       if (error) throw error;
@@ -953,36 +997,61 @@ function ActualLogger({ session, onChange }: { session: SessionRow; onChange: ()
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Log how it actually went</CardTitle>
-        <CardDescription>RPE-based — add distance to auto-derive pace.</CardDescription>
+        <CardDescription>
+          {isStructured
+            ? "Time & distance are summed from your per-step / per-rep entries above."
+            : "RPE-based — add distance to auto-derive pace."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {isStructured ? (
+          <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3 text-sm">
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total from steps</div>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="font-mono">
+                {derivedTotals?.seconds ? formatDuration(derivedTotals.seconds) : "—"}
+              </Badge>
+              <Badge variant="secondary" className="font-mono">
+                {derivedTotals?.meters
+                  ? (session.discipline === "swim"
+                      ? `${derivedTotals.meters} m`
+                      : `${(derivedTotals.meters / 1000).toFixed(2)} km`)
+                  : "—"}
+              </Badge>
+              {livePace && <Badge variant="secondary" className="font-mono">{livePace}</Badge>}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="space-y-1">
+              <Label>Actual hours</Label>
+              <Input type="number" min={0} value={h} onChange={(e) => setH(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Actual minutes</Label>
+              <Input type="number" min={0} max={59} value={m} onChange={(e) => setM(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Distance ({distUnit})</Label>
+              <Input
+                type="number" min={0} step={distUnit === "km" ? 0.01 : 25}
+                value={dist} onChange={(e) => setDist(e.target.value)}
+                placeholder={distUnit === "km" ? "e.g. 8.5" : "e.g. 1500"}
+              />
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="space-y-1">
-            <Label>Actual hours</Label>
-            <Input type="number" min={0} value={h} onChange={(e) => setH(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>Actual minutes</Label>
-            <Input type="number" min={0} max={59} value={m} onChange={(e) => setM(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>Distance ({distUnit})</Label>
-            <Input
-              type="number" min={0} step={distUnit === "km" ? 0.01 : 25}
-              value={dist} onChange={(e) => setDist(e.target.value)}
-              placeholder={distUnit === "km" ? "e.g. 8.5" : "e.g. 1500"}
-            />
-          </div>
-          <div className="space-y-1">
             <Label>Overall RPE</Label>
-            <Input type="number" min={1} max={10} value={overall} onChange={(e) => setOverall(e.target.value)} />
+            <Input type="number" min={1} max={10} step={0.5} value={overall} onChange={(e) => setOverall(e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label>Hardest part RPE</Label>
-            <Input type="number" min={1} max={10} value={peak} onChange={(e) => setPeak(e.target.value)} />
+            <Input type="number" min={1} max={10} step={0.5} value={peak} onChange={(e) => setPeak(e.target.value)} />
           </div>
         </div>
-        {livePace && (
+        {!isStructured && livePace && (
           <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-muted-foreground">Your actual pace:</span>

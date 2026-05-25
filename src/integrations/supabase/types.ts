@@ -185,6 +185,53 @@ export type Database = {
         }
         Relationships: []
       }
+      endurance_step_reps: {
+        Row: {
+          actual_avg_hr: number | null
+          actual_avg_rpe: number | null
+          actual_distance_m: number | null
+          actual_duration_seconds: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          rep_index: number
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          actual_avg_hr?: number | null
+          actual_avg_rpe?: number | null
+          actual_distance_m?: number | null
+          actual_duration_seconds?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rep_index: number
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          actual_avg_hr?: number | null
+          actual_avg_rpe?: number | null
+          actual_distance_m?: number | null
+          actual_duration_seconds?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rep_index?: number
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "endurance_step_reps_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "endurance_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       endurance_steps: {
         Row: {
           actual_avg_hr: number | null

@@ -688,9 +688,21 @@ function StepRowItem({
           </div>
         );
       })()}
-      {(canEditPlan || canLogActuals) && (
-        <ActualStepInputs step={step} defaultDiscipline={defaultDiscipline} onSaved={onChange} />
-      )}
+      {(canEditPlan || canLogActuals) && (() => {
+        const parent = step.parent_id ? allSteps.find((p) => p.id === step.parent_id) : null;
+        const parentRepeats = parent?.is_group ? parent.repeat_count : 1;
+        if (parentRepeats > 1) {
+          return (
+            <RepActualsList
+              stepId={step.id}
+              repeatCount={parentRepeats}
+              discipline={(step.discipline ?? defaultDiscipline) as Discipline}
+              onChange={onChange}
+            />
+          );
+        }
+        return <ActualStepInputs step={step} defaultDiscipline={defaultDiscipline} onSaved={onChange} />;
+      })()}
     </div>
   );
 }

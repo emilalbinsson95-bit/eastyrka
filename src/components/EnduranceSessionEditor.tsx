@@ -761,6 +761,123 @@ function ActualStepInputs({
   );
 }
 
+// ---------- Per-rep actuals (inside repeat groups) ----------
+
+interface RepRow {
+  id: string;
+  step_id: string;
+  rep_index: number;
+  actual_duration_seconds: number | null;
+  actual_distance_m: number | null;
+  actual_avg_hr: number | null;
+  actual_avg_rpe: number | null;
+}
+
+function RepActualsList({
+  stepId, repeatCount, discipline, onChange,
+}: {
+  stepId: string;
+  repeatCount: number;
+  discipline: Discipline;
+  onChange: () => void;
+}) {
+  const qc = useQueryClient();
+  const repsQuery = useQuery({
+    queryKey: ["endurance-step-reps", stepId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_step_reps")
+        .select("*")
+        .eq("step_id", stepId)
+        .order("rep_index", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as RepRow[];
+    },
+  });
+  const reps = repsQuery.data ?? [];
+  const byIdx = new Map(reps.map((r) => [r.rep_index, r]));
+
+  return (
+    <div className="mt-2 space-y-1 rounded border border-dashed border-border bg-muted/30 p-1.5">
+      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        Per-rep actuals ({repeatCount})
+      </div>
+      {Array.from({ length: repeatCount }, (_, i) => i + 1).map((idx) => (
+        <RepRowInputs
+          key={idx}
+          stepId={stepId}
+          repIndex={idx}
+          existing={byIdx.get(idx) ?? null}
+          discipline={discipline}
+          onSaved={() => {
+            qc.invalidateQueries({ queryKey: ["endurance-step-reps", stepId] });
+            onChange();
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RepRowInputs({
+  stepId, repIndex, existing, discipline, onSaved,
+}: {
+  stepId: string;
+  repIndex: number;
+  existing: RepRow | null;
+  discipline: Discipline;
+  onSaved: () => void;
+}) {
+  const initSec = existing?.actual_duration_seconds ?? null;
+  const [mm, setMm] = useState(initSec != null ? String(Math.floor(initSec / 60)) : "");
+  const [ss, setSs] = useState(initSec != null ? String(initSec % 60).padStart(2, "0") : "");
+  const [dist, setDist] = useState(existing?.actual_distance_m != null ? String(existing.actual_distance_m) : "");
+  const [hr, setHr] = useState(existing?.actual_avg_hr != null ? String(existing.actual_avg_hr) : "");
+  const [rpe, setRpe] = useState(existing?.actual_avg_rpe != null ? String(existing.actual_avg_rpe) : "");
+
+  const durationSec = (Number(mm) || 0) * 60 + (Number(ss) || 0);
+  const distM = Number(dist) || 0;
+  const paceLabel = paceLabelFromDistance(discipline, distM || null, durationSec || null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        step_id: stepId,
+        rep_index: repIndex,
+        actual_duration_seconds: durationSec > 0 ? durationSec : null,
+        actual_distance_m: distM > 0 ? distM : null,
+        actual_avg_hr: hr ? Number(hr) : null,
+        actual_avg_rpe: rpe ? Number(rpe) : null,
+      };
+      const { error } = await supabase
+        .from("endurance_step_reps")
+        .upsert(payload, { onConflict: "step_id,rep_index" });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success(`Rep ${repIndex} logged`); onSaved(); },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+      <span className="w-10 text-[10px] font-semibold text-muted-foreground">Rep {repIndex}</span>
+      <div className="flex items-center gap-1">
+        <Input type="number" min={0} className="h-7 w-12" value={mm} onChange={(e) => setMm(e.target.value)} placeholder="m" />
+        <span>:</span>
+        <Input type="number" min={0} max={59} className="h-7 w-12" value={ss} onChange={(e) => setSs(e.target.value)} placeholder="s" />
+      </div>
+      <Input type="number" min={0} className="h-7 w-20" value={dist} onChange={(e) => setDist(e.target.value)}
+        placeholder={discipline === "swim" ? "m" : "metres"} />
+      <Input type="number" min={40} max={230} className="h-7 w-16" value={hr} onChange={(e) => setHr(e.target.value)} placeholder="bpm" />
+      <Input type="number" min={1} max={10} step={0.5} className="h-7 w-14" value={rpe} onChange={(e) => setRpe(e.target.value)} placeholder="RPE" />
+      {paceLabel && <Badge variant="secondary" className="font-mono">{paceLabel}</Badge>}
+      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => save.mutate()} disabled={save.isPending}>
+        <Save className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
 // ---------- Actual logging (athlete) ----------
 
 function ActualLogger({ session, onChange }: { session: SessionRow; onChange: () => void }) {

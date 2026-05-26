@@ -721,6 +721,16 @@ function ActualStepInputs({
   const [hr, setHr] = useState(step.actual_avg_hr != null ? String(step.actual_avg_hr) : "");
   const [rpe, setRpe] = useState(step.actual_avg_rpe != null ? String(step.actual_avg_rpe) : "");
 
+  // Sync inputs when the underlying row changes (data arrives async or another save happens)
+  useEffect(() => {
+    const sec = step.actual_duration_seconds ?? null;
+    setMm(sec != null ? String(Math.floor(sec / 60)) : "");
+    setSs(sec != null ? String(sec % 60).padStart(2, "0") : "");
+    setDist(step.actual_distance_m != null ? String(step.actual_distance_m) : "");
+    setHr(step.actual_avg_hr != null ? String(step.actual_avg_hr) : "");
+    setRpe(step.actual_avg_rpe != null ? String(step.actual_avg_rpe) : "");
+  }, [step.actual_duration_seconds, step.actual_distance_m, step.actual_avg_hr, step.actual_avg_rpe]);
+
   const disc = (step.discipline ?? defaultDiscipline) as Discipline;
   const durationSec = (Number(mm) || 0) * 60 + (Number(ss) || 0);
   const distM = Number(dist) || 0;
@@ -737,7 +747,7 @@ function ActualStepInputs({
       const { error } = await supabase.from("endurance_steps").update(patch).eq("id", step.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Rep logged"); onSaved(); },
+    onSuccess: () => { toast.success("Step logged"); onSaved(); },
     onError: (e) => toast.error((e as Error).message),
   });
 
@@ -797,10 +807,63 @@ function RepActualsList({
   const reps = repsQuery.data ?? [];
   const byIdx = new Map(reps.map((r) => [r.rep_index, r]));
 
+  // Time-weighted averages across the logged reps
+  const summary = useMemo(() => {
+    let secTotal = 0;
+    let distTotal = 0;
+    let rpeWeighted = 0;
+    let rpeWeight = 0;
+    let hrWeighted = 0;
+    let hrWeight = 0;
+    let countRpe = 0;
+    let countHr = 0;
+    for (const r of reps) {
+      const sec = r.actual_duration_seconds ?? 0;
+      secTotal += sec;
+      distTotal += r.actual_distance_m ?? 0;
+      if (r.actual_avg_rpe != null) {
+        const w = sec > 0 ? sec : 1;
+        rpeWeighted += r.actual_avg_rpe * w;
+        rpeWeight += w;
+        countRpe++;
+      }
+      if (r.actual_avg_hr != null) {
+        const w = sec > 0 ? sec : 1;
+        hrWeighted += r.actual_avg_hr * w;
+        hrWeight += w;
+        countHr++;
+      }
+    }
+    return {
+      secTotal,
+      distTotal,
+      avgRpe: countRpe > 0 && rpeWeight > 0 ? Math.round((rpeWeighted / rpeWeight) * 10) / 10 : null,
+      avgHr: countHr > 0 && hrWeight > 0 ? Math.round(hrWeighted / hrWeight) : null,
+      logged: reps.length,
+    };
+  }, [reps]);
+
   return (
-    <div className="mt-2 space-y-1 rounded border border-dashed border-border bg-muted/30 p-1.5">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        Per-rep actuals ({repeatCount})
+    <div className="mt-2 space-y-1 rounded border border-dashed border-primary/40 bg-primary/5 p-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+          Log each rep ({summary.logged}/{repeatCount})
+        </span>
+        {summary.avgRpe != null && (
+          <Badge variant="secondary" className="font-mono text-[10px]">
+            avg RPE {summary.avgRpe}
+          </Badge>
+        )}
+        {summary.avgHr != null && (
+          <Badge variant="secondary" className="font-mono text-[10px]">
+            avg {summary.avgHr} bpm
+          </Badge>
+        )}
+        {summary.secTotal > 0 && (
+          <Badge variant="outline" className="font-mono text-[10px]">
+            {formatDuration(summary.secTotal)}
+          </Badge>
+        )}
       </div>
       {Array.from({ length: repeatCount }, (_, i) => i + 1).map((idx) => (
         <RepRowInputs
@@ -811,6 +874,7 @@ function RepActualsList({
           discipline={discipline}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["endurance-step-reps", stepId] });
+            qc.invalidateQueries({ queryKey: ["endurance-session-reps"] });
             onChange();
           }}
         />
@@ -834,6 +898,16 @@ function RepRowInputs({
   const [dist, setDist] = useState(existing?.actual_distance_m != null ? String(existing.actual_distance_m) : "");
   const [hr, setHr] = useState(existing?.actual_avg_hr != null ? String(existing.actual_avg_hr) : "");
   const [rpe, setRpe] = useState(existing?.actual_avg_rpe != null ? String(existing.actual_avg_rpe) : "");
+
+  // Sync state when the existing row arrives async or is updated elsewhere
+  useEffect(() => {
+    const sec = existing?.actual_duration_seconds ?? null;
+    setMm(sec != null ? String(Math.floor(sec / 60)) : "");
+    setSs(sec != null ? String(sec % 60).padStart(2, "0") : "");
+    setDist(existing?.actual_distance_m != null ? String(existing.actual_distance_m) : "");
+    setHr(existing?.actual_avg_hr != null ? String(existing.actual_avg_hr) : "");
+    setRpe(existing?.actual_avg_rpe != null ? String(existing.actual_avg_rpe) : "");
+  }, [existing?.actual_duration_seconds, existing?.actual_distance_m, existing?.actual_avg_hr, existing?.actual_avg_rpe]);
 
   const durationSec = (Number(mm) || 0) * 60 + (Number(ss) || 0);
   const distM = Number(dist) || 0;
@@ -860,7 +934,7 @@ function RepRowInputs({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-      <span className="w-10 text-[10px] font-semibold text-muted-foreground">Rep {repIndex}</span>
+      <span className="w-12 text-[10px] font-semibold text-muted-foreground">Rep {repIndex}</span>
       <div className="flex items-center gap-1">
         <Input type="number" min={0} className="h-7 w-12" value={mm} onChange={(e) => setMm(e.target.value)} placeholder="m" />
         <span>:</span>
@@ -907,7 +981,7 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_step_reps")
-        .select("step_id, actual_duration_seconds, actual_distance_m")
+        .select("step_id, actual_duration_seconds, actual_distance_m, actual_avg_rpe, actual_avg_hr")
         .in("step_id", stepIds);
       if (error) throw error;
       return data ?? [];
@@ -917,26 +991,69 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
   const derivedTotals = useMemo(() => {
     if (!isStructured) return null;
     let sec = 0;
-    let m = 0;
-    const repsByStep = new Map<string, { d: number; m: number }>();
+    let meters = 0;
+    // Time-weighted RPE and HR (so 90s strides don't dominate over 20min of easy)
+    let rpeWeighted = 0;
+    let rpeWeight = 0;
+    let hrWeighted = 0;
+    let hrWeight = 0;
+    let peakRpeSeen: number | null = null;
+
+    const repsByStep = new Map<string, { d: number; m: number; rpeW: number; rpeWeight: number; hrW: number; hrWeight: number; peak: number | null }>();
     for (const r of repsQuery.data ?? []) {
-      const cur = repsByStep.get(r.step_id) ?? { d: 0, m: 0 };
-      cur.d += r.actual_duration_seconds ?? 0;
+      const cur = repsByStep.get(r.step_id) ?? { d: 0, m: 0, rpeW: 0, rpeWeight: 0, hrW: 0, hrWeight: 0, peak: null };
+      const d = r.actual_duration_seconds ?? 0;
+      cur.d += d;
       cur.m += r.actual_distance_m ?? 0;
+      if (r.actual_avg_rpe != null) {
+        const w = d > 0 ? d : 1;
+        cur.rpeW += r.actual_avg_rpe * w;
+        cur.rpeWeight += w;
+        cur.peak = cur.peak == null ? r.actual_avg_rpe : Math.max(cur.peak, r.actual_avg_rpe);
+      }
+      if (r.actual_avg_hr != null) {
+        const w = d > 0 ? d : 1;
+        cur.hrW += r.actual_avg_hr * w;
+        cur.hrWeight += w;
+      }
       repsByStep.set(r.step_id, cur);
     }
+
     for (const st of steps) {
       if (st.is_group) continue;
       const fromReps = repsByStep.get(st.id);
-      if (fromReps && (fromReps.d > 0 || fromReps.m > 0)) {
+      if (fromReps && (fromReps.d > 0 || fromReps.m > 0 || fromReps.rpeWeight > 0)) {
         sec += fromReps.d;
-        m += fromReps.m;
+        meters += fromReps.m;
+        rpeWeighted += fromReps.rpeW;
+        rpeWeight += fromReps.rpeWeight;
+        hrWeighted += fromReps.hrW;
+        hrWeight += fromReps.hrWeight;
+        if (fromReps.peak != null) peakRpeSeen = peakRpeSeen == null ? fromReps.peak : Math.max(peakRpeSeen, fromReps.peak);
       } else {
-        sec += st.actual_duration_seconds ?? 0;
-        m += st.actual_distance_m ?? 0;
+        const d = st.actual_duration_seconds ?? 0;
+        sec += d;
+        meters += st.actual_distance_m ?? 0;
+        if (st.actual_avg_rpe != null) {
+          const w = d > 0 ? d : 1;
+          rpeWeighted += st.actual_avg_rpe * w;
+          rpeWeight += w;
+          peakRpeSeen = peakRpeSeen == null ? st.actual_avg_rpe : Math.max(peakRpeSeen, st.actual_avg_rpe);
+        }
+        if (st.actual_avg_hr != null) {
+          const w = d > 0 ? d : 1;
+          hrWeighted += st.actual_avg_hr * w;
+          hrWeight += w;
+        }
       }
     }
-    return { seconds: sec, meters: m };
+    return {
+      seconds: sec,
+      meters,
+      avgRpe: rpeWeight > 0 ? Math.round((rpeWeighted / rpeWeight) * 10) / 10 : null,
+      avgHr: hrWeight > 0 ? Math.round(hrWeighted / hrWeight) : null,
+      peakRpe: peakRpeSeen,
+    };
   }, [isStructured, steps, repsQuery.data]);
 
   // Derived live pace label (quick mode uses entered values; structured uses derived)
@@ -966,9 +1083,13 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
           predicted_10k_seconds = total;
         }
       }
+      // In structured mode, prefer derived (time-weighted) overall/peak RPE when the
+      // athlete hasn't overridden them manually.
+      const overallNum = overall ? Number(overall) : (isStructured ? (derivedTotals?.avgRpe ?? null) : null);
+      const peakNum = peak ? Number(peak) : (isStructured ? (derivedTotals?.peakRpe ?? null) : null);
       const hasAnyActual =
         !!actual_total_seconds || !!actual_distance_m ||
-        !!overall || !!peak || !!notes.trim() || predicted_10k_seconds != null;
+        overallNum != null || peakNum != null || !!notes.trim() || predicted_10k_seconds != null;
       const patch: {
         actual_total_seconds: number | null;
         actual_distance_m: number | null;
@@ -980,8 +1101,8 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
       } = {
         actual_total_seconds,
         actual_distance_m,
-        overall_rpe: overall ? Number(overall) : null,
-        peak_rpe: peak ? Number(peak) : null,
+        overall_rpe: overallNum,
+        peak_rpe: peakNum,
         predicted_10k_seconds,
         notes: notes || null,
       };
@@ -1006,7 +1127,9 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
       <CardContent className="space-y-3">
         {isStructured ? (
           <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3 text-sm">
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total from steps</div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Auto-summary from per-step / per-rep entries
+            </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="font-mono">
                 {derivedTotals?.seconds ? formatDuration(derivedTotals.seconds) : "—"}
@@ -1019,7 +1142,20 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
                   : "—"}
               </Badge>
               {livePace && <Badge variant="secondary" className="font-mono">{livePace}</Badge>}
+              {derivedTotals?.avgRpe != null && (
+                <Badge variant="outline" className="font-mono">avg RPE {derivedTotals.avgRpe}</Badge>
+              )}
+              {derivedTotals?.peakRpe != null && (
+                <Badge variant="outline" className="font-mono">peak RPE {derivedTotals.peakRpe}</Badge>
+              )}
+              {derivedTotals?.avgHr != null && (
+                <Badge variant="outline" className="font-mono">avg {derivedTotals.avgHr} bpm</Badge>
+              )}
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              RPE is time-weighted, so short reps (e.g. 90s strides) don't blow up the average.
+              Leave the RPE fields below empty to use these values, or type to override.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

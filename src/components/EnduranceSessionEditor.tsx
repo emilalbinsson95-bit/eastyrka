@@ -1083,9 +1083,13 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
           predicted_10k_seconds = total;
         }
       }
+      // In structured mode, prefer derived (time-weighted) overall/peak RPE when the
+      // athlete hasn't overridden them manually.
+      const overallNum = overall ? Number(overall) : (isStructured ? (derivedTotals?.avgRpe ?? null) : null);
+      const peakNum = peak ? Number(peak) : (isStructured ? (derivedTotals?.peakRpe ?? null) : null);
       const hasAnyActual =
         !!actual_total_seconds || !!actual_distance_m ||
-        !!overall || !!peak || !!notes.trim() || predicted_10k_seconds != null;
+        overallNum != null || peakNum != null || !!notes.trim() || predicted_10k_seconds != null;
       const patch: {
         actual_total_seconds: number | null;
         actual_distance_m: number | null;
@@ -1097,8 +1101,8 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
       } = {
         actual_total_seconds,
         actual_distance_m,
-        overall_rpe: overall ? Number(overall) : null,
-        peak_rpe: peak ? Number(peak) : null,
+        overall_rpe: overallNum,
+        peak_rpe: peakNum,
         predicted_10k_seconds,
         notes: notes || null,
       };

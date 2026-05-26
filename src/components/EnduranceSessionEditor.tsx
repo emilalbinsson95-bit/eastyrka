@@ -721,6 +721,16 @@ function ActualStepInputs({
   const [hr, setHr] = useState(step.actual_avg_hr != null ? String(step.actual_avg_hr) : "");
   const [rpe, setRpe] = useState(step.actual_avg_rpe != null ? String(step.actual_avg_rpe) : "");
 
+  // Sync inputs when the underlying row changes (data arrives async or another save happens)
+  useEffect(() => {
+    const sec = step.actual_duration_seconds ?? null;
+    setMm(sec != null ? String(Math.floor(sec / 60)) : "");
+    setSs(sec != null ? String(sec % 60).padStart(2, "0") : "");
+    setDist(step.actual_distance_m != null ? String(step.actual_distance_m) : "");
+    setHr(step.actual_avg_hr != null ? String(step.actual_avg_hr) : "");
+    setRpe(step.actual_avg_rpe != null ? String(step.actual_avg_rpe) : "");
+  }, [step.actual_duration_seconds, step.actual_distance_m, step.actual_avg_hr, step.actual_avg_rpe]);
+
   const disc = (step.discipline ?? defaultDiscipline) as Discipline;
   const durationSec = (Number(mm) || 0) * 60 + (Number(ss) || 0);
   const distM = Number(dist) || 0;
@@ -737,7 +747,7 @@ function ActualStepInputs({
       const { error } = await supabase.from("endurance_steps").update(patch).eq("id", step.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Rep logged"); onSaved(); },
+    onSuccess: () => { toast.success("Step logged"); onSaved(); },
     onError: (e) => toast.error((e as Error).message),
   });
 

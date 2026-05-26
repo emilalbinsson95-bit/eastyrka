@@ -1127,7 +1127,9 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
       <CardContent className="space-y-3">
         {isStructured ? (
           <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3 text-sm">
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total from steps</div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Auto-summary from per-step / per-rep entries
+            </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="font-mono">
                 {derivedTotals?.seconds ? formatDuration(derivedTotals.seconds) : "—"}
@@ -1140,7 +1142,20 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
                   : "—"}
               </Badge>
               {livePace && <Badge variant="secondary" className="font-mono">{livePace}</Badge>}
+              {derivedTotals?.avgRpe != null && (
+                <Badge variant="outline" className="font-mono">avg RPE {derivedTotals.avgRpe}</Badge>
+              )}
+              {derivedTotals?.peakRpe != null && (
+                <Badge variant="outline" className="font-mono">peak RPE {derivedTotals.peakRpe}</Badge>
+              )}
+              {derivedTotals?.avgHr != null && (
+                <Badge variant="outline" className="font-mono">avg {derivedTotals.avgHr} bpm</Badge>
+              )}
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              RPE is time-weighted, so short reps (e.g. 90s strides) don't blow up the average.
+              Leave the RPE fields below empty to use these values, or type to override.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

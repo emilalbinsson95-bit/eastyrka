@@ -807,10 +807,63 @@ function RepActualsList({
   const reps = repsQuery.data ?? [];
   const byIdx = new Map(reps.map((r) => [r.rep_index, r]));
 
+  // Time-weighted averages across the logged reps
+  const summary = useMemo(() => {
+    let secTotal = 0;
+    let distTotal = 0;
+    let rpeWeighted = 0;
+    let rpeWeight = 0;
+    let hrWeighted = 0;
+    let hrWeight = 0;
+    let countRpe = 0;
+    let countHr = 0;
+    for (const r of reps) {
+      const sec = r.actual_duration_seconds ?? 0;
+      secTotal += sec;
+      distTotal += r.actual_distance_m ?? 0;
+      if (r.actual_avg_rpe != null) {
+        const w = sec > 0 ? sec : 1;
+        rpeWeighted += r.actual_avg_rpe * w;
+        rpeWeight += w;
+        countRpe++;
+      }
+      if (r.actual_avg_hr != null) {
+        const w = sec > 0 ? sec : 1;
+        hrWeighted += r.actual_avg_hr * w;
+        hrWeight += w;
+        countHr++;
+      }
+    }
+    return {
+      secTotal,
+      distTotal,
+      avgRpe: countRpe > 0 && rpeWeight > 0 ? Math.round((rpeWeighted / rpeWeight) * 10) / 10 : null,
+      avgHr: countHr > 0 && hrWeight > 0 ? Math.round(hrWeighted / hrWeight) : null,
+      logged: reps.length,
+    };
+  }, [reps]);
+
   return (
-    <div className="mt-2 space-y-1 rounded border border-dashed border-border bg-muted/30 p-1.5">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        Per-rep actuals ({repeatCount})
+    <div className="mt-2 space-y-1 rounded border border-dashed border-primary/40 bg-primary/5 p-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+          Log each rep ({summary.logged}/{repeatCount})
+        </span>
+        {summary.avgRpe != null && (
+          <Badge variant="secondary" className="font-mono text-[10px]">
+            avg RPE {summary.avgRpe}
+          </Badge>
+        )}
+        {summary.avgHr != null && (
+          <Badge variant="secondary" className="font-mono text-[10px]">
+            avg {summary.avgHr} bpm
+          </Badge>
+        )}
+        {summary.secTotal > 0 && (
+          <Badge variant="outline" className="font-mono text-[10px]">
+            {formatDuration(summary.secTotal)}
+          </Badge>
+        )}
       </div>
       {Array.from({ length: repeatCount }, (_, i) => i + 1).map((idx) => (
         <RepRowInputs
@@ -821,6 +874,7 @@ function RepActualsList({
           discipline={discipline}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["endurance-step-reps", stepId] });
+            qc.invalidateQueries({ queryKey: ["endurance-session-reps"] });
             onChange();
           }}
         />
@@ -844,6 +898,16 @@ function RepRowInputs({
   const [dist, setDist] = useState(existing?.actual_distance_m != null ? String(existing.actual_distance_m) : "");
   const [hr, setHr] = useState(existing?.actual_avg_hr != null ? String(existing.actual_avg_hr) : "");
   const [rpe, setRpe] = useState(existing?.actual_avg_rpe != null ? String(existing.actual_avg_rpe) : "");
+
+  // Sync state when the existing row arrives async or is updated elsewhere
+  useEffect(() => {
+    const sec = existing?.actual_duration_seconds ?? null;
+    setMm(sec != null ? String(Math.floor(sec / 60)) : "");
+    setSs(sec != null ? String(sec % 60).padStart(2, "0") : "");
+    setDist(existing?.actual_distance_m != null ? String(existing.actual_distance_m) : "");
+    setHr(existing?.actual_avg_hr != null ? String(existing.actual_avg_hr) : "");
+    setRpe(existing?.actual_avg_rpe != null ? String(existing.actual_avg_rpe) : "");
+  }, [existing?.actual_duration_seconds, existing?.actual_distance_m, existing?.actual_avg_hr, existing?.actual_avg_rpe]);
 
   const durationSec = (Number(mm) || 0) * 60 + (Number(ss) || 0);
   const distM = Number(dist) || 0;
@@ -870,7 +934,7 @@ function RepRowInputs({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-      <span className="w-10 text-[10px] font-semibold text-muted-foreground">Rep {repIndex}</span>
+      <span className="w-12 text-[10px] font-semibold text-muted-foreground">Rep {repIndex}</span>
       <div className="flex items-center gap-1">
         <Input type="number" min={0} className="h-7 w-12" value={mm} onChange={(e) => setMm(e.target.value)} placeholder="m" />
         <span>:</span>

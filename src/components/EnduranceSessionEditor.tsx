@@ -981,7 +981,7 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_step_reps")
-        .select("step_id, actual_duration_seconds, actual_distance_m")
+        .select("step_id, actual_duration_seconds, actual_distance_m, actual_avg_rpe, actual_avg_hr")
         .in("step_id", stepIds);
       if (error) throw error;
       return data ?? [];
@@ -991,26 +991,69 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
   const derivedTotals = useMemo(() => {
     if (!isStructured) return null;
     let sec = 0;
-    let m = 0;
-    const repsByStep = new Map<string, { d: number; m: number }>();
+    let meters = 0;
+    // Time-weighted RPE and HR (so 90s strides don't dominate over 20min of easy)
+    let rpeWeighted = 0;
+    let rpeWeight = 0;
+    let hrWeighted = 0;
+    let hrWeight = 0;
+    let peakRpeSeen: number | null = null;
+
+    const repsByStep = new Map<string, { d: number; m: number; rpeW: number; rpeWeight: number; hrW: number; hrWeight: number; peak: number | null }>();
     for (const r of repsQuery.data ?? []) {
-      const cur = repsByStep.get(r.step_id) ?? { d: 0, m: 0 };
-      cur.d += r.actual_duration_seconds ?? 0;
+      const cur = repsByStep.get(r.step_id) ?? { d: 0, m: 0, rpeW: 0, rpeWeight: 0, hrW: 0, hrWeight: 0, peak: null };
+      const d = r.actual_duration_seconds ?? 0;
+      cur.d += d;
       cur.m += r.actual_distance_m ?? 0;
+      if (r.actual_avg_rpe != null) {
+        const w = d > 0 ? d : 1;
+        cur.rpeW += r.actual_avg_rpe * w;
+        cur.rpeWeight += w;
+        cur.peak = cur.peak == null ? r.actual_avg_rpe : Math.max(cur.peak, r.actual_avg_rpe);
+      }
+      if (r.actual_avg_hr != null) {
+        const w = d > 0 ? d : 1;
+        cur.hrW += r.actual_avg_hr * w;
+        cur.hrWeight += w;
+      }
       repsByStep.set(r.step_id, cur);
     }
+
     for (const st of steps) {
       if (st.is_group) continue;
       const fromReps = repsByStep.get(st.id);
-      if (fromReps && (fromReps.d > 0 || fromReps.m > 0)) {
+      if (fromReps && (fromReps.d > 0 || fromReps.m > 0 || fromReps.rpeWeight > 0)) {
         sec += fromReps.d;
-        m += fromReps.m;
+        meters += fromReps.m;
+        rpeWeighted += fromReps.rpeW;
+        rpeWeight += fromReps.rpeWeight;
+        hrWeighted += fromReps.hrW;
+        hrWeight += fromReps.hrWeight;
+        if (fromReps.peak != null) peakRpeSeen = peakRpeSeen == null ? fromReps.peak : Math.max(peakRpeSeen, fromReps.peak);
       } else {
-        sec += st.actual_duration_seconds ?? 0;
-        m += st.actual_distance_m ?? 0;
+        const d = st.actual_duration_seconds ?? 0;
+        sec += d;
+        meters += st.actual_distance_m ?? 0;
+        if (st.actual_avg_rpe != null) {
+          const w = d > 0 ? d : 1;
+          rpeWeighted += st.actual_avg_rpe * w;
+          rpeWeight += w;
+          peakRpeSeen = peakRpeSeen == null ? st.actual_avg_rpe : Math.max(peakRpeSeen, st.actual_avg_rpe);
+        }
+        if (st.actual_avg_hr != null) {
+          const w = d > 0 ? d : 1;
+          hrWeighted += st.actual_avg_hr * w;
+          hrWeight += w;
+        }
       }
     }
-    return { seconds: sec, meters: m };
+    return {
+      seconds: sec,
+      meters,
+      avgRpe: rpeWeight > 0 ? Math.round((rpeWeighted / rpeWeight) * 10) / 10 : null,
+      avgHr: hrWeight > 0 ? Math.round(hrWeighted / hrWeight) : null,
+      peakRpe: peakRpeSeen,
+    };
   }, [isStructured, steps, repsQuery.data]);
 
   // Derived live pace label (quick mode uses entered values; structured uses derived)

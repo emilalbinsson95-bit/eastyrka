@@ -1,46 +1,90 @@
-// RPE-weighted endurance load (TRIMP-style).
-// Score = sum over sessions of (minutes × weight(RPE)). Weighting taken from
-// Foster's session-RPE method, with a small exponential bias to penalise hard work.
+// Endurance training load model.
+//
+// Foster sRPE: session load = minutes × session-RPE. This is the validated,
+// peer-reviewed standard (Foster et al. 1995/2001). No magic constants, no
+// extra exponential bias — RPE 10 already weighs ~3× RPE 3 naturally.
+//
+// When per-rep / per-step actuals exist we feed them in as time-weighted
+// segments so a "4×4 min @ RPE 9 with jog rest" doesn't get diluted to a
+// flat "30 min @ RPE 6" average.
+//
+// On top of sRPE we expose:
+//   - acwr()        : 7d acute load ÷ 28d chronic load (sweet spot 0.8–1.3)
+//   - polarized()   : easy / moderate / hard minute split (Seiler 80/20)
+//   - fitnessFatigueSeries() : Banister CTL (42d) / ATL (7d) / TSB form
+//
+// All time arithmetic uses date-fns to avoid timezone drift.
 
+import { parseISO, startOfWeek, format, addDays, differenceInCalendarDays } from "date-fns";
+
+/** A logged session as seen by the load model. */
 export interface LoadSession {
   date: string; // yyyy-MM-dd
   discipline: string | null;
   actual_total_seconds: number | null;
   planned_total_seconds: number | null;
   overall_rpe: number | null;
+  /** peak_rpe is intentionally NOT in the fallback chain (overstates load). */
   peak_rpe: number | null;
   planned_avg_rpe: number | null;
+  /**
+   * Optional time-weighted breakdown derived from endurance_steps + reps.
+   * When present, load and band attribution use this instead of overall_rpe.
+   */
+  segments?: { seconds: number; rpe: number }[];
 }
 
-/** Choose the most representative RPE for a session. */
-function effectiveRpe(s: LoadSession): number | null {
-  return s.overall_rpe ?? s.peak_rpe ?? s.planned_avg_rpe ?? null;
-}
-
-/** Choose minutes: actual if logged, otherwise planned. */
-function effectiveMinutes(s: LoadSession): number {
-  const sec = s.actual_total_seconds ?? s.planned_total_seconds ?? 0;
-  return sec / 60;
-}
-
-/** RPE weight (Foster sRPE × small exponential bias). */
+/** Foster session-RPE weight (linear). */
 export function rpeWeight(rpe: number): number {
-  // Linear sRPE component
-  const lin = rpe;
-  // Exponential bias so RPE 8-10 contribute disproportionately more
-  const expo = Math.exp(0.18 * (rpe - 5));
-  return lin * expo * 0.55;
+  return Math.max(0, Math.min(10, rpe));
 }
 
-/** Per-session load score (arbitrary units). */
+/** Time-weighted RPE from segments. */
+function segmentsAvgRpe(segs: { seconds: number; rpe: number }[]): number | null {
+  let w = 0, total = 0;
+  for (const s of segs) {
+    if (s.seconds <= 0 || s.rpe == null) continue;
+    w += s.rpe * s.seconds;
+    total += s.seconds;
+  }
+  if (total <= 0) return null;
+  return w / total;
+}
+
+/** Choose a session RPE for fallback (NO peak_rpe — it overstates load). */
+function fallbackRpe(s: LoadSession): number | null {
+  return s.overall_rpe ?? s.planned_avg_rpe ?? null;
+}
+
+function totalSeconds(s: LoadSession): number {
+  if (s.segments && s.segments.length) {
+    const sum = s.segments.reduce((a, x) => a + Math.max(0, x.seconds), 0);
+    if (sum > 0) return sum;
+  }
+  return s.actual_total_seconds ?? s.planned_total_seconds ?? 0;
+}
+
+function effectiveMinutes(s: LoadSession): number {
+  return totalSeconds(s) / 60;
+}
+
+/** Per-session Foster sRPE load (arbitrary AU). */
 export function sessionLoad(s: LoadSession): number {
-  const rpe = effectiveRpe(s);
+  // Per-segment path: sum(min_i × rpe_i). Pure Foster, time-weighted.
+  if (s.segments && s.segments.length) {
+    let load = 0;
+    for (const seg of s.segments) {
+      if (seg.seconds <= 0 || seg.rpe == null) continue;
+      load += (seg.seconds / 60) * rpeWeight(seg.rpe);
+    }
+    if (load > 0) return Math.round(load);
+  }
+  const rpe = fallbackRpe(s);
   if (rpe == null) return 0;
-  const min = effectiveMinutes(s);
-  return Math.round(min * rpeWeight(rpe));
+  return Math.round(effectiveMinutes(s) * rpeWeight(rpe));
 }
 
-/** RPE bands for stacked bars. */
+/** RPE band a single session falls into (for the stacked bar). */
 export const RPE_BANDS = [
   { id: "easy", label: "Easy (1–4)", color: "bg-status-peaking" as const, min: 1, max: 4 },
   { id: "mod", label: "Moderate (5–6)", color: "bg-status-adapting" as const, min: 5, max: 6 },
@@ -53,6 +97,20 @@ export function bandForRpe(rpe: number): typeof RPE_BANDS[number] {
   return RPE_BANDS[1];
 }
 
+/** Add minutes per band, using segments when present. */
+function accumulateBands(s: LoadSession, perBand: Record<string, number>) {
+  if (s.segments && s.segments.length) {
+    for (const seg of s.segments) {
+      if (seg.seconds <= 0 || seg.rpe == null) continue;
+      perBand[bandForRpe(seg.rpe).id] += seg.seconds / 60;
+    }
+    return;
+  }
+  const rpe = fallbackRpe(s);
+  if (rpe == null) return;
+  perBand[bandForRpe(rpe).id] += effectiveMinutes(s);
+}
+
 export interface WeeklyBucket {
   weekStart: string; // yyyy-MM-dd (Monday)
   totalMinutes: number;
@@ -62,11 +120,8 @@ export interface WeeklyBucket {
 }
 
 function mondayOf(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  const day = d.getDay(); // 0 = Sun
-  const diff = (day === 0 ? -6 : 1) - day;
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
+  const d = parseISO(dateStr);
+  return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
 export function aggregateWeekly(sessions: LoadSession[], weeks = 8): WeeklyBucket[] {
@@ -82,27 +137,17 @@ export function aggregateWeekly(sessions: LoadSession[], weeks = 8): WeeklyBucke
       };
       buckets.set(wk, b);
     }
-    const min = effectiveMinutes(s);
-    b.totalMinutes += min;
+    b.totalMinutes += effectiveMinutes(s);
     b.load += sessionLoad(s);
-    const rpe = effectiveRpe(s);
-    if (rpe != null) {
-      const band = bandForRpe(rpe);
-      b.perBand[band.id] += min;
-    }
+    accumulateBands(s, b.perBand);
     const disc = s.discipline ?? "other";
-    b.perDiscipline[disc] = (b.perDiscipline[disc] ?? 0) + min;
+    b.perDiscipline[disc] = (b.perDiscipline[disc] ?? 0) + effectiveMinutes(s);
   }
-  // Fill missing weeks
-  const sorted = [...buckets.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
-  if (sorted.length === 0) return [];
-  // Generate last N weeks ending today
-  const today = new Date();
+  const todayMon = mondayOf(format(new Date(), "yyyy-MM-dd"));
+  const todayMonDate = parseISO(todayMon);
   const out: WeeklyBucket[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i * 7);
-    const wk = mondayOf(d.toISOString().slice(0, 10));
+    const wk = format(addDays(todayMonDate, -i * 7), "yyyy-MM-dd");
     out.push(
       buckets.get(wk) ?? {
         weekStart: wk, totalMinutes: 0, load: 0,
@@ -112,4 +157,154 @@ export function aggregateWeekly(sessions: LoadSession[], weeks = 8): WeeklyBucke
     );
   }
   return out;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Daily load + injury / fitness models                                       */
+/* -------------------------------------------------------------------------- */
+
+/** Sum sRPE per calendar day, oldest → newest, padded with zeros. */
+export function dailyLoads(sessions: LoadSession[], days: number, anchor: Date = new Date()): { date: string; load: number }[] {
+  const byDate = new Map<string, number>();
+  for (const s of sessions) {
+    byDate.set(s.date, (byDate.get(s.date) ?? 0) + sessionLoad(s));
+  }
+  const out: { date: string; load: number }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = format(addDays(anchor, -i), "yyyy-MM-dd");
+    out.push({ date: d, load: byDate.get(d) ?? 0 });
+  }
+  return out;
+}
+
+/** Acute (7d) ÷ chronic (28d rolling avg of 7d windows) workload ratio. */
+export interface ACWR {
+  acute: number;   // sum last 7d
+  chronic: number; // avg of last 28d daily load × 7
+  ratio: number | null;
+  zone: "low" | "optimal" | "high" | "danger" | "insufficient";
+}
+
+export function acwr(sessions: LoadSession[], anchor: Date = new Date()): ACWR {
+  const series = dailyLoads(sessions, 28, anchor);
+  const acute = series.slice(-7).reduce((a, x) => a + x.load, 0);
+  const chronicDaily = series.reduce((a, x) => a + x.load, 0) / 28;
+  const chronic = chronicDaily * 7;
+  let ratio: number | null = null;
+  let zone: ACWR["zone"] = "insufficient";
+  // Need a meaningful chronic base before the ratio is trustworthy
+  if (chronic > 50) {
+    ratio = acute / chronic;
+    if (ratio < 0.8) zone = "low";
+    else if (ratio <= 1.3) zone = "optimal";
+    else if (ratio <= 1.5) zone = "high";
+    else zone = "danger";
+  }
+  return { acute: Math.round(acute), chronic: Math.round(chronic), ratio, zone };
+}
+
+/** Easy / moderate / hard / max minute split over a window. Seiler 80/20 reference. */
+export interface PolarizedSplit {
+  totalMin: number;
+  easyMin: number; modMin: number; hardMin: number; maxMin: number;
+  easyPct: number; modPct: number; hardPct: number; maxPct: number;
+}
+
+export function polarizedDistribution(sessions: LoadSession[], anchor: Date = new Date(), days = 28): PolarizedSplit {
+  const fromIso = format(addDays(anchor, -days + 1), "yyyy-MM-dd");
+  const perBand: Record<string, number> = Object.fromEntries(RPE_BANDS.map((x) => [x.id, 0]));
+  for (const s of sessions) {
+    if (s.date < fromIso) continue;
+    accumulateBands(s, perBand);
+  }
+  const totalMin = perBand.easy + perBand.mod + perBand.hard + perBand.max;
+  const pct = (m: number) => (totalMin > 0 ? (m / totalMin) * 100 : 0);
+  return {
+    totalMin: Math.round(totalMin),
+    easyMin: Math.round(perBand.easy),
+    modMin: Math.round(perBand.mod),
+    hardMin: Math.round(perBand.hard),
+    maxMin: Math.round(perBand.max),
+    easyPct: pct(perBand.easy),
+    modPct: pct(perBand.mod),
+    hardPct: pct(perBand.hard),
+    maxPct: pct(perBand.max),
+  };
+}
+
+/**
+ * Banister fitness/fatigue model.
+ *   CTL (Chronic Training Load) ≈ exponential moving avg of daily load, τ = 42d → fitness.
+ *   ATL (Acute Training Load)   ≈ EMA with τ = 7d → fatigue.
+ *   TSB (Training Stress Balance) = CTL − ATL → form (positive = fresh).
+ * Implemented as the standard EMA: ema_today = ema_yesterday + (load_today − ema_yesterday) / τ.
+ */
+export interface FitnessFatiguePoint {
+  date: string;
+  load: number;
+  ctl: number;   // fitness
+  atl: number;   // fatigue
+  tsb: number;   // form
+}
+
+export function fitnessFatigueSeries(
+  sessions: LoadSession[],
+  days: number,
+  anchor: Date = new Date(),
+): FitnessFatiguePoint[] {
+  // Build daily load going back far enough to seed CTL (extra 60d warm-up).
+  const warmup = 60;
+  const series = dailyLoads(sessions, days + warmup, anchor);
+  let ctl = 0, atl = 0;
+  const tauC = 42, tauA = 7;
+  const points: FitnessFatiguePoint[] = [];
+  for (const { date, load } of series) {
+    ctl = ctl + (load - ctl) / tauC;
+    atl = atl + (load - atl) / tauA;
+    points.push({
+      date, load,
+      ctl: Math.round(ctl * 10) / 10,
+      atl: Math.round(atl * 10) / 10,
+      tsb: Math.round((ctl - atl) * 10) / 10,
+    });
+  }
+  return points.slice(-days);
+}
+
+/** Helper: build segments for a session from per-step + per-rep actuals. */
+export function buildSegmentsFromSteps(
+  steps: Array<{ id: string; is_group: boolean; actual_duration_seconds: number | null; actual_avg_rpe: number | null; target_rpe: number | null }>,
+  reps: Array<{ step_id: string; actual_duration_seconds: number | null; actual_avg_rpe: number | null }>,
+): { seconds: number; rpe: number }[] {
+  const repsByStep = new Map<string, typeof reps>();
+  for (const r of reps) {
+    const arr = repsByStep.get(r.step_id) ?? [];
+    arr.push(r);
+    repsByStep.set(r.step_id, arr);
+  }
+  const out: { seconds: number; rpe: number }[] = [];
+  for (const st of steps) {
+    if (st.is_group) continue;
+    const myReps = repsByStep.get(st.id) ?? [];
+    let usedRep = false;
+    for (const r of myReps) {
+      if ((r.actual_duration_seconds ?? 0) > 0) {
+        const rpe = r.actual_avg_rpe ?? st.actual_avg_rpe ?? st.target_rpe;
+        if (rpe != null) {
+          out.push({ seconds: r.actual_duration_seconds!, rpe });
+          usedRep = true;
+        }
+      }
+    }
+    if (!usedRep && (st.actual_duration_seconds ?? 0) > 0) {
+      const rpe = st.actual_avg_rpe ?? st.target_rpe;
+      if (rpe != null) out.push({ seconds: st.actual_duration_seconds!, rpe });
+    }
+  }
+  return out;
+}
+
+// Re-export for callers that still need the calendar helper.
+export function daysBetween(a: string, b: string): number {
+  return differenceInCalendarDays(parseISO(b), parseISO(a));
 }

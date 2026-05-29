@@ -157,17 +157,25 @@ function CyclesListPage() {
             Plan a multi-week block, then publish 1–2 weeks at a time.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-1 h-4 w-4" /> New mesocycle
-            </Button>
-          </DialogTrigger>
-          <NewMesoDialog
-            onSubmit={(v) => createMutation.mutate(v)}
-            saving={createMutation.isPending}
+        <div className="flex items-center gap-2">
+          <GenerateMarathonPlanDialog
+            athleteId={athleteId}
+            coachId={userId}
+            athleteName={profileQuery.data?.full_name ?? "Athlete"}
+            athletePb10k={profileQuery.data?.ten_k_pb_seconds ?? null}
           />
-        </Dialog>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-1 h-4 w-4" /> New mesocycle
+              </Button>
+            </DialogTrigger>
+            <NewMesoDialog
+              onSubmit={(v) => createMutation.mutate(v)}
+              saving={createMutation.isPending}
+            />
+          </Dialog>
+        </div>
       </div>
 
       {cyclesQuery.isLoading ? (

@@ -79,7 +79,7 @@ function CyclesListPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, ten_k_pb_seconds")
         .eq("id", athleteId)
         .maybeSingle();
       return data;

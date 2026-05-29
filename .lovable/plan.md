@@ -1,40 +1,69 @@
-## What this changes
+## Vad som byggs
 
-Three related fixes for endurance session logging:
+En knapp **"Generera 20-veckors maratonplan"** på coachens mesocykel-sida som i ett klick skapar:
+- 1 mesocycle (20 v) + 20 week_plans + ~100 endurance_sessions med strukturerade steps/reps
+- Allt redigerbart efteråt (du kan dra runt pass i kalendern, tweaka intervaller, etc.)
 
-### 1. Per-rep actuals inside repeat groups
-Today a "4 × (4min hard / 1min easy)" group has only ONE actuals row per child step, even though the rep is run 4 times. Athletes can't capture pace/HR/RPE for each individual rep.
+## Vetenskaplig modell
 
-Add a new child table `endurance_step_reps`:
-- `step_id` (the leaf step inside the repeat group)
-- `rep_index` (1..repeat_count)
-- `actual_duration_seconds`, `actual_distance_m`, `actual_avg_hr`, `actual_avg_rpe`
+Hybrid av **Pfitzinger "Advanced Marathoning"** + **Daniels Running Formula** + **polariserat 80/20 (Seiler)**, anpassad för 2:45–4:00 maratontider. Volym och tempo skalas från athletens `ten_k_pb_seconds` (VDOT → E/M/T/I/R-paces, finns redan i `endurancePaceHr.ts`).
 
-UI: when a leaf step's parent is a repeat group, render N "Rep 1, Rep 2, …" rows under it (one per `repeat_count`). Each row has the same compact inputs already used (mm:ss, distance, bpm, RPE) plus a derived pace badge. The existing single per-step actuals row stays for non-grouped steps and is hidden inside repeat groups (replaced by the per-rep rows).
+### 5 faser över 20 veckor
 
-RLS: same as `endurance_steps` (visible if parent session visible; managed if session editable).
+```
+v1–4   Bas (Endurance)        — aerob bas, strides, deload v4
+v5–10  Lactate Threshold      — LT-tempo + medium-long runs, deload v8
+v11–15 Race-specific          — maratontempo i långpass + VO2max, deload v12
+v16–18 Sharpening             — sista kvalitetspassen, race-pace finputs
+v19–20 Taper + race           — −40% v19, −60% v20, race lördag v20
+```
 
-### 2. Separate total-run data from per-step data
-Avoid the confusion where an athlete fills in both the session-level "total time/distance/RPE" AND per-step actuals.
+Varje 4:e vecka är deload (−25 % volym, behåller intensitet). Sista långpasset 3 v före race.
 
-- **Quick mode (vanlig löpning):** keep the single `ActualLogger` (this is the "one rep of a run" case).
-- **Structured mode (intervals):** hide the manual total-time/distance fields in `ActualLogger`. Instead auto-derive `actual_total_seconds` and `actual_distance_m` from the sum of step + rep actuals on save. Keep overall/peak RPE, predicted 10k, notes editable at session level. Show a small read-only summary "Total from steps: 48:12 · 9.4 km".
-- This matches the user's mental model: a plain run is one rep of itself; intervals are summed from their reps.
+### Veckostruktur (5 dgr/v default, 4 eller 6 valbart)
 
-### 3. Allow RPE x.5 everywhere
-`overall_rpe` and `peak_rpe` are currently `smallint`, so 8.5 silently rounds. Migrate both to `numeric(3,1)` so 6.5 / 7.5 / 8.5 / 9.5 are accepted. The inputs already use `step={0.5}`; only the DB type needs to change. Also widen `endurance_step_reps.actual_avg_rpe` and `rehab` table fields stay as-is (not in scope).
+| Dag | Pass |
+|-----|------|
+| Mån | Vila / X-train |
+| Tis | Kvalitet (LT/VO2/MP beroende på fas) |
+| Ons | Recovery jog + strides |
+| Tor | Medium-long run |
+| Fre | Vila |
+| Lör | Kvalitet 2 (tempo eller progressiv) |
+| Sön | Long run (med MP-block i race-spec-fas) |
 
-## Files
+80/20 fördelning: Sön+Tor+Ons = easy (zon 1–2), Tis+Lör = hard (zon 4–5). Easy-andel ≥ 80 % av tid över hela blocket.
 
-- **DB migration:**
-  - `ALTER TABLE endurance_sessions ALTER overall_rpe TYPE numeric(3,1)`, same for `peak_rpe`.
-  - `CREATE TABLE endurance_step_reps` + RLS policies + index on `(step_id, rep_index)`.
-- **`src/components/EnduranceSessionEditor.tsx`:**
-  - `StepRowItem`: if the leaf step's `parent_id` points at a group, render `<RepActualsList stepId step repeatCount />` instead of the single `ActualStepInputs`.
-  - New `RepActualsList` component: fetches `endurance_step_reps` for the step, shows N rows, upserts on save.
-  - `ActualLogger`: in structured mode, hide total-time + distance inputs and compute them from steps/reps; keep RPE / notes / predicted 10k.
-- **`src/lib/endurance.ts`:** small helper `sumActualSecondsFromSteps(steps, reps)` and `sumActualDistanceFromSteps(steps, reps)`.
+### Exempel: passmallar (skalade till VDOT)
 
-## Out of scope (mentioned, not built)
+- **Easy run:** 45–75 min @ RPE 4–5 (E-pace, ~70 % HRmax)
+- **Long run (bas):** 90–150 min @ RPE 5
+- **Long run (race-spec):** 2×(20 min E + 20 min MP) @ RPE 6–7
+- **LT tempo:** 2×20 min @ T-pace, 3 min jogg vila, RPE 7–8
+- **VO2max:** 5×3 min @ I-pace, 3 min jogg, RPE 9
+- **Strides:** 6×20 s @ R-pace, full vila
 
-- **Garmin API integration.** Requires Garmin Connect IQ developer registration, OAuth, server-side polling, and approval from Garmin — multi-week effort. Recommend keeping it as a future task; the per-rep manual flow above unblocks Garmin-watch users in the meantime.
+Allt genereras som riktiga `endurance_steps` med `repeat_count`, så du ser dem precis som ett manuellt byggt pass i editorn.
+
+## Tekniska detaljer
+
+### Filer
+- **`src/lib/marathonPlanGenerator.ts`** (ny) — ren funktion `generate20WeekMarathonPlan({ athleteId, startDate, tenKPbSeconds, daysPerWeek, raceDate })` som returnerar `{ mesocycle, weeks[], sessions[] }`.
+- **`src/components/GenerateMarathonPlanDialog.tsx`** (ny) — wizard: start-datum (måndag), dagar/vecka (4/5/6), bekräftelse av PB från profilen (övrigt-fält om saknas), valbar race-distans (default maraton).
+- **`src/routes/coach.athletes.$athleteId.cycles.tsx`** — lägg till knapp "Generera 20v maraton" bredvid "New mesocycle".
+- **Inga DB-migrations** — använder befintliga tabeller (`mesocycles`, `week_plans`, `planned_sessions`, `endurance_sessions`, `endurance_steps`).
+
+### Persistens
+Allt sparas i en transaktion via en serverFn `generateMarathonPlan` (`src/lib/marathonPlan.functions.ts`) med `requireSupabaseAuth` + coach-check (`is_coach_of`). Räknar veckor från valt måndagsdatum, skapar week_plans i `draft`-status så coachen kan publicera vecka för vecka (din befintliga flow).
+
+### Skalningsformel (kort)
+VDOT från `tenKPbSeconds` (Daniels-quadratic, redan i `endurancePaceHr.ts`) → E/M/T/I-paces. Veckovolym börjar på `baseKm = 0.6 × goalRacePaceKm × 4` (≈48 km/v för 3:00-mara, 60 km/v för 2:45) och progrederar +10 %/v med deload var 4:e vecka, peak ~v14, sedan taper.
+
+## Vad som INTE byggs
+
+- Halvmara/10k/ultra-planer (samma motor, men kräver egna mallar — kan adderas senare).
+- Auto-publicering — du publicerar varje vecka själv som idag.
+- Garmin sync.
+
+## Verifiering
+Genererar en plan mot en test-athlete, kollar i kalendern att veckorna ser rimliga ut, och att 80/20-panelen i WeeklyOverview visar ≥ 80 % easy.

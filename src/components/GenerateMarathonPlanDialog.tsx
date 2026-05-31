@@ -176,9 +176,11 @@ export function GenerateMarathonPlanDialog({
       toast.success("20-week marathon plan generated");
       qc.invalidateQueries({ queryKey: ["mesocycles", athleteId] });
       qc.invalidateQueries({ queryKey: ["athlete-endurance"] });
+      qc.invalidateQueries({ queryKey: ["week-endurance"] });
       setOpen(false);
       onCreated?.(mesoId);
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 

@@ -524,9 +524,27 @@ function PlannedSessionCard({
   athleteId: string;
   dateStr: string;
 }) {
+  // Match logs to a specific planned exercise. To avoid double-counting when
+  // the same exercise name appears twice in a session (e.g. bench press as
+  // both a main and an accessory lift), unlinked (freestyle) logs are only
+  // attributed to the FIRST planned row with that name.
+  const matchLogs = (ex: PlannedExercise): LogRow[] => {
+    const linked = logs.filter((l) => l.planned_exercise_id === ex.id);
+    const sameName = session.planned_exercises.filter(
+      (e) => e.exercise === ex.exercise,
+    );
+    const isFirstByName = sameName[0]?.id === ex.id;
+    const unlinked = isFirstByName
+      ? logs.filter(
+          (l) => l.planned_exercise_id == null && l.exercise === ex.exercise,
+        )
+      : [];
+    return [...linked, ...unlinked];
+  };
+
   // Session progress: count exercises that have at least one logged set today.
-  const exercisesWithLogs = session.planned_exercises.filter((ex) =>
-    logs.some((l) => l.planned_exercise_id === ex.id || l.exercise === ex.exercise),
+  const exercisesWithLogs = session.planned_exercises.filter(
+    (ex) => matchLogs(ex).length > 0,
   ).length;
   const totalEx = session.planned_exercises.length;
   const allDone = totalEx > 0 && exercisesWithLogs >= totalEx;
@@ -559,9 +577,7 @@ function PlannedSessionCard({
         {[...session.planned_exercises]
           .sort((a, b) => a.order_index - b.order_index)
           .map((ex) => {
-            const exerciseLogs = logs.filter(
-              (l) => l.planned_exercise_id === ex.id || l.exercise === ex.exercise,
-            );
+            const exerciseLogs = matchLogs(ex);
             const exerciseProcessed = processed.filter(
               (p) =>
                 exerciseLogs.some((l) => l.id === p.source.id),
@@ -582,6 +598,7 @@ function PlannedSessionCard({
     </Card>
   );
 }
+
 
 function PlannedExerciseRow({
   ex,

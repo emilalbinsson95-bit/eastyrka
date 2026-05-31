@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { format, parseISO, addWeeks } from "date-fns";
+import { format, parseISO, addWeeks, addDays } from "date-fns";
 import {
   ArrowLeft,
   Plus,
@@ -488,6 +488,7 @@ function CycleDetailPage() {
           previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
+          athleteId={athleteId}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
@@ -506,6 +507,7 @@ function CycleDetailPage() {
           }}
         />
       )}
+
     </div>
   );
 }
@@ -517,6 +519,7 @@ function WeekEditor({
   previousWeek,
   exerciseLib,
   baselines,
+  athleteId,
   onTogglePublish,
   onCopyFromPrevious,
 }: {
@@ -526,9 +529,11 @@ function WeekEditor({
   previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
   baselines: Record<string, number>;
+  athleteId: string;
   onTogglePublish: (publish: boolean) => void;
   onCopyFromPrevious: () => void;
 }) {
+
   const qc = useQueryClient();
 
   const sessionsQuery = useQuery({
@@ -559,6 +564,29 @@ function WeekEditor({
       };
     },
   });
+
+  // Endurance/running sessions for this week (read-only summary so coaches
+  // can see auto-generated marathon plans alongside the strength grid).
+  const weekEndDate = useMemo(
+    () => format(addDays(parseISO(week.week_start_date), 6), "yyyy-MM-dd"),
+    [week.week_start_date],
+  );
+
+  const enduranceQuery = useQuery({
+    queryKey: ["week-endurance", athleteId, week.week_start_date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_sessions")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, status")
+        .eq("athlete_id", athleteId)
+        .gte("date", week.week_start_date)
+        .lte("date", weekEndDate)
+        .order("date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
   const addSessionMutation = useMutation({
     mutationFn: async (day: number) => {
@@ -729,7 +757,51 @@ function WeekEditor({
         </div>
       </div>
 
+      {(enduranceQuery.data?.length ?? 0) > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">
+              Running / endurance this week
+              <Badge variant="outline" className="ml-2 text-[10px]">
+                {enduranceQuery.data!.length} sessions
+              </Badge>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Auto-generated from the marathon plan. Open the athlete's calendar to edit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {enduranceQuery.data!.map((s) => {
+              const mins = Math.round((s.planned_total_seconds ?? 0) / 60);
+              return (
+                <div
+                  key={s.id}
+                  className="rounded-md border border-border bg-muted/30 p-2 text-xs"
+                >
+                  <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+                    {format(parseISO(s.date), "EEE d MMM")}
+                  </div>
+                  <div className="mt-0.5 font-medium leading-tight">
+                    {s.title ?? s.discipline}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                    {mins > 0 && <span>{mins} min</span>}
+                    {s.planned_avg_rpe != null && (
+                      <span>RPE {Number(s.planned_avg_rpe).toFixed(1)}</span>
+                    )}
+                    <Badge variant="outline" className="px-1 py-0 text-[9px] capitalize">
+                      {s.status}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
         {Array.from({ length: daysPerWeek }, (_, day) => {
           const dayName = dayLabel(day);
           const session = sessionsByDay.get(day);

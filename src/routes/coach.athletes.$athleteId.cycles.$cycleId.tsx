@@ -757,7 +757,51 @@ function WeekEditor({
         </div>
       </div>
 
+      {(enduranceQuery.data?.length ?? 0) > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">
+              Running / endurance this week
+              <Badge variant="outline" className="ml-2 text-[10px]">
+                {enduranceQuery.data!.length} sessions
+              </Badge>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Auto-generated from the marathon plan. Open the athlete's calendar to edit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {enduranceQuery.data!.map((s) => {
+              const mins = Math.round((s.planned_total_seconds ?? 0) / 60);
+              return (
+                <div
+                  key={s.id}
+                  className="rounded-md border border-border bg-muted/30 p-2 text-xs"
+                >
+                  <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+                    {format(parseISO(s.date), "EEE d MMM")}
+                  </div>
+                  <div className="mt-0.5 font-medium leading-tight">
+                    {s.title ?? s.discipline}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                    {mins > 0 && <span>{mins} min</span>}
+                    {s.planned_avg_rpe != null && (
+                      <span>RPE {Number(s.planned_avg_rpe).toFixed(1)}</span>
+                    )}
+                    <Badge variant="outline" className="px-1 py-0 text-[9px] capitalize">
+                      {s.status}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
         {Array.from({ length: daysPerWeek }, (_, day) => {
           const dayName = dayLabel(day);
           const session = sessionsByDay.get(day);

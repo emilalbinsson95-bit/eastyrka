@@ -519,6 +519,7 @@ function WeekEditor({
   previousWeek,
   exerciseLib,
   baselines,
+  athleteId,
   onTogglePublish,
   onCopyFromPrevious,
 }: {
@@ -528,9 +529,11 @@ function WeekEditor({
   previousWeek: WeekPlanRow | null;
   exerciseLib: ExerciseLib[];
   baselines: Record<string, number>;
+  athleteId: string;
   onTogglePublish: (publish: boolean) => void;
   onCopyFromPrevious: () => void;
 }) {
+
   const qc = useQueryClient();
 
   const sessionsQuery = useQuery({

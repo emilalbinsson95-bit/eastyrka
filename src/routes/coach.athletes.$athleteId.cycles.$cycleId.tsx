@@ -565,6 +565,28 @@ function WeekEditor({
     },
   });
 
+  // Endurance/running sessions for this week (read-only summary so coaches
+  // can see auto-generated marathon plans alongside the strength grid).
+  const weekEndDate = useMemo(
+    () => format(addWeeks(parseISO(week.week_start_date), 0).valueOf() + 6 * 86400000 ? addDaysSafe(week.week_start_date, 6) : week.week_start_date, "yyyy-MM-dd"),
+    [week.week_start_date],
+  );
+  const enduranceQuery = useQuery({
+    queryKey: ["week-endurance", athleteId, week.week_start_date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_sessions")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, status")
+        .eq("athlete_id", athleteId)
+        .gte("date", week.week_start_date)
+        .lte("date", weekEndDate)
+        .order("date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+
   const addSessionMutation = useMutation({
     mutationFn: async (day: number) => {
       const { error } = await supabase.from("planned_sessions").insert({

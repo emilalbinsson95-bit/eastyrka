@@ -488,6 +488,7 @@ function CycleDetailPage() {
           previousWeek={previousWeek}
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
+          athleteId={athleteId}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
@@ -506,6 +507,7 @@ function CycleDetailPage() {
           }}
         />
       )}
+
     </div>
   );
 }

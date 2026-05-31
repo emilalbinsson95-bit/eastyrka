@@ -568,9 +568,10 @@ function WeekEditor({
   // Endurance/running sessions for this week (read-only summary so coaches
   // can see auto-generated marathon plans alongside the strength grid).
   const weekEndDate = useMemo(
-    () => format(addWeeks(parseISO(week.week_start_date), 0).valueOf() + 6 * 86400000 ? addDaysSafe(week.week_start_date, 6) : week.week_start_date, "yyyy-MM-dd"),
+    () => format(addDays(parseISO(week.week_start_date), 6), "yyyy-MM-dd"),
     [week.week_start_date],
   );
+
   const enduranceQuery = useQuery({
     queryKey: ["week-endurance", athleteId, week.week_start_date],
     queryFn: async () => {

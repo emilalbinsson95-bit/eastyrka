@@ -418,6 +418,27 @@ function AnalyticsPage() {
     return { volume, maxWeight, peakE1RM, peakEAk, sessions: dailyStats.length };
   }, [dailyStats]);
 
+  // Baseline history series for selected exercise — shows coach-recorded
+  // 1RM baseline changes over time (progression / regression).
+  const baselineSeries = useMemo(() => {
+    const rows = (baselineHistoryQuery.data ?? []).filter(
+      (r) => exercise && r.exercise === exercise,
+    );
+    return rows.map((r) => ({
+      date: r.recorded_at,
+      label: format(parseISO(r.recorded_at), "MMM d, yyyy"),
+      one_rm_kg: r.one_rm_kg,
+      note: r.note,
+    }));
+  }, [baselineHistoryQuery.data, exercise]);
+
+  const baselineDelta = useMemo(() => {
+    if (baselineSeries.length < 2) return null;
+    const first = baselineSeries[0].one_rm_kg;
+    const last = baselineSeries[baselineSeries.length - 1].one_rm_kg;
+    return { abs: last - first, pct: ((last - first) / first) * 100 };
+  }, [baselineSeries]);
+
   const formSeries = useMemo(
     () =>
       (surveysQuery.data ?? []).map((s) => ({

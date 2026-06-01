@@ -115,11 +115,11 @@ export function EnduranceSessionEditor({
     ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
   };
 
-  // Pass-to-pass: if this session has no own prediction, fall back to the
-  // most recent completed session's prediction for the same athlete.
-  const lastPredictionQuery = useQuery({
-    queryKey: ["last-predicted-10k", session?.athlete_id, session?.id],
-    enabled: !!session?.athlete_id && session?.predicted_10k_seconds == null,
+  // Pass-to-pass: last 5 predictions (newest → oldest) feed both the fallback
+  // benchmark AND the EWMA stabilizer applied at save time.
+  const recentPredictionsQuery = useQuery({
+    queryKey: ["recent-predicted-10k", session?.athlete_id, session?.id],
+    enabled: !!session?.athlete_id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_sessions")
@@ -130,12 +130,13 @@ export function EnduranceSessionEditor({
         .neq("id", session!.id)
         .lte("date", session!.date)
         .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(5);
       if (error) throw error;
-      return (data?.predicted_10k_seconds as number | null) ?? null;
+      return (data ?? []).map((r) => r.predicted_10k_seconds as number);
     },
   });
+  const lastPredictionQuery = { data: recentPredictionsQuery.data?.[0] ?? null };
+
 
   // Priority: this session's stored prediction → previous session's prediction → profile PB.
   const benchmarks: AthleteBenchmarks = {

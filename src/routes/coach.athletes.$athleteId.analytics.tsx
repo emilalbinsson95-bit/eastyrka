@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
-import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download, Footprints, Bike, Waves, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download, Footprints, Bike, Waves, ChevronLeft, ChevronRight, Wand2, Loader2 } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -40,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 import { dailyE1RM } from "@/lib/eakoefficient";
+import { autoFloatBaselines, type BaselineAutoResult } from "@/lib/baselineAutofloat.functions";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 

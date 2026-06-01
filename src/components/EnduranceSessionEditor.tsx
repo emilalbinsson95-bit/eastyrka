@@ -18,7 +18,10 @@ import {
   formatDuration, parseHMS, totalPlannedSeconds, avgTargetRpe, rpeTone, rpeLabel, disciplineEmoji,
   paceLabelFromDistance,
 } from "@/lib/endurance";
-import { estimateForRpe, hasAnyBenchmark, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
+import {
+  estimateForRpe, hasAnyBenchmark, predict10kFromEfforts,
+  fmtMSS, type AthleteBenchmarks, type RunEffort,
+} from "@/lib/endurancePaceHr";
 
 const disciplineIcon = (d: Discipline | null | undefined) =>
   d === "run" ? <Footprints className="h-4 w-4" /> :

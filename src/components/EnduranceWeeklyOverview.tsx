@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  aggregateWeekly, RPE_BANDS, sessionLoad, acwr, polarizedDistribution,
+  aggregateWeekly, RPE_BANDS, sessionLoad, acwr, polarizedDistribution, polarizationTargetForVolume,
   fitnessFatigueSeries, buildSegmentsFromSteps, type LoadSession,
 } from "@/lib/enduranceLoad";
 import { formatDuration } from "@/lib/endurance";

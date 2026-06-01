@@ -640,3 +640,43 @@ function SessionCard({
     </div>
   );
 }
+
+function MonthNavButton({
+  id,
+  isDragging,
+  ariaLabel,
+  onClick,
+  onHoverHold,
+  onHoverLeave,
+  children,
+}: {
+  id: string;
+  isDragging: boolean;
+  ariaLabel: string;
+  onClick: () => void;
+  onHoverHold: () => void;
+  onHoverLeave: () => void;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id, disabled: !isDragging });
+  useEffect(() => {
+    if (isOver) onHoverHold();
+    else onHoverLeave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOver]);
+  return (
+    <Button
+      ref={setNodeRef as unknown as React.Ref<HTMLButtonElement>}
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={cn(
+        isDragging && "ring-1 ring-dashed ring-primary/40",
+        isOver && "bg-primary/15 ring-primary text-primary",
+      )}
+    >
+      {children}
+    </Button>
+  );
+}

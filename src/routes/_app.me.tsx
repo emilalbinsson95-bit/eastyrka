@@ -154,8 +154,13 @@ function MePage() {
         userId={userId}
         initial={profileQuery.data}
         onSaved={() => {
+          // Refresh all data derived from the athlete's endurance benchmarks
+          // so RPE→pace/HR estimates update everywhere immediately.
           qc.invalidateQueries({ queryKey: ["profile", userId] });
           qc.invalidateQueries({ queryKey: ["pb-history", userId] });
+          qc.invalidateQueries({ queryKey: ["athlete-benchmarks", userId] });
+          qc.invalidateQueries({ queryKey: ["today-endurance-profile", userId] });
+          qc.invalidateQueries({ queryKey: ["athlete-profile", userId] });
         }}
       />
     </div>

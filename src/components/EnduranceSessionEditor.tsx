@@ -1265,25 +1265,45 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
         )}
         <div className="space-y-1">
           <Label>Predicted 10k time today</Label>
+          {session.discipline === "run" && autoPredicted10k != null && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">Auto-predicted from this session:</span>
+              <Badge variant="secondary" className="font-mono">{fmtMSS(autoPredicted10k)}</Badge>
+              {predTouched ? (
+                <Button
+                  type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setPredTouched(false);
+                    setPred10kMin(String(Math.floor(autoPredicted10k / 60)));
+                    setPred10kSec(String(autoPredicted10k % 60).padStart(2, "0"));
+                  }}
+                >Use auto</Button>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">Saved automatically. Type below to override.</span>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Input
               type="number" min={0} max={240} placeholder="min"
               className="w-24"
               value={pred10kMin}
-              onChange={(e) => setPred10kMin(e.target.value)}
+              onChange={(e) => { setPredTouched(true); setPred10kMin(e.target.value); }}
             />
             <span className="text-sm text-muted-foreground">:</span>
             <Input
               type="number" min={0} max={59} placeholder="sec"
               className="w-24"
               value={pred10kSec}
-              onChange={(e) => setPred10kSec(e.target.value)}
+              onChange={(e) => { setPredTouched(true); setPred10kSec(e.target.value); }}
             />
             <span className="text-xs text-muted-foreground">
-              How fast you feel you could race a 10k today. Updates only this session — your all-time PB stays in your profile.
+              Derived from your best sustained effort this session. Edit only to override.
             </span>
           </div>
         </div>
+
         <div className="space-y-1">
           <Label>How did it feel?</Label>
           <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}

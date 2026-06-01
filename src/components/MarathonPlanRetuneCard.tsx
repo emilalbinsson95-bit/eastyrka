@@ -211,17 +211,26 @@ export function MarathonPlanRetuneCard({
           )}
         </div>
 
-        {!noChange && canApply && upcomingCount > 0 && (
-          <div className="flex justify-end">
+        {canApply && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] text-muted-foreground">
+              {upcomingCount > 0
+                ? <>Skalar <strong>{upcomingCount}</strong> planerade pass de närmsta 4 veckorna med <strong>×{finalMult.toFixed(2)}</strong>. Loggade pass rörs aldrig.</>
+                : "Inga planerade pass i fönstret 4 veckor framåt."}
+            </div>
             <Button
               size="sm"
+              variant={noChange ? "outline" : "default"}
               onClick={() => apply.mutate()}
-              disabled={apply.isPending}
+              disabled={apply.isPending || upcomingCount === 0 || noChange}
+              title={noChange ? "Inget att justera — multiplikatorn är 1.00" : undefined}
             >
-              {apply.isPending ? "Justerar…" : `Skala ${upcomingCount} pass × ${finalMult.toFixed(2)}`}
+              <Sparkles className="mr-1 h-3.5 w-3.5" />
+              {apply.isPending ? "Re-tunar…" : "Re-tune kommande 4 veckor"}
             </Button>
           </div>
         )}
+
       </CardContent>
     </Card>
   );

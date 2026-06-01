@@ -248,6 +248,8 @@ export type Database = {
           parent_id: string | null
           repeat_count: number
           session_id: string
+          target_hr_bpm: number | null
+          target_pace_seconds_per_km: number | null
           target_rpe: number | null
         }
         Insert: {
@@ -267,6 +269,8 @@ export type Database = {
           parent_id?: string | null
           repeat_count?: number
           session_id: string
+          target_hr_bpm?: number | null
+          target_pace_seconds_per_km?: number | null
           target_rpe?: number | null
         }
         Update: {
@@ -286,6 +290,8 @@ export type Database = {
           parent_id?: string | null
           repeat_count?: number
           session_id?: string
+          target_hr_bpm?: number | null
+          target_pace_seconds_per_km?: number | null
           target_rpe?: number | null
         }
         Relationships: [

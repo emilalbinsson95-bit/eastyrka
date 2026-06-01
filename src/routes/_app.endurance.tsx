@@ -14,6 +14,7 @@ import { ReadinessGate } from "@/components/ReadinessGate";
 import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoji } from "@/lib/endurance";
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
+import { MarathonPlanRetuneCard } from "@/components/MarathonPlanRetuneCard";
 
 export const Route = createFileRoute("/_app/endurance")({
   component: EndurancePage,

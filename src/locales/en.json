@@ -24,7 +24,8 @@
     "home": "Home",
     "calendar": "Calendar",
     "endurance": "Endurance",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "methodology": "Methodology"
   },
   "actions": {
     "signIn": "Sign in",

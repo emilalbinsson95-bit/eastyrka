@@ -160,6 +160,134 @@ TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
           <code> planned_total_seconds</code> och alla <code>endurance_steps.duration_seconds</code>
           för planerade pass de närmsta 28 dagarna. Avslutade/pågående pass rörs aldrig.</p>
       </Section>
+
+      <Section title="Räkneexempel — EAkoefficient">
+        <p>Atlet med baseline 1RM knäböj 150 kg. Idag: 130 kg × 5 reps @ RPE 8.</p>
+        <Formula>
+{`E1RM = 130 × (1 + (5 + (10 − 8)) / 30)
+     = 130 × (1 + 7/30)
+     = 130 × 1.2333
+     = 160.3 kg
+EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
+        </Formula>
+        <p>Tolkning: dagsformen är 6.9 % över baseline → grönt ljus för tungt set
+          eller test, men logga och se om det håller två pass i rad innan baseline justeras.</p>
+      </Section>
+
+      <Section title="Räkneexempel — ACWR efter en tung vecka">
+        <p>Senaste 7 dagar: 4 pass à 60 min RPE 7 + 1 långpass 120 min RPE 6.</p>
+        <Formula>
+{`acute   = 4 × (60 × 7) + 1 × (120 × 6)
+        = 1680 + 720 = 2400 AU
+chronic = (snitt 28d ~ 280 AU/dag) × 7 = 1960 AU
+ratio   = 2400 / 1960 = 1.22  → sweet spot`}
+        </Formula>
+        <p>Hade samma vecka kommit på en kronisk bas på 1200 AU blev ratio 2.0
+          → danger, och drift-/retune-logiken skulle skala kommande veckor × 0.85.</p>
+      </Section>
+
+      <Section title="Räkneexempel — RPE → pace via VDOT">
+        <p>Atlet: 10k-PB 42:00. v = 10000/42 = 238 m/min.</p>
+        <Formula>
+{`VO2     = −4.6 + 0.182258·238 + 0.000104·238²  ≈  44.6
+%VO2max ≈ 0.838  (t = 42 min)
+VDOT    = 44.6 / 0.838 ≈ 53.2`}
+        </Formula>
+        <p>Vid RPE 6 (M-pace, ~82 % VO2max) inverteras kvadraten:</p>
+        <Formula>
+{`mål-VO2 = 0.82 × 53.2 ≈ 43.6
+lös     0.000104·v² + 0.182258·v − 48.2 = 0
+v       ≈ 232 m/min  →  4:18 / km`}
+        </Formula>
+      </Section>
+
+      <Section title="Beslutsdiagram — drift → retune">
+        <Formula>
+{`           ┌─────────────────────────────┐
+           │  5 senaste kvalitetspass    │
+           │  delta_i = actual − planned │
+           └──────────────┬──────────────┘
+                          │
+              avgDelta, n_drifted (Δ ≥ 1)
+                          │
+        ┌─────────────────┼──────────────────┐
+        ▼                 ▼                  ▼
+  avgΔ ≥ +1.5         avgΔ ≥ +1.0        annars
+  ELLER ≥ 4/5         ELLER ≥ 3/5
+        │                 │                  │
+        ▼                 ▼                  ▼
+  reduce_volume       easy_week           hold
+   × 0.85              × 0.90            × 1.00
+        │                 │                  │
+        └─────────┬───────┴──────────────────┘
+                  ▼
+   kombinera med ACWR-faktor (konservativast vinner)
+                  ▼
+   klamp [0.75, 1.10]  →  skala 28d planerade pass`}
+        </Formula>
+      </Section>
+
+      <Section title="Beslutsdiagram — RPE → preskription">
+        <Formula>
+{`           ┌──────────────┐
+           │ Coach-override?│──ja──▶ använd exakt pace/HR/watt
+           └──────┬─────────┘
+                  │ nej
+                  ▼
+           ┌──────────────────┐
+           │ Modalitet?       │
+           └──┬────┬─────┬────┘
+              │    │     │
+           löp│ cykel│ sim│
+              ▼    ▼     ▼
+           VDOT  FTP    CSS
+              │    │     │
+              └────┼─────┘
+                   ▼
+           RPE → %target
+                   ▼
+           steg-pace / watt / pace/100m
+                   ▼
+           HR-överlägg:
+             HRrest+max → Karvonen %HRR
+             bara max   → %HRmax`}
+        </Formula>
+      </Section>
+
+      <Section title="Volym → easy-andel (80/20-rampen)">
+        <Formula>
+{`easy %
+ 80 ┤                          ┌──────────────
+    │                       ╱
+ 70 ┤                    ╱
+    │                 ╱
+ 60 ┤──────────────╱
+    └─────────────┬─────────┬──────────────▶ min/v
+                 150       450`}
+        </Formula>
+        <p>Mellan 150 och 450 min/v: <code>easy = 0.60 + 0.20 × (min − 150) / 300</code>.
+          Vid 300 min/v → 70 % easy / 30 % kvalitet. Vid 600 min/v → kapas till 80 %.</p>
+      </Section>
+
+      <Section title="Faser i 20-veckorsplanen">
+        <Formula>
+{`vecka   1  2  3  4 │ 5  6  7  8  9 10 │11 12 13 14 15 │16 17 18 │19 20
+fas     Base       │ LT-utveckling     │Race-specific  │Sharpen  │Taper
+volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅          │▅▄▃      │▂ R`}
+        </Formula>
+        <p>Race ligger sista söndagen. Taper sänker volym men behåller intensitet
+          (öppningsintervall i v19, race-pace-tune i v20).</p>
+      </Section>
+
+      <Section title="Antaganden & begränsningar">
+        <ul className="list-disc pl-5 space-y-1">
+          <li>VDOT är validerad för 1500 m – maraton. Ultra/track-sprint avviker.</li>
+          <li>EAkoefficient antar samma rörelse som baseline-test (samma bar, samma djup).</li>
+          <li>sRPE kräver att RPE loggas inom ~30 min efter passet — senare logg är brus.</li>
+          <li>ACWR är ett <em>varningssystem</em>, inte en diagnos. Vi ratio:ar inte under 28 d data.</li>
+          <li>Re-tune rör aldrig race-passet eller pass markerade som testfönster.</li>
+        </ul>
+      </Section>
     </div>
   );
 }

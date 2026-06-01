@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle, User } from "lucide-react";
+import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle, User, FlaskConical } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ function CoachLayout() {
             <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
             <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
             <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
+            <CoachNavLink to="/coach/methodology" icon={<FlaskConical className="h-4 w-4" />} label={t("nav.methodology")} />
             <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
           </nav>
           <div className="flex items-center gap-1">
@@ -80,6 +81,7 @@ function CoachLayout() {
           <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
           <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
           <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
+          <CoachNavLink to="/coach/methodology" icon={<FlaskConical className="h-4 w-4" />} label={t("nav.methodology")} />
           <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
         </nav>
       </header>
@@ -97,7 +99,7 @@ function CoachNavLink({
   label,
   exact,
 }: {
-  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/messages";
+  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/coach/methodology" | "/messages";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

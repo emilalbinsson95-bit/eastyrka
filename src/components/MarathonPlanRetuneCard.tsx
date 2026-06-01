@@ -169,7 +169,7 @@ export function MarathonPlanRetuneCard({
         <div className="grid grid-cols-3 gap-2 text-xs">
           <Metric
             label="ACWR (7d/28d)"
-            value={a.ratio.toFixed(2)}
+            value={(a.ratio ?? 0).toFixed(2)}
             sub={a.zone}
             tone={a.zone === "optimal" ? "ok" : a.zone === "low" ? "warn" : a.zone === "high" ? "warn" : "bad"}
           />
@@ -200,13 +200,13 @@ export function MarathonPlanRetuneCard({
                 ? "Konsekvent RPE-överskott — föreslår tydlig deload."
                 : drift.recommendation === "easy_week"
                 ? "RPE driver över plan — föreslår lättare vecka."
-                : `Hög ACWR (${a.ratio.toFixed(2)}) — föreslår mjukare ramp.`}
+                : `Hög ACWR (${(a.ratio ?? 0).toFixed(2)}) — föreslår mjukare ramp.`}
               {" "}Skalas på {upcomingCount} pass (–28d framåt) som ännu inte loggats.
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5">
               <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-              Låg ACWR ({a.ratio.toFixed(2)}) — det finns utrymme att rampa upp +{pct}%.
+              Låg ACWR ({(a.ratio ?? 0).toFixed(2)}) — det finns utrymme att rampa upp +{pct}%.
             </span>
           )}
         </div>

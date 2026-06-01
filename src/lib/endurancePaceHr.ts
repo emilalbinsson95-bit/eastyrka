@@ -140,6 +140,41 @@ export function predict10kFromEfforts(efforts: RunEffort[]): number | null {
   return predict10kFromVdot(bestVdot);
 }
 
+/**
+ * EWMA-stabilized 10k prediction.
+ *
+ * Why: a single great rep can spike `predict10kFromEfforts` to an unrealistic
+ * value. Smoothing against the recent prediction history dampens noise while
+ * still letting genuine fitness gains propagate over 2-4 sessions.
+ *
+ * Formula: a classic EWMA where α controls how reactive we are.
+ *   blended = α · current + (1 − α) · prevEMA
+ * α = 0.4 means a single outlier moves the estimate by ~40% of the gap,
+ * which the next 1-2 sessions wash out unless the trend is real.
+ *
+ * `history` MUST be ordered newest → oldest (typically the 4-5 most recent
+ * `predicted_10k_seconds` from earlier sessions). When the history is empty
+ * we return the raw current prediction unchanged.
+ */
+export function blendPrediction(
+  currentSeconds: number | null,
+  history: number[],
+  alpha = 0.4,
+): number | null {
+  if (currentSeconds == null) return null;
+  const clean = history.filter((n) => Number.isFinite(n) && n >= 1500 && n <= 14400);
+  if (clean.length === 0) return Math.round(currentSeconds);
+
+  // Build EMA over the (reversed) history — oldest first — then blend in current.
+  const oldestFirst = [...clean].reverse();
+  let ema = oldestFirst[0];
+  for (let i = 1; i < oldestFirst.length; i++) {
+    ema = alpha * oldestFirst[i] + (1 - alpha) * ema;
+  }
+  const blended = alpha * currentSeconds + (1 - alpha) * ema;
+  return Math.round(blended);
+}
+
 
 /**
  * RPE 1..10 → target %VO2max for running.

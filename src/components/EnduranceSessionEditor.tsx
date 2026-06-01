@@ -19,8 +19,9 @@ import {
   paceLabelFromDistance,
 } from "@/lib/endurance";
 import {
-  estimateForRpe, hasAnyBenchmark, predict10kFromEfforts,
+  estimateForRpe, hasAnyBenchmark, predict10kFromEfforts, blendPrediction,
   fmtMSS, type AthleteBenchmarks, type RunEffort,
+
 } from "@/lib/endurancePaceHr";
 
 const disciplineIcon = (d: Discipline | null | undefined) =>

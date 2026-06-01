@@ -442,6 +442,36 @@ function AnalyticsPage() {
     return { abs: last - first, pct: ((last - first) / first) * 100 };
   }, [baselineSeries]);
 
+  // Auto-flytande baseline: trögt — kräver minst 12 peak-pass (EAk ≥ 103 %)
+  // sedan senaste baseline-ändringen innan den höjs.
+  const queryClient = useQueryClient();
+  const autoFloat = useServerFn(autoFloatBaselines);
+  const [autoFloatPending, setAutoFloatPending] = useState(false);
+  const [autoFloatResult, setAutoFloatResult] = useState<BaselineAutoResult | null>(null);
+
+  async function handleAutoFloat() {
+    setAutoFloatPending(true);
+    try {
+      const res = await autoFloat({ data: { athleteId } });
+      setAutoFloatResult(res);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["analytics-baselines", athleteId] }),
+        queryClient.invalidateQueries({ queryKey: ["analytics-baseline-history", athleteId] }),
+      ]);
+      if (res.updated.length === 0) {
+        toast.info("Inga baselines behövde flyttas än.");
+      } else {
+        toast.success(
+          `Flyttade ${res.updated.length} baseline${res.updated.length === 1 ? "" : "s"} (${res.updated.map((u) => `${u.exercise} ${u.oldBaseline}→${u.newBaseline} kg`).join(", ")})`,
+        );
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Auto-uppdatering misslyckades");
+    } finally {
+      setAutoFloatPending(false);
+    }
+  }
+
   const formSeries = useMemo(
     () =>
       (surveysQuery.data ?? []).map((s) => ({

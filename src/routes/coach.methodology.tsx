@@ -57,6 +57,11 @@ EAk %      = (dagens E1RM ÷ baseline 1RM) × 100`}
         </ul>
         <p>Volymkvalitet inom passet: jämför set 2+ mot set 1:s E1RM samma dag.
           ≤ 4 % drop = optimal, 4–5 % = acceptabel, ≥ 5 % = fatigue limit nått.</p>
+        <p className="mt-2"><b>Auto-flytande baseline (trögt):</b> när atleten har samlat
+          ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste baseline-ändringen höjs baseline
+          till <code>median(peak-E1RM) × 0.98</code>, avrundat till 0.5 kg. Endast höjningar
+          tillåts; coach hanterar nedjusteringar manuellt. Enstaka topp-pass flyttar
+          alltså aldrig baseline — det krävs sustained progression.</p>
       </Section>
 
       <Section title="RPE → %1RM (RTS / Helms-tabell)">

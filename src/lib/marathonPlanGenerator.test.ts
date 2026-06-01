@@ -14,9 +14,9 @@ describe("marathonPlanGenerator", () => {
     expect(plan.phaseLabels.length).toBe(20);
   });
 
-  it("race day is final Sunday", () => {
-    // startMonday + 19*7+6 days = race Sunday
-    expect(plan.raceDate).toBe("2026-05-17");
+  it("race day is the last Sunday of week 20", () => {
+    // startMonday + 20*7 - 1 = 139 days → 2026-05-24
+    expect(plan.raceDate).toBe("2026-05-24");
   });
 
   it("every week has at least one session", () => {

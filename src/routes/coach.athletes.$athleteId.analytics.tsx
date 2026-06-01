@@ -993,6 +993,47 @@ function AnalyticsPage() {
                   </ResponsiveContainer>
                 </ChartCard>
 
+                <ChartCard
+                  title="Baseline 1RM history"
+                  description={
+                    baselineSeries.length === 0
+                      ? "No baseline changes recorded for this lift yet. Update the baseline on the athlete page to start tracking progression."
+                      : baselineDelta
+                        ? `${baselineSeries.length} change${baselineSeries.length === 1 ? "" : "s"} · ${baselineDelta.abs >= 0 ? "+" : ""}${baselineDelta.abs.toFixed(1)} kg (${baselineDelta.pct >= 0 ? "+" : ""}${baselineDelta.pct.toFixed(1)}%) since first record.`
+                        : "Single baseline on record."
+                  }
+                >
+                  {baselineSeries.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      Every baseline edit is logged automatically — the chart fills in as you update it.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <LineChart data={baselineSeries}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={["auto", "auto"]} unit=" kg" />
+                        <Tooltip
+                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                          formatter={(v: number) => [`${v} kg`, "Baseline 1RM"]}
+                          labelFormatter={(label, payload) => {
+                            const note = payload?.[0]?.payload?.note;
+                            return note ? `${label} — ${note}` : label;
+                          }}
+                        />
+                        <Line
+                          type="stepAfter"
+                          dataKey="one_rm_kg"
+                          name="Baseline 1RM (kg)"
+                          stroke="var(--chart-3)"
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+
                 <ChartCard title="Volume per session" description="Total tonnage (reps × weight) for each training day.">
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={dailyStats}>

@@ -543,9 +543,16 @@ export function generate20WeekMarathonPlan(opts: {
   startMonday: string; // YYYY-MM-DD
   tenKPbSeconds: number; // athlete 10k PB
   daysPerWeek: 4 | 5 | 6;
+  /**
+   * Optional pre-plan volume scaling driven by recent training load (ACWR)
+   * and/or RPE drift. Multiplied on top of the VDOT-derived volume factor.
+   * Typical range 0.80–1.05. Default 1.0.
+   */
+  volumeAdjustment?: number;
 }): MarathonPlan {
-  const { startMonday, tenKPbSeconds, daysPerWeek } = opts;
-  const factor = volumeFactor(tenKPbSeconds);
+  const { startMonday, tenKPbSeconds, daysPerWeek, volumeAdjustment = 1.0 } = opts;
+  const adj = Math.max(0.6, Math.min(1.2, volumeAdjustment));
+  const factor = volumeFactor(tenKPbSeconds) * adj;
   const weeklyVolumeMin = WEEKLY_MIN_BASE.map((m) => Math.round(m * factor / 5) * 5);
 
   const sessions: PlannedSession[] = [];
@@ -575,3 +582,4 @@ export function generate20WeekMarathonPlan(opts: {
     phaseLabels: PHASE_LABELS,
   };
 }
+

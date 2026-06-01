@@ -154,6 +154,24 @@ function AnalyticsPage() {
     },
   });
 
+  const baselineHistoryQuery = useQuery({
+    queryKey: ["analytics-baseline-history", athleteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("baseline_history")
+        .select("exercise, one_rm_kg, recorded_at, note")
+        .eq("athlete_id", athleteId)
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((r) => ({
+        exercise: r.exercise,
+        one_rm_kg: Number(r.one_rm_kg),
+        recorded_at: r.recorded_at as string,
+        note: r.note as string | null,
+      }));
+    },
+  });
+
   const surveysQuery = useQuery({
     queryKey: ["analytics-surveys", athleteId, days],
     queryFn: async () => {
@@ -399,6 +417,27 @@ function AnalyticsPage() {
     const peakEAk = dailyStats.reduce((acc, d) => Math.max(acc, d.eaKoefficient), 0);
     return { volume, maxWeight, peakE1RM, peakEAk, sessions: dailyStats.length };
   }, [dailyStats]);
+
+  // Baseline history series for selected exercise — shows coach-recorded
+  // 1RM baseline changes over time (progression / regression).
+  const baselineSeries = useMemo(() => {
+    const rows = (baselineHistoryQuery.data ?? []).filter(
+      (r) => exercise && r.exercise === exercise,
+    );
+    return rows.map((r) => ({
+      date: r.recorded_at,
+      label: format(parseISO(r.recorded_at), "MMM d, yyyy"),
+      one_rm_kg: r.one_rm_kg,
+      note: r.note,
+    }));
+  }, [baselineHistoryQuery.data, exercise]);
+
+  const baselineDelta = useMemo(() => {
+    if (baselineSeries.length < 2) return null;
+    const first = baselineSeries[0].one_rm_kg;
+    const last = baselineSeries[baselineSeries.length - 1].one_rm_kg;
+    return { abs: last - first, pct: ((last - first) / first) * 100 };
+  }, [baselineSeries]);
 
   const formSeries = useMemo(
     () =>
@@ -952,6 +991,47 @@ function AnalyticsPage() {
                       )}
                     </LineChart>
                   </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard
+                  title="Baseline 1RM history"
+                  description={
+                    baselineSeries.length === 0
+                      ? "No baseline changes recorded for this lift yet. Update the baseline on the athlete page to start tracking progression."
+                      : baselineDelta
+                        ? `${baselineSeries.length} change${baselineSeries.length === 1 ? "" : "s"} · ${baselineDelta.abs >= 0 ? "+" : ""}${baselineDelta.abs.toFixed(1)} kg (${baselineDelta.pct >= 0 ? "+" : ""}${baselineDelta.pct.toFixed(1)}%) since first record.`
+                        : "Single baseline on record."
+                  }
+                >
+                  {baselineSeries.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      Every baseline edit is logged automatically — the chart fills in as you update it.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <LineChart data={baselineSeries}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={["auto", "auto"]} unit=" kg" />
+                        <Tooltip
+                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                          formatter={(v: number) => [`${v} kg`, "Baseline 1RM"]}
+                          labelFormatter={(label, payload) => {
+                            const note = payload?.[0]?.payload?.note;
+                            return note ? `${label} — ${note}` : label;
+                          }}
+                        />
+                        <Line
+                          type="stepAfter"
+                          dataKey="one_rm_kg"
+                          name="Baseline 1RM (kg)"
+                          stroke="var(--chart-3)"
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </ChartCard>
 
                 <ChartCard title="Volume per session" description="Total tonnage (reps × weight) for each training day.">

@@ -308,3 +308,93 @@ export function buildSegmentsFromSteps(
 export function daysBetween(a: string, b: string): number {
   return differenceInCalendarDays(parseISO(b), parseISO(a));
 }
+
+/* -------------------------------------------------------------------------- */
+/* Feedback loop: drift detection + plan-volume adjustment                    */
+/* -------------------------------------------------------------------------- */
+
+/** A session with enough info to compare planned vs actual RPE. */
+export interface DriftSession {
+  date: string;
+  planned_avg_rpe: number | null;
+  overall_rpe: number | null;
+  peak_rpe: number | null;
+  status: string | null;
+}
+
+export interface DriftSignal {
+  /** Number of recent quality sessions inspected. */
+  inspected: number;
+  /** How many of those exceeded plan by ≥ 1 RPE point. */
+  drifted: number;
+  /** Average (actual − planned) RPE across inspected sessions. */
+  avgDelta: number;
+  /** Plain-language recommendation. */
+  recommendation: "hold" | "easy_week" | "reduce_volume";
+  /** Suggested multiplier applied to the next mesocycle / next week volume. */
+  volumeMultiplier: number;
+}
+
+/**
+ * Look at the most recent `n` completed quality sessions (planned RPE ≥ 6)
+ * and detect whether actual effort is consistently overshooting the plan —
+ * a classic early sign of accumulating fatigue or chronic over-reach.
+ *
+ * Heuristic: if 3+ of the last 5 hard sessions had actual_overall_rpe ≥
+ * planned_avg_rpe + 1, recommend a deload-style 0.9× volume scaling for the
+ * next training block. Sustained drift (avg ≥ +1.5) triggers a deeper 0.85×.
+ */
+export function recentQualityDrift(sessions: DriftSession[], n = 5): DriftSignal {
+  const eligible = sessions
+    .filter((s) => s.status === "completed" && s.planned_avg_rpe != null && s.planned_avg_rpe >= 6 && s.overall_rpe != null)
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, n);
+
+  if (eligible.length < 3) {
+    return { inspected: eligible.length, drifted: 0, avgDelta: 0, recommendation: "hold", volumeMultiplier: 1.0 };
+  }
+
+  let drifted = 0;
+  let deltaSum = 0;
+  for (const s of eligible) {
+    const delta = (s.overall_rpe ?? 0) - (s.planned_avg_rpe ?? 0);
+    deltaSum += delta;
+    if (delta >= 1) drifted++;
+  }
+  const avgDelta = deltaSum / eligible.length;
+
+  let recommendation: DriftSignal["recommendation"] = "hold";
+  let volumeMultiplier = 1.0;
+  if (avgDelta >= 1.5 || drifted >= 4) {
+    recommendation = "reduce_volume";
+    volumeMultiplier = 0.85;
+  } else if (drifted >= 3 || avgDelta >= 1.0) {
+    recommendation = "easy_week";
+    volumeMultiplier = 0.9;
+  }
+
+  return {
+    inspected: eligible.length,
+    drifted,
+    avgDelta: Math.round(avgDelta * 10) / 10,
+    recommendation,
+    volumeMultiplier,
+  };
+}
+
+/**
+ * Map an ACWR ratio into a volume multiplier appropriate for plan generation.
+ *
+ * Athletes with chronically high ACWR (>1.3) entering a new mesocycle should
+ * NOT start at 100% of the calibrated weekly volume — that compounds risk.
+ * Athletes well under-trained (<0.7) can start slightly elevated to ramp
+ * faster, but never above 1.05× to keep the standard 10% rule honest.
+ */
+export function volumeAdjustmentForAcwr(ratio: number | null): number {
+  if (ratio == null || !isFinite(ratio)) return 1.0;
+  if (ratio >= 1.5) return 0.80; // danger
+  if (ratio >= 1.3) return 0.90; // high — start conservatively
+  if (ratio <= 0.7) return 1.05; // very low base — small ramp-up
+  return 1.0; // optimal
+}
+

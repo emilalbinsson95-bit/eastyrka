@@ -154,6 +154,24 @@ function AnalyticsPage() {
     },
   });
 
+  const baselineHistoryQuery = useQuery({
+    queryKey: ["analytics-baseline-history", athleteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("baseline_history")
+        .select("exercise, one_rm_kg, recorded_at, note")
+        .eq("athlete_id", athleteId)
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((r) => ({
+        exercise: r.exercise,
+        one_rm_kg: Number(r.one_rm_kg),
+        recorded_at: r.recorded_at as string,
+        note: r.note as string | null,
+      }));
+    },
+  });
+
   const surveysQuery = useQuery({
     queryKey: ["analytics-surveys", athleteId, days],
     queryFn: async () => {

@@ -24,7 +24,8 @@
     "home": "Hem",
     "calendar": "Kalender",
     "endurance": "Kondition",
-    "analytics": "Analys"
+    "analytics": "Analys",
+    "methodology": "Metodik"
   },
   "actions": {
     "signIn": "Logga in",

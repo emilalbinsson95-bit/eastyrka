@@ -82,6 +82,7 @@ function EndurancePage() {
   return (
     <div className="space-y-4">
       <EnduranceWeeklyOverview athleteId={user.id} />
+      <MarathonPlanRetuneCard athleteId={user.id} canApply />
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">

@@ -188,9 +188,10 @@ describe("enduranceLoad", () => {
   });
 
   describe("polarizationTargetForVolume", () => {
-    it("60/40 at low volume", () => {
+    it("40/60 (HIIT-weighted) at low volume", () => {
       const t = polarizationTargetForVolume(120);
-      expect(t.easyPct).toBe(60);
+      expect(t.easyPct).toBe(40);
+      expect(t.hardPct).toBe(60);
       expect(t.bucket).toBe("low");
     });
     it("80/20 at elite volume", () => {
@@ -200,8 +201,8 @@ describe("enduranceLoad", () => {
     });
     it("interpolates linearly between 150 and 450", () => {
       const t = polarizationTargetForVolume(300);
-      // midpoint → 70
-      expect(t.easyPct).toBe(70);
+      // midpoint between 40 and 80 → 60
+      expect(t.easyPct).toBe(60);
     });
   });
 });

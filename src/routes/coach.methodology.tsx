@@ -57,6 +57,11 @@ EAk %      = (dagens E1RM ÷ baseline 1RM) × 100`}
         </ul>
         <p>Volymkvalitet inom passet: jämför set 2+ mot set 1:s E1RM samma dag.
           ≤ 4 % drop = optimal, 4–5 % = acceptabel, ≥ 5 % = fatigue limit nått.</p>
+        <p className="mt-2"><b>Auto-flytande baseline (trögt):</b> när atleten har samlat
+          ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste baseline-ändringen höjs baseline
+          till <code>median(peak-E1RM) × 0.98</code>, avrundat till 0.5 kg. Endast höjningar
+          tillåts; coach hanterar nedjusteringar manuellt. Enstaka topp-pass flyttar
+          alltså aldrig baseline — det krävs sustained progression.</p>
       </Section>
 
       <Section title="RPE → %1RM (RTS / Helms-tabell)">
@@ -122,16 +127,18 @@ TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
         <p>60 dagars warm-up före synligt fönster så CTL hinner stabilisera sig.</p>
       </Section>
 
-      <Section title="Polariseringsmål — volymanpassad 80/20">
-        <p>Klassisk Seiler 80/20 antar elitvolym. Vi interpolerar easy-andelen
-          linjärt mellan veckans totala minuter:</p>
+      <Section title="Polariseringsmål — volymanpassad (HIIT-tungt → 80/20)">
+        <p>Klassisk Seiler 80/20 antar elitvolym. Vid låg volym vänder vi förhållandet:
+          då är HIIT-tunga pass mer effektiva per minut för VO2max, blodtryck och löpekonomi
+          (Gibala, Stöggl & Sperlich, Tjønna 4×4 m.fl.). Easy-andelen interpoleras linjärt
+          mellan veckans totala minuter:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><b>≤ 150 min/v (≈ 20 km)</b> → 60 % easy, 40 % kvalitet (pyramidalt)</li>
-          <li><b>150 – 450 min</b> → linjär ramp 60 → 80 %</li>
-          <li><b>≥ 450 min/v (≈ 90 km)</b> → klassisk 80/20</li>
+          <li><b>≤ 150 min/v (≈ 20 km, 2 korta pass)</b> → 40 % easy / <b>60 % kvalitet</b> (HIIT-tungt)</li>
+          <li><b>150 – 450 min</b> → linjär ramp 40 → 80 % easy</li>
+          <li><b>≥ 450 min/v (≈ 75–90 km)</b> → klassisk 80/20</li>
         </ul>
-        <p>Rationale: vid låg volym ger mer kvalitet bättre adaptation; vid hög volym
-          tjänar man mer på att skydda aerob bas än att lägga på fler hårda pass.</p>
+        <p>Rationale: lite total volym → kvalitet driver adaptationen och hälsovinsten.
+          Hög volym → aerob bas är redan stor; mer hårt arbete ger främst skaderisk.</p>
       </Section>
 
       <Section title="Drift-detektion (feedback-loop)">
@@ -254,19 +261,19 @@ v       ≈ 232 m/min  →  4:18 / km`}
         </Formula>
       </Section>
 
-      <Section title="Volym → easy-andel (80/20-rampen)">
+      <Section title="Volym → easy-andel (HIIT-tungt → 80/20-rampen)">
         <Formula>
 {`easy %
  80 ┤                          ┌──────────────
     │                       ╱
- 70 ┤                    ╱
+ 60 ┤                    ╱
     │                 ╱
- 60 ┤──────────────╱
+ 40 ┤──────────────╱
     └─────────────┬─────────┬──────────────▶ min/v
                  150       450`}
         </Formula>
-        <p>Mellan 150 och 450 min/v: <code>easy = 0.60 + 0.20 × (min − 150) / 300</code>.
-          Vid 300 min/v → 70 % easy / 30 % kvalitet. Vid 600 min/v → kapas till 80 %.</p>
+        <p>Mellan 150 och 450 min/v: <code>easy = 0.40 + 0.40 × (min − 150) / 300</code>.
+          Vid 150 min/v → 40 % easy / 60 % kvalitet. Vid 300 min/v → 60/40. Vid 450+ min/v → 80/20.</p>
       </Section>
 
       <Section title="Faser i 20-veckorsplanen">

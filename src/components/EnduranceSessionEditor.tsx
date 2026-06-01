@@ -113,13 +113,38 @@ export function EnduranceSessionEditor({
   const profileBenchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
     ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
   };
-  // For pace estimates in this session, prefer the session's own predicted 10k
-  // (athlete's "feel today") over the all-time PB stored on the profile.
+
+  // Pass-to-pass: if this session has no own prediction, fall back to the
+  // most recent completed session's prediction for the same athlete.
+  const lastPredictionQuery = useQuery({
+    queryKey: ["last-predicted-10k", session?.athlete_id, session?.id],
+    enabled: !!session?.athlete_id && session?.predicted_10k_seconds == null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_sessions")
+        .select("predicted_10k_seconds, date")
+        .eq("athlete_id", session!.athlete_id)
+        .eq("discipline", "run")
+        .not("predicted_10k_seconds", "is", null)
+        .neq("id", session!.id)
+        .lte("date", session!.date)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.predicted_10k_seconds as number | null) ?? null;
+    },
+  });
+
+  // Priority: this session's stored prediction → previous session's prediction → profile PB.
   const benchmarks: AthleteBenchmarks = {
     ...profileBenchmarks,
     ten_k_pb_seconds:
-      sessionQuery.data?.predicted_10k_seconds ?? profileBenchmarks.ten_k_pb_seconds,
+      sessionQuery.data?.predicted_10k_seconds
+      ?? lastPredictionQuery.data
+      ?? profileBenchmarks.ten_k_pb_seconds,
   };
+
 
   if (sessionQuery.isLoading) {
     return <Card><CardContent className="py-6 text-sm text-muted-foreground">Loading…</CardContent></Card>;

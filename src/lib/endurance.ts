@@ -58,6 +58,10 @@ export interface StepInput {
   duration_seconds: number | null;
   target_rpe: number | null;
   notes: string | null;
+  /** Coach override: lock a step to an exact pace (sec/km). When set, the RPE→pace estimate is bypassed. */
+  target_pace_seconds_per_km?: number | null;
+  /** Coach override: lock a step to an exact HR target. When set, the RPE→HR estimate is bypassed. */
+  target_hr_bpm?: number | null;
   actual_duration_seconds?: number | null;
   actual_avg_hr?: number | null;
   actual_distance_m?: number | null;

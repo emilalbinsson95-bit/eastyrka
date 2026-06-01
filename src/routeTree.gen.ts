@@ -24,6 +24,7 @@ import { Route as PatientIndexRouteImport } from './routes/patient.index'
 import { Route as CoachIndexRouteImport } from './routes/coach.index'
 import { Route as PhysioInvitesRouteImport } from './routes/physio.invites'
 import { Route as PatientCalendarRouteImport } from './routes/patient.calendar'
+import { Route as CoachMethodologyRouteImport } from './routes/coach.methodology'
 import { Route as CoachMeRouteImport } from './routes/coach.me'
 import { Route as CoachInvitesRouteImport } from './routes/coach.invites'
 import { Route as CoachExercisesRouteImport } from './routes/coach.exercises'
@@ -116,6 +117,11 @@ const PatientCalendarRoute = PatientCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
   getParentRoute: () => PatientRoute,
+} as any)
+const CoachMethodologyRoute = CoachMethodologyRouteImport.update({
+  id: '/methodology',
+  path: '/methodology',
+  getParentRoute: () => CoachRoute,
 } as any)
 const CoachMeRoute = CoachMeRouteImport.update({
   id: '/me',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
   '/coach/me': typeof CoachMeRoute
+  '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
   '/physio/invites': typeof PhysioInvitesRoute
   '/coach/': typeof CoachIndexRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
   '/coach/me': typeof CoachMeRoute
+  '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
   '/physio/invites': typeof PhysioInvitesRoute
   '/coach': typeof CoachIndexRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/invites': typeof CoachInvitesRoute
   '/coach/me': typeof CoachMeRoute
+  '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
   '/physio/invites': typeof PhysioInvitesRoute
   '/coach/': typeof CoachIndexRoute
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/coach/exercises'
     | '/coach/invites'
     | '/coach/me'
+    | '/coach/methodology'
     | '/patient/calendar'
     | '/physio/invites'
     | '/coach/'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/coach/exercises'
     | '/coach/invites'
     | '/coach/me'
+    | '/coach/methodology'
     | '/patient/calendar'
     | '/physio/invites'
     | '/coach'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/coach/exercises'
     | '/coach/invites'
     | '/coach/me'
+    | '/coach/methodology'
     | '/patient/calendar'
     | '/physio/invites'
     | '/coach/'
@@ -539,6 +551,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/patient/calendar'
       preLoaderRoute: typeof PatientCalendarRouteImport
       parentRoute: typeof PatientRoute
+    }
+    '/coach/methodology': {
+      id: '/coach/methodology'
+      path: '/methodology'
+      fullPath: '/coach/methodology'
+      preLoaderRoute: typeof CoachMethodologyRouteImport
+      parentRoute: typeof CoachRoute
     }
     '/coach/me': {
       id: '/coach/me'
@@ -727,6 +746,7 @@ interface CoachRouteChildren {
   CoachExercisesRoute: typeof CoachExercisesRoute
   CoachInvitesRoute: typeof CoachInvitesRoute
   CoachMeRoute: typeof CoachMeRoute
+  CoachMethodologyRoute: typeof CoachMethodologyRoute
   CoachIndexRoute: typeof CoachIndexRoute
   CoachAthletesAthleteIdRoute: typeof CoachAthletesAthleteIdRouteWithChildren
 }
@@ -735,6 +755,7 @@ const CoachRouteChildren: CoachRouteChildren = {
   CoachExercisesRoute: CoachExercisesRoute,
   CoachInvitesRoute: CoachInvitesRoute,
   CoachMeRoute: CoachMeRoute,
+  CoachMethodologyRoute: CoachMethodologyRoute,
   CoachIndexRoute: CoachIndexRoute,
   CoachAthletesAthleteIdRoute: CoachAthletesAthleteIdRouteWithChildren,
 }

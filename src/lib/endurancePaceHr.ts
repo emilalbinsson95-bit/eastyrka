@@ -69,6 +69,79 @@ function mPerMinToSecPerKm(mPerMin: number): number {
 }
 
 /**
+ * Predict the 10k race time (seconds) implied by a given VDOT.
+ * Solves vdotFromRace(t, 10000) = vdot via bisection in [25:00, 4:00:00].
+ */
+export function predict10kFromVdot(vdot: number): number | null {
+  if (!vdot || vdot <= 0) return null;
+  let lo = 1500;   // 25:00 (very fast)
+  let hi = 14400;  // 4:00:00 (very slow)
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    const v = vdotFromRace(mid, 10000);
+    if (v == null) return null;
+    // Higher VDOT → faster time (smaller t). vdotFromRace decreases as t grows.
+    if (v > vdot) lo = mid; else hi = mid;
+    if (hi - lo < 0.5) break;
+  }
+  return Math.round((lo + hi) / 2);
+}
+
+export interface RunEffort {
+  /** Distance in meters for this effort segment (one rep or one step). */
+  distance_m: number;
+  /** Duration in seconds for this effort segment. */
+  duration_s: number;
+  /** Optional average HR during the effort — used to gate noise. */
+  avg_hr?: number | null;
+  /** Optional average RPE during the effort. */
+  avg_rpe?: number | null;
+}
+
+/**
+ * Compute an optimal 10k prediction from a session's actual efforts.
+ * Strategy:
+ *  - Consider each effort with both distance and duration recorded.
+ *  - Skip very short bursts (<3 min) and easy strides (RPE ≤ 4) — too noisy.
+ *  - Convert each qualifying effort to a VDOT via Jack Daniels' formula.
+ *  - Take the best VDOT (fastest sustained quality) and convert to a 10k time.
+ *  - If no qualifying effort but the whole session is long enough, fall back
+ *    to the cumulative effort as a single "race-equivalent".
+ * Returns null when there's not enough signal.
+ */
+export function predict10kFromEfforts(efforts: RunEffort[]): number | null {
+  if (!efforts || efforts.length === 0) return null;
+  const valid = efforts.filter(
+    (e) => e.distance_m > 0 && e.duration_s > 0,
+  );
+  if (valid.length === 0) return null;
+
+  let bestVdot = 0;
+
+  // Per-effort VDOT — require ≥ 3 min and (when RPE is known) RPE ≥ 5.
+  for (const e of valid) {
+    if (e.duration_s < 180) continue;
+    if (e.avg_rpe != null && e.avg_rpe < 5) continue;
+    const v = vdotFromRace(e.duration_s, e.distance_m);
+    if (v && v > bestVdot) bestVdot = v;
+  }
+
+  // Cumulative fallback — useful for steady runs (no single "rep").
+  if (bestVdot === 0) {
+    const totalSec = valid.reduce((s, e) => s + e.duration_s, 0);
+    const totalM = valid.reduce((s, e) => s + e.distance_m, 0);
+    if (totalSec >= 900 && totalM >= 2500) {
+      const v = vdotFromRace(totalSec, totalM);
+      if (v) bestVdot = v;
+    }
+  }
+
+  if (bestVdot === 0) return null;
+  return predict10kFromVdot(bestVdot);
+}
+
+
+/**
  * RPE 1..10 → target %VO2max for running.
  * Anchored on Daniels paces: E≈70%, M≈82%, T≈88%, I≈97%, R≈105% (interval/rep pace).
  */

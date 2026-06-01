@@ -18,7 +18,10 @@ import {
   formatDuration, parseHMS, totalPlannedSeconds, avgTargetRpe, rpeTone, rpeLabel, disciplineEmoji,
   paceLabelFromDistance,
 } from "@/lib/endurance";
-import { estimateForRpe, hasAnyBenchmark, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
+import {
+  estimateForRpe, hasAnyBenchmark, predict10kFromEfforts,
+  fmtMSS, type AthleteBenchmarks, type RunEffort,
+} from "@/lib/endurancePaceHr";
 
 const disciplineIcon = (d: Discipline | null | undefined) =>
   d === "run" ? <Footprints className="h-4 w-4" /> :
@@ -110,13 +113,38 @@ export function EnduranceSessionEditor({
   const profileBenchmarks: AthleteBenchmarks = benchmarksQuery.data ?? {
     ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
   };
-  // For pace estimates in this session, prefer the session's own predicted 10k
-  // (athlete's "feel today") over the all-time PB stored on the profile.
+
+  // Pass-to-pass: if this session has no own prediction, fall back to the
+  // most recent completed session's prediction for the same athlete.
+  const lastPredictionQuery = useQuery({
+    queryKey: ["last-predicted-10k", session?.athlete_id, session?.id],
+    enabled: !!session?.athlete_id && session?.predicted_10k_seconds == null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("endurance_sessions")
+        .select("predicted_10k_seconds, date")
+        .eq("athlete_id", session!.athlete_id)
+        .eq("discipline", "run")
+        .not("predicted_10k_seconds", "is", null)
+        .neq("id", session!.id)
+        .lte("date", session!.date)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.predicted_10k_seconds as number | null) ?? null;
+    },
+  });
+
+  // Priority: this session's stored prediction → previous session's prediction → profile PB.
   const benchmarks: AthleteBenchmarks = {
     ...profileBenchmarks,
     ten_k_pb_seconds:
-      sessionQuery.data?.predicted_10k_seconds ?? profileBenchmarks.ten_k_pb_seconds,
+      sessionQuery.data?.predicted_10k_seconds
+      ?? lastPredictionQuery.data
+      ?? profileBenchmarks.ten_k_pb_seconds,
   };
+
 
   if (sessionQuery.isLoading) {
     return <Card><CardContent className="py-6 text-sm text-muted-foreground">Loading…</CardContent></Card>;
@@ -971,6 +999,9 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
   const initPred = session.predicted_10k_seconds;
   const [pred10kMin, setPred10kMin] = useState<string>(initPred ? String(Math.floor(initPred / 60)) : "");
   const [pred10kSec, setPred10kSec] = useState<string>(initPred ? String(initPred % 60).padStart(2, "0") : "");
+  // Track whether the athlete has manually edited the prediction this session.
+  // If not, we auto-fill from the computed value on save.
+  const [predTouched, setPredTouched] = useState(false);
 
   // For structured mode: sum actuals from steps + reps to derive session totals.
   const sessionId = session.id;
@@ -1056,6 +1087,64 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
     };
   }, [isStructured, steps, repsQuery.data]);
 
+  // ---- Optimal 10k prediction from this session's actuals ----
+  // Run-only. Builds RunEffort[] from per-rep (preferred) or per-step actuals,
+  // then converts the best sustained quality to an equivalent 10k time.
+  const autoPredicted10k = useMemo<number | null>(() => {
+    if (session.discipline !== "run") return null;
+    const efforts: RunEffort[] = [];
+    if (isStructured) {
+      const repsByStep = new Map<string, typeof repsQuery.data>();
+      for (const r of repsQuery.data ?? []) {
+        const arr = repsByStep.get(r.step_id) ?? [];
+        arr.push(r);
+        repsByStep.set(r.step_id, arr);
+      }
+      for (const st of steps) {
+        if (st.is_group) continue;
+        const reps = repsByStep.get(st.id) ?? [];
+        if (reps.length > 0) {
+          for (const r of reps) {
+            efforts.push({
+              distance_m: r.actual_distance_m ?? 0,
+              duration_s: r.actual_duration_seconds ?? 0,
+              avg_hr: r.actual_avg_hr,
+              avg_rpe: r.actual_avg_rpe,
+            });
+          }
+        } else if (st.actual_duration_seconds || st.actual_distance_m) {
+          efforts.push({
+            distance_m: st.actual_distance_m ?? 0,
+            duration_s: st.actual_duration_seconds ?? 0,
+            avg_hr: st.actual_avg_hr,
+            avg_rpe: st.actual_avg_rpe,
+          });
+        }
+      }
+    } else {
+      // Quick mode — treat the whole session as one effort.
+      const totalSec = (h || m) ? parseHMS(h || "0", m || "0", "0") : 0;
+      const totalM = dist ? Number(dist) * 1000 : 0;
+      if (totalSec > 0 && totalM > 0) {
+        efforts.push({
+          distance_m: totalM,
+          duration_s: totalSec,
+          avg_rpe: overall ? Number(overall) : null,
+        });
+      }
+    }
+    return predict10kFromEfforts(efforts);
+  }, [session.discipline, isStructured, steps, repsQuery.data, h, m, dist, overall]);
+
+  // Sync derived prediction into the input until the user manually edits it.
+  useEffect(() => {
+    if (predTouched) return;
+    if (initPred) return; // session already has a stored prediction; respect it.
+    if (autoPredicted10k == null) return;
+    setPred10kMin(String(Math.floor(autoPredicted10k / 60)));
+    setPred10kSec(String(autoPredicted10k % 60).padStart(2, "0"));
+  }, [autoPredicted10k, predTouched, initPred]);
+
   // Derived live pace label (quick mode uses entered values; structured uses derived)
   const liveSeconds = isStructured
     ? (derivedTotals?.seconds || null)
@@ -1064,6 +1153,7 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
     ? (derivedTotals?.meters || null)
     : (dist ? (session.discipline === "swim" ? Number(dist) : Number(dist) * 1000) : null);
   const livePace = paceLabelFromDistance(session.discipline, liveDistanceM, liveSeconds);
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -1074,7 +1164,7 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
         ? (derivedTotals?.meters ? derivedTotals.meters : null)
         : (dist ? Math.round(session.discipline === "swim" ? Number(dist) : Number(dist) * 1000) : null);
       let predicted_10k_seconds: number | null = null;
-      if (pred10kMin || pred10kSec) {
+      if (predTouched && (pred10kMin || pred10kSec)) {
         const total = (Number(pred10kMin) || 0) * 60 + (Number(pred10kSec) || 0);
         if (total > 0) {
           if (total < 1500 || total > 14400) {
@@ -1082,6 +1172,10 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
           }
           predicted_10k_seconds = total;
         }
+      } else {
+        // Auto: use the optimal prediction derived from this session's actuals.
+        // Falls back to whatever was previously stored on the session.
+        predicted_10k_seconds = autoPredicted10k ?? initPred ?? null;
       }
       // In structured mode, prefer derived (time-weighted) overall/peak RPE when the
       // athlete hasn't overridden them manually.
@@ -1196,25 +1290,45 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
         )}
         <div className="space-y-1">
           <Label>Predicted 10k time today</Label>
+          {session.discipline === "run" && autoPredicted10k != null && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">Auto-predicted from this session:</span>
+              <Badge variant="secondary" className="font-mono">{fmtMSS(autoPredicted10k)}</Badge>
+              {predTouched ? (
+                <Button
+                  type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setPredTouched(false);
+                    setPred10kMin(String(Math.floor(autoPredicted10k / 60)));
+                    setPred10kSec(String(autoPredicted10k % 60).padStart(2, "0"));
+                  }}
+                >Use auto</Button>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">Saved automatically. Type below to override.</span>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Input
               type="number" min={0} max={240} placeholder="min"
               className="w-24"
               value={pred10kMin}
-              onChange={(e) => setPred10kMin(e.target.value)}
+              onChange={(e) => { setPredTouched(true); setPred10kMin(e.target.value); }}
             />
             <span className="text-sm text-muted-foreground">:</span>
             <Input
               type="number" min={0} max={59} placeholder="sec"
               className="w-24"
               value={pred10kSec}
-              onChange={(e) => setPred10kSec(e.target.value)}
+              onChange={(e) => { setPredTouched(true); setPred10kSec(e.target.value); }}
             />
             <span className="text-xs text-muted-foreground">
-              How fast you feel you could race a 10k today. Updates only this session — your all-time PB stays in your profile.
+              Derived from your best sustained effort this session. Edit only to override.
             </span>
           </div>
         </div>
+
         <div className="space-y-1">
           <Label>How did it feel?</Label>
           <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}

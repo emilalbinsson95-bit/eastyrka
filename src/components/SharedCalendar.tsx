@@ -656,7 +656,7 @@ function MonthNavButton({
   onClick: () => void;
   onHoverHold: () => void;
   onHoverLeave: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled: !isDragging });
   useEffect(() => {
@@ -666,7 +666,7 @@ function MonthNavButton({
   }, [isOver]);
   return (
     <Button
-      ref={setNodeRef as unknown as React.Ref<HTMLButtonElement>}
+      ref={setNodeRef as unknown as Ref<HTMLButtonElement>}
       variant="ghost"
       size="icon"
       onClick={onClick}

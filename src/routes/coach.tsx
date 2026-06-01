@@ -99,7 +99,7 @@ function CoachNavLink({
   label,
   exact,
 }: {
-  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/messages";
+  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/coach/methodology" | "/messages";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

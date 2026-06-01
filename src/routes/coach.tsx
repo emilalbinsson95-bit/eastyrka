@@ -57,6 +57,7 @@ function CoachLayout() {
             <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
             <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
             <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
+            <CoachNavLink to="/coach/methodology" icon={<FlaskConical className="h-4 w-4" />} label={t("nav.methodology")} />
             <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
           </nav>
           <div className="flex items-center gap-1">

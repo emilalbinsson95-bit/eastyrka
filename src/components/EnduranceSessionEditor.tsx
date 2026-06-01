@@ -974,6 +974,9 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
   const initPred = session.predicted_10k_seconds;
   const [pred10kMin, setPred10kMin] = useState<string>(initPred ? String(Math.floor(initPred / 60)) : "");
   const [pred10kSec, setPred10kSec] = useState<string>(initPred ? String(initPred % 60).padStart(2, "0") : "");
+  // Track whether the athlete has manually edited the prediction this session.
+  // If not, we auto-fill from the computed value on save.
+  const [predTouched, setPredTouched] = useState(false);
 
   // For structured mode: sum actuals from steps + reps to derive session totals.
   const sessionId = session.id;

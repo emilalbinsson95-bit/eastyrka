@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
   PointerSensor,
   useDraggable,
   useDroppable,
@@ -12,6 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2 } from "lucide-react";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

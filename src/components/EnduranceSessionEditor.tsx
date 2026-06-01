@@ -181,7 +181,7 @@ export function EnduranceSessionEditor({
           }}
         />
       )}
-      {isAthlete && <ActualLogger session={session} steps={stepsQuery.data ?? []} onChange={() =>
+      {isAthlete && <ActualLogger session={session} steps={stepsQuery.data ?? []} recentPredictions={recentPredictionsQuery.data ?? []} onChange={() =>
         qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] })} />}
     </div>
   );

@@ -152,13 +152,34 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
+  // Track active drag so we can auto-switch month when hovering nav buttons.
+  const [isDragging, setIsDragging] = useState(false);
+  const hoverPrevTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverNextTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearHoverTimers() {
+    if (hoverPrevTimer.current) { clearTimeout(hoverPrevTimer.current); hoverPrevTimer.current = null; }
+    if (hoverNextTimer.current) { clearTimeout(hoverNextTimer.current); hoverNextTimer.current = null; }
+  }
+  useEffect(() => clearHoverTimers, []);
+
+  function handleDragStart(_e: DragStartEvent) {
+    if (readOnly) return;
+    setIsDragging(true);
+  }
+
   function handleDragEnd(e: DragEndEvent) {
+    setIsDragging(false);
+    clearHoverTimers();
     if (readOnly) return;
     const overId = e.over?.id;
     const activeId = e.active?.id;
     if (!overId || !activeId) return;
+    const overStr = String(overId);
+    // Dropped on month-nav zone → don't move, just switch month
+    if (overStr === "__nav_prev__" || overStr === "__nav_next__") return;
     const [source, sourceId] = String(activeId).split(":") as [CalendarItem["source"], string];
-    const date = String(overId);
+    const date = overStr;
     const item = (itemsQuery.data ?? []).find((i) => i.sourceId === sourceId && i.source === source);
     if (!item) return;
     if (item.effectiveDate === date) return;
@@ -166,22 +187,53 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => { setIsDragging(false); clearHoverTimers(); }}>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setMonthDate((d) => addMonths(d, -1))} aria-label={t("calendar.prevMonth")}>
+            <MonthNavButton
+              id="__nav_prev__"
+              isDragging={isDragging}
+              ariaLabel={t("calendar.prevMonth")}
+              onClick={() => setMonthDate((d) => addMonths(d, -1))}
+              onHoverHold={() => {
+                if (hoverPrevTimer.current) return;
+                hoverPrevTimer.current = setTimeout(() => {
+                  setMonthDate((d) => addMonths(d, -1));
+                  hoverPrevTimer.current = null;
+                }, 400);
+              }}
+              onHoverLeave={() => {
+                if (hoverPrevTimer.current) { clearTimeout(hoverPrevTimer.current); hoverPrevTimer.current = null; }
+              }}
+            >
               <ChevronLeft className="h-4 w-4" />
-            </Button>
+            </MonthNavButton>
             <div className="min-w-[10rem] text-center text-lg font-semibold">
               {format(monthDate, "MMMM yyyy")}
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setMonthDate((d) => addMonths(d, 1))} aria-label={t("calendar.nextMonth")}>
+            <MonthNavButton
+              id="__nav_next__"
+              isDragging={isDragging}
+              ariaLabel={t("calendar.nextMonth")}
+              onClick={() => setMonthDate((d) => addMonths(d, 1))}
+              onHoverHold={() => {
+                if (hoverNextTimer.current) return;
+                hoverNextTimer.current = setTimeout(() => {
+                  setMonthDate((d) => addMonths(d, 1));
+                  hoverNextTimer.current = null;
+                }, 400);
+              }}
+              onHoverLeave={() => {
+                if (hoverNextTimer.current) { clearTimeout(hoverNextTimer.current); hoverNextTimer.current = null; }
+              }}
+            >
               <ChevronRight className="h-4 w-4" />
-            </Button>
+            </MonthNavButton>
           </div>
           <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
         </div>
+
 
         {!readOnly && (
           <p className="text-xs text-muted-foreground">

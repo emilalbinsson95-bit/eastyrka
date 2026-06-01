@@ -295,13 +295,19 @@ function PolarizedPanel({ split }: { split: ReturnType<typeof polarizedDistribut
   if (split.totalMin <= 0) {
     return null;
   }
-  // Seiler 80/20 target line at 80% easy.
+  // Volume-adapted target: 80/20 is only optimal at ~9 mil+/week.
+  // Lower weekly volume → tilt target toward more quality.
+  // split.totalMin is 28-day total; convert to weekly average.
+  const weeklyMin = split.totalMin / 4;
+  const target = polarizationTargetForVolume(weeklyMin);
+  const hardActualPct = split.hardPct + split.maxPct;
+  const onTarget = Math.abs(split.easyPct - target.easyPct) <= 5;
   return (
     <div className="rounded-md border border-border bg-muted/20 p-3">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div className="text-sm font-medium">Intensitetsfördelning (senaste 28d)</div>
-        <div className="text-[11px] text-muted-foreground">
-          Mål: ~80% lätt / ~20% hård (Seiler polarized)
+        <div className="text-[11px] text-muted-foreground text-right">
+          Mål: ~{target.label} (lätt / hård) · {Math.round(weeklyMin)} min/v
         </div>
       </div>
       <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
@@ -311,8 +317,14 @@ function PolarizedPanel({ split }: { split: ReturnType<typeof polarizedDistribut
           <div className={cn(RPE_BANDS[2].color)} style={{ width: `${split.hardPct}%` }} />
           <div className={cn(RPE_BANDS[3].color)} style={{ width: `${split.maxPct}%` }} />
         </div>
-        {/* 80% mark */}
-        <div className="absolute inset-y-0 w-px bg-foreground/40" style={{ left: "80%" }} />
+        {/* dynamic target mark */}
+        <div className="absolute inset-y-0 w-px bg-foreground/60" style={{ left: `${target.easyPct}%` }} />
+      </div>
+      <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>{target.rationale}</span>
+        <span className={onTarget ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+          {onTarget ? "På mål" : `Faktiskt ${Math.round(split.easyPct)} / ${Math.round(hardActualPct)}`}
+        </span>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-2 text-[11px]">
         <Mini label="Lätt" pct={split.easyPct} min={split.easyMin} />
@@ -323,6 +335,7 @@ function PolarizedPanel({ split }: { split: ReturnType<typeof polarizedDistribut
     </div>
   );
 }
+
 
 function Mini({ label, pct, min }: { label: string; pct: number; min: number }) {
   return (

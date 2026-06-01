@@ -19,8 +19,9 @@ import {
   paceLabelFromDistance,
 } from "@/lib/endurance";
 import {
-  estimateForRpe, hasAnyBenchmark, predict10kFromEfforts,
+  estimateForRpe, hasAnyBenchmark, predict10kFromEfforts, blendPrediction,
   fmtMSS, type AthleteBenchmarks, type RunEffort,
+
 } from "@/lib/endurancePaceHr";
 
 const disciplineIcon = (d: Discipline | null | undefined) =>
@@ -114,11 +115,11 @@ export function EnduranceSessionEditor({
     ten_k_pb_seconds: null, max_hr: null, resting_hr: null, ftp_watts: null, css_per_100m_seconds: null,
   };
 
-  // Pass-to-pass: if this session has no own prediction, fall back to the
-  // most recent completed session's prediction for the same athlete.
-  const lastPredictionQuery = useQuery({
-    queryKey: ["last-predicted-10k", session?.athlete_id, session?.id],
-    enabled: !!session?.athlete_id && session?.predicted_10k_seconds == null,
+  // Pass-to-pass: last 5 predictions (newest → oldest) feed both the fallback
+  // benchmark AND the EWMA stabilizer applied at save time.
+  const recentPredictionsQuery = useQuery({
+    queryKey: ["recent-predicted-10k", session?.athlete_id, session?.id],
+    enabled: !!session?.athlete_id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("endurance_sessions")
@@ -129,12 +130,13 @@ export function EnduranceSessionEditor({
         .neq("id", session!.id)
         .lte("date", session!.date)
         .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(5);
       if (error) throw error;
-      return (data?.predicted_10k_seconds as number | null) ?? null;
+      return (data ?? []).map((r) => r.predicted_10k_seconds as number);
     },
   });
+  const lastPredictionQuery = { data: recentPredictionsQuery.data?.[0] ?? null };
+
 
   // Priority: this session's stored prediction → previous session's prediction → profile PB.
   const benchmarks: AthleteBenchmarks = {
@@ -179,7 +181,7 @@ export function EnduranceSessionEditor({
           }}
         />
       )}
-      {isAthlete && <ActualLogger session={session} steps={stepsQuery.data ?? []} onChange={() =>
+      {isAthlete && <ActualLogger session={session} steps={stepsQuery.data ?? []} recentPredictions={recentPredictionsQuery.data ?? []} onChange={() =>
         qc.invalidateQueries({ queryKey: ["endurance-session", sessionId] })} />}
     </div>
   );
@@ -982,7 +984,7 @@ function RepRowInputs({
 
 // ---------- Actual logging (athlete) ----------
 
-function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps: StepRow[]; onChange: () => void }) {
+function ActualLogger({ session, steps, recentPredictions = [], onChange }: { session: SessionRow; steps: StepRow[]; recentPredictions?: number[]; onChange: () => void }) {
   const isStructured = session.mode === "structured";
   const [h, setH] = useState(session.actual_total_seconds ? String(Math.floor(session.actual_total_seconds / 3600)) : "");
   const [m, setM] = useState(session.actual_total_seconds ? String(Math.floor((session.actual_total_seconds % 3600) / 60)) : "");

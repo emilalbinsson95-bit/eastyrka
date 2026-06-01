@@ -140,6 +140,41 @@ export function predict10kFromEfforts(efforts: RunEffort[]): number | null {
   return predict10kFromVdot(bestVdot);
 }
 
+/**
+ * EWMA-stabilized 10k prediction.
+ *
+ * Why: a single great rep can spike `predict10kFromEfforts` to an unrealistic
+ * value. Smoothing against the recent prediction history dampens noise while
+ * still letting genuine fitness gains propagate over 2-4 sessions.
+ *
+ * Formula: a classic EWMA where α controls how reactive we are.
+ *   blended = α · current + (1 − α) · prevEMA
+ * α = 0.4 means a single outlier moves the estimate by ~40% of the gap,
+ * which the next 1-2 sessions wash out unless the trend is real.
+ *
+ * `history` MUST be ordered newest → oldest (typically the 4-5 most recent
+ * `predicted_10k_seconds` from earlier sessions). When the history is empty
+ * we return the raw current prediction unchanged.
+ */
+export function blendPrediction(
+  currentSeconds: number | null,
+  history: number[],
+  alpha = 0.4,
+): number | null {
+  if (currentSeconds == null) return null;
+  const clean = history.filter((n) => Number.isFinite(n) && n >= 1500 && n <= 14400);
+  if (clean.length === 0) return Math.round(currentSeconds);
+
+  // Build EMA over the (reversed) history — oldest first — then blend in current.
+  const oldestFirst = [...clean].reverse();
+  let ema = oldestFirst[0];
+  for (let i = 1; i < oldestFirst.length; i++) {
+    ema = alpha * oldestFirst[i] + (1 - alpha) * ema;
+  }
+  const blended = alpha * currentSeconds + (1 - alpha) * ema;
+  return Math.round(blended);
+}
+
 
 /**
  * RPE 1..10 → target %VO2max for running.
@@ -236,17 +271,39 @@ function hrForRpe(rpe: number, b: AthleteBenchmarks): { lo: number; hi: number }
 
 /**
  * Main entry: estimate per-discipline targets for an RPE.
+ *
+ * Coach overrides (`paceOverrideSecPerKm`, `hrOverrideBpm`) bypass the
+ * RPE→benchmark math for the affected metric. This is how a "do exactly
+ * 4:30/km at 165 bpm" step survives changes to the athlete's profile PB
+ * without drifting.
  */
 export function estimateForRpe(
   discipline: Discipline,
   rpe: number | null | undefined,
   b: AthleteBenchmarks,
+  overrides?: {
+    paceOverrideSecPerKm?: number | null;
+    hrOverrideBpm?: number | null;
+  },
 ): EstimateResult {
-  if (rpe == null) return {};
   const out: EstimateResult = {};
+  const paceOverride = overrides?.paceOverrideSecPerKm ?? null;
+  const hrOverride = overrides?.hrOverrideBpm ?? null;
 
-  // Running pace (VDOT)
-  if (discipline === "run" && b.ten_k_pb_seconds) {
+  // Coach pace override wins for run/other distance-based disciplines.
+  if (paceOverride && paceOverride > 0) {
+    out.paceLabel = `${fmtPacePerKm(paceOverride)} (target)`;
+    out.paceMidSecPerKm = paceOverride;
+  }
+  if (hrOverride && hrOverride > 0) {
+    out.hrLabel = `${hrOverride} bpm (target)`;
+    out.hrMid = hrOverride;
+  }
+
+  if (rpe == null) return out;
+
+  // Running pace (VDOT) — only if no override.
+  if (!out.paceLabel && discipline === "run" && b.ten_k_pb_seconds) {
     const vdot = vdotFromRace(b.ten_k_pb_seconds, 10000);
     if (vdot) {
       const [pctLo, pctHi] = [
@@ -273,22 +330,23 @@ export function estimateForRpe(
   }
 
   // Swim pace
-  if (discipline === "swim" && b.css_per_100m_seconds) {
+  if (!out.paceLabel && discipline === "swim" && b.css_per_100m_seconds) {
     const [mLo, mHi] = pctOfCssPaceForRpe(rpe);
     const slow = Math.round(b.css_per_100m_seconds * mLo);
     const fast = Math.round(b.css_per_100m_seconds * mHi);
-    // mLo > mHi means slower bound; fast = smaller seconds
     const lo = Math.min(slow, fast);
     const hi = Math.max(slow, fast);
     out.paceLabel = `${fmtMSS(lo)}–${fmtPacePer100m(hi)}`;
-    out.paceMidSecPerKm = ((lo + hi) / 2) * 10; // sec/km equiv (rough)
+    out.paceMidSecPerKm = ((lo + hi) / 2) * 10;
   }
 
-  // Heart rate — all disciplines if max HR present
-  const hr = hrForRpe(rpe, b);
-  if (hr) {
-    out.hrLabel = `${hr.lo}–${hr.hi} bpm`;
-    out.hrMid = Math.round((hr.lo + hr.hi) / 2);
+  // Heart rate — all disciplines if max HR present and no override.
+  if (!out.hrLabel) {
+    const hr = hrForRpe(rpe, b);
+    if (hr) {
+      out.hrLabel = `${hr.lo}–${hr.hi} bpm`;
+      out.hrMid = Math.round((hr.lo + hr.hi) / 2);
+    }
   }
 
   return out;

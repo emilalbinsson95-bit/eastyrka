@@ -398,3 +398,71 @@ export function volumeAdjustmentForAcwr(ratio: number | null): number {
   return 1.0; // optimal
 }
 
+/* -------------------------------------------------------------------------- */
+/* Volume-adapted polarization target                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Personalized polarization target that depends on weekly running volume.
+ *
+ * Rationale: classic Seiler 80/20 was derived from elite endurance athletes
+ * running 90+ km / 8–12 h per week. At those volumes, the aerobic base is so
+ * large that adding more hard work yields diminishing returns and elevates
+ * injury risk — hence ~80 % easy.
+ *
+ * For low-volume runners (≤ ~20 km / 2 h per week), the same ratio is
+ * counter-productive: there simply isn't enough total stimulus to drive
+ * adaptation, and almost no high-intensity work means VO2max, lactate
+ * threshold and running economy plateau. Research on time-crunched runners
+ * (Esteve-Lanao, Stöggl & Sperlich, Muñoz et al.) supports a higher quality
+ * share — closer to 60/40 or even pyramidal — at low weekly minutes.
+ *
+ * We interpolate the easy target between 60 % (≤ 150 weekly min) and
+ * 80 % (≥ 450 weekly min ≈ 9 mil / 90 km).
+ */
+export interface PolarizationTarget {
+  /** Easy share in percent (e.g. 72). */
+  easyPct: number;
+  /** Hard + max share in percent (100 − easyPct − ~modPct allowance). */
+  hardPct: number;
+  /** Human-readable label, e.g. "70 / 30". */
+  label: string;
+  /** Short rationale shown next to the target. */
+  rationale: string;
+  /** Bucket id for analytics / theming. */
+  bucket: "low" | "mid-low" | "mid" | "high";
+}
+
+export function polarizationTargetForVolume(weeklyMin: number): PolarizationTarget {
+  // Anchor points: (minutes, easyPct)
+  // 0–150 min (≤ ~20 km)  → 60 % easy
+  // 450+ min (≥ ~90 km)   → 80 % easy
+  const lo = 150, hi = 450;
+  const easyLo = 60, easyHi = 80;
+  let easyPct: number;
+  if (weeklyMin <= lo) easyPct = easyLo;
+  else if (weeklyMin >= hi) easyPct = easyHi;
+  else easyPct = easyLo + ((weeklyMin - lo) / (hi - lo)) * (easyHi - easyLo);
+  easyPct = Math.round(easyPct);
+  const hardPct = 100 - easyPct;
+
+  let bucket: PolarizationTarget["bucket"];
+  let rationale: string;
+  if (weeklyMin <= lo) {
+    bucket = "low";
+    rationale = "Låg volym → kvalitet väger tyngre för att driva adaptation.";
+  } else if (weeklyMin < 300) {
+    bucket = "mid-low";
+    rationale = "Måttlig volym → pyramidal fördelning, mer tröskel/tempo.";
+  } else if (weeklyMin < hi) {
+    bucket = "mid";
+    rationale = "Hög volym → närmar sig klassisk 80/20.";
+  } else {
+    bucket = "high";
+    rationale = "Elitvolym → 80/20 polariserat ger bäst utbyte.";
+  }
+
+  return { easyPct, hardPct, label: `${easyPct} / ${hardPct}`, rationale, bucket };
+}
+
+

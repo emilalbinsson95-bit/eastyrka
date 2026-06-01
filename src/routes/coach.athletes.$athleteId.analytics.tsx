@@ -1036,6 +1036,50 @@ function AnalyticsPage() {
                         : "Single baseline on record."
                   }
                 >
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">Auto-flytande baseline</p>
+                      <p>Höjer baseline när atleten har ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste ändringen. Trögt — påverkas inte av enstaka topp-pass.</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAutoFloat}
+                      disabled={autoFloatPending}
+                    >
+                      {autoFloatPending ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Wand2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Kör auto-uppdatering
+                    </Button>
+                  </div>
+                  {autoFloatResult && (
+                    <div className="mb-3 space-y-1 text-xs">
+                      {autoFloatResult.updated.length > 0 && (
+                        <ul className="space-y-0.5">
+                          {autoFloatResult.updated.map((u) => (
+                            <li key={u.exercise} className="text-status-adapting-foreground">
+                              ✓ {u.exercise}: {u.oldBaseline} → <b>{u.newBaseline} kg</b> ({u.peakCount} peaks, median E1RM {u.medianPeakE1RM} kg)
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {autoFloatResult.skipped.filter((s) => s.peakCount > 0).length > 0 && (
+                        <ul className="space-y-0.5 text-muted-foreground">
+                          {autoFloatResult.skipped
+                            .filter((s) => s.peakCount > 0)
+                            .map((s) => (
+                              <li key={s.exercise}>
+                                · {s.exercise}: {s.peakCount}/{autoFloatResult.threshold} peaks
+                                {s.reason === "no_improvement" ? " (ingen förbättring)" : ""}
+                              </li>
+                            ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                   {baselineSeries.length === 0 ? (
                     <div className="py-8 text-center text-sm text-muted-foreground">
                       Every baseline edit is logged automatically — the chart fills in as you update it.

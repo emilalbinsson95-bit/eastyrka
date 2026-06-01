@@ -20,10 +20,11 @@ describe("eakoefficient", () => {
       const b = dailyE1RM({ weight_kg: 100, reps: 8, rpe: 8 });
       expect(a).toBeCloseTo(b, 5);
     });
-    it("RPE 8 vs RPE 10 same reps → RPE 10 higher E1RM", () => {
+    it("lower RPE (more reserve) → higher predicted E1RM", () => {
+      // Same lift at RPE 8 implies more reps in reserve → 1RM estimate is higher
       const e10 = dailyE1RM({ weight_kg: 100, reps: 5, rpe: 10 });
       const e8 = dailyE1RM({ weight_kg: 100, reps: 5, rpe: 8 });
-      expect(e10).toBeGreaterThan(e8);
+      expect(e8).toBeGreaterThan(e10);
     });
   });
 

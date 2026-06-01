@@ -83,6 +83,9 @@ function CoachEndurance() {
 
       <EnduranceWeeklyOverview athleteId={athleteId} />
 
+      <MarathonPlanRetuneCard athleteId={athleteId} canApply />
+
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">

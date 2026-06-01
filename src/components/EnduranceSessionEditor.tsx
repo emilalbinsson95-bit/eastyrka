@@ -1139,7 +1139,7 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
         ? (derivedTotals?.meters ? derivedTotals.meters : null)
         : (dist ? Math.round(session.discipline === "swim" ? Number(dist) : Number(dist) * 1000) : null);
       let predicted_10k_seconds: number | null = null;
-      if (pred10kMin || pred10kSec) {
+      if (predTouched && (pred10kMin || pred10kSec)) {
         const total = (Number(pred10kMin) || 0) * 60 + (Number(pred10kSec) || 0);
         if (total > 0) {
           if (total < 1500 || total > 14400) {
@@ -1147,6 +1147,10 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
           }
           predicted_10k_seconds = total;
         }
+      } else {
+        // Auto: use the optimal prediction derived from this session's actuals.
+        // Falls back to whatever was previously stored on the session.
+        predicted_10k_seconds = autoPredicted10k ?? initPred ?? null;
       }
       // In structured mode, prefer derived (time-weighted) overall/peak RPE when the
       // athlete hasn't overridden them manually.

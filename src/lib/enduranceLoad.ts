@@ -406,19 +406,26 @@ export function volumeAdjustmentForAcwr(ratio: number | null): number {
  * Personalized polarization target that depends on weekly running volume.
  *
  * Rationale: classic Seiler 80/20 was derived from elite endurance athletes
- * running 90+ km / 8–12 h per week. At those volumes, the aerobic base is so
+ * running 90+ km / 8–12 h per week. At those volumes the aerobic base is so
  * large that adding more hard work yields diminishing returns and elevates
  * injury risk — hence ~80 % easy.
  *
- * For low-volume runners (≤ ~20 km / 2 h per week), the same ratio is
- * counter-productive: there simply isn't enough total stimulus to drive
- * adaptation, and almost no high-intensity work means VO2max, lactate
- * threshold and running economy plateau. Research on time-crunched runners
- * (Esteve-Lanao, Stöggl & Sperlich, Muñoz et al.) supports a higher quality
- * share — closer to 60/40 or even pyramidal — at low weekly minutes.
+ * For low-volume runners (≤ ~20 km / ≤ 150 min per week — e.g. 2 short
+ * sessions) the same ratio is counter-productive: there simply isn't enough
+ * total stimulus to drive adaptation, and almost no high-intensity work
+ * means VO2max, lactate threshold, mitochondrial density and running
+ * economy plateau. Time-crunched HIIT literature (Gibala, Stöggl &
+ * Sperlich "polarized vs. pyramidal" trial, Esteve-Lanao, Muñoz et al.,
+ * Tjønna et al. 4×4) consistently shows that when total weekly minutes are
+ * small, weighting the session mix HARD (~60 % quality / 40 % easy) yields
+ * larger gains in VO2max, blood pressure and metabolic markers than a
+ * dilute 80 % easy split — because the aerobic stimulus per minute of HIIT
+ * is much higher.
  *
- * We interpolate the easy target between 60 % (≤ 150 weekly min) and
- * 80 % (≥ 450 weekly min ≈ 9 mil / 90 km).
+ * We therefore interpolate the easy target between 40 % (≤ 150 weekly min,
+ * i.e. "2 short runs / week" — HIIT-weighted) and 80 % (≥ 450 weekly min
+ * ≈ 75–90 km — classic Seiler 80/20). Endurance base still wins for
+ * marathon-style economy at high volumes, hence the ramp.
  */
 export interface PolarizationTarget {
   /** Easy share in percent (e.g. 72). */
@@ -435,10 +442,10 @@ export interface PolarizationTarget {
 
 export function polarizationTargetForVolume(weeklyMin: number): PolarizationTarget {
   // Anchor points: (minutes, easyPct)
-  // 0–150 min (≤ ~20 km)  → 60 % easy
-  // 450+ min (≥ ~90 km)   → 80 % easy
+  //  ≤ 150 min/v (≈ 20 km, 2 korta pass) → 40 % easy / 60 % kvalitet (HIIT-tungt)
+  //  ≥ 450 min/v (≈ 75–90 km)            → 80 % easy / 20 % kvalitet (Seiler 80/20)
   const lo = 150, hi = 450;
-  const easyLo = 60, easyHi = 80;
+  const easyLo = 40, easyHi = 80;
   let easyPct: number;
   if (weeklyMin <= lo) easyPct = easyLo;
   else if (weeklyMin >= hi) easyPct = easyHi;
@@ -450,16 +457,16 @@ export function polarizationTargetForVolume(weeklyMin: number): PolarizationTarg
   let rationale: string;
   if (weeklyMin <= lo) {
     bucket = "low";
-    rationale = "Låg volym → kvalitet väger tyngre för att driva adaptation.";
+    rationale = "Låg volym → HIIT-tungt (60 % kvalitet) ger störst VO2max- och hälsovinst per minut.";
   } else if (weeklyMin < 300) {
     bucket = "mid-low";
-    rationale = "Måttlig volym → pyramidal fördelning, mer tröskel/tempo.";
+    rationale = "Måttlig volym → pyramidalt, fortfarande extra tröskel/VO2 för att driva adaptation.";
   } else if (weeklyMin < hi) {
     bucket = "mid";
-    rationale = "Hög volym → närmar sig klassisk 80/20.";
+    rationale = "Hög volym → närmar sig klassisk 80/20, basen börjar väga tyngre.";
   } else {
     bucket = "high";
-    rationale = "Elitvolym → 80/20 polariserat ger bäst utbyte.";
+    rationale = "Elitvolym → 80/20 polariserat skyddar bas och minimerar skaderisk.";
   }
 
   return { easyPct, hardPct, label: `${easyPct} / ${hardPct}`, rationale, bucket };

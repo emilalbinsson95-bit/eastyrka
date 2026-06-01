@@ -14,6 +14,7 @@ import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoj
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
 import { EnduranceLibrary } from "@/components/EnduranceLibrary";
+import { MarathonPlanRetuneCard } from "@/components/MarathonPlanRetuneCard";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/endurance")({
   component: CoachEndurance,
@@ -81,6 +82,9 @@ function CoachEndurance() {
       </Link>
 
       <EnduranceWeeklyOverview athleteId={athleteId} />
+
+      <MarathonPlanRetuneCard athleteId={athleteId} canApply />
+
 
       <Card>
         <CardHeader className="pb-3">

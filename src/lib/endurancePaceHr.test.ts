@@ -13,11 +13,12 @@ import {
 
 describe("endurancePaceHr", () => {
   describe("vdotFromRace", () => {
-    it("≈ 50 for 38:00 10k", () => {
+    it("VDOT in elite range for 38:00 10k", () => {
       const v = vdotFromRace(38 * 60, 10000);
       expect(v).not.toBeNull();
-      expect(v!).toBeGreaterThan(48);
-      expect(v!).toBeLessThan(52);
+      // Daniels VDOT for 38:00 10k ≈ 55
+      expect(v!).toBeGreaterThan(52);
+      expect(v!).toBeLessThan(58);
     });
     it("null for zero inputs", () => {
       expect(vdotFromRace(0, 10000)).toBeNull();

@@ -984,7 +984,7 @@ function RepRowInputs({
 
 // ---------- Actual logging (athlete) ----------
 
-function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps: StepRow[]; onChange: () => void }) {
+function ActualLogger({ session, steps, recentPredictions = [], onChange }: { session: SessionRow; steps: StepRow[]; recentPredictions?: number[]; onChange: () => void }) {
   const isStructured = session.mode === "structured";
   const [h, setH] = useState(session.actual_total_seconds ? String(Math.floor(session.actual_total_seconds / 3600)) : "");
   const [m, setM] = useState(session.actual_total_seconds ? String(Math.floor((session.actual_total_seconds % 3600) / 60)) : "");

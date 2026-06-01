@@ -1062,6 +1062,64 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
     };
   }, [isStructured, steps, repsQuery.data]);
 
+  // ---- Optimal 10k prediction from this session's actuals ----
+  // Run-only. Builds RunEffort[] from per-rep (preferred) or per-step actuals,
+  // then converts the best sustained quality to an equivalent 10k time.
+  const autoPredicted10k = useMemo<number | null>(() => {
+    if (session.discipline !== "run") return null;
+    const efforts: RunEffort[] = [];
+    if (isStructured) {
+      const repsByStep = new Map<string, typeof repsQuery.data>();
+      for (const r of repsQuery.data ?? []) {
+        const arr = repsByStep.get(r.step_id) ?? [];
+        arr.push(r);
+        repsByStep.set(r.step_id, arr);
+      }
+      for (const st of steps) {
+        if (st.is_group) continue;
+        const reps = repsByStep.get(st.id) ?? [];
+        if (reps.length > 0) {
+          for (const r of reps) {
+            efforts.push({
+              distance_m: r.actual_distance_m ?? 0,
+              duration_s: r.actual_duration_seconds ?? 0,
+              avg_hr: r.actual_avg_hr,
+              avg_rpe: r.actual_avg_rpe,
+            });
+          }
+        } else if (st.actual_duration_seconds || st.actual_distance_m) {
+          efforts.push({
+            distance_m: st.actual_distance_m ?? 0,
+            duration_s: st.actual_duration_seconds ?? 0,
+            avg_hr: st.actual_avg_hr,
+            avg_rpe: st.actual_avg_rpe,
+          });
+        }
+      }
+    } else {
+      // Quick mode — treat the whole session as one effort.
+      const totalSec = (h || m) ? parseHMS(h || "0", m || "0", "0") : 0;
+      const totalM = dist ? Number(dist) * 1000 : 0;
+      if (totalSec > 0 && totalM > 0) {
+        efforts.push({
+          distance_m: totalM,
+          duration_s: totalSec,
+          avg_rpe: overall ? Number(overall) : null,
+        });
+      }
+    }
+    return predict10kFromEfforts(efforts);
+  }, [session.discipline, isStructured, steps, repsQuery.data, h, m, dist, overall]);
+
+  // Sync derived prediction into the input until the user manually edits it.
+  useEffect(() => {
+    if (predTouched) return;
+    if (initPred) return; // session already has a stored prediction; respect it.
+    if (autoPredicted10k == null) return;
+    setPred10kMin(String(Math.floor(autoPredicted10k / 60)));
+    setPred10kSec(String(autoPredicted10k % 60).padStart(2, "0"));
+  }, [autoPredicted10k, predTouched, initPred]);
+
   // Derived live pace label (quick mode uses entered values; structured uses derived)
   const liveSeconds = isStructured
     ? (derivedTotals?.seconds || null)
@@ -1070,6 +1128,7 @@ function ActualLogger({ session, steps, onChange }: { session: SessionRow; steps
     ? (derivedTotals?.meters || null)
     : (dist ? (session.discipline === "swim" ? Number(dist) : Number(dist) * 1000) : null);
   const livePace = paceLabelFromDistance(session.discipline, liveDistanceM, liveSeconds);
+
 
   const save = useMutation({
     mutationFn: async () => {

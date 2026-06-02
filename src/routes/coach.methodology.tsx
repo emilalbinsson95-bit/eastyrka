@@ -286,6 +286,125 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
           (öppningsintervall i v19, race-pace-tune i v20).</p>
       </Section>
 
+      <Section title="Forskningsgrund — vad varje metod vilar på">
+        <p>Varje formel och tröskel i appen är vald från peer-reviewed litteratur. Här är
+          de viktigaste källorna, grupperade per metod.</p>
+
+        <p className="font-semibold text-foreground mt-3">Epley 1RM-formel (EAkoefficient)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Epley B. (1985). <em>Poundage Chart</em>. Boyd Epley Workout. Original-källan
+            till <code>1RM = vikt × (1 + reps/30)</code>.</li>
+          <li>LeSuer DA et al. (1997). <em>The Accuracy of Prediction Equations for
+            Estimating 1-RM Performance in the Bench Press, Squat, and Deadlift</em>.
+            J Strength Cond Res 11(4). Visar att Epley håller r &gt; 0.95 upp till ~10 reps —
+            varför vi klampar reps till 8.</li>
+          <li>Helms ER et al. (2016). <em>RPE and Velocity Relationships for the Back Squat,
+            Bench Press, and Deadlift in Powerlifters</em>. J Strength Cond Res 30(11).
+            Validerar RIR-baserad RPE som autoregleringsmått — grunden för
+            <code>RPE = 10 − RIR</code>.</li>
+          <li>Zourdos MC et al. (2016). <em>Novel Resistance Training-Specific Rating of
+            Perceived Exertion Scale Measuring Repetitions in Reserve</em>. JSCR 30(1).
+            Definierar RPE@reps-tabellen vi använder för preskription.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">VDOT, %VO2max och löppace</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Daniels J. (2014). <em>Daniels' Running Formula</em>, 3rd ed. Human Kinetics.
+            Källan till VDOT-tabellen och E/M/T/I/R-zonerna.</li>
+          <li>Daniels J, Gilbert J. (1979). <em>Oxygen Power: Performance Tables for
+            Distance Runners</em>. Originalstudien med den kvadratiska VO2/pace-ekvationen
+            och %VO2max-decay-funktionen vi implementerar bokstavligt.</li>
+          <li>Léger L, Mercier D. (1984). <em>Gross energy cost of horizontal treadmill and
+            track running</em>. Sports Med 1. Stödbevis för linjär energi-kostnad mellan
+            8–22 km/h som motiverar zon-skalningen.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Foster sRPE (träningslast)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Foster C et al. (2001). <em>A New Approach to Monitoring Exercise Training</em>.
+            J Strength Cond Res 15(1). Originalet för <code>load = min × RPE</code>.</li>
+          <li>Haddad M et al. (2017). <em>Session-RPE Method for Training Load Monitoring:
+            Validity, Ecological Usefulness, and Influencing Factors</em>. Front Neurosci 11.
+            Bekräftar validitet mot HR-baserad TRIMP r = 0.75–0.90.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">ACWR — akut:kronisk last</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Gabbett TJ. (2016). <em>The training-injury prevention paradox</em>.
+            BJSM 50(5). Källan till sweet-spot 0.8–1.3 och danger &gt; 1.5.</li>
+          <li>Hulin BT et al. (2016). <em>The acute:chronic workload ratio predicts injury</em>.
+            BJSM 50. Hög kronisk last skyddar — varför vi inte rapporterar ratio under
+            chronic ≤ 50 AU.</li>
+          <li>Impellizzeri FM et al. (2020). <em>What role do chronic workloads play in the
+            ACWR?</em> Sports Med 50. Kritisk replik som motiverar 28-dagars warm-up
+            och att vi presenterar ACWR som varning, inte diagnos.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Banister fitness/fatigue (CTL/ATL/TSB)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Banister EW. (1991). <em>Modeling Elite Athletic Performance</em>.
+            Originalmodellen med τ = 42 / τ = 7-konstanterna.</li>
+          <li>Coggan AR. (2003). <em>TrainingPeaks Performance Management Chart</em>.
+            Operationaliseringen till CTL/ATL/TSB som vi följer.</li>
+          <li>Busso T. (2003). <em>Variable dose-response relationship between exercise
+            training and performance</em>. MSSE 35.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Polariserad träning (80/20)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Seiler S. (2010). <em>What is best practice for training intensity and
+            duration distribution in endurance athletes?</em> IJSPP 5.</li>
+          <li>Stöggl T, Sperlich B. (2014). <em>Polarized training has greater impact on
+            key endurance variables than threshold, high intensity or high volume training</em>.
+            Front Physiol 5.</li>
+          <li>Esteve-Lanao J et al. (2007). <em>Impact of training intensity distribution
+            on performance in endurance athletes</em>. JSCR 21.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">HIIT-vikt vid låg volym (40/60 under 150 min/v)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tjønna AE et al. (2008). <em>Aerobic interval training versus continuous
+            moderate exercise as a treatment for the metabolic syndrome</em>. Circulation 118.
+            4×4 min @ 90 % HRmax slår kontinuerlig träning per minut.</li>
+          <li>Gibala MJ et al. (2012). <em>Physiological adaptations to low-volume,
+            high-intensity interval training in health and disease</em>. J Physiol 590.
+            Grunden till "kvalitet driver adaptation när tid är knapp".</li>
+          <li>Milanović Z et al. (2015). <em>Effectiveness of HIIT and continuous endurance
+            training for VO2max improvements: meta-analysis</em>. Sports Med 45. HIIT ger
+            större ΔVO2max per minut, särskilt &lt; 3 h/v träning.</li>
+          <li>Weston KS, Wisløff U, Coombes JS. (2014). <em>HIIT vs. moderate-intensity
+            continuous training in cardiometabolic disease</em>. BJSM 48.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Maratonperiodisering (20-veckorsplanen)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Pfitzinger P, Douglas S. (2009). <em>Advanced Marathoning</em>, 2nd ed.
+            Strukturen Base → LT → Race-Specific → Taper, MLR-konceptet och MP-blocken
+            i långpass.</li>
+          <li>Daniels J. (2014). <em>Running Formula</em>. Tempo-, I- och R-passens längd
+            och vila.</li>
+          <li>Mujika I, Padilla S. (2003). <em>Scientific bases for precompetition tapering
+            strategies</em>. MSSE 35. Stödjer 40–60 % volymsänkning över 2 v med
+            bibehållen intensitet.</li>
+          <li>Bosquet L et al. (2007). <em>Effects of tapering on performance:
+            meta-analysis</em>. MSSE 39. 8–14 d taper med 41–60 % volymsänkning ger
+            störst prestationslyft.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Autoregulering & RIR-baserad styrka</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Helms ER et al. (2018). <em>Application of the RIR-Based RPE Scale for
+            Resistance Training</em>. Strength Cond J 38. Motiverar &gt; 102 % E1RM
+            regelbundet som legitimt peaking-signal — vår auto-flytande baseline-tröskel.</li>
+          <li>Greig L et al. (2020). <em>Autoregulation in resistance training: addressing
+            the inconsistencies</em>. Sports Med 50. Varför vi kräver ≥ 12 observationer
+            innan baseline justeras (signal vs. brus).</li>
+        </ul>
+
+        <p className="text-xs italic mt-4">Inga källor är cherry-pickade — där forskningen
+          är svagare (t.ex. ACWR-debatten 2019–2022) är trösklarna medvetet konservativa.</p>
+      </Section>
+
       <Section title="Antaganden & begränsningar">
         <ul className="list-disc pl-5 space-y-1">
           <li>VDOT är validerad för 1500 m – maraton. Ultra/track-sprint avviker.</li>
@@ -293,6 +412,8 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
           <li>sRPE kräver att RPE loggas inom ~30 min efter passet — senare logg är brus.</li>
           <li>ACWR är ett <em>varningssystem</em>, inte en diagnos. Vi ratio:ar inte under 28 d data.</li>
           <li>Re-tune rör aldrig race-passet eller pass markerade som testfönster.</li>
+          <li>HIIT-tungt schema vid låg volym förutsätter att atleten är skadefri — vid
+            ACWR &gt; 1.3 prioriterar systemet alltid easy oavsett volymbucket.</li>
         </ul>
       </Section>
     </div>

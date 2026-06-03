@@ -1020,12 +1020,12 @@ function AnalyticsPage() {
                   <KpiCard icon={<Dumbbell className="h-4 w-4" />} label="Total volume" value={`${(totals.volume / 1000).toFixed(1)}t`} hint={`${totals.sessions} sessions`} />
                   <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Max weight" value={`${totals.maxWeight} kg`} />
                   <KpiCard icon={<Activity className="h-4 w-4" />} label="Peak E1RM" value={`${totals.peakE1RM.toFixed(1)} kg`} />
-                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Peak EAkoeff" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={baselines[exercise] ? `Base: ${baselines[exercise]} kg` : "No baseline"} />
+                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Peak EAkoeff" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Base: ${lookupBaseline(exercise)} kg` : "No baseline"} />
                 </div>
 
                 <ChartCard
                   title="E1RM & EAkoefficient over time"
-                  description={baselines[exercise] ? "Best daily E1RM and EAkoefficient % vs. baseline." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
+                  description={lookupBaseline(exercise) ? "Best daily E1RM and EAkoefficient % vs. baseline." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
                 >
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={dailyStats}>
@@ -1036,7 +1036,7 @@ function AnalyticsPage() {
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
                       <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
-                      {baselines[exercise] && (
+                      {lookupBaseline(exercise) > 0 && (
                         <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff %" stroke="var(--accent-foreground)" strokeWidth={2} dot={{ r: 3 }} />
                       )}
                     </LineChart>

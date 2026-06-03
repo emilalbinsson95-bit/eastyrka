@@ -1512,18 +1512,54 @@ function AnalyticsPage() {
                 description="Each dot is one day. X = self-reported form (1–10), Y = average EAk% across logged exercises that day."
               >
                 <ResponsiveContainer width="100%" height={320}>
-                  <ScatterChart>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis type="number" dataKey="form" name="Daily form" domain={[1, 10]} stroke="var(--muted-foreground)" fontSize={11} />
-                    <YAxis type="number" dataKey="eak" name="EAk %" stroke="var(--muted-foreground)" fontSize={11} />
-                    <ZAxis range={[60, 60]} />
+                  <ScatterChart margin={{ top: 12, right: 24, bottom: 28, left: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.6} />
+                    <XAxis
+                      type="number"
+                      dataKey="form"
+                      name="Daily form"
+                      domain={[1, 10]}
+                      ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+                      stroke="var(--foreground)"
+                      tick={{ fill: "var(--foreground)", fontSize: 11 }}
+                      label={{ value: "Daily form (1–10)", position: "insideBottom", offset: -16, fill: "var(--muted-foreground)", fontSize: 12 }}
+                    />
+                    <YAxis
+                      type="number"
+                      dataKey="eak"
+                      name="EAk %"
+                      stroke="var(--foreground)"
+                      tick={{ fill: "var(--foreground)", fontSize: 11 }}
+                      label={{ value: "EAkoefficient %", angle: -90, position: "insideLeft", fill: "var(--muted-foreground)", fontSize: 12 }}
+                    />
+                    <ZAxis range={[110, 110]} />
                     <Tooltip
-                      cursor={{ strokeDasharray: "3 3" }}
-                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                      cursor={{ stroke: "var(--foreground)", strokeOpacity: 0.35, strokeDasharray: "3 3" }}
+                      contentStyle={{
+                        background: "var(--popover)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        color: "var(--popover-foreground)",
+                        boxShadow: "0 8px 24px -8px rgb(0 0 0 / 0.35)",
+                      }}
+                      labelStyle={{ color: "var(--popover-foreground)" }}
+                      itemStyle={{ color: "var(--popover-foreground)" }}
                       formatter={(value, name) => [value, name]}
                     />
-                    <ReferenceLine y={100} stroke="var(--muted-foreground)" strokeDasharray="3 3" label={{ value: "Baseline", fill: "var(--muted-foreground)", fontSize: 10 }} />
-                    <Scatter data={readinessScatter.points} fill="var(--primary)" />
+                    <ReferenceLine
+                      y={100}
+                      stroke="var(--chart-2)"
+                      strokeOpacity={0.8}
+                      strokeDasharray="4 4"
+                      label={{ value: "Baseline 100%", fill: "var(--chart-2)", fontSize: 11, position: "insideTopRight" }}
+                    />
+                    <Scatter
+                      data={readinessScatter.points}
+                      fill="var(--chart-1)"
+                      fillOpacity={0.85}
+                      stroke="var(--background)"
+                      strokeWidth={1.5}
+                    />
                   </ScatterChart>
                 </ResponsiveContainer>
               </ChartCard>

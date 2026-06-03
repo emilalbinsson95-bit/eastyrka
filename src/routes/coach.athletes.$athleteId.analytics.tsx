@@ -153,7 +153,15 @@ function AnalyticsPage() {
         .eq("athlete_id", athleteId);
       if (error) throw error;
       const map: Record<string, number> = {};
-      for (const b of data ?? []) map[b.exercise] = Number(b.one_rm_kg);
+      for (const b of data ?? []) {
+        const key = (b.exercise ?? "").trim();
+        const val = Number(b.one_rm_kg);
+        // Keep highest baseline if duplicates (case/whitespace variants)
+        if (!map[key] || val > map[key]) map[key] = val;
+        // Also store lowercase alias for case-insensitive lookup
+        const lower = key.toLowerCase();
+        if (lower !== key && (!map[lower] || val > map[lower])) map[lower] = val;
+      }
       return map;
     },
   });

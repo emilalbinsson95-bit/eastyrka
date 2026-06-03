@@ -634,7 +634,7 @@ function AnalyticsPage() {
     }
     const eakByDate = new Map<string, { sum: number; count: number }>();
     for (const l of allLogs) {
-      const baseline = baselines[l.exercise];
+      const baseline = lookupBaseline(l.exercise);
       if (!baseline || baseline <= 0) continue;
       const eak = (dailyE1RM(l) / baseline) * 100;
       const cur = eakByDate.get(l.date) ?? { sum: 0, count: 0 };

@@ -137,6 +137,7 @@ function AnalyticsPage() {
       if (error) throw error;
       return (data ?? []).map((l) => ({
         ...l,
+        exercise: (l.exercise ?? "").trim(),
         weight_kg: Number(l.weight_kg),
         rpe: Number(l.rpe),
       })) as LogRow[];

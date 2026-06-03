@@ -411,7 +411,7 @@ function AnalyticsPage() {
       cur.rpeSum += l.rpe;
       byDate.set(l.date, cur);
     }
-    const baseline = baselines[exercise ?? ""] ?? 0;
+    const baseline = lookupBaseline(exercise);
     return Array.from(byDate.values())
       .map((s) => ({
         date: s.date,

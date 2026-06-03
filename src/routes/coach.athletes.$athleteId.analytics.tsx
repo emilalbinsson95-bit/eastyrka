@@ -137,6 +137,7 @@ function AnalyticsPage() {
       if (error) throw error;
       return (data ?? []).map((l) => ({
         ...l,
+        exercise: (l.exercise ?? "").trim(),
         weight_kg: Number(l.weight_kg),
         rpe: Number(l.rpe),
       })) as LogRow[];
@@ -152,7 +153,15 @@ function AnalyticsPage() {
         .eq("athlete_id", athleteId);
       if (error) throw error;
       const map: Record<string, number> = {};
-      for (const b of data ?? []) map[b.exercise] = Number(b.one_rm_kg);
+      for (const b of data ?? []) {
+        const key = (b.exercise ?? "").trim();
+        const val = Number(b.one_rm_kg);
+        // Keep highest baseline if duplicates (case/whitespace variants)
+        if (!map[key] || val > map[key]) map[key] = val;
+        // Also store lowercase alias for case-insensitive lookup
+        const lower = key.toLowerCase();
+        if (lower !== key && (!map[lower] || val > map[lower])) map[lower] = val;
+      }
       return map;
     },
   });
@@ -348,6 +357,14 @@ function AnalyticsPage() {
   const baselines = baselinesQuery.data ?? {};
   const exerciseLib = exerciseLibQuery.data ?? new Map<string, string>();
 
+  // Case-/whitespace-insensitive baseline lookup so "Bench Press" and
+  // "bench press " resolve to the same baseline.
+  const lookupBaseline = (name: string | undefined | null): number => {
+    if (!name) return 0;
+    const key = name.trim();
+    return baselines[key] ?? baselines[key.toLowerCase()] ?? 0;
+  };
+
   const exercises = useMemo(() => {
     const set = new Set<string>();
     allLogs.forEach((l) => set.add(l.exercise));
@@ -394,7 +411,7 @@ function AnalyticsPage() {
       cur.rpeSum += l.rpe;
       byDate.set(l.date, cur);
     }
-    const baseline = baselines[exercise ?? ""] ?? 0;
+    const baseline = lookupBaseline(exercise);
     return Array.from(byDate.values())
       .map((s) => ({
         date: s.date,
@@ -617,7 +634,7 @@ function AnalyticsPage() {
     }
     const eakByDate = new Map<string, { sum: number; count: number }>();
     for (const l of allLogs) {
-      const baseline = baselines[l.exercise];
+      const baseline = lookupBaseline(l.exercise);
       if (!baseline || baseline <= 0) continue;
       const eak = (dailyE1RM(l) / baseline) * 100;
       const cur = eakByDate.get(l.date) ?? { sum: 0, count: 0 };
@@ -1003,12 +1020,12 @@ function AnalyticsPage() {
                   <KpiCard icon={<Dumbbell className="h-4 w-4" />} label="Total volume" value={`${(totals.volume / 1000).toFixed(1)}t`} hint={`${totals.sessions} sessions`} />
                   <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Max weight" value={`${totals.maxWeight} kg`} />
                   <KpiCard icon={<Activity className="h-4 w-4" />} label="Peak E1RM" value={`${totals.peakE1RM.toFixed(1)} kg`} />
-                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Peak EAkoeff" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={baselines[exercise] ? `Base: ${baselines[exercise]} kg` : "No baseline"} />
+                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Peak EAkoeff" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Base: ${lookupBaseline(exercise)} kg` : "No baseline"} />
                 </div>
 
                 <ChartCard
                   title="E1RM & EAkoefficient over time"
-                  description={baselines[exercise] ? "Best daily E1RM and EAkoefficient % vs. baseline." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
+                  description={lookupBaseline(exercise) ? "Best daily E1RM and EAkoefficient % vs. baseline." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
                 >
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={dailyStats}>
@@ -1019,7 +1036,7 @@ function AnalyticsPage() {
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
                       <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
-                      {baselines[exercise] && (
+                      {lookupBaseline(exercise) > 0 && (
                         <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff %" stroke="var(--accent-foreground)" strokeWidth={2} dot={{ r: 3 }} />
                       )}
                     </LineChart>

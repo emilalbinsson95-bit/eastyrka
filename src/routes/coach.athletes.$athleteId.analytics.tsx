@@ -357,6 +357,14 @@ function AnalyticsPage() {
   const baselines = baselinesQuery.data ?? {};
   const exerciseLib = exerciseLibQuery.data ?? new Map<string, string>();
 
+  // Case-/whitespace-insensitive baseline lookup so "Bench Press" and
+  // "bench press " resolve to the same baseline.
+  const lookupBaseline = (name: string | undefined | null): number => {
+    if (!name) return 0;
+    const key = name.trim();
+    return baselines[key] ?? baselines[key.toLowerCase()] ?? 0;
+  };
+
   const exercises = useMemo(() => {
     const set = new Set<string>();
     allLogs.forEach((l) => set.add(l.exercise));

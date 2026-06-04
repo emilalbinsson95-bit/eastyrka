@@ -131,6 +131,10 @@ export type Database = {
           created_at: string
           date: string
           discipline: Database["public"]["Enums"]["endurance_discipline"]
+          external_activity_id: string | null
+          external_provider:
+            | Database["public"]["Enums"]["external_provider"]
+            | null
           id: string
           mode: Database["public"]["Enums"]["endurance_mode"]
           notes: string | null
@@ -151,6 +155,10 @@ export type Database = {
           created_at?: string
           date?: string
           discipline?: Database["public"]["Enums"]["endurance_discipline"]
+          external_activity_id?: string | null
+          external_provider?:
+            | Database["public"]["Enums"]["external_provider"]
+            | null
           id?: string
           mode?: Database["public"]["Enums"]["endurance_mode"]
           notes?: string | null
@@ -171,6 +179,10 @@ export type Database = {
           created_at?: string
           date?: string
           discipline?: Database["public"]["Enums"]["endurance_discipline"]
+          external_activity_id?: string | null
+          external_provider?:
+            | Database["public"]["Enums"]["external_provider"]
+            | null
           id?: string
           mode?: Database["public"]["Enums"]["endurance_mode"]
           notes?: string | null
@@ -343,6 +355,54 @@ export type Database = {
           id?: string
           is_global?: boolean
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      external_integrations: {
+        Row: {
+          access_token: string | null
+          athlete_id: string
+          connected_at: string
+          created_at: string
+          id: string
+          last_sync_error: string | null
+          last_synced_at: string | null
+          provider: Database["public"]["Enums"]["external_provider"]
+          provider_user_id: string | null
+          refresh_token: string | null
+          scope: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          athlete_id: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          provider: Database["public"]["Enums"]["external_provider"]
+          provider_user_id?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          athlete_id?: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          provider?: Database["public"]["Enums"]["external_provider"]
+          provider_user_id?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1213,6 +1273,7 @@ export type Database = {
       cycle_status: "draft" | "active" | "archived"
       endurance_discipline: "run" | "bike" | "swim" | "other"
       endurance_mode: "quick" | "structured"
+      external_provider: "garmin" | "strava"
       intensity_metric: "rpe" | "rir"
       plan_status: "draft" | "published"
     }
@@ -1346,6 +1407,7 @@ export const Constants = {
       cycle_status: ["draft", "active", "archived"],
       endurance_discipline: ["run", "bike", "swim", "other"],
       endurance_mode: ["quick", "structured"],
+      external_provider: ["garmin", "strava"],
       intensity_metric: ["rpe", "rir"],
       plan_status: ["draft", "published"],
     },

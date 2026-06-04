@@ -122,6 +122,8 @@ function MePage() {
         </CardContent>
       </Card>
 
+      <ConnectionsCard />
+
       <Card>
         <CardHeader>
           <CardTitle>1RM Baselines</CardTitle>

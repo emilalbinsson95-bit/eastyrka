@@ -17,6 +17,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { parseTimeToSeconds, secondsToTimeStr } from "@/lib/endurancePaceHr";
+import { ConnectionsCard } from "@/components/ConnectionsCard";
 
 export const Route = createFileRoute("/_app/me")({
   head: () => ({

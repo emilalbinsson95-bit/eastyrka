@@ -686,11 +686,6 @@ function EditLoggedSet({
   );
 }
 
-interface LogRowExt extends LogRow {
-  original_reps?: number | null;
-  original_rpe?: number | null;
-}
-
 function PlannedExerciseRow({
   ex,
   logs,

@@ -23,7 +23,17 @@ export type VolumeQuality =
   | "optimal"
   | "acceptable"
   | "fatigue_limit"
+  | "sandbag"
   | "unknown";
+
+/**
+ * Threshold (percent) above set 1's E1RM that a later set must exceed to be
+ * flagged as a probable "set 1 sandbag" — i.e. the athlete underperformed
+ * set 1 (skipped warm-up, low effort, mis-logged RPE) and a later, harder
+ * set produced a clearly higher E1RM than physiologically plausible within
+ * the same session.
+ */
+export const SANDBAG_SET1_THRESHOLD_PCT = 2;
 
 export interface SetInput {
   reps: number;

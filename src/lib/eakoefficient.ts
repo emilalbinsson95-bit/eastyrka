@@ -110,6 +110,7 @@ export function volumeQualityFromDrop(
   dropPercent: number,
 ): VolumeQuality {
   if (setNumber <= 1) return "baseline";
+  if (dropPercent < -SANDBAG_SET1_THRESHOLD_PCT) return "sandbag";
   if (dropPercent <= 4) return "optimal";
   if (dropPercent >= 5) return "fatigue_limit";
   return "acceptable";
@@ -125,6 +126,8 @@ export function volumeQualityLabel(q: VolumeQuality): string {
       return "Acceptable";
     case "fatigue_limit":
       return "Fatigue limit";
+    case "sandbag":
+      return "Set 1 sandbagged?";
     default:
       return "—";
   }
@@ -138,6 +141,8 @@ export function volumeQualityClasses(q: VolumeQuality): string {
       return "bg-status-peaking text-status-peaking-foreground";
     case "fatigue_limit":
       return "bg-status-exhausted text-status-exhausted-foreground";
+    case "sandbag":
+      return "bg-status-exhausted text-status-exhausted-foreground ring-1 ring-status-exhausted-foreground/30";
     case "baseline":
       return "bg-muted text-muted-foreground";
     default:

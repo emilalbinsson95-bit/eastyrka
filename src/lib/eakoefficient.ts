@@ -23,7 +23,17 @@ export type VolumeQuality =
   | "optimal"
   | "acceptable"
   | "fatigue_limit"
+  | "sandbag"
   | "unknown";
+
+/**
+ * Threshold (percent) above set 1's E1RM that a later set must exceed to be
+ * flagged as a probable "set 1 sandbag" — i.e. the athlete underperformed
+ * set 1 (skipped warm-up, low effort, mis-logged RPE) and a later, harder
+ * set produced a clearly higher E1RM than physiologically plausible within
+ * the same session.
+ */
+export const SANDBAG_SET1_THRESHOLD_PCT = 2;
 
 export interface SetInput {
   reps: number;
@@ -100,6 +110,7 @@ export function volumeQualityFromDrop(
   dropPercent: number,
 ): VolumeQuality {
   if (setNumber <= 1) return "baseline";
+  if (dropPercent < -SANDBAG_SET1_THRESHOLD_PCT) return "sandbag";
   if (dropPercent <= 4) return "optimal";
   if (dropPercent >= 5) return "fatigue_limit";
   return "acceptable";
@@ -115,6 +126,8 @@ export function volumeQualityLabel(q: VolumeQuality): string {
       return "Acceptable";
     case "fatigue_limit":
       return "Fatigue limit";
+    case "sandbag":
+      return "Set 1 sandbagged?";
     default:
       return "—";
   }
@@ -128,6 +141,8 @@ export function volumeQualityClasses(q: VolumeQuality): string {
       return "bg-status-peaking text-status-peaking-foreground";
     case "fatigue_limit":
       return "bg-status-exhausted text-status-exhausted-foreground";
+    case "sandbag":
+      return "bg-status-exhausted text-status-exhausted-foreground ring-1 ring-status-exhausted-foreground/30";
     case "baseline":
       return "bg-muted text-muted-foreground";
     default:

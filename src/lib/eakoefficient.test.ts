@@ -68,6 +68,13 @@ describe("eakoefficient", () => {
       expect(volumeQualityFromDrop(3, 5)).toBe("fatigue_limit");
       expect(volumeQualityFromDrop(4, 10)).toBe("fatigue_limit");
     });
+    it("later set notably stronger than set 1 → sandbag", () => {
+      expect(volumeQualityFromDrop(2, -3)).toBe("sandbag");
+      expect(volumeQualityFromDrop(2, -10)).toBe("sandbag");
+    });
+    it("small negative drop (within threshold) stays optimal", () => {
+      expect(volumeQualityFromDrop(2, -1)).toBe("optimal");
+    });
   });
 
   describe("processLogs", () => {

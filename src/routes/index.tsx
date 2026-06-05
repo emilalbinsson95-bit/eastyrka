@@ -21,9 +21,66 @@ export const Route = createFileRoute("/")({
         content:
           "Plan, track and monitor training and rehab progress in one professional platform.",
       },
-      { property: "og:url", content: "https://set-smart-guide.lovable.app/" },
+      { property: "og:url", content: "https://eastyrka.lovable.app/" },
     ],
-    links: [{ rel: "canonical", href: "https://set-smart-guide.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://eastyrka.lovable.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "EA Training System",
+          applicationCategory: "HealthApplication",
+          operatingSystem: "Web, iOS, Android",
+          description:
+            "Coaching, athlete readiness tracking and rehab session monitoring in one professional platform.",
+          url: "https://eastyrka.lovable.app/",
+          image: "https://eastyrka.lovable.app/icon-512.png",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          featureList: [
+            "Real-time readiness tracking (EAkoefficient)",
+            "Fatigue limit detection per set",
+            "Marathon and endurance plan generation",
+            "Coach–athlete connection and analytics",
+            "Physiotherapist–patient rehab monitoring",
+          ],
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "Who is EA Training System for?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Coaches and athletes who want science-based readiness tracking, and physiotherapists with their patients for rehab session monitoring.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Does it work on mobile?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes. The app is mobile-first and can be installed on your phone home screen for an app-like experience.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Is it free?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes, you can create a free account and start using the platform immediately.",
+              },
+            },
+          ],
+        }),
+      },
+    ],
   }),
   component: Landing,
 });

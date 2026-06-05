@@ -67,7 +67,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bdd18a74-4ba8-43c0-beec-a3f7677f17a9/id-preview-37c2bf53--369f24af-f4f2-4fad-9b2f-2b98e3b979d6.lovable.app-1777283904089.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bdd18a74-4ba8-43c0-beec-a3f7677f17a9/id-preview-37c2bf53--369f24af-f4f2-4fad-9b2f-2b98e3b979d6.lovable.app-1777283904089.png" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+    ],
     scripts: [
       {
         type: "application/ld+json",
@@ -75,9 +81,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "EA Training System",
-          url: "https://set-smart-guide.lovable.app",
+          url: "https://eastyrka.lovable.app",
           description:
             "Coaching and rehab monitoring platform for coaches, athletes, physiotherapists and patients.",
+          inLanguage: ["en", "sv"],
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://eastyrka.lovable.app/?q={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
         }),
       },
       {
@@ -86,7 +98,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "EA Training System",
-          url: "https://set-smart-guide.lovable.app",
+          url: "https://eastyrka.lovable.app",
+          logo: "https://eastyrka.lovable.app/icon-512.png",
         }),
       },
     ],

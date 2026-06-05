@@ -108,6 +108,8 @@ interface LogRow {
   comment: string | null;
   form_score: number | null;
   planned_exercise_id: string | null;
+  original_reps?: number | null;
+  original_rpe?: number | null;
 }
 
 function TodayPage() {

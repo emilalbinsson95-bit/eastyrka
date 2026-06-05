@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   format,
 } from "date-fns";
-import { Plus, CheckCircle2, Save, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, CheckCircle2, Save, Calendar as CalendarIcon, Pencil, X } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +108,8 @@ interface LogRow {
   comment: string | null;
   form_score: number | null;
   planned_exercise_id: string | null;
+  original_reps?: number | null;
+  original_rpe?: number | null;
 }
 
 function TodayPage() {
@@ -600,6 +602,90 @@ function PlannedSessionCard({
 }
 
 
+function EditLoggedSet({
+  log,
+  athleteId,
+  dateStr,
+  onClose,
+}: {
+  log: LogRow;
+  athleteId: string;
+  dateStr: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [reps, setReps] = useState(String(log.reps));
+  const [weight, setWeight] = useState(String(log.weight_kg));
+  const [rpe, setRpe] = useState(String(log.rpe));
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const parsed = setSchema.parse({
+        reps: Number(reps),
+        weight_kg: Number(weight),
+        rpe: Number(rpe),
+      });
+      const { error } = await supabase
+        .from("training_logs")
+        .update({
+          reps: parsed.reps,
+          weight_kg: parsed.weight_kg,
+          rpe: parsed.rpe,
+          edited_by_athlete_at: new Date().toISOString(),
+          original_reps: log.original_reps ?? log.reps,
+          original_rpe: log.original_rpe ?? log.rpe,
+        } as never)
+        .eq("id", log.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Set updated");
+      queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
+      onClose();
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 rounded bg-muted px-2 py-1.5 text-xs">
+      <Input
+        type="number"
+        inputMode="decimal"
+        value={weight}
+        onChange={(e) => setWeight(e.target.value)}
+        className="h-7 w-16 text-xs"
+        aria-label="Weight kg"
+      />
+      <span className="text-muted-foreground">kg ×</span>
+      <Input
+        type="number"
+        inputMode="numeric"
+        value={reps}
+        onChange={(e) => setReps(e.target.value)}
+        className="h-7 w-14 text-xs"
+        aria-label="Reps"
+      />
+      <span className="text-muted-foreground">@RPE</span>
+      <Input
+        type="number"
+        inputMode="decimal"
+        step="0.5"
+        value={rpe}
+        onChange={(e) => setRpe(e.target.value)}
+        className="h-7 w-14 text-xs"
+        aria-label="RPE"
+      />
+      <Button size="sm" className="h-7 px-2" disabled={save.isPending} onClick={() => save.mutate()}>
+        <Save className="h-3 w-3" />
+      </Button>
+      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}>
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
 function PlannedExerciseRow({
   ex,
   logs,
@@ -615,6 +701,7 @@ function PlannedExerciseRow({
   athleteId: string;
   dateStr: string;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const completed = logs.length;
   const targetSets = ex.target_sets;
   const isDone = completed >= targetSets;
@@ -671,39 +758,63 @@ function PlannedExerciseRow({
         <div className="mb-3 space-y-1">
           {processed
             .sort((a, b) => a.source.set_number - b.source.set_number)
-            .map((p) => (
-              <div
-                key={p.source.id}
-                className="flex items-center justify-between rounded bg-muted/50 px-2 py-1.5 text-xs"
-              >
-                <span className="font-medium">
-                  Set {p.source.set_number}: {p.source.reps}×{p.source.weight_kg}kg
-                  @RPE{p.source.rpe}
-                </span>
-                <div className="flex items-center gap-1">
-                  {p.eaKoefficient > 0 && (
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 font-semibold",
-                        readinessClasses(p.status),
-                      )}
+            .map((p) => {
+              const logForEdit = logs.find((l) => l.id === p.source.id);
+              if (editingId === p.source.id && logForEdit) {
+                return (
+                  <EditLoggedSet
+                    key={p.source.id}
+                    log={logForEdit}
+                    athleteId={athleteId}
+                    dateStr={dateStr}
+                    onClose={() => setEditingId(null)}
+                  />
+                );
+              }
+              return (
+                <div
+                  key={p.source.id}
+                  className="flex items-center justify-between rounded bg-muted/50 px-2 py-1.5 text-xs"
+                >
+                  <span className="font-medium">
+                    Set {p.source.set_number}: {p.source.reps}×{p.source.weight_kg}kg
+                    @RPE{p.source.rpe}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {p.eaKoefficient > 0 && (
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-semibold",
+                          readinessClasses(p.status),
+                        )}
+                      >
+                        {p.eaKoefficient.toFixed(0)}%
+                      </span>
+                    )}
+                    {p.source.set_number > 1 && p.set1E1RM > 0 && (
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-semibold",
+                          volumeQualityClasses(p.volume),
+                        )}
+                      >
+                        {volumeQualityLabel(p.volume)}
+                      </span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-primary"
+                      onClick={() => setEditingId(p.source.id)}
+                      aria-label="Edit set"
+                      title="Edit logged set"
                     >
-                      {p.eaKoefficient.toFixed(0)}%
-                    </span>
-                  )}
-                  {p.source.set_number > 1 && p.set1E1RM > 0 && (
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 font-semibold",
-                        volumeQualityClasses(p.volume),
-                      )}
-                    >
-                      {volumeQualityLabel(p.volume)}
-                    </span>
-                  )}
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
 

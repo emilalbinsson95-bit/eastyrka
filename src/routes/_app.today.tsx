@@ -600,6 +600,95 @@ function PlannedSessionCard({
 }
 
 
+function EditLoggedSet({
+  log,
+  athleteId,
+  dateStr,
+  onClose,
+}: {
+  log: LogRow;
+  athleteId: string;
+  dateStr: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [reps, setReps] = useState(String(log.reps));
+  const [weight, setWeight] = useState(String(log.weight_kg));
+  const [rpe, setRpe] = useState(String(log.rpe));
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const parsed = setSchema.parse({
+        reps: Number(reps),
+        weight_kg: Number(weight),
+        rpe: Number(rpe),
+      });
+      const { error } = await supabase
+        .from("training_logs")
+        .update({
+          reps: parsed.reps,
+          weight_kg: parsed.weight_kg,
+          rpe: parsed.rpe,
+          edited_by_athlete_at: new Date().toISOString(),
+          original_reps: log.original_reps ?? log.reps,
+          original_rpe: log.original_rpe ?? log.rpe,
+        } as never)
+        .eq("id", log.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Set updated");
+      queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
+      onClose();
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 rounded bg-muted px-2 py-1.5 text-xs">
+      <Input
+        type="number"
+        inputMode="decimal"
+        value={weight}
+        onChange={(e) => setWeight(e.target.value)}
+        className="h-7 w-16 text-xs"
+        aria-label="Weight kg"
+      />
+      <span className="text-muted-foreground">kg ×</span>
+      <Input
+        type="number"
+        inputMode="numeric"
+        value={reps}
+        onChange={(e) => setReps(e.target.value)}
+        className="h-7 w-14 text-xs"
+        aria-label="Reps"
+      />
+      <span className="text-muted-foreground">@RPE</span>
+      <Input
+        type="number"
+        inputMode="decimal"
+        step="0.5"
+        value={rpe}
+        onChange={(e) => setRpe(e.target.value)}
+        className="h-7 w-14 text-xs"
+        aria-label="RPE"
+      />
+      <Button size="sm" className="h-7 px-2" disabled={save.isPending} onClick={() => save.mutate()}>
+        <Save className="h-3 w-3" />
+      </Button>
+      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}>
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+interface LogRowExt extends LogRow {
+  original_reps?: number | null;
+  original_rpe?: number | null;
+}
+
 function PlannedExerciseRow({
   ex,
   logs,
@@ -615,6 +704,7 @@ function PlannedExerciseRow({
   athleteId: string;
   dateStr: string;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const completed = logs.length;
   const targetSets = ex.target_sets;
   const isDone = completed >= targetSets;

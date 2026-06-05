@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   format,
 } from "date-fns";
-import { Plus, CheckCircle2, Save, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, CheckCircle2, Save, Calendar as CalendarIcon, Pencil, X } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";

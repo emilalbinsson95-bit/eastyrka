@@ -763,39 +763,63 @@ function PlannedExerciseRow({
         <div className="mb-3 space-y-1">
           {processed
             .sort((a, b) => a.source.set_number - b.source.set_number)
-            .map((p) => (
-              <div
-                key={p.source.id}
-                className="flex items-center justify-between rounded bg-muted/50 px-2 py-1.5 text-xs"
-              >
-                <span className="font-medium">
-                  Set {p.source.set_number}: {p.source.reps}×{p.source.weight_kg}kg
-                  @RPE{p.source.rpe}
-                </span>
-                <div className="flex items-center gap-1">
-                  {p.eaKoefficient > 0 && (
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 font-semibold",
-                        readinessClasses(p.status),
-                      )}
+            .map((p) => {
+              const logForEdit = logs.find((l) => l.id === p.source.id);
+              if (editingId === p.source.id && logForEdit) {
+                return (
+                  <EditLoggedSet
+                    key={p.source.id}
+                    log={logForEdit}
+                    athleteId={athleteId}
+                    dateStr={dateStr}
+                    onClose={() => setEditingId(null)}
+                  />
+                );
+              }
+              return (
+                <div
+                  key={p.source.id}
+                  className="flex items-center justify-between rounded bg-muted/50 px-2 py-1.5 text-xs"
+                >
+                  <span className="font-medium">
+                    Set {p.source.set_number}: {p.source.reps}×{p.source.weight_kg}kg
+                    @RPE{p.source.rpe}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {p.eaKoefficient > 0 && (
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-semibold",
+                          readinessClasses(p.status),
+                        )}
+                      >
+                        {p.eaKoefficient.toFixed(0)}%
+                      </span>
+                    )}
+                    {p.source.set_number > 1 && p.set1E1RM > 0 && (
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-semibold",
+                          volumeQualityClasses(p.volume),
+                        )}
+                      >
+                        {volumeQualityLabel(p.volume)}
+                      </span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-primary"
+                      onClick={() => setEditingId(p.source.id)}
+                      aria-label="Edit set"
+                      title="Edit logged set"
                     >
-                      {p.eaKoefficient.toFixed(0)}%
-                    </span>
-                  )}
-                  {p.source.set_number > 1 && p.set1E1RM > 0 && (
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 font-semibold",
-                        volumeQualityClasses(p.volume),
-                      )}
-                    >
-                      {volumeQualityLabel(p.volume)}
-                    </span>
-                  )}
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
 

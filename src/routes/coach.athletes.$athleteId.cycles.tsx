@@ -1,8 +1,8 @@
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
-import { Plus, Calendar, ArrowRight, Trash2 } from "lucide-react";
+import { format, parseISO, addWeeks, differenceInCalendarDays, addDays } from "date-fns";
+import { Plus, Calendar, ArrowRight, Trash2, Copy } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,6 +134,209 @@ function CyclesListPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async (input: { source: Mesocycle; newName: string; newStartDate: string }) => {
+      const { source, newName, newStartDate } = input;
+      const dayShift = differenceInCalendarDays(parseISO(newStartDate), parseISO(source.start_date));
+
+      // 1. New mesocycle
+      const { data: newMeso, error: mErr } = await supabase
+        .from("mesocycles")
+        .insert({
+          coach_id: userId,
+          athlete_id: athleteId,
+          name: newName,
+          goal: source.goal,
+          start_date: newStartDate,
+          total_weeks: source.total_weeks,
+          days_per_week: source.days_per_week,
+          notes: source.notes,
+        })
+        .select("id")
+        .single();
+      if (mErr) throw mErr;
+
+      // 2. Source week_plans
+      const { data: srcWeeks, error: wErr } = await supabase
+        .from("week_plans")
+        .select("id, week_index, week_start_date")
+        .eq("mesocycle_id", source.id)
+        .order("week_index", { ascending: true });
+      if (wErr) throw wErr;
+
+      const weekIdMap = new Map<string, string>();
+      if (srcWeeks && srcWeeks.length) {
+        const weekRows = srcWeeks.map((w) => ({
+          coach_id: userId,
+          athlete_id: athleteId,
+          mesocycle_id: newMeso.id,
+          week_index: w.week_index,
+          week_start_date: format(addDays(parseISO(w.week_start_date), dayShift), "yyyy-MM-dd"),
+          status: "draft" as const,
+        }));
+        const { data: newWeeks, error: nwErr } = await supabase
+          .from("week_plans")
+          .insert(weekRows)
+          .select("id, week_index");
+        if (nwErr) throw nwErr;
+        for (const sw of srcWeeks) {
+          const match = newWeeks?.find((nw) => nw.week_index === sw.week_index);
+          if (match) weekIdMap.set(sw.id, match.id);
+        }
+
+        // 3. Sessions for these weeks
+        const { data: srcSessions, error: sErr } = await supabase
+          .from("planned_sessions")
+          .select("id, week_plan_id, day_of_week, title, notes")
+          .in("week_plan_id", srcWeeks.map((w) => w.id));
+        if (sErr) throw sErr;
+
+        const sessionIdMap = new Map<string, string>();
+        if (srcSessions && srcSessions.length) {
+          // Insert one by one to map old→new ids
+          for (const s of srcSessions) {
+            const newWeekId = weekIdMap.get(s.week_plan_id);
+            if (!newWeekId) continue;
+            const { data: ns, error: nsErr } = await supabase
+              .from("planned_sessions")
+              .insert({
+                week_plan_id: newWeekId,
+                day_of_week: s.day_of_week,
+                title: s.title,
+                notes: s.notes,
+              })
+              .select("id")
+              .single();
+            if (nsErr) throw nsErr;
+            sessionIdMap.set(s.id, ns.id);
+          }
+
+          // 4. Planned exercises
+          const { data: srcExes, error: eErr } = await supabase
+            .from("planned_exercises")
+            .select("planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index")
+            .in("planned_session_id", srcSessions.map((s) => s.id));
+          if (eErr) throw eErr;
+          if (srcExes && srcExes.length) {
+            const exRows = srcExes
+              .map((e) => {
+                const newSid = sessionIdMap.get(e.planned_session_id);
+                if (!newSid) return null;
+                return { ...e, planned_session_id: newSid };
+              })
+              .filter((x): x is NonNullable<typeof x> => !!x);
+            if (exRows.length) {
+              const { error: ieErr } = await supabase.from("planned_exercises").insert(exRows);
+              if (ieErr) throw ieErr;
+            }
+          }
+        }
+      }
+
+      // 5. Endurance sessions in the date range of source meso
+      const srcEnd = format(addWeeks(parseISO(source.start_date), source.total_weeks), "yyyy-MM-dd");
+      const { data: srcEndSess, error: esErr } = await supabase
+        .from("endurance_sessions")
+        .select("id, date, discipline, mode, title, planned_total_seconds, planned_avg_rpe, notes")
+        .eq("athlete_id", athleteId)
+        .gte("date", source.start_date)
+        .lt("date", srcEnd)
+        .eq("status", "planned");
+      if (esErr) throw esErr;
+
+      if (srcEndSess && srcEndSess.length) {
+        const endSessionIdMap = new Map<string, string>();
+        for (const s of srcEndSess) {
+          const { data: ns, error: insErr } = await supabase
+            .from("endurance_sessions")
+            .insert({
+              athlete_id: athleteId,
+              coach_id: userId,
+              date: format(addDays(parseISO(s.date), dayShift), "yyyy-MM-dd"),
+              discipline: s.discipline,
+              mode: s.mode,
+              title: s.title,
+              planned_total_seconds: s.planned_total_seconds,
+              planned_avg_rpe: s.planned_avg_rpe,
+              notes: s.notes,
+              status: "planned",
+            })
+            .select("id")
+            .single();
+          if (insErr) throw insErr;
+          endSessionIdMap.set(s.id, ns.id);
+        }
+
+        // Endurance steps (two passes for parent_id remap)
+        const { data: srcSteps, error: stErr } = await supabase
+          .from("endurance_steps")
+          .select("id, session_id, parent_id, order_index, is_group, repeat_count, discipline, duration_seconds, target_rpe, target_pace_seconds_per_km, target_hr_bpm, notes")
+          .in("session_id", srcEndSess.map((s) => s.id))
+          .order("order_index", { ascending: true });
+        if (stErr) throw stErr;
+
+        if (srcSteps && srcSteps.length) {
+          const stepIdMap = new Map<string, string>();
+          // Pass 1: top-level
+          const tops = srcSteps.filter((st) => !st.parent_id);
+          for (const st of tops) {
+            const newSid = endSessionIdMap.get(st.session_id);
+            if (!newSid) continue;
+            const { data: ns, error: e } = await supabase
+              .from("endurance_steps")
+              .insert({
+                session_id: newSid,
+                parent_id: null,
+                order_index: st.order_index,
+                is_group: st.is_group,
+                repeat_count: st.repeat_count,
+                discipline: st.discipline,
+                duration_seconds: st.duration_seconds,
+                target_rpe: st.target_rpe,
+                target_pace_seconds_per_km: st.target_pace_seconds_per_km,
+                target_hr_bpm: st.target_hr_bpm,
+                notes: st.notes,
+              })
+              .select("id")
+              .single();
+            if (e) throw e;
+            stepIdMap.set(st.id, ns.id);
+          }
+          // Pass 2: children
+          const children = srcSteps.filter((st) => st.parent_id);
+          for (const st of children) {
+            const newSid = endSessionIdMap.get(st.session_id);
+            const newParentId = st.parent_id ? stepIdMap.get(st.parent_id) : null;
+            if (!newSid) continue;
+            const { error: e } = await supabase.from("endurance_steps").insert({
+              session_id: newSid,
+              parent_id: newParentId ?? null,
+              order_index: st.order_index,
+              is_group: st.is_group,
+              repeat_count: st.repeat_count,
+              discipline: st.discipline,
+              duration_seconds: st.duration_seconds,
+              target_rpe: st.target_rpe,
+              target_pace_seconds_per_km: st.target_pace_seconds_per_km,
+              target_hr_bpm: st.target_hr_bpm,
+              notes: st.notes,
+            });
+            if (e) throw e;
+          }
+        }
+      }
+
+      return newMeso.id;
+    },
+    onSuccess: () => {
+      toast.success("Mesocycle duplicated");
+      qc.invalidateQueries({ queryKey: ["mesocycles", athleteId] });
+      qc.invalidateQueries({ queryKey: ["athlete-endurance"] });
+      qc.invalidateQueries({ queryKey: ["week-endurance"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (childMatches.length > 0) {
     return <Outlet />;
   }
@@ -206,16 +409,25 @@ function CyclesListPage() {
                       {m.goal || "No specific goal set"}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      if (confirm(`Delete "${m.name}" and all its weeks?`))
-                        deleteMutation.mutate(m.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <DuplicateMesoButton
+                      source={m}
+                      onDuplicate={(name, date) =>
+                        duplicateMutation.mutate({ source: m, newName: name, newStartDate: date })
+                      }
+                      saving={duplicateMutation.isPending}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (confirm(`Delete "${m.name}" and all its weeks?`))
+                          deleteMutation.mutate(m.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between text-sm">
@@ -340,5 +552,69 @@ function NewMesoDialog({
         </Button>
       </DialogFooter>
     </DialogContent>
+  );
+}
+
+function DuplicateMesoButton({
+  source,
+  onDuplicate,
+  saving,
+}: {
+  source: Mesocycle;
+  onDuplicate: (newName: string, newStartDate: string) => void;
+  saving: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(`${source.name} (copy)`);
+  const [startDate, setStartDate] = useState(() =>
+    format(addWeeks(parseISO(source.start_date), source.total_weeks), "yyyy-MM-dd"),
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Duplicate mesocycle"
+          onClick={() => {
+            setName(`${source.name} (copy)`);
+            setStartDate(format(addWeeks(parseISO(source.start_date), source.total_weeks), "yyyy-MM-dd"));
+          }}
+        >
+          <Copy className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Duplicate mesocycle</DialogTitle>
+          <DialogDescription>
+            Copies all weeks, strength sessions, and endurance sessions from "{source.name}" into a new draft mesocycle. Dates are shifted to the new start date.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>New name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <Label>New start date (Mon)</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            disabled={saving || !name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)}
+            onClick={() => {
+              onDuplicate(name.trim(), startDate);
+              setOpen(false);
+            }}
+          >
+            {saving ? "Duplicating…" : "Duplicate"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

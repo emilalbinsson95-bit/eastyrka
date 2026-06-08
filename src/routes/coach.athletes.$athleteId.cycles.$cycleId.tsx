@@ -400,7 +400,7 @@ function CycleDetailPage() {
   const weeks = weeksQuery.data ?? [];
   const publishedCount = weeks.filter((w) => w.status === "published").length;
   const currentWeek = weeks[activeWeek];
-  const previousWeek = activeWeek > 0 ? weeks[activeWeek - 1] : null;
+  
 
   return (
     <div className="space-y-4">
@@ -485,23 +485,22 @@ function CycleDetailPage() {
           week={currentWeek}
           weekIndex={activeWeek}
           daysPerWeek={cycle.days_per_week}
-          previousWeek={previousWeek}
+          allWeeks={weeks}
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
           athleteId={athleteId}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
-          onCopyFromPrevious={() => {
-            if (!previousWeek) return;
+          onCopyFromWeek={(fromWeekId, fromIndex) => {
             if (
               !confirm(
-                `Replace Week ${activeWeek + 1} with a copy of Week ${activeWeek}? This will overwrite any existing sessions.`,
+                `Replace Week ${activeWeek + 1} with a copy of Week ${fromIndex + 1}? This will overwrite any existing sessions.`,
               )
             )
               return;
             copyWeekMutation.mutate({
-              fromWeekId: previousWeek.id,
+              fromWeekId,
               toWeekId: currentWeek.id,
             });
           }}
@@ -516,22 +515,22 @@ function WeekEditor({
   week,
   weekIndex,
   daysPerWeek,
-  previousWeek,
+  allWeeks,
   exerciseLib,
   baselines,
   athleteId,
   onTogglePublish,
-  onCopyFromPrevious,
+  onCopyFromWeek,
 }: {
   week: WeekPlanRow;
   weekIndex: number;
   daysPerWeek: number;
-  previousWeek: WeekPlanRow | null;
+  allWeeks: WeekPlanRow[];
   exerciseLib: ExerciseLib[];
   baselines: Record<string, number>;
   athleteId: string;
   onTogglePublish: (publish: boolean) => void;
-  onCopyFromPrevious: () => void;
+  onCopyFromWeek: (fromWeekId: string, fromIndex: number) => void;
 }) {
 
   const qc = useQueryClient();
@@ -734,10 +733,29 @@ function WeekEditor({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {previousWeek && (
-            <Button variant="outline" size="sm" onClick={onCopyFromPrevious}>
-              <Copy className="mr-1 h-4 w-4" /> Copy from Week {weekIndex}
-            </Button>
+          {allWeeks.filter((w) => w.id !== week.id).length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Copy className="mr-1 h-4 w-4" /> Copy from week…
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+                {allWeeks.map((w, i) =>
+                  w.id === week.id ? null : (
+                    <DropdownMenuItem
+                      key={w.id}
+                      onSelect={() => onCopyFromWeek(w.id, i)}
+                    >
+                      Week {i + 1}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {format(parseISO(w.week_start_date), "MMM d")}
+                      </span>
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button
             variant={week.status === "published" ? "outline" : "default"}

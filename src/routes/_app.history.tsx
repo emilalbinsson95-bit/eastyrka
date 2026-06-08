@@ -84,10 +84,20 @@ function HistoryPage() {
   });
 
   const updateLog = useMutation({
-    mutationFn: async ({ id, reps, rpe }: { id: string; reps: number; rpe: number }) => {
+    mutationFn: async ({
+      id,
+      reps,
+      rpe,
+      weight_kg,
+    }: {
+      id: string;
+      reps: number;
+      rpe: number;
+      weight_kg: number;
+    }) => {
       const { error } = await supabase
         .from("training_logs")
-        .update({ reps, rpe })
+        .update({ reps, rpe, weight_kg, edited_by_athlete_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
     },

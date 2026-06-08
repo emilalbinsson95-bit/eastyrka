@@ -252,7 +252,18 @@ function SetRow({
       ) : (
         <div className="space-y-2">
           <div className="font-medium">{p.source.exercise} · Set {p.source.set_number}</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor={`weight-${p.source.id}`} className="text-xs">Weight (kg)</Label>
+              <Input
+                id={`weight-${p.source.id}`}
+                type="number"
+                min={0}
+                step={0.5}
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+              />
+            </div>
             <div className="space-y-1">
               <Label htmlFor={`reps-${p.source.id}`} className="text-xs">Reps</Label>
               <Input
@@ -284,6 +295,7 @@ function SetRow({
               onClick={() => {
                 setReps(p.source.reps);
                 setRpe(p.source.rpe);
+                setWeight(p.source.weight_kg);
                 setEditing(false);
               }}
             >
@@ -291,11 +303,16 @@ function SetRow({
             </Button>
             <Button
               size="sm"
-              disabled={saving || (reps === p.source.reps && rpe === p.source.rpe)}
+              disabled={
+                saving ||
+                (reps === p.source.reps &&
+                  rpe === p.source.rpe &&
+                  weight === p.source.weight_kg)
+              }
               onClick={async () => {
                 setSaving(true);
                 try {
-                  await onSave(reps, rpe);
+                  await onSave(reps, rpe, weight);
                   setEditing(false);
                 } finally {
                   setSaving(false);

@@ -195,11 +195,12 @@ function SetRow({
 }: {
   p: ReturnType<typeof processLogs>[number];
   row: LogRow;
-  onSave: (reps: number, rpe: number) => Promise<void>;
+  onSave: (reps: number, rpe: number, weight_kg: number) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [reps, setReps] = useState(p.source.reps);
   const [rpe, setRpe] = useState(p.source.rpe);
+  const [weight, setWeight] = useState(p.source.weight_kg);
   const [saving, setSaving] = useState(false);
 
   const wasEdited = !!row.edited_by_athlete_at;

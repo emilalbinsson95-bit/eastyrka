@@ -485,23 +485,22 @@ function CycleDetailPage() {
           week={currentWeek}
           weekIndex={activeWeek}
           daysPerWeek={cycle.days_per_week}
-          previousWeek={previousWeek}
+          allWeeks={weeks}
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
           athleteId={athleteId}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
-          onCopyFromPrevious={() => {
-            if (!previousWeek) return;
+          onCopyFromWeek={(fromWeekId, fromIndex) => {
             if (
               !confirm(
-                `Replace Week ${activeWeek + 1} with a copy of Week ${activeWeek}? This will overwrite any existing sessions.`,
+                `Replace Week ${activeWeek + 1} with a copy of Week ${fromIndex + 1}? This will overwrite any existing sessions.`,
               )
             )
               return;
             copyWeekMutation.mutate({
-              fromWeekId: previousWeek.id,
+              fromWeekId,
               toWeekId: currentWeek.id,
             });
           }}

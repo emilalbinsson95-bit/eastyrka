@@ -515,22 +515,22 @@ function WeekEditor({
   week,
   weekIndex,
   daysPerWeek,
-  previousWeek,
+  allWeeks,
   exerciseLib,
   baselines,
   athleteId,
   onTogglePublish,
-  onCopyFromPrevious,
+  onCopyFromWeek,
 }: {
   week: WeekPlanRow;
   weekIndex: number;
   daysPerWeek: number;
-  previousWeek: WeekPlanRow | null;
+  allWeeks: WeekPlanRow[];
   exerciseLib: ExerciseLib[];
   baselines: Record<string, number>;
   athleteId: string;
   onTogglePublish: (publish: boolean) => void;
-  onCopyFromPrevious: () => void;
+  onCopyFromWeek: (fromWeekId: string, fromIndex: number) => void;
 }) {
 
   const qc = useQueryClient();

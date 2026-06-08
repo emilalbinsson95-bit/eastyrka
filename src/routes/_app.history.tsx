@@ -84,10 +84,20 @@ function HistoryPage() {
   });
 
   const updateLog = useMutation({
-    mutationFn: async ({ id, reps, rpe }: { id: string; reps: number; rpe: number }) => {
+    mutationFn: async ({
+      id,
+      reps,
+      rpe,
+      weight_kg,
+    }: {
+      id: string;
+      reps: number;
+      rpe: number;
+      weight_kg: number;
+    }) => {
       const { error } = await supabase
         .from("training_logs")
-        .update({ reps, rpe })
+        .update({ reps, rpe, weight_kg, edited_by_athlete_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
     },
@@ -166,8 +176,8 @@ function HistoryPage() {
                 key={p.source.id}
                 p={p}
                 row={row}
-                onSave={(reps, rpe) =>
-                  updateLog.mutateAsync({ id: p.source.id, reps, rpe })
+                onSave={(reps, rpe, weight_kg) =>
+                  updateLog.mutateAsync({ id: p.source.id, reps, rpe, weight_kg })
                 }
               />
             ))}
@@ -185,11 +195,12 @@ function SetRow({
 }: {
   p: ReturnType<typeof processLogs>[number];
   row: LogRow;
-  onSave: (reps: number, rpe: number) => Promise<void>;
+  onSave: (reps: number, rpe: number, weight_kg: number) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [reps, setReps] = useState(p.source.reps);
   const [rpe, setRpe] = useState(p.source.rpe);
+  const [weight, setWeight] = useState(p.source.weight_kg);
   const [saving, setSaving] = useState(false);
 
   const wasEdited = !!row.edited_by_athlete_at;
@@ -241,7 +252,18 @@ function SetRow({
       ) : (
         <div className="space-y-2">
           <div className="font-medium">{p.source.exercise} · Set {p.source.set_number}</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor={`weight-${p.source.id}`} className="text-xs">Weight (kg)</Label>
+              <Input
+                id={`weight-${p.source.id}`}
+                type="number"
+                min={0}
+                step={0.5}
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+              />
+            </div>
             <div className="space-y-1">
               <Label htmlFor={`reps-${p.source.id}`} className="text-xs">Reps</Label>
               <Input
@@ -273,6 +295,7 @@ function SetRow({
               onClick={() => {
                 setReps(p.source.reps);
                 setRpe(p.source.rpe);
+                setWeight(p.source.weight_kg);
                 setEditing(false);
               }}
             >
@@ -280,11 +303,16 @@ function SetRow({
             </Button>
             <Button
               size="sm"
-              disabled={saving || (reps === p.source.reps && rpe === p.source.rpe)}
+              disabled={
+                saving ||
+                (reps === p.source.reps &&
+                  rpe === p.source.rpe &&
+                  weight === p.source.weight_kg)
+              }
               onClick={async () => {
                 setSaving(true);
                 try {
-                  await onSave(reps, rpe);
+                  await onSave(reps, rpe, weight);
                   setEditing(false);
                 } finally {
                   setSaving(false);

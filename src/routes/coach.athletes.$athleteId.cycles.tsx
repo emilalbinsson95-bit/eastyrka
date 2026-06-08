@@ -554,3 +554,67 @@ function NewMesoDialog({
     </DialogContent>
   );
 }
+
+function DuplicateMesoButton({
+  source,
+  onDuplicate,
+  saving,
+}: {
+  source: Mesocycle;
+  onDuplicate: (newName: string, newStartDate: string) => void;
+  saving: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(`${source.name} (copy)`);
+  const [startDate, setStartDate] = useState(() =>
+    format(addWeeks(parseISO(source.start_date), source.total_weeks), "yyyy-MM-dd"),
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Duplicate mesocycle"
+          onClick={() => {
+            setName(`${source.name} (copy)`);
+            setStartDate(format(addWeeks(parseISO(source.start_date), source.total_weeks), "yyyy-MM-dd"));
+          }}
+        >
+          <Copy className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Duplicate mesocycle</DialogTitle>
+          <DialogDescription>
+            Copies all weeks, strength sessions, and endurance sessions from "{source.name}" into a new draft mesocycle. Dates are shifted to the new start date.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>New name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <Label>New start date (Mon)</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            disabled={saving || !name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)}
+            onClick={() => {
+              onDuplicate(name.trim(), startDate);
+              setOpen(false);
+            }}
+          >
+            {saving ? "Duplicating…" : "Duplicate"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

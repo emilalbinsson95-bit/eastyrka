@@ -733,10 +733,29 @@ function WeekEditor({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {previousWeek && (
-            <Button variant="outline" size="sm" onClick={onCopyFromPrevious}>
-              <Copy className="mr-1 h-4 w-4" /> Copy from Week {weekIndex}
-            </Button>
+          {allWeeks.filter((w) => w.id !== week.id).length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Copy className="mr-1 h-4 w-4" /> Copy from week…
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+                {allWeeks.map((w, i) =>
+                  w.id === week.id ? null : (
+                    <DropdownMenuItem
+                      key={w.id}
+                      onSelect={() => onCopyFromWeek(w.id, i)}
+                    >
+                      Week {i + 1}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {format(parseISO(w.week_start_date), "MMM d")}
+                      </span>
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button
             variant={week.status === "published" ? "outline" : "default"}

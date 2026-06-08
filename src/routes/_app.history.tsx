@@ -176,8 +176,8 @@ function HistoryPage() {
                 key={p.source.id}
                 p={p}
                 row={row}
-                onSave={(reps, rpe) =>
-                  updateLog.mutateAsync({ id: p.source.id, reps, rpe })
+                onSave={(reps, rpe, weight_kg) =>
+                  updateLog.mutateAsync({ id: p.source.id, reps, rpe, weight_kg })
                 }
               />
             ))}

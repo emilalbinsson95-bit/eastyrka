@@ -409,16 +409,25 @@ function CyclesListPage() {
                       {m.goal || "No specific goal set"}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      if (confirm(`Delete "${m.name}" and all its weeks?`))
-                        deleteMutation.mutate(m.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <DuplicateMesoButton
+                      source={m}
+                      onDuplicate={(name, date) =>
+                        duplicateMutation.mutate({ source: m, newName: name, newStartDate: date })
+                      }
+                      saving={duplicateMutation.isPending}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (confirm(`Delete "${m.name}" and all its weeks?`))
+                          deleteMutation.mutate(m.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between text-sm">

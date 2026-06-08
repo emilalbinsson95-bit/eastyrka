@@ -1,8 +1,8 @@
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
-import { Plus, Calendar, ArrowRight, Trash2 } from "lucide-react";
+import { format, parseISO, addWeeks, differenceInCalendarDays, addDays } from "date-fns";
+import { Plus, Calendar, ArrowRight, Trash2, Copy } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";

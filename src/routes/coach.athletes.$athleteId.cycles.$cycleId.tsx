@@ -400,7 +400,7 @@ function CycleDetailPage() {
   const weeks = weeksQuery.data ?? [];
   const publishedCount = weeks.filter((w) => w.status === "published").length;
   const currentWeek = weeks[activeWeek];
-  const previousWeek = activeWeek > 0 ? weeks[activeWeek - 1] : null;
+  
 
   return (
     <div className="space-y-4">

@@ -374,7 +374,18 @@ export function EnduranceTodayCard({
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 border-t border-border px-3 py-2">
+              <div className="flex items-center justify-end gap-2 border-t border-border px-3 py-2">
+                {s.status !== "completed" && (
+                  <MarkEnduranceDoneButton
+                    sessionId={s.id}
+                    plannedSeconds={s.planned_total_seconds}
+                    plannedAvgRpe={s.planned_avg_rpe}
+                    invalidateKeys={[
+                      ["today-endurance", athleteId, dateStr],
+                      ["endurance-sessions", athleteId],
+                    ]}
+                  />
+                )}
                 <Link
                   to="/endurance"
                   className="text-xs text-primary underline-offset-4 hover:underline"

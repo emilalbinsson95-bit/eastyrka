@@ -20,6 +20,7 @@ import {
   totalPlannedSeconds,
 } from "@/lib/endurance";
 import { estimateForRpe, type AthleteBenchmarks } from "@/lib/endurancePaceHr";
+import { MarkEnduranceDoneButton } from "@/components/MarkEnduranceDoneButton";
 
 interface Session {
   id: string;

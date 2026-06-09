@@ -15,6 +15,7 @@ import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoj
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
 import { MarathonPlanRetuneCard } from "@/components/MarathonPlanRetuneCard";
+import { MarkEnduranceDoneButton } from "@/components/MarkEnduranceDoneButton";
 
 export const Route = createFileRoute("/_app/endurance")({
   component: EndurancePage,

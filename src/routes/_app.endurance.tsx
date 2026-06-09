@@ -15,6 +15,7 @@ import { DISCIPLINES, type Discipline, type Mode, formatDuration, disciplineEmoj
 import { sessionDrift, driftBadgeClasses } from "@/components/EnduranceSummary";
 import { EnduranceWeeklyOverview } from "@/components/EnduranceWeeklyOverview";
 import { MarathonPlanRetuneCard } from "@/components/MarathonPlanRetuneCard";
+import { MarkEnduranceDoneButton } from "@/components/MarkEnduranceDoneButton";
 
 export const Route = createFileRoute("/_app/endurance")({
   component: EndurancePage,
@@ -127,12 +128,14 @@ function EndurancePage() {
             <p className="text-sm text-muted-foreground">No endurance sessions yet — log one above.</p>
           )}
           {(list.data ?? []).map((s) => (
-            <button
+            <div
               key={s.id}
-              onClick={() => setOpenId(s.id)}
-              className="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-accent"
+              className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
             >
-              <div className="flex items-center gap-3">
+              <button
+                onClick={() => setOpenId(s.id)}
+                className="flex flex-1 items-center gap-3 text-left"
+              >
                 <span className="text-xl">{disciplineEmoji(s.discipline as Discipline)}</span>
                 <div>
                   <div className="font-medium text-sm">{s.title || "Session"}</div>
@@ -140,12 +143,22 @@ function EndurancePage() {
                     {format(new Date(s.date), "EEE MMM d")} · {s.mode === "structured" ? "Intervals" : "Quick"}
                   </div>
                 </div>
-              </div>
+              </button>
               <div className="flex items-center gap-2 text-xs">
                 {s.actual_total_seconds ? (
                   <Badge variant="secondary">Done · {formatDuration(s.actual_total_seconds)}</Badge>
                 ) : (
-                  <Badge>Planned {formatDuration(s.planned_total_seconds)}</Badge>
+                  <>
+                    <Badge>Planned {formatDuration(s.planned_total_seconds)}</Badge>
+                    <MarkEnduranceDoneButton
+                      sessionId={s.id}
+                      plannedSeconds={s.planned_total_seconds}
+                      plannedAvgRpe={s.planned_avg_rpe}
+                      variant="outline"
+                      label="Mark done"
+                      invalidateKeys={[["endurance-sessions", user?.id]]}
+                    />
+                  </>
                 )}
                 {s.overall_rpe != null && <Badge variant="outline">RPE {s.overall_rpe}</Badge>}
                 {s.predicted_10k_seconds != null && (
@@ -154,9 +167,11 @@ function EndurancePage() {
                   </Badge>
                 )}
                 {(() => { const d = sessionDrift(s); return d && d.tone !== "ok" ? <Badge className={driftBadgeClasses(d.tone)}>{d.label}</Badge> : null; })()}
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <button onClick={() => setOpenId(s.id)} aria-label="Open session">
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
               </div>
-            </button>
+            </div>
           ))}
         </CardContent>
       </Card>

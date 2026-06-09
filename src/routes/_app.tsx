@@ -105,11 +105,12 @@ function AthleteLayout() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto grid max-w-3xl grid-cols-6">
+        <div className="mx-auto grid max-w-3xl grid-cols-7">
           <TabLink to="/today" icon={<Calendar className="h-5 w-5" />} label={t("nav.today")} />
           <TabLink to="/calendar" icon={<CalendarDays className="h-5 w-5" />} label="Calendar" />
           <TabLink to="/endurance" icon={<Footprints className="h-5 w-5" />} label="Endurance" />
           <TabLink to="/history" icon={<History className="h-5 w-5" />} label={t("nav.history")} />
+          <TabLink to="/stats" icon={<BarChart3 className="h-5 w-5" />} label="Stats" />
           <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
           <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>

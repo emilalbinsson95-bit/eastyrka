@@ -857,11 +857,10 @@ function BodyweightCard({
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  formatter={(value: number | null, name: string) =>
-                    value == null
-                      ? ["—", name]
-                      : [`${fmtNum(value, 1)} kg`, name]
-                  }
+                  formatter={(value, name) => {
+                    const n = typeof value === "number" ? value : Number(value);
+                    return [isFinite(n) ? `${fmtNum(n, 1)} kg` : "—", String(name)];
+                  }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Line

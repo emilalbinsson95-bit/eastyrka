@@ -116,6 +116,14 @@ function AthleteDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link
+              to="/coach/athletes/$athleteId/stats"
+              params={{ athleteId }}
+            >
+              <TrendingUp className="mr-1 h-4 w-4" /> Stats
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link
               to="/coach/athletes/$athleteId/analytics"
               params={{ athleteId }}
             >

@@ -40,7 +40,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { dailyE1RM } from "@/lib/eakoefficient";
+import {
+  dailyE1RM,
+  eaKoefficient,
+  readinessFromEAk,
+  readinessLabel,
+  readinessClasses,
+} from "@/lib/eakoefficient";
 import {
   fitnessFatigueSeries,
   acwr,

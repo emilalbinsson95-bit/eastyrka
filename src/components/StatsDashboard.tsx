@@ -40,7 +40,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { dailyE1RM } from "@/lib/eakoefficient";
+import {
+  dailyE1RM,
+  eaKoefficient,
+  readinessFromEAk,
+  readinessLabel,
+  readinessClasses,
+} from "@/lib/eakoefficient";
 import {
   fitnessFatigueSeries,
   acwr,
@@ -77,6 +83,7 @@ interface ReadinessRow {
   date: string;
   bodyweight_kg: number | null;
   daily_form: number | null;
+  stiffness: number | null;
 }
 
 interface MesocycleRow {
@@ -192,7 +199,7 @@ export function StatsDashboard({
       since.setDate(since.getDate() - 365);
       const { data, error } = await supabase
         .from("readiness_surveys")
-        .select("date, bodyweight_kg, daily_form")
+        .select("date, bodyweight_kg, daily_form, stiffness")
         .eq("athlete_id", athleteId)
         .gte("date", since.toISOString().slice(0, 10))
         .order("date", { ascending: true });
@@ -215,10 +222,25 @@ export function StatsDashboard({
     },
   });
 
+  const baselinesQuery = useQuery({
+    queryKey: ["stats-baselines", athleteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("baselines")
+        .select("exercise, one_rm_kg")
+        .eq("athlete_id", athleteId);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const r of data ?? []) map[r.exercise] = Number(r.one_rm_kg);
+      return map;
+    },
+  });
+
   const logs = logsQuery.data ?? [];
   const endurance = enduranceQuery.data ?? [];
   const readiness = readinessQuery.data ?? [];
   const mesocycles = mesoQuery.data ?? [];
+  const baselines = baselinesQuery.data ?? {};
 
   return (
     <div className="space-y-4">
@@ -232,11 +254,240 @@ export function StatsDashboard({
       </div>
 
       <TrainingStatusCard logs={logs} endurance={endurance} />
+      <EAkoefficientCard logs={logs} baselines={baselines} readiness={readiness} />
       <WeekInNumbersCard logs={logs} endurance={endurance} />
       <MesoSummaryCard logs={logs} mesocycles={mesocycles} />
       <PRFeedCard logs={logs} />
       <BodyweightCard readiness={readiness} logs={logs} />
     </div>
+  );
+}
+
+// ============= EAkoefficient (strength-only) vs stiffness =============
+function EAkoefficientCard({
+  logs,
+  baselines,
+  readiness,
+}: {
+  logs: LogRow[];
+  baselines: Record<string, number>;
+  readiness: ReadinessRow[];
+}) {
+  const data = useMemo(() => {
+    // Per-day EAk: average top-set eak across exercises that have a baseline.
+    const byDate = new Map<string, Map<string, number>>(); // date -> exercise -> max eak
+    for (const l of logs) {
+      const base = baselines[l.exercise];
+      if (!base || base <= 0) continue;
+      const eak = eaKoefficient(
+        { weight_kg: Number(l.weight_kg), reps: l.reps, rpe: Number(l.rpe) },
+        base,
+      );
+      if (!isFinite(eak) || eak <= 0) continue;
+      const inner = byDate.get(l.date) ?? new Map<string, number>();
+      inner.set(l.exercise, Math.max(inner.get(l.exercise) ?? 0, eak));
+      byDate.set(l.date, inner);
+    }
+    const stiffByDate = new Map<string, number>();
+    for (const r of readiness) {
+      if (r.stiffness != null) stiffByDate.set(r.date, Number(r.stiffness));
+    }
+
+    const dates = Array.from(
+      new Set<string>([...byDate.keys(), ...stiffByDate.keys()]),
+    ).sort();
+
+    const series = dates.map((d) => {
+      const inner = byDate.get(d);
+      let eak: number | null = null;
+      if (inner && inner.size > 0) {
+        const vals = Array.from(inner.values());
+        eak = vals.reduce((s, n) => s + n, 0) / vals.length;
+      }
+      return {
+        date: d,
+        label: format(parseISO(d), "MMM d"),
+        EAk: eak,
+        Stiffness: stiffByDate.get(d) ?? null,
+      };
+    });
+
+    // Last 84 days window
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 84);
+    const recent = series.filter((p) => parseISO(p.date) >= cutoff);
+
+    // Latest EAk and stiffness
+    const lastEak = [...recent].reverse().find((p) => p.EAk != null)?.EAk ?? null;
+    const lastStiff =
+      [...recent].reverse().find((p) => p.Stiffness != null)?.Stiffness ?? null;
+
+    // Pearson correlation between EAk and stiffness on days where both exist
+    const paired = recent.filter(
+      (p) => p.EAk != null && p.Stiffness != null,
+    ) as { EAk: number; Stiffness: number }[];
+    let corr: number | null = null;
+    if (paired.length >= 5) {
+      const n = paired.length;
+      const mx = paired.reduce((s, p) => s + p.EAk, 0) / n;
+      const my = paired.reduce((s, p) => s + p.Stiffness, 0) / n;
+      let num = 0,
+        dx = 0,
+        dy = 0;
+      for (const p of paired) {
+        num += (p.EAk - mx) * (p.Stiffness - my);
+        dx += (p.EAk - mx) ** 2;
+        dy += (p.Stiffness - my) ** 2;
+      }
+      const denom = Math.sqrt(dx * dy);
+      corr = denom > 0 ? num / denom : null;
+    }
+
+    return { recent, lastEak, lastStiff, corr, pairedCount: paired.length };
+  }, [logs, baselines, readiness]);
+
+  const status = data.lastEak != null ? readinessFromEAk(data.lastEak) : "unknown";
+  const hasAny =
+    data.recent.some((p) => p.EAk != null) ||
+    data.recent.some((p) => p.Stiffness != null);
+
+  const corrLabel =
+    data.corr == null
+      ? null
+      : data.corr <= -0.4
+        ? "Strong inverse — more stiffness, weaker output"
+        : data.corr <= -0.15
+          ? "Mild inverse — stiffness slightly drags performance"
+          : data.corr >= 0.4
+            ? "Positive — stiffness coincides with stronger output (unusual)"
+            : data.corr >= 0.15
+              ? "Weak positive link"
+              : "No clear link between stiffness and output";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Gauge className="h-5 w-5 text-primary" />
+          EAkoefficient (strength)
+        </CardTitle>
+        <CardDescription>
+          Today's lift performance vs your 1RM baseline — strength only, no
+          running. Plotted against self-reported stiffness from the daily
+          readiness survey.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!hasAny ? (
+          <p className="text-sm text-muted-foreground">
+            Log some strength sets (with a 1RM baseline set) and a few daily
+            readiness surveys to see your EAkoefficient trend.
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold",
+                  readinessClasses(status),
+                )}
+              >
+                {data.lastEak != null
+                  ? `${fmtNum(data.lastEak, 0)}% · ${readinessLabel(status)}`
+                  : "No recent lifts"}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                Latest stiffness:{" "}
+                <span className="font-medium text-foreground">
+                  {data.lastStiff != null ? `${data.lastStiff}/10` : "—"}
+                </span>
+              </span>
+              {data.corr != null && (
+                <span className="text-sm text-muted-foreground">
+                  Correlation (n={data.pairedCount}):{" "}
+                  <span className="font-medium text-foreground">
+                    r = {fmtNum(data.corr, 2)}
+                  </span>
+                </span>
+              )}
+            </div>
+            {corrLabel && (
+              <p className="text-xs text-muted-foreground">{corrLabel}</p>
+            )}
+
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={data.recent}
+                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="label"
+                    fontSize={11}
+                    tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    minTickGap={20}
+                  />
+                  <YAxis
+                    yAxisId="eak"
+                    fontSize={11}
+                    tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    width={40}
+                    domain={[80, 110]}
+                  />
+                  <YAxis
+                    yAxisId="stiff"
+                    orientation="right"
+                    fontSize={11}
+                    tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    width={28}
+                    domain={[0, 10]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <ReferenceLine
+                    yAxisId="eak"
+                    y={100}
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeDasharray="2 4"
+                  />
+                  <Line
+                    yAxisId="eak"
+                    type="monotone"
+                    dataKey="EAk"
+                    name="EAk %"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="stiff"
+                    type="monotone"
+                    dataKey="Stiffness"
+                    name="Stiffness /10"
+                    stroke="hsl(0 80% 60%)"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

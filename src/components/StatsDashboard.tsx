@@ -83,6 +83,7 @@ interface ReadinessRow {
   date: string;
   bodyweight_kg: number | null;
   daily_form: number | null;
+  stiffness: number | null;
 }
 
 interface MesocycleRow {

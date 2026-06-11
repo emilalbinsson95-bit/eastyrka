@@ -253,7 +253,7 @@ export function StatsDashboard({
         </p>
       </div>
 
-      <TrainingStatusCard logs={logs} endurance={endurance} />
+      <TrainingStatusCard logs={logs} />
       <EAkoefficientCard logs={logs} baselines={baselines} readiness={readiness} />
       <WeekInNumbersCard logs={logs} endurance={endurance} />
       <MesoSummaryCard logs={logs} mesocycles={mesocycles} />

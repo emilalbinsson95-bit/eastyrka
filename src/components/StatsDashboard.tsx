@@ -253,7 +253,7 @@ export function StatsDashboard({
         </p>
       </div>
 
-      <TrainingStatusCard logs={logs} endurance={endurance} />
+      <TrainingStatusCard logs={logs} />
       <EAkoefficientCard logs={logs} baselines={baselines} readiness={readiness} />
       <WeekInNumbersCard logs={logs} endurance={endurance} />
       <MesoSummaryCard logs={logs} mesocycles={mesocycles} />
@@ -572,13 +572,11 @@ function strengthLoadSession(
 
 function TrainingStatusCard({
   logs,
-  endurance,
 }: {
   logs: LogRow[];
-  endurance: EnduranceRow[];
 }) {
-  const { sessions, ff, ratio, totalCount } = useMemo(() => {
-    // Group strength by date
+  const { ff, ratio, totalCount } = useMemo(() => {
+    // Strength-only: group sets by date.
     const byDate = new Map<string, LogRow[]>();
     for (const l of logs) {
       const arr = byDate.get(l.date) ?? [];
@@ -590,23 +588,10 @@ function TrainingStatusCard({
       const s = strengthLoadSession(date, rows);
       if (s) strengthSessions.push(s);
     }
-    const enduranceSessions: LoadSession[] = endurance
-      .filter((e) => e.status === "completed")
-      .map((e) => ({
-        date: e.date,
-        discipline: e.discipline,
-        actual_total_seconds: e.actual_total_seconds,
-        planned_total_seconds: e.planned_total_seconds,
-        overall_rpe: e.overall_rpe,
-        peak_rpe: e.peak_rpe,
-        planned_avg_rpe: e.planned_avg_rpe,
-      }));
-    const all = [...strengthSessions, ...enduranceSessions];
-    const totalCount = strengthSessions.length + enduranceSessions.length;
-    const ff = fitnessFatigueSeries(all, 60);
-    const a = acwr(all);
-    return { sessions: all, ff, ratio: a, totalCount };
-  }, [logs, endurance]);
+    const ff = fitnessFatigueSeries(strengthSessions, 60);
+    const a = acwr(strengthSessions);
+    return { ff, ratio: a, totalCount: strengthSessions.length };
+  }, [logs]);
 
   if (totalCount < TRAINING_STATUS_THRESHOLD) {
     const pct = (totalCount / TRAINING_STATUS_THRESHOLD) * 100;
@@ -619,7 +604,7 @@ function TrainingStatusCard({
           </CardTitle>
           <CardDescription>
             We need at least {TRAINING_STATUS_THRESHOLD} logged sessions
-            (strength days + completed endurance) to estimate fatigue, adapting
+            (strength days only) to estimate fatigue, adapting
             and peaking reliably.
           </CardDescription>
         </CardHeader>

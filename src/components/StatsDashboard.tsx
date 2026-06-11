@@ -604,7 +604,7 @@ function TrainingStatusCard({
           </CardTitle>
           <CardDescription>
             We need at least {TRAINING_STATUS_THRESHOLD} logged sessions
-            (strength days + completed endurance) to estimate fatigue, adapting
+            (strength days only) to estimate fatigue, adapting
             and peaking reliably.
           </CardDescription>
         </CardHeader>

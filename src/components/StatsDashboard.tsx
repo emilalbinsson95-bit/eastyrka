@@ -199,7 +199,7 @@ export function StatsDashboard({
       since.setDate(since.getDate() - 365);
       const { data, error } = await supabase
         .from("readiness_surveys")
-        .select("date, bodyweight_kg, daily_form")
+        .select("date, bodyweight_kg, daily_form, stiffness")
         .eq("athlete_id", athleteId)
         .gte("date", since.toISOString().slice(0, 10))
         .order("date", { ascending: true });

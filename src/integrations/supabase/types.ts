@@ -407,6 +407,48 @@ export type Database = {
         }
         Relationships: []
       }
+      function_tests: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          patient_id: string
+          recorded_by: string | null
+          side: string
+          test_type: string
+          tested_at: string
+          unit: string
+          updated_at: string
+          value_numeric: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          recorded_by?: string | null
+          side?: string
+          test_type: string
+          tested_at?: string
+          unit: string
+          updated_at?: string
+          value_numeric: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          recorded_by?: string | null
+          side?: string
+          test_type?: string
+          tested_at?: string
+          unit?: string
+          updated_at?: string
+          value_numeric?: number
+        }
+        Relationships: []
+      }
       mesocycles: {
         Row: {
           athlete_id: string
@@ -561,6 +603,36 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      patient_checkins: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          patient_id: string
+          stiffness: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          patient_id: string
+          stiffness: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          patient_id?: string
+          stiffness?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -950,6 +1022,9 @@ export type Database = {
       }
       rehab_exercises: {
         Row: {
+          band_id: string | null
+          band_max_kg: number | null
+          band_min_kg: number | null
           created_at: string
           hold_seconds: number | null
           id: string
@@ -967,6 +1042,9 @@ export type Database = {
           tolerance: string | null
         }
         Insert: {
+          band_id?: string | null
+          band_max_kg?: number | null
+          band_min_kg?: number | null
           created_at?: string
           hold_seconds?: number | null
           id?: string
@@ -984,6 +1062,9 @@ export type Database = {
           tolerance?: string | null
         }
         Update: {
+          band_id?: string | null
+          band_max_kg?: number | null
+          band_min_kg?: number | null
           created_at?: string
           hold_seconds?: number | null
           id?: string
@@ -1001,6 +1082,13 @@ export type Database = {
           tolerance?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rehab_exercises_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "resistance_bands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rehab_exercises_session_id_fkey"
             columns: ["session_id"]
@@ -1048,6 +1136,42 @@ export type Database = {
           status?: string
           subjective_notes?: string | null
           title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resistance_bands: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          max_kg: number
+          min_kg: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          max_kg: number
+          min_kg: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          max_kg?: number
+          min_kg?: number
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []

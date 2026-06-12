@@ -102,6 +102,8 @@ function PatientHome() {
         <Stat icon={<CalendarDays className="h-4 w-4 text-primary" />} label={t("patient.stats.planned")} value={String(totalPlanned)} />
       </div>
 
+      <StiffnessCheckInCard />
+
       {nextSession ? (
         <Link
           to="/patient/sessions/$sessionId"

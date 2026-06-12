@@ -74,9 +74,10 @@ function PatientLayout() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto grid max-w-3xl grid-cols-4">
+        <div className="mx-auto grid max-w-3xl grid-cols-5">
           <TabLink to="/patient" icon={<ClipboardList className="h-5 w-5" />} label={t("nav.sessions")} />
           <TabLink to="/patient/calendar" icon={<CalendarDays className="h-5 w-5" />} label="Calendar" />
+          <TabLink to="/patient/progression" icon={<TrendingUp className="h-5 w-5" />} label="Progress" />
           <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
           <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>

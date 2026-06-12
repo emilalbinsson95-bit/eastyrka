@@ -54,13 +54,16 @@ function PhysioLayout() {
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label={t("nav.patients")} exact />
+            <PhysioNavLink to="/physio/bands" icon={<Layers className="h-4 w-4" />} label="Bands" />
             <PhysioNavLink to="/physio/invites" icon={<UserPlus className="h-4 w-4" />} label={t("nav.invites")} />
             <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
+            <PhysioNavLink to="/physio/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
           </nav>
           <div className="flex items-center gap-1">
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />
+            <PhysioRoleSwitcher />
             <Button
               variant="ghost"
               size="sm"
@@ -73,8 +76,10 @@ function PhysioLayout() {
         </div>
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
           <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label={t("nav.patients")} exact />
+          <PhysioNavLink to="/physio/bands" icon={<Layers className="h-4 w-4" />} label="Bands" />
           <PhysioNavLink to="/physio/invites" icon={<UserPlus className="h-4 w-4" />} label={t("nav.invites")} />
           <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
+          <PhysioNavLink to="/physio/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
         </nav>
       </header>
 

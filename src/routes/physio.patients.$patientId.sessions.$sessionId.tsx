@@ -274,7 +274,18 @@ function PhysioSession() {
                 </div>
                 <div>
                   <Label className="text-xs">Band</Label>
-                  <Input value={band} onChange={(e) => setBand(e.target.value)} placeholder="red / blue / —" />
+                  <select
+                    value={bandId}
+                    onChange={(e) => setBandId(e.target.value)}
+                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  >
+                    <option value="">— none —</option>
+                    {(bandsQuery.data ?? []).map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.label} ({Number(b.min_kg)}–{Number(b.max_kg)} kg)
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-xs">Notes</Label>

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StiffnessCheckInCard } from "@/components/StiffnessCheckInCard";
 
 export const Route = createFileRoute("/patient/")({
   head: () => ({

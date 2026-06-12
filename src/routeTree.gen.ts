@@ -22,7 +22,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PhysioIndexRouteImport } from './routes/physio.index'
 import { Route as PatientIndexRouteImport } from './routes/patient.index'
 import { Route as CoachIndexRouteImport } from './routes/coach.index'
+import { Route as PhysioMeRouteImport } from './routes/physio.me'
 import { Route as PhysioInvitesRouteImport } from './routes/physio.invites'
+import { Route as PhysioBandsRouteImport } from './routes/physio.bands'
 import { Route as PatientProgressionRouteImport } from './routes/patient.progression'
 import { Route as PatientCalendarRouteImport } from './routes/patient.calendar'
 import { Route as CoachMethodologyRouteImport } from './routes/coach.methodology'
@@ -112,9 +114,19 @@ const CoachIndexRoute = CoachIndexRouteImport.update({
   path: '/',
   getParentRoute: () => CoachRoute,
 } as any)
+const PhysioMeRoute = PhysioMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => PhysioRoute,
+} as any)
 const PhysioInvitesRoute = PhysioInvitesRouteImport.update({
   id: '/invites',
   path: '/invites',
+  getParentRoute: () => PhysioRoute,
+} as any)
+const PhysioBandsRoute = PhysioBandsRouteImport.update({
+  id: '/bands',
+  path: '/bands',
   getParentRoute: () => PhysioRoute,
 } as any)
 const PatientProgressionRoute = PatientProgressionRouteImport.update({
@@ -270,7 +282,9 @@ export interface FileRoutesByFullPath {
   '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
   '/patient/progression': typeof PatientProgressionRoute
+  '/physio/bands': typeof PhysioBandsRoute
   '/physio/invites': typeof PhysioInvitesRoute
+  '/physio/me': typeof PhysioMeRoute
   '/coach/': typeof CoachIndexRoute
   '/patient/': typeof PatientIndexRoute
   '/physio/': typeof PhysioIndexRoute
@@ -306,7 +320,9 @@ export interface FileRoutesByTo {
   '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
   '/patient/progression': typeof PatientProgressionRoute
+  '/physio/bands': typeof PhysioBandsRoute
   '/physio/invites': typeof PhysioInvitesRoute
+  '/physio/me': typeof PhysioMeRoute
   '/coach': typeof CoachIndexRoute
   '/patient': typeof PatientIndexRoute
   '/physio': typeof PhysioIndexRoute
@@ -347,7 +363,9 @@ export interface FileRoutesById {
   '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
   '/patient/progression': typeof PatientProgressionRoute
+  '/physio/bands': typeof PhysioBandsRoute
   '/physio/invites': typeof PhysioInvitesRoute
+  '/physio/me': typeof PhysioMeRoute
   '/coach/': typeof CoachIndexRoute
   '/patient/': typeof PatientIndexRoute
   '/physio/': typeof PhysioIndexRoute
@@ -388,7 +406,9 @@ export interface FileRouteTypes {
     | '/coach/methodology'
     | '/patient/calendar'
     | '/patient/progression'
+    | '/physio/bands'
     | '/physio/invites'
+    | '/physio/me'
     | '/coach/'
     | '/patient/'
     | '/physio/'
@@ -424,7 +444,9 @@ export interface FileRouteTypes {
     | '/coach/methodology'
     | '/patient/calendar'
     | '/patient/progression'
+    | '/physio/bands'
     | '/physio/invites'
+    | '/physio/me'
     | '/coach'
     | '/patient'
     | '/physio'
@@ -464,7 +486,9 @@ export interface FileRouteTypes {
     | '/coach/methodology'
     | '/patient/calendar'
     | '/patient/progression'
+    | '/physio/bands'
     | '/physio/invites'
+    | '/physio/me'
     | '/coach/'
     | '/patient/'
     | '/physio/'
@@ -588,11 +612,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachIndexRouteImport
       parentRoute: typeof CoachRoute
     }
+    '/physio/me': {
+      id: '/physio/me'
+      path: '/me'
+      fullPath: '/physio/me'
+      preLoaderRoute: typeof PhysioMeRouteImport
+      parentRoute: typeof PhysioRoute
+    }
     '/physio/invites': {
       id: '/physio/invites'
       path: '/invites'
       fullPath: '/physio/invites'
       preLoaderRoute: typeof PhysioInvitesRouteImport
+      parentRoute: typeof PhysioRoute
+    }
+    '/physio/bands': {
+      id: '/physio/bands'
+      path: '/bands'
+      fullPath: '/physio/bands'
+      preLoaderRoute: typeof PhysioBandsRouteImport
       parentRoute: typeof PhysioRoute
     }
     '/patient/progression': {
@@ -882,13 +920,17 @@ const PhysioPatientsPatientIdRouteWithChildren =
   )
 
 interface PhysioRouteChildren {
+  PhysioBandsRoute: typeof PhysioBandsRoute
   PhysioInvitesRoute: typeof PhysioInvitesRoute
+  PhysioMeRoute: typeof PhysioMeRoute
   PhysioIndexRoute: typeof PhysioIndexRoute
   PhysioPatientsPatientIdRoute: typeof PhysioPatientsPatientIdRouteWithChildren
 }
 
 const PhysioRouteChildren: PhysioRouteChildren = {
+  PhysioBandsRoute: PhysioBandsRoute,
   PhysioInvitesRoute: PhysioInvitesRoute,
+  PhysioMeRoute: PhysioMeRoute,
   PhysioIndexRoute: PhysioIndexRoute,
   PhysioPatientsPatientIdRoute: PhysioPatientsPatientIdRouteWithChildren,
 }
@@ -911,3 +953,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

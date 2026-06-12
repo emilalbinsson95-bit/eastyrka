@@ -96,7 +96,7 @@ function PhysioNavLink({
   label,
   exact,
 }: {
-  to: "/physio" | "/physio/invites" | "/messages";
+  to: "/physio" | "/physio/invites" | "/physio/bands" | "/physio/me" | "/messages";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

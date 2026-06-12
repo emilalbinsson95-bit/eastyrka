@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Activity, ClipboardList, MessageCircle, User as UserIcon, LogOut, CalendarDays } from "lucide-react";
+import { Activity, ClipboardList, MessageCircle, User as UserIcon, LogOut, CalendarDays, TrendingUp } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -74,9 +74,10 @@ function PatientLayout() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto grid max-w-3xl grid-cols-4">
+        <div className="mx-auto grid max-w-3xl grid-cols-5">
           <TabLink to="/patient" icon={<ClipboardList className="h-5 w-5" />} label={t("nav.sessions")} />
           <TabLink to="/patient/calendar" icon={<CalendarDays className="h-5 w-5" />} label="Calendar" />
+          <TabLink to="/patient/progression" icon={<TrendingUp className="h-5 w-5" />} label="Progress" />
           <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
           <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>
@@ -90,7 +91,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/patient" | "/messages" | "/me" | "/patient/calendar";
+  to: "/patient" | "/messages" | "/me" | "/patient/calendar" | "/patient/progression";
   icon: React.ReactNode;
   label: string;
 }) {

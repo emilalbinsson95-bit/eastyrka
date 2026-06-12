@@ -1,69 +1,58 @@
-## Vad som byggs
+# Physio + patient: progression, bands, self-patient, stiffness check-in
 
-En knapp **"Generera 20-veckors maratonplan"** på coachens mesocykel-sida som i ett klick skapar:
-- 1 mesocycle (20 v) + 20 week_plans + ~100 endurance_sessions med strukturerade steps/reps
-- Allt redigerbart efteråt (du kan dra runt pass i kalendern, tweaka intervaller, etc.)
+Four focused additions, no copy of the athlete stats stack.
 
-## Vetenskaplig modell
+## 1. Band library (shared reference)
 
-Hybrid av **Pfitzinger "Advanced Marathoning"** + **Daniels Running Formula** + **polariserat 80/20 (Seiler)**, anpassad för 2:45–4:00 maratontider. Volym och tempo skalas från athletens `ten_k_pb_seconds` (VDOT → E/M/T/I/R-paces, finns redan i `endurancePaceHr.ts`).
+New table `public.resistance_bands` (id, color, label, min_kg, max_kg, sort_order, created_by, timestamps). Visible to all authenticated users; only physios/coaches can insert/update/delete (their own rows + service_role). Seed Lovable's defaults:
 
-### 5 faser över 20 veckor
-
-```
-v1–4   Bas (Endurance)        — aerob bas, strides, deload v4
-v5–10  Lactate Threshold      — LT-tempo + medium-long runs, deload v8
-v11–15 Race-specific          — maratontempo i långpass + VO2max, deload v12
-v16–18 Sharpening             — sista kvalitetspassen, race-pace finputs
-v19–20 Taper + race           — −40% v19, −60% v20, race lördag v20
+```text
+Yellow  2– 5 kg    Red    5–15 kg
+Green   4–10 kg    Black 10–25 kg
+Blue    7–18 kg    Silver 15–35 kg
 ```
 
-Varje 4:e vecka är deload (−25 % volym, behåller intensitet). Sista långpasset 3 v före race.
+Add band fields to `public.rehab_exercises`:
+- `band_id uuid references resistance_bands` (nullable)
+- `band_min_kg numeric` / `band_max_kg numeric` (snapshot at prescription)
 
-### Veckostruktur (5 dgr/v default, 4 eller 6 valbart)
+New page `src/routes/physio.bands.tsx` (linked from the physio nav): CRUD list — color swatch, label, kg range. Reused inside the rehab exercise editor as a band picker (sets `band_id` and snapshots the kg range).
 
-| Dag | Pass |
-|-----|------|
-| Mån | Vila / X-train |
-| Tis | Kvalitet (LT/VO2/MP beroende på fas) |
-| Ons | Recovery jog + strides |
-| Tor | Medium-long run |
-| Fre | Vila |
-| Lör | Kvalitet 2 (tempo eller progressiv) |
-| Sön | Long run (med MP-block i race-spec-fas) |
+## 2. Progression dashboard (no "stats")
 
-80/20 fördelning: Sön+Tor+Ons = easy (zon 1–2), Tis+Lör = hard (zon 4–5). Easy-andel ≥ 80 % av tid över hela blocket.
+Shared component `src/components/ProgressionDashboard.tsx`, used by:
+- `src/routes/physio.patients.$patientId.progression.tsx` (with back-to-patient link)
+- `src/routes/patient.progression.tsx` (added to patient nav)
 
-### Exempel: passmallar (skalade till VDOT)
+Four cards (matches your picks):
 
-- **Easy run:** 45–75 min @ RPE 4–5 (E-pace, ~70 % HRmax)
-- **Long run (bas):** 90–150 min @ RPE 5
-- **Long run (race-spec):** 2×(20 min E + 20 min MP) @ RPE 6–7
-- **LT tempo:** 2×20 min @ T-pace, 3 min jogg vila, RPE 7–8
-- **VO2max:** 5×3 min @ I-pace, 3 min jogg, RPE 9
-- **Strides:** 6×20 s @ R-pace, full vila
+1. **Per-exercise progression** — for each rehab exercise the patient has done, a small line chart of reps × sets × band tension (kg, midpoint of band range) over time. Latest delta shown.
+2. **Stiffness trend** — 30-day line of daily check-ins (see §4). Latest value + 7-day avg.
+3. **Function tests** — table + per-test sparkline. Backed by a new table `public.function_tests` (patient_id, test_type, value_numeric, unit, side `left|right|bilateral|na`, tested_at, notes, recorded_by). Seeded test types: ROM (deg), single-leg hop (cm), balance hold (sec), Y-balance, isometric strength (kg). Physio adds entries; patient can see them read-only.
+4. **Adherence** — sessions completed vs prescribed in the last 4 weeks (% + streak). Uses existing `rehab_sessions` + planned/override tables already in the schema.
 
-Allt genereras som riktiga `endurance_steps` med `repeat_count`, så du ser dem precis som ett manuellt byggt pass i editorn.
+No EAk, no CTL/ATL, no 20-session gate.
 
-## Tekniska detaljer
+## 3. Physio self-patient toggle
 
-### Filer
-- **`src/lib/marathonPlanGenerator.ts`** (ny) — ren funktion `generate20WeekMarathonPlan({ athleteId, startDate, tenKPbSeconds, daysPerWeek, raceDate })` som returnerar `{ mesocycle, weeks[], sessions[] }`.
-- **`src/components/GenerateMarathonPlanDialog.tsx`** (ny) — wizard: start-datum (måndag), dagar/vecka (4/5/6), bekräftelse av PB från profilen (övrigt-fält om saknas), valbar race-distans (default maraton).
-- **`src/routes/coach.athletes.$athleteId.cycles.tsx`** — lägg till knapp "Generera 20v maraton" bredvid "New mesocycle".
-- **Inga DB-migrations** — använder befintliga tabeller (`mesocycles`, `week_plans`, `planned_sessions`, `endurance_sessions`, `endurance_steps`).
+Add `PhysioRoleSwitcher` modeled exactly on `RoleSwitcher`:
+- One-click "Enable patient view" → grants `patient` role to self, links self in `physio_patients` (physio_id = patient_id = self), idempotent.
+- Once enabled, dropdown switches between Physio view (`/physio`) and Patient view (`/patient`).
+- Mounted in the physio header next to notifications.
 
-### Persistens
-Allt sparas i en transaktion via en serverFn `generateMarathonPlan` (`src/lib/marathonPlan.functions.ts`) med `requireSupabaseAuth` + coach-check (`is_coach_of`). Räknar veckor från valt måndagsdatum, skapar week_plans i `draft`-status så coachen kan publicera vecka för vecka (din befintliga flow).
+Also add `src/routes/physio.me.tsx` (mirror of `coach.me`) so physios have a profile + roster page.
 
-### Skalningsformel (kort)
-VDOT från `tenKPbSeconds` (Daniels-quadratic, redan i `endurancePaceHr.ts`) → E/M/T/I-paces. Veckovolym börjar på `baseKm = 0.6 × goalRacePaceKm × 4` (≈48 km/v för 3:00-mara, 60 km/v för 2:45) och progrederar +10 %/v med deload var 4:e vecka, peak ~v14, sedan taper.
+## 4. Daily stiffness check-in (lightweight)
 
-## Vad som INTE byggs
+New table `public.patient_checkins` (patient_id, date unique-per-patient, stiffness smallint 0–10, note text, timestamps). RLS: patient owns rows; linked physios can read (via `is_physio_of`). Trigger validates 0–10 range. NOT using `readiness_surveys` — those are athlete-side and heavier.
 
-- Halvmara/10k/ultra-planer (samma motor, men kräver egna mallar — kan adderas senare).
-- Auto-publicering — du publicerar varje vecka själv som idag.
-- Garmin sync.
+UI: single-slider card on `patient.index.tsx` ("How stiff today? 0–10") with a Save button. Today's value displayed if already submitted; one entry per day (upsert). The stiffness trend card in §2 reads from this table.
 
-## Verifiering
-Genererar en plan mot en test-athlete, kollar i kalendern att veckorna ser rimliga ut, och att 80/20-panelen i WeeklyOverview visar ≥ 80 % easy.
+## Out of scope (this turn)
+Pain rating UI, ROM measurement tools, video uploads, return-to-sport algorithm, methodology page for physio.
+
+## Technical notes
+- Migration is one call: enum-free, 2 new tables + 3 columns on rehab_exercises + GRANTs + RLS + validation triggers + seed insert for bands.
+- Band kg used in progression chart = `(band_min_kg + band_max_kg) / 2` when no explicit kg is logged on the set.
+- All new routes use `useQuery`/`useSuspenseQuery`; no server functions needed (everything reachable with the browser supabase client + RLS).
+- i18n keys added to `src/locales/en.json` and `sv.json` for nav items ("Bands", "Progression", "Patient view").

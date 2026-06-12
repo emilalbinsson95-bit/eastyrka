@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StiffnessCheckInCard } from "@/components/StiffnessCheckInCard";
 
 export const Route = createFileRoute("/patient/")({
   head: () => ({
@@ -100,6 +101,8 @@ function PatientHome() {
         <Stat icon={<CheckCircle2 className="h-4 w-4 text-green-600" />} label={t("patient.stats.done")} value={String(totalDone)} />
         <Stat icon={<CalendarDays className="h-4 w-4 text-primary" />} label={t("patient.stats.planned")} value={String(totalPlanned)} />
       </div>
+
+      <StiffnessCheckInCard />
 
       {nextSession ? (
         <Link

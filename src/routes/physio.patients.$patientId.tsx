@@ -228,6 +228,11 @@ function PatientDetail() {
         </Button>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">
+            <Link to="/physio/patients/$patientId/progression" params={{ patientId }}>
+              <TrendingUp className="mr-1 h-4 w-4" /> Progression
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
             <Link to="/physio/patients/$patientId/calendar" params={{ patientId }}>
               <Calendar className="mr-1 h-4 w-4" /> Calendar
             </Link>

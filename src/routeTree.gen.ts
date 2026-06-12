@@ -37,6 +37,7 @@ import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
 import { Route as PhysioPatientsPatientIdRouteImport } from './routes/physio.patients.$patientId'
 import { Route as PatientSessionsSessionIdRouteImport } from './routes/patient.sessions.$sessionId'
 import { Route as CoachAthletesAthleteIdRouteImport } from './routes/coach.athletes.$athleteId'
+import { Route as PhysioPatientsPatientIdProgressionRouteImport } from './routes/physio.patients.$patientId.progression'
 import { Route as PhysioPatientsPatientIdCalendarRouteImport } from './routes/physio.patients.$patientId.calendar'
 import { Route as CoachAthletesAthleteIdStatsRouteImport } from './routes/coach.athletes.$athleteId.stats'
 import { Route as CoachAthletesAthleteIdEnduranceRouteImport } from './routes/coach.athletes.$athleteId.endurance'
@@ -186,6 +187,12 @@ const CoachAthletesAthleteIdRoute = CoachAthletesAthleteIdRouteImport.update({
   path: '/athletes/$athleteId',
   getParentRoute: () => CoachRoute,
 } as any)
+const PhysioPatientsPatientIdProgressionRoute =
+  PhysioPatientsPatientIdProgressionRouteImport.update({
+    id: '/progression',
+    path: '/progression',
+    getParentRoute: () => PhysioPatientsPatientIdRoute,
+  } as any)
 const PhysioPatientsPatientIdCalendarRoute =
   PhysioPatientsPatientIdCalendarRouteImport.update({
     id: '/calendar',
@@ -269,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/coach/athletes/$athleteId/endurance': typeof CoachAthletesAthleteIdEnduranceRoute
   '/coach/athletes/$athleteId/stats': typeof CoachAthletesAthleteIdStatsRoute
   '/physio/patients/$patientId/calendar': typeof PhysioPatientsPatientIdCalendarRoute
+  '/physio/patients/$patientId/progression': typeof PhysioPatientsPatientIdProgressionRoute
   '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
   '/physio/patients/$patientId/sessions/$sessionId': typeof PhysioPatientsPatientIdSessionsSessionIdRoute
 }
@@ -303,6 +311,7 @@ export interface FileRoutesByTo {
   '/coach/athletes/$athleteId/endurance': typeof CoachAthletesAthleteIdEnduranceRoute
   '/coach/athletes/$athleteId/stats': typeof CoachAthletesAthleteIdStatsRoute
   '/physio/patients/$patientId/calendar': typeof PhysioPatientsPatientIdCalendarRoute
+  '/physio/patients/$patientId/progression': typeof PhysioPatientsPatientIdProgressionRoute
   '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
   '/physio/patients/$patientId/sessions/$sessionId': typeof PhysioPatientsPatientIdSessionsSessionIdRoute
 }
@@ -342,6 +351,7 @@ export interface FileRoutesById {
   '/coach/athletes/$athleteId/endurance': typeof CoachAthletesAthleteIdEnduranceRoute
   '/coach/athletes/$athleteId/stats': typeof CoachAthletesAthleteIdStatsRoute
   '/physio/patients/$patientId/calendar': typeof PhysioPatientsPatientIdCalendarRoute
+  '/physio/patients/$patientId/progression': typeof PhysioPatientsPatientIdProgressionRoute
   '/coach/athletes/$athleteId/cycles/$cycleId': typeof CoachAthletesAthleteIdCyclesCycleIdRoute
   '/physio/patients/$patientId/sessions/$sessionId': typeof PhysioPatientsPatientIdSessionsSessionIdRoute
 }
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/coach/athletes/$athleteId/endurance'
     | '/coach/athletes/$athleteId/stats'
     | '/physio/patients/$patientId/calendar'
+    | '/physio/patients/$patientId/progression'
     | '/coach/athletes/$athleteId/cycles/$cycleId'
     | '/physio/patients/$patientId/sessions/$sessionId'
   fileRoutesByTo: FileRoutesByTo
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/coach/athletes/$athleteId/endurance'
     | '/coach/athletes/$athleteId/stats'
     | '/physio/patients/$patientId/calendar'
+    | '/physio/patients/$patientId/progression'
     | '/coach/athletes/$athleteId/cycles/$cycleId'
     | '/physio/patients/$patientId/sessions/$sessionId'
   id:
@@ -453,6 +465,7 @@ export interface FileRouteTypes {
     | '/coach/athletes/$athleteId/endurance'
     | '/coach/athletes/$athleteId/stats'
     | '/physio/patients/$patientId/calendar'
+    | '/physio/patients/$patientId/progression'
     | '/coach/athletes/$athleteId/cycles/$cycleId'
     | '/physio/patients/$patientId/sessions/$sessionId'
   fileRoutesById: FileRoutesById
@@ -668,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachAthletesAthleteIdRouteImport
       parentRoute: typeof CoachRoute
     }
+    '/physio/patients/$patientId/progression': {
+      id: '/physio/patients/$patientId/progression'
+      path: '/progression'
+      fullPath: '/physio/patients/$patientId/progression'
+      preLoaderRoute: typeof PhysioPatientsPatientIdProgressionRouteImport
+      parentRoute: typeof PhysioPatientsPatientIdRoute
+    }
     '/physio/patients/$patientId/calendar': {
       id: '/physio/patients/$patientId/calendar'
       path: '/calendar'
@@ -822,12 +842,15 @@ const PatientRouteWithChildren =
 
 interface PhysioPatientsPatientIdRouteChildren {
   PhysioPatientsPatientIdCalendarRoute: typeof PhysioPatientsPatientIdCalendarRoute
+  PhysioPatientsPatientIdProgressionRoute: typeof PhysioPatientsPatientIdProgressionRoute
   PhysioPatientsPatientIdSessionsSessionIdRoute: typeof PhysioPatientsPatientIdSessionsSessionIdRoute
 }
 
 const PhysioPatientsPatientIdRouteChildren: PhysioPatientsPatientIdRouteChildren =
   {
     PhysioPatientsPatientIdCalendarRoute: PhysioPatientsPatientIdCalendarRoute,
+    PhysioPatientsPatientIdProgressionRoute:
+      PhysioPatientsPatientIdProgressionRoute,
     PhysioPatientsPatientIdSessionsSessionIdRoute:
       PhysioPatientsPatientIdSessionsSessionIdRoute,
   }

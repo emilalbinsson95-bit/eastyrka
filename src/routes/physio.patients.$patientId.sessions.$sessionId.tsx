@@ -73,13 +73,26 @@ function PhysioSession() {
   const [reps, setReps] = useState("");
   const [hold, setHold] = useState("");
   const [load, setLoad] = useState("");
-  const [band, setBand] = useState("");
+  const [bandId, setBandId] = useState("");
   const [notes, setNotes] = useState("");
+
+  const bandsQuery = useQuery({
+    queryKey: ["resistance-bands"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("resistance_bands")
+        .select("id, color, label, min_kg, max_kg, sort_order")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const addExercise = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error("Exercise name required");
       const order = (exercisesQuery.data ?? []).length;
+      const band = (bandsQuery.data ?? []).find((b) => b.id === bandId);
       const { error } = await supabase.from("rehab_exercises").insert({
         session_id: sessionId,
         order_index: order,
@@ -88,7 +101,10 @@ function PhysioSession() {
         reps: reps === "" ? null : Number(reps),
         hold_seconds: hold === "" ? null : Number(hold),
         load_kg: load === "" ? null : Number(load),
-        resistance_band: band || null,
+        resistance_band: band?.label ?? null,
+        band_id: band?.id ?? null,
+        band_min_kg: band ? Number(band.min_kg) : null,
+        band_max_kg: band ? Number(band.max_kg) : null,
         notes: notes || null,
       });
       if (error) throw error;
@@ -100,7 +116,7 @@ function PhysioSession() {
       setReps("");
       setHold("");
       setLoad("");
-      setBand("");
+      setBandId("");
       setNotes("");
       toast.success("Exercise added");
     },

@@ -91,7 +91,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/patient" | "/messages" | "/me" | "/patient/calendar";
+  to: "/patient" | "/messages" | "/me" | "/patient/calendar" | "/patient/progression";
   icon: React.ReactNode;
   label: string;
 }) {

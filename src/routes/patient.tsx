@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { UnifiedRoleSwitcher } from "@/components/UnifiedRoleSwitcher";
 
 export const Route = createFileRoute("/patient")({
   component: PatientLayout,
@@ -54,6 +55,7 @@ function PatientLayout() {
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />
+            <UnifiedRoleSwitcher />
             <Button
               variant="ghost"
               size="sm"

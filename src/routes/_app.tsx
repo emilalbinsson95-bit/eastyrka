@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { UnifiedRoleSwitcher } from "@/components/UnifiedRoleSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -83,7 +83,7 @@ function AthleteLayout() {
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />
-            <RoleSwitcher />
+            <UnifiedRoleSwitcher />
             <Button
               variant="ghost"
               size="sm"

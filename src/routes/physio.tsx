@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { PhysioRoleSwitcher } from "@/components/PhysioRoleSwitcher";
+import { UnifiedRoleSwitcher } from "@/components/UnifiedRoleSwitcher";
 
 export const Route = createFileRoute("/physio")({
   component: PhysioLayout,
@@ -63,7 +63,7 @@ function PhysioLayout() {
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />
-            <PhysioRoleSwitcher />
+            <UnifiedRoleSwitcher />
             <Button
               variant="ghost"
               size="sm"

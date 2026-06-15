@@ -33,7 +33,7 @@ export type VolumeQuality =
  * set produced a clearly higher E1RM than physiologically plausible within
  * the same session.
  */
-export const SANDBAG_SET1_THRESHOLD_PCT = 2;
+export const SANDBAG_SET1_THRESHOLD_PCT = 5;
 
 export interface SetInput {
   reps: number;

@@ -81,7 +81,7 @@ function PatientLayout() {
           <TabLink to="/patient/calendar" icon={<CalendarDays className="h-5 w-5" />} label="Calendar" />
           <TabLink to="/patient/progression" icon={<TrendingUp className="h-5 w-5" />} label="Progress" />
           <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
-          <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
+          <TabLink to="/patient/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>
       </nav>
     </div>
@@ -93,7 +93,7 @@ function TabLink({
   icon,
   label,
 }: {
-  to: "/patient" | "/messages" | "/me" | "/patient/calendar" | "/patient/progression";
+  to: "/patient" | "/messages" | "/patient/me" | "/patient/calendar" | "/patient/progression";
   icon: React.ReactNode;
   label: string;
 }) {

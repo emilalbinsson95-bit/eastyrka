@@ -81,7 +81,7 @@ function PatientLayout() {
           <TabLink to="/patient/calendar" icon={<CalendarDays className="h-5 w-5" />} label="Calendar" />
           <TabLink to="/patient/progression" icon={<TrendingUp className="h-5 w-5" />} label="Progress" />
           <TabLink to="/messages" icon={<MessageCircle className="h-5 w-5" />} label={t("nav.messages")} />
-          <TabLink to="/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
+          <TabLink to="/patient/me" icon={<UserIcon className="h-5 w-5" />} label={t("nav.me")} />
         </div>
       </nav>
     </div>

@@ -26,6 +26,7 @@ import { Route as PhysioMeRouteImport } from './routes/physio.me'
 import { Route as PhysioInvitesRouteImport } from './routes/physio.invites'
 import { Route as PhysioBandsRouteImport } from './routes/physio.bands'
 import { Route as PatientProgressionRouteImport } from './routes/patient.progression'
+import { Route as PatientMeRouteImport } from './routes/patient.me'
 import { Route as PatientCalendarRouteImport } from './routes/patient.calendar'
 import { Route as CoachMethodologyRouteImport } from './routes/coach.methodology'
 import { Route as CoachMeRouteImport } from './routes/coach.me'
@@ -132,6 +133,11 @@ const PhysioBandsRoute = PhysioBandsRouteImport.update({
 const PatientProgressionRoute = PatientProgressionRouteImport.update({
   id: '/progression',
   path: '/progression',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientMeRoute = PatientMeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => PatientRoute,
 } as any)
 const PatientCalendarRoute = PatientCalendarRouteImport.update({
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/coach/me': typeof CoachMeRoute
   '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
+  '/patient/me': typeof PatientMeRoute
   '/patient/progression': typeof PatientProgressionRoute
   '/physio/bands': typeof PhysioBandsRoute
   '/physio/invites': typeof PhysioInvitesRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/coach/me': typeof CoachMeRoute
   '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
+  '/patient/me': typeof PatientMeRoute
   '/patient/progression': typeof PatientProgressionRoute
   '/physio/bands': typeof PhysioBandsRoute
   '/physio/invites': typeof PhysioInvitesRoute
@@ -362,6 +370,7 @@ export interface FileRoutesById {
   '/coach/me': typeof CoachMeRoute
   '/coach/methodology': typeof CoachMethodologyRoute
   '/patient/calendar': typeof PatientCalendarRoute
+  '/patient/me': typeof PatientMeRoute
   '/patient/progression': typeof PatientProgressionRoute
   '/physio/bands': typeof PhysioBandsRoute
   '/physio/invites': typeof PhysioInvitesRoute
@@ -405,6 +414,7 @@ export interface FileRouteTypes {
     | '/coach/me'
     | '/coach/methodology'
     | '/patient/calendar'
+    | '/patient/me'
     | '/patient/progression'
     | '/physio/bands'
     | '/physio/invites'
@@ -443,6 +453,7 @@ export interface FileRouteTypes {
     | '/coach/me'
     | '/coach/methodology'
     | '/patient/calendar'
+    | '/patient/me'
     | '/patient/progression'
     | '/physio/bands'
     | '/physio/invites'
@@ -485,6 +496,7 @@ export interface FileRouteTypes {
     | '/coach/me'
     | '/coach/methodology'
     | '/patient/calendar'
+    | '/patient/me'
     | '/patient/progression'
     | '/physio/bands'
     | '/physio/invites'
@@ -638,6 +650,13 @@ declare module '@tanstack/react-router' {
       path: '/progression'
       fullPath: '/patient/progression'
       preLoaderRoute: typeof PatientProgressionRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/me': {
+      id: '/patient/me'
+      path: '/me'
+      fullPath: '/patient/me'
+      preLoaderRoute: typeof PatientMeRouteImport
       parentRoute: typeof PatientRoute
     }
     '/patient/calendar': {
@@ -884,6 +903,7 @@ const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)
 
 interface PatientRouteChildren {
   PatientCalendarRoute: typeof PatientCalendarRoute
+  PatientMeRoute: typeof PatientMeRoute
   PatientProgressionRoute: typeof PatientProgressionRoute
   PatientIndexRoute: typeof PatientIndexRoute
   PatientSessionsSessionIdRoute: typeof PatientSessionsSessionIdRoute
@@ -891,6 +911,7 @@ interface PatientRouteChildren {
 
 const PatientRouteChildren: PatientRouteChildren = {
   PatientCalendarRoute: PatientCalendarRoute,
+  PatientMeRoute: PatientMeRoute,
   PatientProgressionRoute: PatientProgressionRoute,
   PatientIndexRoute: PatientIndexRoute,
   PatientSessionsSessionIdRoute: PatientSessionsSessionIdRoute,

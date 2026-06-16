@@ -313,6 +313,8 @@ function PatientDetail() {
         </CardContent>
       </Card>
 
+      <PlansCard physioId={physioId} patientId={patientId} />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

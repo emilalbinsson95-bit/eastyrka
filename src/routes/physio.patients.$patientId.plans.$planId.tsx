@@ -110,7 +110,7 @@ function PlanDetail() {
 
       // Load template exercises in one batch
       const tplIds = Array.from(new Set(toGenerate.map((c) => c.template_id).filter(Boolean) as string[]));
-      const tplExMap = new Map<string, Array<Record<string, unknown>>>();
+      const tplExMap = new Map<string, Array<any>>();
       if (tplIds.length) {
         const { data: tplEx, error } = await supabase
           .from("rehab_plan_template_exercises")
@@ -118,7 +118,7 @@ function PlanDetail() {
           .in("template_id", tplIds)
           .order("order_index");
         if (error) throw error;
-        for (const e of tplEx ?? []) {
+        for (const e of (tplEx ?? []) as any[]) {
           if (!tplExMap.has(e.template_id)) tplExMap.set(e.template_id, []);
           tplExMap.get(e.template_id)!.push(e);
         }

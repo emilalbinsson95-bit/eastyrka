@@ -497,3 +497,101 @@ function DeltaBadge({
     </span>
   );
 }
+
+function PlansCard({ physioId, patientId }: { physioId: string; patientId: string }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [weeks, setWeeks] = useState("4");
+
+  const plansQuery = useQuery({
+    queryKey: ["rehab-plans", physioId, patientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rehab_plans")
+        .select("id, name, start_date, weeks, status")
+        .eq("physio_id", physioId)
+        .eq("patient_id", patientId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const createPlan = useMutation({
+    mutationFn: async () => {
+      if (!name.trim()) throw new Error("Plan name required");
+      const { data, error } = await supabase
+        .from("rehab_plans")
+        .insert({
+          physio_id: physioId,
+          patient_id: patientId,
+          name: name.trim(),
+          start_date: startDate,
+          weeks: Math.max(1, Math.min(52, Number(weeks) || 4)),
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Plan created");
+      setName("");
+      qc.invalidateQueries({ queryKey: ["rehab-plans", physioId, patientId] });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-primary" /> Multi-week plans
+        </CardTitle>
+        <CardDescription>Schedule rehab sessions across weeks. Generate them when ready.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Plan name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. ACL Phase 2" />
+          </div>
+          <div>
+            <Label className="text-xs">Start date</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Weeks</Label>
+            <Input type="number" min={1} max={52} value={weeks} onChange={(e) => setWeeks(e.target.value)} />
+          </div>
+        </div>
+        <Button size="sm" onClick={() => createPlan.mutate()} disabled={createPlan.isPending}>
+          <Plus className="mr-1 h-4 w-4" /> Create plan
+        </Button>
+
+        <div className="space-y-2 pt-2">
+          {(plansQuery.data ?? []).length === 0 && (
+            <p className="text-sm text-muted-foreground">No plans yet.</p>
+          )}
+          {(plansQuery.data ?? []).map((p) => (
+            <Link
+              key={p.id}
+              to="/physio/patients/$patientId/plans/$planId"
+              params={{ patientId, planId: p.id }}
+              className="flex items-center justify-between gap-2 rounded-md border border-border p-3 text-sm hover:bg-accent"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium">{p.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {p.weeks} weeks · starts {new Date(p.start_date).toLocaleDateString()} · {p.status}
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

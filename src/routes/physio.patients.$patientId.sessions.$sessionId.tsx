@@ -279,6 +279,26 @@ function PhysioSession() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isPhysio && (templatesQuery.data ?? []).length > 0 && (
+            <div className="flex flex-wrap items-end gap-2 rounded-md border border-border bg-muted/30 p-2">
+              <div className="flex-1 min-w-[180px]">
+                <Label className="text-xs">Load from template</Label>
+                <select
+                  value={loadTplId}
+                  onChange={(e) => setLoadTplId(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">— pick template —</option>
+                  {(templatesQuery.data ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <Button size="sm" onClick={() => loadTemplate.mutate()} disabled={!loadTplId || loadTemplate.isPending}>
+                Load
+              </Button>
+            </div>
+          )}
           {(exercisesQuery.data ?? []).length === 0 && (
             <p className="text-sm text-muted-foreground">No exercises yet.</p>
           )}

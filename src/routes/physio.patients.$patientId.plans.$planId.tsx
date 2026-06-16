@@ -180,7 +180,7 @@ function PlanDetail() {
   });
 
   const updatePlan = useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: Partial<{ name: string; start_date: string; status: string; notes: string | null }>) => {
       const { error } = await supabase.from("rehab_plans").update(patch).eq("id", planId);
       if (error) throw error;
     },

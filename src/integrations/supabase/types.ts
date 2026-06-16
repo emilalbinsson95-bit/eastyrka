@@ -1098,6 +1098,193 @@ export type Database = {
           },
         ]
       }
+      rehab_plan_sessions: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          id: string
+          materialized_session_id: string | null
+          plan_id: string
+          template_id: string | null
+          title: string | null
+          week_index: number
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          id?: string
+          materialized_session_id?: string | null
+          plan_id: string
+          template_id?: string | null
+          title?: string | null
+          week_index: number
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          materialized_session_id?: string | null
+          plan_id?: string
+          template_id?: string | null
+          title?: string | null
+          week_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehab_plan_sessions_materialized_session_id_fkey"
+            columns: ["materialized_session_id"]
+            isOneToOne: false
+            referencedRelation: "rehab_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_plan_sessions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "rehab_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_plan_sessions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "rehab_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rehab_plan_template_exercises: {
+        Row: {
+          band_id: string | null
+          band_label: string | null
+          band_max_kg: number | null
+          band_min_kg: number | null
+          created_at: string
+          hold_seconds: number | null
+          id: string
+          load_kg: number | null
+          name: string
+          notes: string | null
+          order_index: number
+          reps: number | null
+          sets: number | null
+          template_id: string
+        }
+        Insert: {
+          band_id?: string | null
+          band_label?: string | null
+          band_max_kg?: number | null
+          band_min_kg?: number | null
+          created_at?: string
+          hold_seconds?: number | null
+          id?: string
+          load_kg?: number | null
+          name: string
+          notes?: string | null
+          order_index?: number
+          reps?: number | null
+          sets?: number | null
+          template_id: string
+        }
+        Update: {
+          band_id?: string | null
+          band_label?: string | null
+          band_max_kg?: number | null
+          band_min_kg?: number | null
+          created_at?: string
+          hold_seconds?: number | null
+          id?: string
+          load_kg?: number | null
+          name?: string
+          notes?: string | null
+          order_index?: number
+          reps?: number | null
+          sets?: number | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehab_plan_template_exercises_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "resistance_bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_plan_template_exercises_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "rehab_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rehab_plan_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          physio_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          physio_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          physio_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rehab_plans: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          patient_id: string
+          physio_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          weeks: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          patient_id: string
+          physio_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          weeks?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          patient_id?: string
+          physio_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          weeks?: number
+        }
+        Relationships: []
+      }
       rehab_sessions: {
         Row: {
           created_at: string

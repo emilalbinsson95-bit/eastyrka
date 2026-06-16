@@ -1,58 +1,46 @@
-# Physio + patient: progression, bands, self-patient, stiffness check-in
+# Physio: training plans & workouts
 
-Four focused additions, no copy of the athlete stats stack.
+Three things to ship:
 
-## 1. Band library (shared reference)
+## 1. Fix "create rehab session" failure
 
-New table `public.resistance_bands` (id, color, label, min_kg, max_kg, sort_order, created_by, timestamps). Visible to all authenticated users; only physios/coaches can insert/update/delete (their own rows + service_role). Seed Lovable's defaults:
+Current insert requires:
+- `physio_id = auth.uid()` ✓
+- `is_physio_of(auth.uid(), patient_id)` — needs a row in `physio_patients`
 
-```text
-Yellow  2– 5 kg    Red    5–15 kg
-Green   4–10 kg    Black 10–25 kg
-Blue    7–18 kg    Silver 15–35 kg
-```
+Today this silently fails for any patient who isn't already linked. The patient page is reachable from the roster (so the link exists there), but the form gives no error feedback if anything else goes wrong.
 
-Add band fields to `public.rehab_exercises`:
-- `band_id uuid references resistance_bands` (nullable)
-- `band_min_kg numeric` / `band_max_kg numeric` (snapshot at prescription)
+**Fix:**
+- Show the real Supabase error in a toast (currently `onError` shows it, but the insert error message gets eaten by the navigate-on-success path if there's no row returned). Verify and harden.
+- Add an explicit "physio role required" guard with a clear toast if `has_role(uid, 'physio')` is false.
 
-New page `src/routes/physio.bands.tsx` (linked from the physio nav): CRUD list — color swatch, label, kg range. Reused inside the rehab exercise editor as a band picker (sets `band_id` and snapshots the kg range).
+## 2. Reusable rehab workout templates
 
-## 2. Progression dashboard (no "stats")
+New tables (mirrors coach's `plan_templates`):
+- `rehab_plan_templates` — `id, physio_id, name, description, created_at`
+- `rehab_plan_template_exercises` — `id, template_id, order_index, name, sets, reps, hold_seconds, load_kg, band_id, notes`
 
-Shared component `src/components/ProgressionDashboard.tsx`, used by:
-- `src/routes/physio.patients.$patientId.progression.tsx` (with back-to-patient link)
-- `src/routes/patient.progression.tsx` (added to patient nav)
+UI:
+- `/physio/templates` — list, create, edit templates with the same exercise form as a session.
+- In session page: "Load from template" button that bulk-inserts all template exercises into the current session.
 
-Four cards (matches your picks):
+## 3. Multi-week rehab plans
 
-1. **Per-exercise progression** — for each rehab exercise the patient has done, a small line chart of reps × sets × band tension (kg, midpoint of band range) over time. Latest delta shown.
-2. **Stiffness trend** — 30-day line of daily check-ins (see §4). Latest value + 7-day avg.
-3. **Function tests** — table + per-test sparkline. Backed by a new table `public.function_tests` (patient_id, test_type, value_numeric, unit, side `left|right|bilateral|na`, tested_at, notes, recorded_by). Seeded test types: ROM (deg), single-leg hop (cm), balance hold (sec), Y-balance, isometric strength (kg). Physio adds entries; patient can see them read-only.
-4. **Adherence** — sessions completed vs prescribed in the last 4 weeks (% + streak). Uses existing `rehab_sessions` + planned/override tables already in the schema.
+New tables (mirrors coach's `mesocycles` + `week_plans`):
+- `rehab_plans` — `id, physio_id, patient_id, name, start_date, weeks, status, notes`
+- `rehab_plan_sessions` — `id, plan_id, week_index, day_of_week, title, template_id (nullable)`
 
-No EAk, no CTL/ATL, no 20-session gate.
+UI:
+- On patient page: "New plan" — pick name, start date, weeks count.
+- `/physio/patients/$patientId/plans/$planId` — week grid (Mon–Sun × N weeks), drop a template or empty session on any day. "Generate rehab sessions" button materializes `rehab_sessions` rows for each cell on the right date.
 
-## 3. Physio self-patient toggle
+## Out of scope
 
-Add `PhysioRoleSwitcher` modeled exactly on `RoleSwitcher`:
-- One-click "Enable patient view" → grants `patient` role to self, links self in `physio_patients` (physio_id = patient_id = self), idempotent.
-- Once enabled, dropdown switches between Physio view (`/physio`) and Patient view (`/patient`).
-- Mounted in the physio header next to notifications.
-
-Also add `src/routes/physio.me.tsx` (mirror of `coach.me`) so physios have a profile + roster page.
-
-## 4. Daily stiffness check-in (lightweight)
-
-New table `public.patient_checkins` (patient_id, date unique-per-patient, stiffness smallint 0–10, note text, timestamps). RLS: patient owns rows; linked physios can read (via `is_physio_of`). Trigger validates 0–10 range. NOT using `readiness_surveys` — those are athlete-side and heavier.
-
-UI: single-slider card on `patient.index.tsx` ("How stiff today? 0–10") with a Save button. Today's value displayed if already submitted; one entry per day (upsert). The stiffness trend card in §2 reads from this table.
-
-## Out of scope (this turn)
-Pain rating UI, ROM measurement tools, video uploads, return-to-sport algorithm, methodology page for physio.
+- Drag-and-drop calendar (use simple dropdowns).
+- Notifications when a planned session goes overdue.
 
 ## Technical notes
-- Migration is one call: enum-free, 2 new tables + 3 columns on rehab_exercises + GRANTs + RLS + validation triggers + seed insert for bands.
-- Band kg used in progression chart = `(band_min_kg + band_max_kg) / 2` when no explicit kg is logged on the set.
-- All new routes use `useQuery`/`useSuspenseQuery`; no server functions needed (everything reachable with the browser supabase client + RLS).
-- i18n keys added to `src/locales/en.json` and `sv.json` for nav items ("Bands", "Progression", "Patient view").
+
+- All new tables: GRANT to `authenticated` + `service_role`, RLS scoped to `physio_id = auth.uid()` (and `patient_id = auth.uid()` SELECT for plans).
+- Templates are physio-owned only.
+- "Generate sessions" idempotent: skip cells already materialized.

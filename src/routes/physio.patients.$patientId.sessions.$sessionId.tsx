@@ -88,6 +88,58 @@ function PhysioSession() {
     },
   });
 
+  const templatesQuery = useQuery({
+    queryKey: ["rehab-templates", physioId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rehab_plan_templates")
+        .select("id, name")
+        .eq("physio_id", physioId)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const [loadTplId, setLoadTplId] = useState("");
+  const loadTemplate = useMutation({
+    mutationFn: async () => {
+      if (!loadTplId) throw new Error("Pick a template");
+      const { data: exs, error } = await supabase
+        .from("rehab_plan_template_exercises")
+        .select("*")
+        .eq("template_id", loadTplId)
+        .order("order_index");
+      if (error) throw error;
+      const base = (exercisesQuery.data ?? []).length;
+      const rows = (exs ?? []).map((e, idx) => ({
+        session_id: sessionId,
+        order_index: base + idx,
+        name: e.name,
+        sets: e.sets,
+        reps: e.reps,
+        hold_seconds: e.hold_seconds,
+        load_kg: e.load_kg,
+        band_id: e.band_id,
+        resistance_band: e.band_label,
+        band_min_kg: e.band_min_kg,
+        band_max_kg: e.band_max_kg,
+        notes: e.notes,
+      }));
+      if (rows.length === 0) throw new Error("Template has no exercises");
+      const { error: iErr } = await supabase.from("rehab_exercises").insert(rows);
+      if (iErr) throw iErr;
+      return rows.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Loaded ${n} exercise${n === 1 ? "" : "s"}`);
+      setLoadTplId("");
+      qc.invalidateQueries({ queryKey: ["rehab-exercises", sessionId] });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+
   const addExercise = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error("Exercise name required");
@@ -227,6 +279,26 @@ function PhysioSession() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isPhysio && (templatesQuery.data ?? []).length > 0 && (
+            <div className="flex flex-wrap items-end gap-2 rounded-md border border-border bg-muted/30 p-2">
+              <div className="flex-1 min-w-[180px]">
+                <Label className="text-xs">Load from template</Label>
+                <select
+                  value={loadTplId}
+                  onChange={(e) => setLoadTplId(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">— pick template —</option>
+                  {(templatesQuery.data ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <Button size="sm" onClick={() => loadTemplate.mutate()} disabled={!loadTplId || loadTemplate.isPending}>
+                Load
+              </Button>
+            </div>
+          )}
           {(exercisesQuery.data ?? []).length === 0 && (
             <p className="text-sm text-muted-foreground">No exercises yet.</p>
           )}

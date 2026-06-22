@@ -77,6 +77,7 @@ export type Database = {
           coach_id: string
           created_at: string
           id: string
+          status: string
           tag: string | null
         }
         Insert: {
@@ -84,6 +85,7 @@ export type Database = {
           coach_id: string
           created_at?: string
           id?: string
+          status?: string
           tag?: string | null
         }
         Update: {
@@ -91,6 +93,7 @@ export type Database = {
           coach_id?: string
           created_at?: string
           id?: string
+          status?: string
           tag?: string | null
         }
         Relationships: []
@@ -689,18 +692,21 @@ export type Database = {
           id: string
           patient_id: string
           physio_id: string
+          status: string
         }
         Insert: {
           created_at?: string
           id?: string
           patient_id: string
           physio_id: string
+          status?: string
         }
         Update: {
           created_at?: string
           id?: string
           patient_id?: string
           physio_id?: string
+          status?: string
         }
         Relationships: []
       }

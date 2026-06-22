@@ -47,29 +47,30 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#6d28d9" },
+      { name: "theme-color", content: "#0A0E1A" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "EA Training" },
-      { title: "EA Training System — Coaching & Rehab Monitoring Platform" },
+      { name: "apple-mobile-web-app-title", content: "SETPOINT" },
+      { title: "SETPOINT — Train at your readiness" },
       {
         name: "description",
         content:
-          "Monitor athletes, patients and rehab progress. For coaches, athletes, physiotherapists and their patients.",
+          "SETPOINT is the readiness baseline for strength. Per-set fatigue-limit detection and EAkoefficient readiness for serious lifters and their coaches.",
       },
-      { name: "author", content: "EA Training System" },
-      { property: "og:title", content: "EA Training System — Coaching & Rehab Monitoring Platform" },
+      { name: "author", content: "SETPOINT" },
+      { property: "og:site_name", content: "SETPOINT" },
+      { property: "og:title", content: "SETPOINT — Train at your readiness" },
       {
         property: "og:description",
         content:
-          "Real-time readiness tracking for coaches and athletes, plus rehab session monitoring for physiotherapists and their patients.",
+          "The readiness baseline for strength. Every set tells you if you should push or pull back.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "EA Training System — Coaching & Rehab Monitoring Platform" },
-      { name: "twitter:description", content: "Coaching and rehab progress monitoring in one professional platform." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bdd18a74-4ba8-43c0-beec-a3f7677f17a9/id-preview-37c2bf53--369f24af-f4f2-4fad-9b2f-2b98e3b979d6.lovable.app-1777283904089.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bdd18a74-4ba8-43c0-beec-a3f7677f17a9/id-preview-37c2bf53--369f24af-f4f2-4fad-9b2f-2b98e3b979d6.lovable.app-1777283904089.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "SETPOINT — Train at your readiness" },
+      { name: "twitter:description", content: "The readiness baseline for strength. Per-set fatigue-limit detection for lifters and coaches." },
+      { property: "og:image", content: "https://eastyrka.lovable.app/__l5e/assets-v1/b689a073-500c-4544-9005-bfee4934a2f3/setpoint-og.jpg" },
+      { name: "twitter:image", content: "https://eastyrka.lovable.app/__l5e/assets-v1/b689a073-500c-4544-9005-bfee4934a2f3/setpoint-og.jpg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -84,10 +85,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "WebSite",
-          name: "EA Training System",
+          name: "SETPOINT",
           url: "https://eastyrka.lovable.app",
           description:
-            "Coaching and rehab monitoring platform for coaches, athletes, physiotherapists and patients.",
+            "The readiness baseline for strength. Per-set fatigue-limit detection and EAkoefficient readiness for serious lifters and their coaches.",
           inLanguage: ["en", "sv"],
           potentialAction: {
             "@type": "SearchAction",
@@ -101,9 +102,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: "EA Training System",
+          name: "SETPOINT",
           url: "https://eastyrka.lovable.app",
-          logo: "https://eastyrka.lovable.app/icon-512.png",
+          logo: "https://eastyrka.lovable.app/__l5e/assets-v1/4bf5e6a5-90ae-4231-a3ba-35d301d670a7/setpoint-logo.png",
         }),
       },
     ],

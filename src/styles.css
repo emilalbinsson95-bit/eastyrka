@@ -2,13 +2,21 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* SETPOINT brand fonts */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system for the Powerlifting Coach Platform.
- * Inspired by the EAkoefficient prototype: clean white cards on slate-50,
- * blue accent, color-coded readiness pills (red/blue/green/yellow),
- * subtle purple tint for volume-quality columns.
+ * SETPOINT design system — clinical precision for strength & readiness.
+ * Palette: ink #0A0E1A · steel #1A2332 · paper #E8EDF3 · signal #00D4A8
+ * Type:    Inter (body) · JetBrains Mono (numerics / labels)
  */
 
 @theme inline {
@@ -19,6 +27,9 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -40,6 +51,12 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+
+  /* Brand tokens */
+  --color-ink: var(--ink);
+  --color-steel: var(--steel);
+  --color-paper: var(--paper);
+  --color-signal: var(--signal);
 
   /* Domain-specific status tokens */
   --color-status-exhausted: var(--status-exhausted);
@@ -71,109 +88,116 @@
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
-  /* Slate-50 page bg, slate-900 text */
-  --background: oklch(0.984 0.003 247.858);
-  --foreground: oklch(0.208 0.042 265.755);
+  /* Brand literals */
+  --ink: oklch(0.16 0.025 260);
+  --steel: oklch(0.26 0.03 255);
+  --paper: oklch(0.96 0.008 250);
+  --signal: oklch(0.78 0.16 175);
+
+  /* Light theme — paper bg, ink text */
+  --background: oklch(0.98 0.005 250);
+  --foreground: oklch(0.16 0.025 260);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.16 0.025 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.16 0.025 260);
 
-  /* Blue-600 primary */
-  --primary: oklch(0.546 0.215 262.881);
-  --primary-foreground: oklch(0.984 0.003 247.858);
+  /* Signal teal primary */
+  --primary: oklch(0.72 0.15 175);
+  --primary-foreground: oklch(0.16 0.025 260);
 
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.546 0.215 262.881);
+  --secondary: oklch(0.95 0.008 250);
+  --secondary-foreground: oklch(0.16 0.025 260);
+  --muted: oklch(0.95 0.008 250);
+  --muted-foreground: oklch(0.5 0.025 255);
+  --accent: oklch(0.94 0.03 175);
+  --accent-foreground: oklch(0.16 0.025 260);
+  --destructive: oklch(0.6 0.22 27);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  --border: oklch(0.9 0.01 250);
+  --input: oklch(0.9 0.01 250);
+  --ring: oklch(0.72 0.15 175);
 
-  /* Status pills (light tints + saturated text) */
-  --status-exhausted: oklch(0.945 0.045 27);
+  /* Status pills — kept semantic, retuned to brand */
+  --status-exhausted: oklch(0.94 0.05 27);
   --status-exhausted-foreground: oklch(0.45 0.18 27);
-  --status-undertrained: oklch(0.94 0.04 250);
-  --status-undertrained-foreground: oklch(0.45 0.18 250);
-  --status-adapting: oklch(0.945 0.07 150);
-  --status-adapting-foreground: oklch(0.42 0.14 150);
-  --status-peaking: oklch(0.95 0.08 95);
+  --status-undertrained: oklch(0.93 0.04 255);
+  --status-undertrained-foreground: oklch(0.42 0.12 255);
+  --status-adapting: oklch(0.93 0.07 175);
+  --status-adapting-foreground: oklch(0.38 0.12 175);
+  --status-peaking: oklch(0.94 0.09 90);
   --status-peaking-foreground: oklch(0.45 0.13 80);
 
-  --readiness-tint: oklch(0.97 0.02 250);
-  --volume-tint: oklch(0.97 0.025 300);
+  --readiness-tint: oklch(0.96 0.025 175);
+  --volume-tint: oklch(0.96 0.02 260);
 
-  --chart-1: oklch(0.546 0.215 262.881);
-  --chart-2: oklch(0.6 0.15 150);
+  --chart-1: oklch(0.72 0.15 175);
+  --chart-2: oklch(0.55 0.08 255);
   --chart-3: oklch(0.65 0.18 30);
   --chart-4: oklch(0.7 0.15 95);
   --chart-5: oklch(0.55 0.2 300);
 
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-primary: oklch(0.546 0.215 262.881);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.546 0.215 262.881);
+  --sidebar-foreground: oklch(0.16 0.025 260);
+  --sidebar-primary: oklch(0.72 0.15 175);
+  --sidebar-primary-foreground: oklch(0.16 0.025 260);
+  --sidebar-accent: oklch(0.95 0.008 250);
+  --sidebar-accent-foreground: oklch(0.16 0.025 260);
+  --sidebar-border: oklch(0.9 0.01 250);
+  --sidebar-ring: oklch(0.72 0.15 175);
 }
 
 .dark {
-  --background: oklch(0.18 0.025 260);
-  --foreground: oklch(0.97 0.005 250);
-  --card: oklch(0.23 0.03 260);
-  --card-foreground: oklch(0.97 0.005 250);
-  --popover: oklch(0.23 0.03 260);
-  --popover-foreground: oklch(0.97 0.005 250);
-  --primary: oklch(0.65 0.2 262);
-  --primary-foreground: oklch(0.18 0.025 260);
-  --secondary: oklch(0.28 0.03 260);
-  --secondary-foreground: oklch(0.97 0.005 250);
-  --muted: oklch(0.28 0.03 260);
-  --muted-foreground: oklch(0.7 0.04 256);
-  --accent: oklch(0.28 0.03 260);
-  --accent-foreground: oklch(0.97 0.005 250);
+  /* Dark theme — ink bg, paper text, signal accent */
+  --background: oklch(0.16 0.025 260);
+  --foreground: oklch(0.96 0.008 250);
+  --card: oklch(0.22 0.028 258);
+  --card-foreground: oklch(0.96 0.008 250);
+  --popover: oklch(0.22 0.028 258);
+  --popover-foreground: oklch(0.96 0.008 250);
+  --primary: oklch(0.78 0.16 175);
+  --primary-foreground: oklch(0.16 0.025 260);
+  --secondary: oklch(0.26 0.03 258);
+  --secondary-foreground: oklch(0.96 0.008 250);
+  --muted: oklch(0.26 0.03 258);
+  --muted-foreground: oklch(0.72 0.025 255);
+  --accent: oklch(0.3 0.05 175);
+  --accent-foreground: oklch(0.96 0.008 250);
   --destructive: oklch(0.7 0.19 22);
-  --destructive-foreground: oklch(0.97 0.005 250);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.2 262);
+  --destructive-foreground: oklch(0.96 0.008 250);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.78 0.16 175);
 
-  --status-exhausted: oklch(0.35 0.1 27);
+  --status-exhausted: oklch(0.32 0.1 27);
   --status-exhausted-foreground: oklch(0.85 0.12 27);
-  --status-undertrained: oklch(0.35 0.1 250);
-  --status-undertrained-foreground: oklch(0.85 0.12 250);
-  --status-adapting: oklch(0.32 0.08 150);
-  --status-adapting-foreground: oklch(0.85 0.12 150);
-  --status-peaking: oklch(0.35 0.09 90);
+  --status-undertrained: oklch(0.32 0.08 255);
+  --status-undertrained-foreground: oklch(0.85 0.1 255);
+  --status-adapting: oklch(0.3 0.08 175);
+  --status-adapting-foreground: oklch(0.85 0.13 175);
+  --status-peaking: oklch(0.34 0.09 90);
   --status-peaking-foreground: oklch(0.88 0.13 90);
 
-  --readiness-tint: oklch(0.25 0.04 250);
-  --volume-tint: oklch(0.25 0.04 300);
+  --readiness-tint: oklch(0.26 0.04 175);
+  --volume-tint: oklch(0.26 0.03 260);
 
-  --chart-1: oklch(0.65 0.2 262);
-  --chart-2: oklch(0.7 0.17 162);
+  --chart-1: oklch(0.78 0.16 175);
+  --chart-2: oklch(0.7 0.12 255);
   --chart-3: oklch(0.77 0.19 70);
   --chart-4: oklch(0.63 0.27 304);
   --chart-5: oklch(0.65 0.25 16);
 
-  --sidebar: oklch(0.23 0.03 260);
-  --sidebar-foreground: oklch(0.97 0.005 250);
-  --sidebar-primary: oklch(0.65 0.2 262);
-  --sidebar-primary-foreground: oklch(0.18 0.025 260);
-  --sidebar-accent: oklch(0.28 0.03 260);
-  --sidebar-accent-foreground: oklch(0.97 0.005 250);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.65 0.2 262);
+  --sidebar: oklch(0.22 0.028 258);
+  --sidebar-foreground: oklch(0.96 0.008 250);
+  --sidebar-primary: oklch(0.78 0.16 175);
+  --sidebar-primary-foreground: oklch(0.16 0.025 260);
+  --sidebar-accent: oklch(0.26 0.03 258);
+  --sidebar-accent-foreground: oklch(0.96 0.008 250);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.78 0.16 175);
 }
 
 @layer base {
@@ -184,7 +208,18 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+
+  /* Numerics & labels read as lab-instrument output */
+  .font-mono,
+  code,
+  kbd,
+  pre,
+  samp,
+  [data-numeric] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }

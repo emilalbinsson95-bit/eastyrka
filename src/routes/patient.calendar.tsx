@@ -5,7 +5,7 @@ import { SharedCalendar } from "@/components/SharedCalendar";
 export const Route = createFileRoute("/patient/calendar")({
   head: () => ({
     meta: [
-      { title: "Calendar — EA Training System" },
+      { title: "Calendar — SETPOINT" },
       { name: "description", content: "Shared rehab calendar between patient and physio." },
     ],
   }),

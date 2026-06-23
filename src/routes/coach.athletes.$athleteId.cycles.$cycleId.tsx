@@ -96,7 +96,7 @@ export const Route = createFileRoute(
 )({
   head: () => ({
     meta: [
-      { title: "Mesocycle builder — EA Training System Coach" },
+      { title: "Mesocycle builder — SETPOINT Coach" },
       {
         name: "description",
         content:

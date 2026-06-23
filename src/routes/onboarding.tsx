@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Welcome — EA Training System" },
+      { title: "Welcome — SETPOINT" },
       { name: "description", content: "Quick setup to personalize your training." },
     ],
   }),
@@ -201,7 +201,7 @@ function OnboardingPage() {
         <div className="space-y-2 text-center">
           <div className="inline-flex items-center gap-2 text-sm font-medium text-primary">
             <Activity className="h-4 w-4" />
-            EA Training System
+            SETPOINT
           </div>
           <Progress value={progress} className="h-1.5" />
           <p className="text-xs text-muted-foreground">

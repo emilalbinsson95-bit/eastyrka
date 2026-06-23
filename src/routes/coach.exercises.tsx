@@ -33,7 +33,7 @@ import {
 export const Route = createFileRoute("/coach/exercises")({
   head: () => ({
     meta: [
-      { title: "Exercise library — EA Training System Coach" },
+      { title: "Exercise library — SETPOINT Coach" },
       {
         name: "description",
         content:

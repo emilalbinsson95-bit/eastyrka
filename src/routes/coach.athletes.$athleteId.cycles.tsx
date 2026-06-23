@@ -33,7 +33,7 @@ import { GenerateMarathonPlanDialog } from "@/components/GenerateMarathonPlanDia
 export const Route = createFileRoute("/coach/athletes/$athleteId/cycles")({
   head: () => ({
     meta: [
-      { title: "Mesocycles — EA Training System Coach" },
+      { title: "Mesocycles — SETPOINT Coach" },
       {
         name: "description",
         content:

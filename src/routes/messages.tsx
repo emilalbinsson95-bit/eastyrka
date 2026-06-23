@@ -26,7 +26,7 @@ export const Route = createFileRoute("/messages")({
   },
   head: () => ({
     meta: [
-      { title: "Messages — EA Training System" },
+      { title: "Messages — SETPOINT" },
       { name: "description", content: "Chat between coach and athlete." },
     ],
   }),

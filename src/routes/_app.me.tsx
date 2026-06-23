@@ -22,7 +22,7 @@ import { ConnectionsCard } from "@/components/ConnectionsCard";
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
     meta: [
-      { title: "My Profile — EA Training System" },
+      { title: "My Profile — SETPOINT" },
       { name: "description", content: "Your profile and current 1RM baselines." },
     ],
   }),

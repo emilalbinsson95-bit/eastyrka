@@ -1,13 +1,13 @@
 {
-  "name": "EA Training System",
-  "short_name": "EA Training",
-  "description": "Coaching and rehab monitoring platform for coaches, athletes, physiotherapists and patients.",
+  "name": "SETPOINT",
+  "short_name": "SETPOINT",
+  "description": "The readiness baseline for strength. Per-set fatigue-limit detection and EAkoefficient readiness for serious lifters and their coaches.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b0b12",
-  "theme_color": "#6d28d9",
+  "background_color": "#0A0E1A",
+  "theme_color": "#00D4A8",
   "categories": ["health", "fitness", "productivity"],
   "icons": [
     {

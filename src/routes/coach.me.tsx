@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/coach/me")({
   head: () => ({
     meta: [
-      { title: "My Account — EA Training System Coach" },
+      { title: "My Account — SETPOINT Coach" },
       {
         name: "description",
         content: "Your coach account, profile, and roster overview.",

@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -36,13 +37,13 @@ const signupSchema = z.object({
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Sign up — EA Training System" },
+      { title: "Sign up — SETPOINT" },
       {
         name: "description",
         content:
-          "Create an account on EA Training System — for coaches, athletes, physiotherapists and patients.",
+          "Create an account on SETPOINT — for coaches, athletes, physiotherapists and patients.",
       },
-      { property: "og:title", content: "Sign up — EA Training System" },
+      { property: "og:title", content: "Sign up — SETPOINT" },
       {
         property: "og:description",
         content: "Get started in minutes. Pick your role and start tracking training or rehab.",
@@ -109,7 +110,7 @@ function SignupPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Activity className="h-6 w-6 text-primary" />
+            <BrandMark className="scale-125" showWordmark />
           </div>
           <CardTitle>Create your account</CardTitle>
           <CardDescription>

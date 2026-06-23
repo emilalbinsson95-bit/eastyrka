@@ -55,7 +55,7 @@ const DEFAULT_EXERCISES = [
 export const Route = createFileRoute("/coach/athletes/$athleteId")({
   head: () => ({
     meta: [
-      { title: "Athlete dashboard — EA Training System Coach" },
+      { title: "Athlete dashboard — SETPOINT Coach" },
       { name: "description", content: "EAkoefficient analytics and programming for one athlete." },
     ],
   }),

@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
@@ -11,9 +12,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — EA Training System" },
+      { title: "Sign in — SETPOINT" },
       { name: "description", content: "Sign in to your coach, athlete, physiotherapist or patient account." },
-      { property: "og:title", content: "Sign in — EA Training System" },
+      { property: "og:title", content: "Sign in — SETPOINT" },
       { property: "og:description", content: "Access your readiness dashboard, athlete roster or rehab sessions." },
       { property: "og:url", content: "https://set-smart-guide.lovable.app/login" },
     ],
@@ -55,10 +56,10 @@ function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Activity className="h-6 w-6 text-primary" />
+            <BrandMark className="scale-125" showWordmark />
           </div>
           <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Sign in to your EA Training System account</CardDescription>
+          <CardDescription>Sign in to your SETPOINT account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

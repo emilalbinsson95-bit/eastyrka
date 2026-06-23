@@ -6,7 +6,7 @@ import { SharedCalendar } from "@/components/SharedCalendar";
 export const Route = createFileRoute("/coach/athletes/$athleteId/calendar")({
   head: () => ({
     meta: [
-      { title: "Athlete calendar — EA Training System Coach" },
+      { title: "Athlete calendar — SETPOINT Coach" },
       { name: "description", content: "Shared training calendar for this athlete." },
     ],
   }),

@@ -5,7 +5,7 @@ import { StatsDashboard } from "@/components/StatsDashboard";
 export const Route = createFileRoute("/_app/stats")({
   head: () => ({
     meta: [
-      { title: "Stats — EA Training System" },
+      { title: "Stats — SETPOINT" },
       {
         name: "description",
         content:

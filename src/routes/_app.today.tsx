@@ -48,7 +48,7 @@ import { plannedSessionDate } from "@/lib/planned-session-dates";
 export const Route = createFileRoute("/_app/today")({
   head: () => ({
     meta: [
-      { title: "Today's Session — EA Training System" },
+      { title: "Today's Session — SETPOINT" },
       { name: "description", content: "Log today's lifts and see your readiness in real time." },
     ],
   }),

@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,7 +46,7 @@ function PatientLayout() {
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link to="/patient" className="flex items-center gap-2 font-semibold">
-            <Activity className="h-5 w-5 text-primary" />
+            <BrandMark />
             {t("app.name")}
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               {t("role.patient")}

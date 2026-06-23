@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -76,7 +77,7 @@ function AthleteLayout() {
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link to="/today" className="flex items-center gap-2 font-semibold">
-            <Activity className="h-5 w-5 text-primary" />
+            <BrandMark />
             {t("app.name")}
           </Link>
           <div className="flex items-center gap-1">

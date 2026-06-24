@@ -401,10 +401,13 @@ function TodayPage() {
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="space-y-1">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
+          Setpoint · Today
+        </p>
         <h1 className="text-2xl font-bold tracking-tight">Today</h1>
-        <p className="text-sm text-muted-foreground">
-          {format(today, "EEEE, MMMM d")}
+        <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          {format(today, "EEEE · MMMM d")}
         </p>
       </div>
 

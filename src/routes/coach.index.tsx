@@ -158,7 +158,10 @@ function CoachRosterPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="space-y-1">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
+            Roster · Readiness
+          </p>
           <h1 className="text-2xl font-bold tracking-tight">My athletes</h1>
           <p className="text-sm text-muted-foreground">
             Click an athlete to see their EAkoefficient dashboard, set baselines, and
@@ -357,23 +360,27 @@ function AthleteCard({
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Last EAkoeff</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              EAk
+            </span>
             {athlete.last_eak && athlete.last_eak > 0 ? (
               <span
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-xs font-semibold",
+                  "rounded-full px-2 py-0.5 text-[11px]",
                   readinessClasses(status),
                 )}
               >
                 {athlete.last_eak.toFixed(0)}% · {readinessLabel(status)}
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground">—</span>
+              <span className="font-mono text-xs text-muted-foreground">—</span>
             )}
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Form</span>
-            <span className="font-medium">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Form
+            </span>
+            <span className="font-mono tabular-nums text-sm font-medium">
               {athlete.last_form != null ? `${athlete.last_form}/10` : "—"}
             </span>
           </div>

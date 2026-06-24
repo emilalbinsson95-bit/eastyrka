@@ -84,17 +84,19 @@ export function readinessLabel(status: ReadinessStatus): string {
  * src/styles.css. Always use these — never hardcode bg-red-100 etc.
  */
 export function readinessClasses(status: ReadinessStatus): string {
+  const base =
+    "font-mono uppercase tracking-[0.12em] tabular-nums ring-1 ring-inset";
   switch (status) {
     case "exhausted":
-      return "bg-status-exhausted text-status-exhausted-foreground";
+      return `${base} bg-status-exhausted text-status-exhausted-foreground ring-status-exhausted-foreground/20`;
     case "undertrained":
-      return "bg-status-undertrained text-status-undertrained-foreground";
+      return `${base} bg-status-undertrained text-status-undertrained-foreground ring-status-undertrained-foreground/20`;
     case "adapting":
-      return "bg-status-adapting text-status-adapting-foreground";
+      return `${base} bg-status-adapting text-status-adapting-foreground ring-status-adapting-foreground/20`;
     case "peaking":
-      return "bg-status-peaking text-status-peaking-foreground";
+      return `${base} bg-status-peaking text-status-peaking-foreground ring-status-peaking-foreground/20`;
     default:
-      return "bg-muted text-muted-foreground";
+      return `${base} bg-muted text-muted-foreground ring-border`;
   }
 }
 
@@ -134,19 +136,21 @@ export function volumeQualityLabel(q: VolumeQuality): string {
 }
 
 export function volumeQualityClasses(q: VolumeQuality): string {
+  const base =
+    "font-mono uppercase tracking-[0.12em] tabular-nums ring-1 ring-inset";
   switch (q) {
     case "optimal":
-      return "bg-status-adapting text-status-adapting-foreground";
+      return `${base} bg-status-adapting text-status-adapting-foreground ring-status-adapting-foreground/20`;
     case "acceptable":
-      return "bg-status-peaking text-status-peaking-foreground";
+      return `${base} bg-status-peaking text-status-peaking-foreground ring-status-peaking-foreground/20`;
     case "fatigue_limit":
-      return "bg-status-exhausted text-status-exhausted-foreground";
+      return `${base} bg-status-exhausted text-status-exhausted-foreground ring-status-exhausted-foreground/30`;
     case "sandbag":
-      return "bg-status-exhausted text-status-exhausted-foreground ring-1 ring-status-exhausted-foreground/30";
+      return `${base} bg-status-exhausted text-status-exhausted-foreground ring-status-exhausted-foreground/40`;
     case "baseline":
-      return "bg-muted text-muted-foreground";
+      return `${base} bg-muted text-muted-foreground ring-border`;
     default:
-      return "bg-muted text-muted-foreground";
+      return `${base} bg-muted text-muted-foreground ring-border`;
   }
 }
 

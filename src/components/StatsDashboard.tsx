@@ -244,7 +244,10 @@ export function StatsDashboard({
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="space-y-1">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
+          Setpoint · Athlete telemetry
+        </p>
         <h1 className="text-2xl font-bold tracking-tight">
           {athleteName ? `Stats — ${athleteName}` : "Stats"}
         </h1>

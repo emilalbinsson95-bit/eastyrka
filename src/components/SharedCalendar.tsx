@@ -298,6 +298,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
             const inMonth = isSameMonth(d, monthDate);
             const items = itemsByDay.get(iso) ?? [];
             const readiness = readinessByDay.get(iso);
+            const period = unavailabilityCovering(unavailQuery.data ?? [], iso);
+            const periodStart = period ? isPeriodStart(period, iso) : false;
             return (
               <DayCell
                 key={iso}
@@ -309,6 +311,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 readiness={readiness}
                 readOnly={readOnly}
                 canDelete={canDelete}
+                unavailability={period ?? null}
+                unavailabilityIsStart={periodStart}
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }
@@ -319,7 +323,6 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
                 onRequestDelete={(it) => setDeleteTarget(it)}
                 onPreview={(it) => {
-                  // Athlete view: clicking ad-hoc strength or own endurance opens the editor.
                   if (!readOnly && it.source === "adhoc_strength") {
                     setEditorTarget({ kind: "adhoc_strength", date: it.sourceId });
                     return;

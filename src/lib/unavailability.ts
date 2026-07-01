@@ -71,7 +71,12 @@ export async function updateUnavailability(id: string, patch: Partial<{
   reason: UnavailabilityReason;
   notes: string | null;
 }>) {
-  const dbPatch: Record<string, unknown> = {};
+  const dbPatch: {
+    start_date?: string;
+    end_date?: string;
+    reason?: UnavailabilityReason;
+    notes?: string | null;
+  } = {};
   if (patch.startDate !== undefined) dbPatch.start_date = patch.startDate;
   if (patch.endDate !== undefined) dbPatch.end_date = patch.endDate;
   if (patch.reason !== undefined) dbPatch.reason = patch.reason;

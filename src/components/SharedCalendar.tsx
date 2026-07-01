@@ -76,8 +76,12 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const { t } = useTranslation();
   const [monthDate, setMonthDate] = useState<Date>(() => new Date());
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? ownerId;
 
   const canDelete = viewerRole === "coach" || viewerRole === "physio";
+  // Athlete manages their own; coach can manage for their athletes.
+  const canManageUnavailability = !readOnly || viewerRole === "coach";
 
   const itemsQuery = useQuery({
     queryKey: ["calendar-items", ownerId, format(monthDate, "yyyy-MM")],
@@ -87,6 +91,11 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const readinessQuery = useQuery({
     queryKey: ["calendar-readiness", ownerId, format(monthDate, "yyyy-MM")],
     queryFn: () => fetchReadinessDots(ownerId, monthDate),
+  });
+
+  const unavailQuery = useQuery({
+    queryKey: ["unavailability", ownerId, format(monthDate, "yyyy-MM")],
+    queryFn: () => fetchUnavailability(ownerId, monthDate),
   });
 
   const moveMutation = useMutation({

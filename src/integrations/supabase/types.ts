@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_unavailability: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          notes: string | null
+          reason: Database["public"]["Enums"]["unavailability_reason"]
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          notes?: string | null
+          reason?: Database["public"]["Enums"]["unavailability_reason"]
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          notes?: string | null
+          reason?: Database["public"]["Enums"]["unavailability_reason"]
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       baseline_history: {
         Row: {
           athlete_id: string
@@ -1593,6 +1629,7 @@ export type Database = {
       external_provider: "garmin" | "strava"
       intensity_metric: "rpe" | "rir"
       plan_status: "draft" | "published"
+      unavailability_reason: "sick" | "injured" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1727,6 +1764,7 @@ export const Constants = {
       external_provider: ["garmin", "strava"],
       intensity_metric: ["rpe", "rir"],
       plan_status: ["draft", "published"],
+      unavailability_reason: ["sick", "injured", "other"],
     },
   },
 } as const

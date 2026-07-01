@@ -12,7 +12,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight } from "lucide-react";
 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,16 @@ import {
   setOverride,
   uncancelSession,
 } from "@/lib/calendar";
+import {
+  fetchUnavailability,
+  deleteUnavailability,
+  pushSessionsPastPeriod,
+  unavailabilityCovering,
+  isPeriodStart,
+  type Unavailability,
+} from "@/lib/unavailability";
+import { UnavailabilityDialog } from "@/components/UnavailabilityDialog";
+import { useAuth } from "@/lib/auth";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 import { AddSessionDialog } from "@/components/AddSessionDialog";
 import { AdhocStrengthEditor } from "@/components/AdhocStrengthEditor";
@@ -66,8 +76,12 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const { t } = useTranslation();
   const [monthDate, setMonthDate] = useState<Date>(() => new Date());
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? ownerId;
 
   const canDelete = viewerRole === "coach" || viewerRole === "physio";
+  // Athlete manages their own; coach can manage for their athletes.
+  const canManageUnavailability = !readOnly || viewerRole === "coach";
 
   const itemsQuery = useQuery({
     queryKey: ["calendar-items", ownerId, format(monthDate, "yyyy-MM")],
@@ -77,6 +91,11 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const readinessQuery = useQuery({
     queryKey: ["calendar-readiness", ownerId, format(monthDate, "yyyy-MM")],
     queryFn: () => fetchReadinessDots(ownerId, monthDate),
+  });
+
+  const unavailQuery = useQuery({
+    queryKey: ["unavailability", ownerId, format(monthDate, "yyyy-MM")],
+    queryFn: () => fetchUnavailability(ownerId, monthDate),
   });
 
   const moveMutation = useMutation({
@@ -126,6 +145,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
   const [addForDate, setAddForDate] = useState<string | null>(null);
+  const [unavailDialogOpen, setUnavailDialogOpen] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<Unavailability | null>(null);
   const [editorTarget, setEditorTarget] = useState<
     | { kind: "endurance"; sessionId: string }
     | { kind: "adhoc_strength"; date: string }
@@ -231,7 +252,18 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               <ChevronRight className="h-4 w-4" />
             </MonthNavButton>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
+          <div className="flex items-center gap-2">
+            {canManageUnavailability && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setEditingPeriod(null); setUnavailDialogOpen(true); }}
+              >
+                <Thermometer className="mr-1 h-3.5 w-3.5" /> Mark sick / hurt
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
+          </div>
         </div>
 
 
@@ -239,6 +271,20 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           <p className="text-xs text-muted-foreground">
             {t("calendar.helperAthlete")}
           </p>
+        )}
+
+        {(unavailQuery.data ?? []).length > 0 && (
+          <UnavailabilityList
+            periods={unavailQuery.data ?? []}
+            items={itemsQuery.data ?? []}
+            ownerId={ownerId}
+            canManage={canManageUnavailability}
+            onEdit={(p) => { setEditingPeriod(p); setUnavailDialogOpen(true); }}
+            onChanged={() => {
+              qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
+              qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+            }}
+          />
         )}
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">
@@ -252,6 +298,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
             const inMonth = isSameMonth(d, monthDate);
             const items = itemsByDay.get(iso) ?? [];
             const readiness = readinessByDay.get(iso);
+            const period = unavailabilityCovering(unavailQuery.data ?? [], iso);
+            const periodStart = period ? isPeriodStart(period, iso) : false;
             return (
               <DayCell
                 key={iso}
@@ -263,6 +311,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 readiness={readiness}
                 readOnly={readOnly}
                 canDelete={canDelete}
+                unavailability={period ?? null}
+                unavailabilityIsStart={periodStart}
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }
@@ -273,7 +323,6 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
                 onRequestDelete={(it) => setDeleteTarget(it)}
                 onPreview={(it) => {
-                  // Athlete view: clicking ad-hoc strength or own endurance opens the editor.
                   if (!readOnly && it.source === "adhoc_strength") {
                     setEditorTarget({ kind: "adhoc_strength", date: it.sourceId });
                     return;
@@ -415,8 +464,19 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               {t("calendar.deleteSession")}
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
+      </AlertDialogContent>
       </AlertDialog>
+
+      <UnavailabilityDialog
+        open={unavailDialogOpen}
+        onOpenChange={(o) => {
+          setUnavailDialogOpen(o);
+          if (!o) setEditingPeriod(null);
+        }}
+        athleteId={ownerId}
+        currentUserId={currentUserId}
+        existing={editingPeriod}
+      />
     </DndContext>
   );
 }
@@ -430,6 +490,8 @@ function DayCell({
   readiness,
   readOnly,
   canDelete,
+  unavailability,
+  unavailabilityIsStart,
   onConfirm,
   onRequestCancel,
   onUncancel,
@@ -445,6 +507,8 @@ function DayCell({
   readiness?: number;
   readOnly: boolean;
   canDelete: boolean;
+  unavailability: Unavailability | null;
+  unavailabilityIsStart: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
@@ -454,6 +518,13 @@ function DayCell({
 }) {
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
+  const bandColor =
+    unavailability?.reason === "injured"
+      ? "bg-rose-500/15 ring-rose-500/40"
+      : unavailability?.reason === "sick"
+        ? "bg-amber-500/15 ring-amber-500/40"
+        : "bg-slate-500/15 ring-slate-500/40";
+  const bandLabel = unavailability?.reason === "injured" ? "HURT" : unavailability?.reason === "sick" ? "SICK" : "OFF";
   return (
     <div
       ref={setNodeRef}
@@ -461,9 +532,15 @@ function DayCell({
         "group/day relative min-h-[110px] bg-card p-1.5 transition-colors",
         !inMonth && "bg-muted/30 text-muted-foreground/60",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
+        unavailability && cn(bandColor, "ring-1 ring-inset"),
       )}
     >
-      <div className="flex items-center justify-between">
+      {unavailability && unavailabilityIsStart && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-foreground/70">
+          {bandLabel}
+        </div>
+      )}
+      <div className={cn("flex items-center justify-between", unavailability && unavailabilityIsStart && "mt-2.5")}>
         <span
           className={cn(
             "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold",
@@ -678,5 +755,106 @@ function MonthNavButton({
     >
       {children}
     </Button>
+  );
+}
+
+function UnavailabilityList({
+  periods,
+  items,
+  ownerId,
+  canManage,
+  onEdit,
+  onChanged,
+}: {
+  periods: Unavailability[];
+  items: CalendarItem[];
+  ownerId: string;
+  canManage: boolean;
+  onEdit: (p: Unavailability) => void;
+  onChanged: () => void;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function handleDelete(p: Unavailability) {
+    setBusyId(p.id);
+    try {
+      await deleteUnavailability(p.id);
+      toast.success("Period removed");
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handlePush(p: Unavailability) {
+    setBusyId(p.id);
+    try {
+      const affected = items
+        .filter((i) => i.effectiveDate >= p.startDate && i.effectiveDate <= p.endDate)
+        .map((i) => ({ source: i.source, sourceId: i.sourceId, effectiveDate: i.effectiveDate }));
+      if (affected.length === 0) {
+        toast.info("No sessions inside this period");
+      } else {
+        const n = await pushSessionsPastPeriod({ ownerId, period: p, items: affected });
+        toast.success(`Pushed ${n} session${n === 1 ? "" : "s"} past ${format(parseISO(p.endDate), "MMM d")}`);
+        onChanged();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not push sessions");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {periods.map((p) => {
+        const label = p.reason === "injured" ? "Hurt" : p.reason === "sick" ? "Sick" : "Off";
+        const dot =
+          p.reason === "injured" ? "bg-rose-500" : p.reason === "sick" ? "bg-amber-500" : "bg-slate-500";
+        return (
+          <div
+            key={p.id}
+            className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
+          >
+            <span className={cn("h-2 w-2 rounded-full", dot)} />
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              {label}
+            </span>
+            <span className="font-medium">
+              {format(parseISO(p.startDate), "MMM d")} – {format(parseISO(p.endDate), "MMM d")}
+            </span>
+            {p.notes && <span className="truncate text-muted-foreground">· {p.notes}</span>}
+            {canManage && (
+              <div className="ml-auto flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busyId === p.id}
+                  onClick={() => handlePush(p)}
+                  title="Move any sessions inside this range to after the end date"
+                >
+                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Push sessions past
+                </Button>
+                <Button variant="ghost" size="sm" disabled={busyId === p.id} onClick={() => onEdit(p)}>
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busyId === p.id}
+                  onClick={() => handleDelete(p)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

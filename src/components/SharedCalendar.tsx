@@ -145,6 +145,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
   const [addForDate, setAddForDate] = useState<string | null>(null);
+  const [unavailDialogOpen, setUnavailDialogOpen] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<Unavailability | null>(null);
   const [editorTarget, setEditorTarget] = useState<
     | { kind: "endurance"; sessionId: string }
     | { kind: "adhoc_strength"; date: string }

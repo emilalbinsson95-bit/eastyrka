@@ -757,3 +757,104 @@ function MonthNavButton({
     </Button>
   );
 }
+
+function UnavailabilityList({
+  periods,
+  items,
+  ownerId,
+  canManage,
+  onEdit,
+  onChanged,
+}: {
+  periods: Unavailability[];
+  items: CalendarItem[];
+  ownerId: string;
+  canManage: boolean;
+  onEdit: (p: Unavailability) => void;
+  onChanged: () => void;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function handleDelete(p: Unavailability) {
+    setBusyId(p.id);
+    try {
+      await deleteUnavailability(p.id);
+      toast.success("Period removed");
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handlePush(p: Unavailability) {
+    setBusyId(p.id);
+    try {
+      const affected = items
+        .filter((i) => i.effectiveDate >= p.startDate && i.effectiveDate <= p.endDate)
+        .map((i) => ({ source: i.source, sourceId: i.sourceId, effectiveDate: i.effectiveDate }));
+      if (affected.length === 0) {
+        toast.info("No sessions inside this period");
+      } else {
+        const n = await pushSessionsPastPeriod({ ownerId, period: p, items: affected });
+        toast.success(`Pushed ${n} session${n === 1 ? "" : "s"} past ${format(parseISO(p.endDate), "MMM d")}`);
+        onChanged();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not push sessions");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {periods.map((p) => {
+        const label = p.reason === "injured" ? "Hurt" : p.reason === "sick" ? "Sick" : "Off";
+        const dot =
+          p.reason === "injured" ? "bg-rose-500" : p.reason === "sick" ? "bg-amber-500" : "bg-slate-500";
+        return (
+          <div
+            key={p.id}
+            className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
+          >
+            <span className={cn("h-2 w-2 rounded-full", dot)} />
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              {label}
+            </span>
+            <span className="font-medium">
+              {format(parseISO(p.startDate), "MMM d")} – {format(parseISO(p.endDate), "MMM d")}
+            </span>
+            {p.notes && <span className="truncate text-muted-foreground">· {p.notes}</span>}
+            {canManage && (
+              <div className="ml-auto flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busyId === p.id}
+                  onClick={() => handlePush(p)}
+                  title="Move any sessions inside this range to after the end date"
+                >
+                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Push sessions past
+                </Button>
+                <Button variant="ghost" size="sm" disabled={busyId === p.id} onClick={() => onEdit(p)}>
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busyId === p.id}
+                  onClick={() => handleDelete(p)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

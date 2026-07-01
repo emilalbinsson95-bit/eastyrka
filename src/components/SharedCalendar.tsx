@@ -490,6 +490,8 @@ function DayCell({
   readiness,
   readOnly,
   canDelete,
+  unavailability,
+  unavailabilityIsStart,
   onConfirm,
   onRequestCancel,
   onUncancel,
@@ -505,6 +507,8 @@ function DayCell({
   readiness?: number;
   readOnly: boolean;
   canDelete: boolean;
+  unavailability: Unavailability | null;
+  unavailabilityIsStart: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
@@ -514,6 +518,13 @@ function DayCell({
 }) {
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: date, disabled: readOnly });
+  const bandColor =
+    unavailability?.reason === "injured"
+      ? "bg-rose-500/15 ring-rose-500/40"
+      : unavailability?.reason === "sick"
+        ? "bg-amber-500/15 ring-amber-500/40"
+        : "bg-slate-500/15 ring-slate-500/40";
+  const bandLabel = unavailability?.reason === "injured" ? "HURT" : unavailability?.reason === "sick" ? "SICK" : "OFF";
   return (
     <div
       ref={setNodeRef}
@@ -521,9 +532,15 @@ function DayCell({
         "group/day relative min-h-[110px] bg-card p-1.5 transition-colors",
         !inMonth && "bg-muted/30 text-muted-foreground/60",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
+        unavailability && cn(bandColor, "ring-1 ring-inset"),
       )}
     >
-      <div className="flex items-center justify-between">
+      {unavailability && unavailabilityIsStart && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-foreground/70">
+          {bandLabel}
+        </div>
+      )}
+      <div className={cn("flex items-center justify-between", unavailability && unavailabilityIsStart && "mt-2.5")}>
         <span
           className={cn(
             "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold",

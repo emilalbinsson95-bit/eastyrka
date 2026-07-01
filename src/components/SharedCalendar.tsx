@@ -252,7 +252,18 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               <ChevronRight className="h-4 w-4" />
             </MonthNavButton>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
+          <div className="flex items-center gap-2">
+            {canManageUnavailability && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setEditingPeriod(null); setUnavailDialogOpen(true); }}
+              >
+                <Thermometer className="mr-1 h-3.5 w-3.5" /> Mark sick / hurt
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
+          </div>
         </div>
 
 
@@ -260,6 +271,20 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           <p className="text-xs text-muted-foreground">
             {t("calendar.helperAthlete")}
           </p>
+        )}
+
+        {(unavailQuery.data ?? []).length > 0 && (
+          <UnavailabilityList
+            periods={unavailQuery.data ?? []}
+            items={itemsQuery.data ?? []}
+            ownerId={ownerId}
+            canManage={canManageUnavailability}
+            onEdit={(p) => { setEditingPeriod(p); setUnavailDialogOpen(true); }}
+            onChanged={() => {
+              qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
+              qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+            }}
+          />
         )}
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">

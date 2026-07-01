@@ -12,7 +12,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight } from "lucide-react";
 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,16 @@ import {
   setOverride,
   uncancelSession,
 } from "@/lib/calendar";
+import {
+  fetchUnavailability,
+  deleteUnavailability,
+  pushSessionsPastPeriod,
+  unavailabilityCovering,
+  isPeriodStart,
+  type Unavailability,
+} from "@/lib/unavailability";
+import { UnavailabilityDialog } from "@/components/UnavailabilityDialog";
+import { useAuth } from "@/lib/auth";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 import { AddSessionDialog } from "@/components/AddSessionDialog";
 import { AdhocStrengthEditor } from "@/components/AdhocStrengthEditor";

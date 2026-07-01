@@ -464,8 +464,19 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               {t("calendar.deleteSession")}
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
+      </AlertDialogContent>
       </AlertDialog>
+
+      <UnavailabilityDialog
+        open={unavailDialogOpen}
+        onOpenChange={(o) => {
+          setUnavailDialogOpen(o);
+          if (!o) setEditingPeriod(null);
+        }}
+        athleteId={ownerId}
+        currentUserId={currentUserId}
+        existing={editingPeriod}
+      />
     </DndContext>
   );
 }

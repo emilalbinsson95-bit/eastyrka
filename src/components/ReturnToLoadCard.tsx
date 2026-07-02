@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
-import { HeartPulse, CheckCircle2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
+import { HeartPulse, CheckCircle2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fetchUnavailability } from "@/lib/unavailability";
+import { deriveBaselinesFromLogs } from "@/lib/baselineFromLogs";
+import { autoFloatBaselines } from "@/lib/baselineAutofloat.functions";
 
 const CORE_KEYWORDS = ["squat", "bench", "deadlift", "press", "row", "pull"];
 const RETURN_TO_LOAD_TAG = "[return-to-load]";
+
+type BaselineRow = { exercise: string; oneRmKg: number; source: "coach" | "derived" };
 
 /**
  * A conservative "get the body used to load again" session, auto-suggested
@@ -43,18 +48,34 @@ export function ReturnToLoadCard({ athleteId, dateStr }: { athleteId: string; da
       .sort((a, b) => b.endDate.localeCompare(a.endDate))[0];
   }, [unavailQuery.data, today]);
 
+  // Merge coach baselines + log-derived baselines. Coach baseline wins if > 0;
+  // otherwise we fall back to the athlete's own recent form so the return-to-load
+  // prescription is grounded in real, current output — not a stale/absent input.
   const baselinesQuery = useQuery({
-    queryKey: ["baselines", athleteId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("baselines")
-        .select("exercise, one_rm_kg")
-        .eq("athlete_id", athleteId);
-      if (error) throw error;
-      return (data ?? []).map((r) => ({
-        exercise: r.exercise as string,
-        oneRmKg: Number(r.one_rm_kg),
-      }));
+    queryKey: ["baselines-merged", athleteId],
+    queryFn: async (): Promise<BaselineRow[]> => {
+      const [coachRes, derived] = await Promise.all([
+        supabase.from("baselines").select("exercise, one_rm_kg").eq("athlete_id", athleteId),
+        deriveBaselinesFromLogs(athleteId),
+      ]);
+      if (coachRes.error) throw coachRes.error;
+      const coachMap = new Map<string, number>();
+      for (const r of coachRes.data ?? []) {
+        coachMap.set(r.exercise as string, Number(r.one_rm_kg));
+      }
+      const rows: BaselineRow[] = [];
+      const seen = new Set<string>();
+      for (const [exercise, oneRmKg] of coachMap) {
+        if (oneRmKg > 0) {
+          rows.push({ exercise, oneRmKg, source: "coach" });
+          seen.add(exercise);
+        }
+      }
+      for (const d of derived) {
+        if (seen.has(d.exercise)) continue;
+        rows.push({ exercise: d.exercise, oneRmKg: d.oneRmKg, source: "derived" });
+      }
+      return rows;
     },
     enabled: !!activeReturn,
   });
@@ -79,15 +100,38 @@ export function ReturnToLoadCard({ athleteId, dateStr }: { athleteId: string; da
   const prescription = useMemo(() => {
     const rows = baselinesQuery.data ?? [];
     if (rows.length === 0) return [];
-    // Prefer core compound lifts by name; if none matched, take top 5 by 1RM.
     const core = rows.filter((r) => CORE_KEYWORDS.some((k) => r.exercise.toLowerCase().includes(k)));
     const chosen = (core.length > 0 ? core : [...rows].sort((a, b) => b.oneRmKg - a.oneRmKg)).slice(0, 5);
     return chosen.map((r) => {
       const raw = r.oneRmKg * 0.6;
       const weight = Math.round(raw / 2.5) * 2.5;
-      return { exercise: r.exercise, weight, sets: 3, reps: 5, oneRm: r.oneRmKg };
+      return { exercise: r.exercise, weight, sets: 3, reps: 5, oneRm: r.oneRmKg, source: r.source };
     });
   }, [baselinesQuery.data]);
+
+  const hasDerived = prescription.some((p) => p.source === "derived");
+  const autoFloat = useServerFn(autoFloatBaselines);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function refreshBaselines() {
+    setRefreshing(true);
+    try {
+      const res = await autoFloat({ data: { athleteId } });
+      qc.invalidateQueries({ queryKey: ["baselines-merged", athleteId] });
+      qc.invalidateQueries({ queryKey: ["baselines", athleteId] });
+      if (res.updated.length === 0) {
+        toast.info("Baselines already match your recent form.");
+      } else {
+        toast.success(
+          `Updated ${res.updated.length} baseline${res.updated.length === 1 ? "" : "s"} from recent form.`,
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not refresh baselines");
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   if (!activeReturn) return null;
   if (dismissed) return null;

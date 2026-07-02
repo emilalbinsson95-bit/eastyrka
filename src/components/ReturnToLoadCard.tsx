@@ -220,7 +220,16 @@ export function ReturnToLoadCard({ athleteId, dateStr }: { athleteId: string; da
               <tbody>
                 {prescription.map((p) => (
                   <tr key={p.exercise} className="border-b border-border/40 last:border-0">
-                    <td className="px-3 py-2 font-medium">{p.exercise}</td>
+                    <td className="px-3 py-2 font-medium">
+                      <div className="flex items-center gap-2">
+                        <span>{p.exercise}</span>
+                        {p.source === "derived" && (
+                          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                            from recent form
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{p.sets} × {p.reps}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{p.weight} kg</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-muted-foreground">≤6</td>
@@ -231,10 +240,27 @@ export function ReturnToLoadCard({ athleteId, dateStr }: { athleteId: string; da
           </div>
         )}
 
+        {hasDerived && (
+          <p className="text-xs text-muted-foreground">
+            Some loads use a baseline derived from your last ~120 days of set-1 logs
+            (trimmed median of top E1RMs × 0.98). Accept it as your coach baseline to
+            lock it in — future EAk readings will use the same number.
+          </p>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button onClick={logAll} disabled={posting || prescription.length === 0}>
             <CheckCircle2 className="mr-1.5 h-4 w-4" />
             {posting ? "Logging…" : "Log this session"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={refreshBaselines}
+            disabled={refreshing}
+            title="Update coach baselines from your recent peak logs (autoFloat)"
+          >
+            <RefreshCw className={`mr-1.5 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing…" : "Refresh baselines from form"}
           </Button>
           <Button variant="ghost" onClick={() => setDismissed(true)}>Skip today</Button>
         </div>
@@ -242,3 +268,4 @@ export function ReturnToLoadCard({ athleteId, dateStr }: { athleteId: string; da
     </Card>
   );
 }
+

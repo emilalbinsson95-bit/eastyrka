@@ -841,17 +841,15 @@ function MonthNavButton({
 
 function UnavailabilityList({
   periods,
-  items,
-  ownerId,
   canManage,
   onEdit,
+  onPush,
   onChanged,
 }: {
   periods: Unavailability[];
-  items: CalendarItem[];
-  ownerId: string;
   canManage: boolean;
   onEdit: (p: Unavailability) => void;
+  onPush: (p: Unavailability) => void;
   onChanged: () => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -864,26 +862,6 @@ function UnavailabilityList({
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not remove");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handlePush(p: Unavailability) {
-    setBusyId(p.id);
-    try {
-      const affected = items
-        .filter((i) => i.effectiveDate >= p.startDate && i.effectiveDate <= p.endDate)
-        .map((i) => ({ source: i.source, sourceId: i.sourceId, effectiveDate: i.effectiveDate }));
-      if (affected.length === 0) {
-        toast.info("No sessions inside this period");
-      } else {
-        const n = await pushSessionsPastPeriod({ ownerId, period: p, items: affected });
-        toast.success(`Pushed ${n} session${n === 1 ? "" : "s"} past ${format(parseISO(p.endDate), "MMM d")}`);
-        onChanged();
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not push sessions");
     } finally {
       setBusyId(null);
     }
@@ -914,10 +892,10 @@ function UnavailabilityList({
                   variant="ghost"
                   size="sm"
                   disabled={busyId === p.id}
-                  onClick={() => handlePush(p)}
-                  title="Move any sessions inside this range to after the end date"
+                  onClick={() => onPush(p)}
+                  title="Preview and move sessions inside this range to after the end date"
                 >
-                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Push sessions past
+                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Reschedule sessions
                 </Button>
                 <Button variant="ghost" size="sm" disabled={busyId === p.id} onClick={() => onEdit(p)}>
                   Edit
@@ -939,3 +917,4 @@ function UnavailabilityList({
     </div>
   );
 }
+

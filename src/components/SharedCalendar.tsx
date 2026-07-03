@@ -327,6 +327,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 canDelete={canDelete}
                 unavailability={period ?? null}
                 unavailabilityIsStart={periodStart}
+                unavailabilityIsEnd={period ? period.endDate === iso : false}
+                isReturnDay={returnDays.has(iso)}
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }

@@ -11,7 +11,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
+import { addDays, addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight } from "lucide-react";
 
 import { toast } from "sonner";

@@ -286,17 +286,19 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         )}
 
         {(unavailQuery.data ?? []).length > 0 && (
-          <UnavailabilityList
-            periods={unavailQuery.data ?? []}
-            items={itemsQuery.data ?? []}
-            ownerId={ownerId}
-            canManage={canManageUnavailability}
-            onEdit={(p) => { setEditingPeriod(p); setUnavailDialogOpen(true); }}
-            onChanged={() => {
-              qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
-              qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
-            }}
-          />
+          <>
+            <CalendarLegend />
+            <UnavailabilityList
+              periods={unavailQuery.data ?? []}
+              canManage={canManageUnavailability}
+              onEdit={(p) => { setEditingPeriod(p); setUnavailDialogOpen(true); }}
+              onPush={(p) => setPushPeriod(p)}
+              onChanged={() => {
+                qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
+                qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+              }}
+            />
+          </>
         )}
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">

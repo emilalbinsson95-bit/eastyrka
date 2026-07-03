@@ -493,9 +493,48 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         currentUserId={currentUserId}
         existing={editingPeriod}
       />
+
+      <PushSessionsDialog
+        open={!!pushPeriod}
+        onOpenChange={(o) => !o && setPushPeriod(null)}
+        ownerId={ownerId}
+        period={pushPeriod}
+        items={itemsQuery.data ?? []}
+        onDone={() => {
+          qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
+          qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+        }}
+      />
     </DndContext>
   );
 }
+
+function CalendarLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+      <span className="font-mono uppercase tracking-[0.16em]">Legend</span>
+      <LegendSwatch className="bg-amber-500/25 ring-amber-500/50" label="Sick" />
+      <LegendSwatch className="bg-rose-500/25 ring-rose-500/50" label="Hurt" />
+      <LegendSwatch className="bg-slate-500/25 ring-slate-500/50" label="Away" />
+      <span className="flex items-center gap-1.5">
+        <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/60">
+          <span className="h-1 w-1 rounded-full bg-primary" />
+        </span>
+        Return-to-load
+      </span>
+    </div>
+  );
+}
+
+function LegendSwatch({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={cn("inline-block h-3 w-4 rounded ring-1", className)} />
+      {label}
+    </span>
+  );
+}
+
 
 function DayCell({
   date,

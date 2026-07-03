@@ -178,9 +178,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const returnDays = useMemo(() => {
     const set = new Set<string>();
     for (const u of unavailQuery.data ?? []) {
-      set.add(format(addMonths(parseISO(u.endDate), 0).setDate(parseISO(u.endDate).getDate() + 1) as unknown as Date, "yyyy-MM-dd"));
+      set.add(format(addDays(parseISO(u.endDate), 1), "yyyy-MM-dd"));
     }
-    // Simpler + safer: rebuild using date-fns addDays.
     return set;
   }, [unavailQuery.data]);
 

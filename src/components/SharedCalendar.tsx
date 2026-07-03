@@ -547,6 +547,8 @@ function DayCell({
   canDelete,
   unavailability,
   unavailabilityIsStart,
+  unavailabilityIsEnd,
+  isReturnDay,
   onConfirm,
   onRequestCancel,
   onUncancel,
@@ -564,6 +566,8 @@ function DayCell({
   canDelete: boolean;
   unavailability: Unavailability | null;
   unavailabilityIsStart: boolean;
+  unavailabilityIsEnd: boolean;
+  isReturnDay: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
@@ -579,7 +583,12 @@ function DayCell({
       : unavailability?.reason === "sick"
         ? "bg-amber-500/15 ring-amber-500/40"
         : "bg-slate-500/15 ring-slate-500/40";
+  const BandIcon =
+    unavailability?.reason === "injured" ? HeartPulse : unavailability?.reason === "sick" ? Thermometer : X;
   const bandLabel = unavailability?.reason === "injured" ? "HURT" : unavailability?.reason === "sick" ? "SICK" : "OFF";
+  const bandTitle = unavailability
+    ? `${bandLabel} · ${format(parseISO(unavailability.startDate), "MMM d")} – ${format(parseISO(unavailability.endDate), "MMM d")}${unavailability.notes ? ` · ${unavailability.notes}` : ""}`
+    : undefined;
   return (
     <div
       ref={setNodeRef}
@@ -588,11 +597,28 @@ function DayCell({
         !inMonth && "bg-muted/30 text-muted-foreground/60",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
         unavailability && cn(bandColor, "ring-1 ring-inset"),
+        isReturnDay && !unavailability && "bg-primary/[0.04] ring-1 ring-inset ring-primary/30",
       )}
+      title={bandTitle}
     >
       {unavailability && unavailabilityIsStart && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-foreground/70">
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-foreground/70">
+          <BandIcon className="h-2.5 w-2.5" />
           {bandLabel}
+        </div>
+      )}
+      {unavailability && unavailabilityIsEnd && !unavailabilityIsStart && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center py-0.5 font-mono text-[8px] uppercase tracking-[0.22em] text-foreground/50">
+          ends
+        </div>
+      )}
+      {isReturnDay && !unavailability && (
+        <div
+          className="pointer-events-none absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.16em] text-primary"
+          title="First day back — return-to-load session suggested"
+        >
+          <HeartPulse className="h-2.5 w-2.5" />
+          back
         </div>
       )}
       <div className={cn("flex items-center justify-between", unavailability && unavailabilityIsStart && "mt-2.5")}>

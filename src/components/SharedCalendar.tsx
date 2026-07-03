@@ -11,7 +11,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
+import { addDays, addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight } from "lucide-react";
 
 import { toast } from "sonner";
@@ -50,12 +50,13 @@ import {
 import {
   fetchUnavailability,
   deleteUnavailability,
-  pushSessionsPastPeriod,
+  
   unavailabilityCovering,
   isPeriodStart,
   type Unavailability,
 } from "@/lib/unavailability";
 import { UnavailabilityDialog } from "@/components/UnavailabilityDialog";
+import { PushSessionsDialog } from "@/components/PushSessionsDialog";
 import { useAuth } from "@/lib/auth";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 import { AddSessionDialog } from "@/components/AddSessionDialog";
@@ -147,6 +148,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [addForDate, setAddForDate] = useState<string | null>(null);
   const [unavailDialogOpen, setUnavailDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Unavailability | null>(null);
+  const [pushPeriod, setPushPeriod] = useState<Unavailability | null>(null);
   const [editorTarget, setEditorTarget] = useState<
     | { kind: "endurance"; sessionId: string }
     | { kind: "adhoc_strength"; date: string }
@@ -170,6 +172,16 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
     for (const r of readinessQuery.data ?? []) map.set(r.date, r.daily_form);
     return map;
   }, [readinessQuery.data]);
+
+  // The day immediately after each period ends — this is where the
+  // return-to-load session auto-suggests, so we mark it on the calendar.
+  const returnDays = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of unavailQuery.data ?? []) {
+      set.add(format(addDays(parseISO(u.endDate), 1), "yyyy-MM-dd"));
+    }
+    return set;
+  }, [unavailQuery.data]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -274,17 +286,19 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         )}
 
         {(unavailQuery.data ?? []).length > 0 && (
-          <UnavailabilityList
-            periods={unavailQuery.data ?? []}
-            items={itemsQuery.data ?? []}
-            ownerId={ownerId}
-            canManage={canManageUnavailability}
-            onEdit={(p) => { setEditingPeriod(p); setUnavailDialogOpen(true); }}
-            onChanged={() => {
-              qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
-              qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
-            }}
-          />
+          <>
+            <CalendarLegend />
+            <UnavailabilityList
+              periods={unavailQuery.data ?? []}
+              canManage={canManageUnavailability}
+              onEdit={(p) => { setEditingPeriod(p); setUnavailDialogOpen(true); }}
+              onPush={(p) => setPushPeriod(p)}
+              onChanged={() => {
+                qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
+                qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+              }}
+            />
+          </>
         )}
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">
@@ -313,6 +327,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 canDelete={canDelete}
                 unavailability={period ?? null}
                 unavailabilityIsStart={periodStart}
+                unavailabilityIsEnd={period ? period.endDate === iso : false}
+                isReturnDay={returnDays.has(iso)}
                 onConfirm={(it) =>
                   moveMutation.mutate({ ownerId, source: it.source, sourceId: it.sourceId, date: it.suggestedDate })
                 }
@@ -477,9 +493,48 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         currentUserId={currentUserId}
         existing={editingPeriod}
       />
+
+      <PushSessionsDialog
+        open={!!pushPeriod}
+        onOpenChange={(o) => !o && setPushPeriod(null)}
+        ownerId={ownerId}
+        period={pushPeriod}
+        items={itemsQuery.data ?? []}
+        onDone={() => {
+          qc.invalidateQueries({ queryKey: ["unavailability", ownerId] });
+          qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+        }}
+      />
     </DndContext>
   );
 }
+
+function CalendarLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+      <span className="font-mono uppercase tracking-[0.16em]">Legend</span>
+      <LegendSwatch className="bg-amber-500/25 ring-amber-500/50" label="Sick" />
+      <LegendSwatch className="bg-rose-500/25 ring-rose-500/50" label="Hurt" />
+      <LegendSwatch className="bg-slate-500/25 ring-slate-500/50" label="Away" />
+      <span className="flex items-center gap-1.5">
+        <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/60">
+          <span className="h-1 w-1 rounded-full bg-primary" />
+        </span>
+        Return-to-load
+      </span>
+    </div>
+  );
+}
+
+function LegendSwatch({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={cn("inline-block h-3 w-4 rounded ring-1", className)} />
+      {label}
+    </span>
+  );
+}
+
 
 function DayCell({
   date,
@@ -492,6 +547,8 @@ function DayCell({
   canDelete,
   unavailability,
   unavailabilityIsStart,
+  unavailabilityIsEnd,
+  isReturnDay,
   onConfirm,
   onRequestCancel,
   onUncancel,
@@ -509,6 +566,8 @@ function DayCell({
   canDelete: boolean;
   unavailability: Unavailability | null;
   unavailabilityIsStart: boolean;
+  unavailabilityIsEnd: boolean;
+  isReturnDay: boolean;
   onConfirm: (it: CalendarItem) => void;
   onRequestCancel: (it: CalendarItem) => void;
   onUncancel: (it: CalendarItem) => void;
@@ -524,7 +583,12 @@ function DayCell({
       : unavailability?.reason === "sick"
         ? "bg-amber-500/15 ring-amber-500/40"
         : "bg-slate-500/15 ring-slate-500/40";
+  const BandIcon =
+    unavailability?.reason === "injured" ? HeartPulse : unavailability?.reason === "sick" ? Thermometer : X;
   const bandLabel = unavailability?.reason === "injured" ? "HURT" : unavailability?.reason === "sick" ? "SICK" : "OFF";
+  const bandTitle = unavailability
+    ? `${bandLabel} · ${format(parseISO(unavailability.startDate), "MMM d")} – ${format(parseISO(unavailability.endDate), "MMM d")}${unavailability.notes ? ` · ${unavailability.notes}` : ""}`
+    : undefined;
   return (
     <div
       ref={setNodeRef}
@@ -533,11 +597,28 @@ function DayCell({
         !inMonth && "bg-muted/30 text-muted-foreground/60",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
         unavailability && cn(bandColor, "ring-1 ring-inset"),
+        isReturnDay && !unavailability && "bg-primary/[0.04] ring-1 ring-inset ring-primary/30",
       )}
+      title={bandTitle}
     >
       {unavailability && unavailabilityIsStart && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-foreground/70">
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-foreground/70">
+          <BandIcon className="h-2.5 w-2.5" />
           {bandLabel}
+        </div>
+      )}
+      {unavailability && unavailabilityIsEnd && !unavailabilityIsStart && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center py-0.5 font-mono text-[8px] uppercase tracking-[0.22em] text-foreground/50">
+          ends
+        </div>
+      )}
+      {isReturnDay && !unavailability && (
+        <div
+          className="pointer-events-none absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.16em] text-primary"
+          title="First day back — return-to-load session suggested"
+        >
+          <HeartPulse className="h-2.5 w-2.5" />
+          back
         </div>
       )}
       <div className={cn("flex items-center justify-between", unavailability && unavailabilityIsStart && "mt-2.5")}>
@@ -760,17 +841,15 @@ function MonthNavButton({
 
 function UnavailabilityList({
   periods,
-  items,
-  ownerId,
   canManage,
   onEdit,
+  onPush,
   onChanged,
 }: {
   periods: Unavailability[];
-  items: CalendarItem[];
-  ownerId: string;
   canManage: boolean;
   onEdit: (p: Unavailability) => void;
+  onPush: (p: Unavailability) => void;
   onChanged: () => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -783,26 +862,6 @@ function UnavailabilityList({
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not remove");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handlePush(p: Unavailability) {
-    setBusyId(p.id);
-    try {
-      const affected = items
-        .filter((i) => i.effectiveDate >= p.startDate && i.effectiveDate <= p.endDate)
-        .map((i) => ({ source: i.source, sourceId: i.sourceId, effectiveDate: i.effectiveDate }));
-      if (affected.length === 0) {
-        toast.info("No sessions inside this period");
-      } else {
-        const n = await pushSessionsPastPeriod({ ownerId, period: p, items: affected });
-        toast.success(`Pushed ${n} session${n === 1 ? "" : "s"} past ${format(parseISO(p.endDate), "MMM d")}`);
-        onChanged();
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not push sessions");
     } finally {
       setBusyId(null);
     }
@@ -833,10 +892,10 @@ function UnavailabilityList({
                   variant="ghost"
                   size="sm"
                   disabled={busyId === p.id}
-                  onClick={() => handlePush(p)}
-                  title="Move any sessions inside this range to after the end date"
+                  onClick={() => onPush(p)}
+                  title="Preview and move sessions inside this range to after the end date"
                 >
-                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Push sessions past
+                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Reschedule sessions
                 </Button>
                 <Button variant="ghost" size="sm" disabled={busyId === p.id} onClick={() => onEdit(p)}>
                   Edit
@@ -858,3 +917,4 @@ function UnavailabilityList({
     </div>
   );
 }
+

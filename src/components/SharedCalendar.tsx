@@ -173,6 +173,17 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
     return map;
   }, [readinessQuery.data]);
 
+  // The day immediately after each period ends — this is where the
+  // return-to-load session auto-suggests, so we mark it on the calendar.
+  const returnDays = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of unavailQuery.data ?? []) {
+      set.add(format(addMonths(parseISO(u.endDate), 0).setDate(parseISO(u.endDate).getDate() + 1) as unknown as Date, "yyyy-MM-dd"));
+    }
+    // Simpler + safer: rebuild using date-fns addDays.
+    return set;
+  }, [unavailQuery.data]);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Track active drag so we can auto-switch month when hovering nav buttons.

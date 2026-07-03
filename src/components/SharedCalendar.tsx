@@ -50,7 +50,7 @@ import {
 import {
   fetchUnavailability,
   deleteUnavailability,
-  pushSessionsPastPeriod,
+  
   unavailabilityCovering,
   isPeriodStart,
   type Unavailability,

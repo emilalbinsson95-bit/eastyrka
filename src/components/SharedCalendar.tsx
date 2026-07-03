@@ -56,6 +56,7 @@ import {
   type Unavailability,
 } from "@/lib/unavailability";
 import { UnavailabilityDialog } from "@/components/UnavailabilityDialog";
+import { PushSessionsDialog } from "@/components/PushSessionsDialog";
 import { useAuth } from "@/lib/auth";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 import { AddSessionDialog } from "@/components/AddSessionDialog";

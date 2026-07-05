@@ -96,7 +96,7 @@ function InvitesPage() {
       }
       const { error } = await supabase
         .from("coach_athletes")
-        .insert({ coach_id: coachId, athlete_id: trimmed });
+        .insert({ coach_id: coachId, athlete_id: trimmed, status: "accepted" });
       if (error) {
         if (error.code === "23505") throw new Error("Athlete is already linked");
         throw error;

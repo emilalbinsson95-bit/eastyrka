@@ -76,7 +76,7 @@ export function UnifiedRoleSwitcher() {
         if (!existing) {
           await supabase
             .from("coach_athletes")
-            .insert({ coach_id: user.id, athlete_id: user.id });
+            .insert({ coach_id: user.id, athlete_id: user.id, status: "accepted" });
         }
       }
       if (target === "patient") {

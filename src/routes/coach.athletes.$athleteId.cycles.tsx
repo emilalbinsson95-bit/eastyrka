@@ -368,6 +368,11 @@ function CyclesListPage() {
             athleteName={profileQuery.data?.full_name ?? "Athlete"}
             athletePb10k={profileQuery.data?.ten_k_pb_seconds ?? null}
           />
+          <GenerateStrengthTemplateDialog
+            athleteId={athleteId}
+            coachId={userId}
+            athleteName={profileQuery.data?.full_name ?? "Athlete"}
+          />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>

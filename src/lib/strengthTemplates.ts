@@ -6,7 +6,7 @@
 // All templates use RPE as the intensity metric and progress volume/intensity across weeks
 // with a built-in deload on the final week. Everything is editable after generation.
 
-export type IntensityMetric = "rpe" | "rir" | "percent";
+export type IntensityMetric = "rpe" | "rir";
 
 export interface TemplateExercise {
   exercise: string;

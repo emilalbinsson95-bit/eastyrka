@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GenerateMarathonPlanDialog } from "@/components/GenerateMarathonPlanDialog";
+import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/cycles")({
   head: () => ({

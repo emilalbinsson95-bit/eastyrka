@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GenerateMarathonPlanDialog } from "@/components/GenerateMarathonPlanDialog";
+import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/cycles")({
   head: () => ({
@@ -366,6 +367,11 @@ function CyclesListPage() {
             coachId={userId}
             athleteName={profileQuery.data?.full_name ?? "Athlete"}
             athletePb10k={profileQuery.data?.ten_k_pb_seconds ?? null}
+          />
+          <GenerateStrengthTemplateDialog
+            athleteId={athleteId}
+            coachId={userId}
+            athleteName={profileQuery.data?.full_name ?? "Athlete"}
           />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>

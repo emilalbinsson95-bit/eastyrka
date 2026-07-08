@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { ReadinessGate } from "@/components/ReadinessGate";
 import { EnduranceTodayCard } from "@/components/EnduranceTodayCard";
 import { ReturnToLoadCard } from "@/components/ReturnToLoadCard";
+import { AddExtraExerciseInline } from "@/components/AddExtraExerciseInline";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 
 export const Route = createFileRoute("/_app/today")({
@@ -602,6 +603,7 @@ function PlannedSessionCard({
               />
             );
           })}
+        <AddExtraExerciseInline athleteId={athleteId} dateStr={dateStr} />
       </CardContent>
     </Card>
   );

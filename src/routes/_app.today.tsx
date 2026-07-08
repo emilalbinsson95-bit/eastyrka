@@ -142,10 +142,7 @@ function TodayPage() {
   const planQuery = useQuery({
     queryKey: ["athlete-plan", userId, todayStr],
     queryFn: async (): Promise<WeekPlan | null> => {
-      const { data, error } = await supabase
-        .from("week_plans")
-        .select(
-          `id, week_start_date, status,
+      const selectCols = `id, week_start_date, status,
            planned_sessions (
              id, day_of_week, title, notes,
              planned_exercises (
@@ -154,8 +151,11 @@ function TodayPage() {
                target_weight_kg, lengthened_partials, last_set_to_failure,
                notes, order_index
              )
-           )`,
-        )
+           )`;
+      // Prefer the current (or most recent past) published week.
+      const { data, error } = await supabase
+        .from("week_plans")
+        .select(selectCols)
         .eq("athlete_id", userId)
         .eq("status", "published")
         .lte("week_start_date", todayStr)
@@ -163,21 +163,37 @@ function TodayPage() {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      if (!data) return null;
-      const wp = data as {
+      let wp = data as {
         id: string; week_start_date: string; status: string;
         planned_sessions: Omit<PlannedSession, "week_plan_id" | "week_start_date">[];
-      };
+      } | null;
+      // Fallback: no current week → surface the next upcoming published week so
+      // the athlete can still start a session ahead of schedule.
+      if (!wp) {
+        const { data: upcoming, error: upErr } = await supabase
+          .from("week_plans")
+          .select(selectCols)
+          .eq("athlete_id", userId)
+          .eq("status", "published")
+          .gt("week_start_date", todayStr)
+          .order("week_start_date", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (upErr) throw upErr;
+        wp = upcoming as typeof wp;
+      }
+      if (!wp) return null;
       return {
         ...wp,
         planned_sessions: wp.planned_sessions.map((s) => ({
           ...s,
-          week_plan_id: wp.id,
-          week_start_date: wp.week_start_date,
+          week_plan_id: wp!.id,
+          week_start_date: wp!.week_start_date,
         })),
       };
     },
   });
+
 
   // 3. Fetch the cross-week planned sessions referenced by today's overrides
   //    (i.e. sessions belonging to OTHER week_plans that were dragged to today).

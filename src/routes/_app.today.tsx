@@ -603,6 +603,7 @@ function PlannedSessionCard({
               />
             );
           })}
+        <AddExtraExerciseInline athleteId={athleteId} dateStr={dateStr} />
       </CardContent>
     </Card>
   );

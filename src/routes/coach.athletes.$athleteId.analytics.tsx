@@ -298,7 +298,7 @@ function AnalyticsPage() {
       // `since` still has sessions inside the window.
       const lowerBound = new Date(since);
       lowerBound.setDate(lowerBound.getDate() - 7);
-      const today = new Date();
+      const todayDate = new Date();
       const { data: weeks, error: wErr } = await supabase
         .from("week_plans")
         .select("id, week_start_date, status")

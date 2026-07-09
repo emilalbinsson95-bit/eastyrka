@@ -53,16 +53,16 @@ export function MarathonPlanRetuneCard({
     },
   });
 
-  // Upcoming non-completed planned sessions
+  // Upcoming non-completed planned sessions (includes today so a session
+  // planned for today isn't invisible to both history and upcoming).
   const upcoming = useQuery({
     queryKey: ["retune-upcoming", athleteId],
     queryFn: async () => {
-      const fromDate = format(addDays(new Date(), 1), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("endurance_sessions")
         .select("id, date, title, planned_total_seconds, planned_avg_rpe, status")
         .eq("athlete_id", athleteId)
-        .gte("date", fromDate)
+        .gte("date", today)
         .lte("date", horizonEnd)
         .eq("status", "planned")
         .order("date", { ascending: true });

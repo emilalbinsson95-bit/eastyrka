@@ -294,12 +294,18 @@ function AnalyticsPage() {
     queryFn: async () => {
       const since = new Date();
       since.setDate(since.getDate() - days);
+      // Widen lower bound by 7 days: a week_plan starting up to 6 days before
+      // `since` still has sessions inside the window.
+      const lowerBound = new Date(since);
+      lowerBound.setDate(lowerBound.getDate() - 7);
+      const todayDate = new Date();
       const { data: weeks, error: wErr } = await supabase
         .from("week_plans")
         .select("id, week_start_date, status")
         .eq("athlete_id", athleteId)
         .eq("status", "published")
-        .gte("week_start_date", format(since, "yyyy-MM-dd"));
+        .gte("week_start_date", format(lowerBound, "yyyy-MM-dd"))
+        .lte("week_start_date", format(todayDate, "yyyy-MM-dd"));
       if (wErr) throw wErr;
       const weekIds = (weeks ?? []).map((w) => w.id);
       if (weekIds.length === 0) {

@@ -75,7 +75,15 @@ export function MesocycleProgressCard({ athleteId }: { athleteId: string }) {
       const end = addWeeks(start, c.total_weeks);
       return !isBefore(today, start) && isBefore(today, end);
     });
-    return containing ?? cycles[0];
+    if (containing) return containing;
+    // Otherwise prefer the next upcoming (earliest future start).
+    // cycles are DESC by start_date, so scan from the end for the earliest future one.
+    const future = [...cycles]
+      .filter((c) => isAfter(parseISO(c.start_date), today))
+      .sort((a, b) => parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime());
+    if (future.length > 0) return future[0];
+    // Fallback: most recent past cycle (cycles[0] since DESC).
+    return cycles[0];
   }, [cyclesQuery.data]);
 
   if (cyclesQuery.isLoading) return null;

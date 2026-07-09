@@ -305,7 +305,7 @@ function AnalyticsPage() {
         .eq("athlete_id", athleteId)
         .eq("status", "published")
         .gte("week_start_date", format(lowerBound, "yyyy-MM-dd"))
-        .lte("week_start_date", format(today, "yyyy-MM-dd"));
+        .lte("week_start_date", format(todayDate, "yyyy-MM-dd"));
       if (wErr) throw wErr;
       const weekIds = (weeks ?? []).map((w) => w.id);
       if (weekIds.length === 0) {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, addDays, startOfWeek } from "date-fns";
@@ -19,6 +19,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import { cn } from "@/lib/utils";
+
+// Weekday assignments (1=Mon..7=Sun) per training frequency — spread across the week for recovery.
+const DAY_SCHEDULES: Record<number, number[]> = {
+  2: [1, 4],
+  3: [1, 3, 5],
+  4: [1, 2, 4, 5],
+  5: [1, 2, 3, 5, 6],
+  6: [1, 2, 3, 4, 5, 6],
+};
 
 export function GenerateStrengthTemplateDialog({
   athleteId,
@@ -41,11 +50,19 @@ export function GenerateStrengthTemplateDialog({
   const [startDate, setStartDate] = useState(nextMonday);
 
   const template = getTemplate(templateId);
+  const [daysPerWeek, setDaysPerWeek] = useState<number>(template?.daysPerWeek ?? 4);
+
+  // When template changes, reset days-per-week to that template's default.
+  useEffect(() => {
+    if (template) setDaysPerWeek(template.daysPerWeek);
+  }, [templateId, template]);
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
       const weeks = template.buildWeeks();
+      const schedule = DAY_SCHEDULES[daysPerWeek] ?? DAY_SCHEDULES[template.daysPerWeek];
+
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase

@@ -907,7 +907,8 @@ function WeekEditor({
               )}
             </Card>
           );
-        })}
+          });
+        })()}
       </div>
     </div>
   );

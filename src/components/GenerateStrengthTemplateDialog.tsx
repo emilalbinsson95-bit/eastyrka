@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, addDays, startOfWeek } from "date-fns";
@@ -19,6 +19,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import { cn } from "@/lib/utils";
+
+// Weekday assignments (1=Mon..7=Sun) per training frequency — spread across the week for recovery.
+const DAY_SCHEDULES: Record<number, number[]> = {
+  2: [1, 4],
+  3: [1, 3, 5],
+  4: [1, 2, 4, 5],
+  5: [1, 2, 3, 5, 6],
+  6: [1, 2, 3, 4, 5, 6],
+};
 
 export function GenerateStrengthTemplateDialog({
   athleteId,
@@ -41,11 +50,19 @@ export function GenerateStrengthTemplateDialog({
   const [startDate, setStartDate] = useState(nextMonday);
 
   const template = getTemplate(templateId);
+  const [daysPerWeek, setDaysPerWeek] = useState<number>(template?.daysPerWeek ?? 4);
+
+  // When template changes, reset days-per-week to that template's default.
+  useEffect(() => {
+    if (template) setDaysPerWeek(template.daysPerWeek);
+  }, [templateId, template]);
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
       const weeks = template.buildWeeks();
+      const schedule = DAY_SCHEDULES[daysPerWeek] ?? DAY_SCHEDULES[template.daysPerWeek];
+
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase
@@ -57,7 +74,7 @@ export function GenerateStrengthTemplateDialog({
           goal: template.goal,
           start_date: startDate,
           total_weeks: template.weeks,
-          days_per_week: template.daysPerWeek,
+          days_per_week: daysPerWeek,
           notes: `Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.`,
         })
         .select("id")
@@ -85,19 +102,41 @@ export function GenerateStrengthTemplateDialog({
         if (r.week_index != null) weekIdByIdx.set(r.week_index, r.id);
       }
 
-      // 3. Sessions + exercises, per week (need session ids)
+      // 3. Sessions + exercises, per week — remap onto the chosen frequency.
       for (const w of weeks) {
         const wpId = weekIdByIdx.get(w.week_index);
         if (!wpId) continue;
 
-        for (const s of w.sessions) {
+        const ordered = [...w.sessions].sort((a, b) => a.day_of_week - b.day_of_week);
+        const kept = ordered.slice(0, daysPerWeek);
+        const extraCount = Math.max(0, daysPerWeek - kept.length);
+
+        type MappedSession = { day: number; title: string; notes: string | null; exercises: typeof kept[number]["exercises"] };
+        const mapped: MappedSession[] = kept.map((s, i) => ({
+          day: schedule[i] ?? s.day_of_week,
+          title: s.title,
+          notes: s.notes ?? null,
+          exercises: s.exercises,
+        }));
+        for (let i = 0; i < extraCount; i++) {
+          const day = schedule[kept.length + i];
+          if (day == null) break;
+          mapped.push({
+            day,
+            title: "Accessory / GPP (customize)",
+            notes: "Added because you chose more training days than the template. Fill with the assistance work you need.",
+            exercises: [],
+          });
+        }
+
+        for (const s of mapped) {
           const { data: ps, error: psErr } = await supabase
             .from("planned_sessions")
             .insert({
               week_plan_id: wpId,
-              day_of_week: s.day_of_week,
+              day_of_week: s.day,
               title: s.title,
-              notes: s.notes ?? null,
+              notes: s.notes,
             })
             .select("id")
             .single();
@@ -189,15 +228,44 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
 
-          <div>
-            <Label htmlFor="tpl-start">Start date (Monday)</Label>
-            <Input
-              id="tpl-start"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="tpl-start">Start date (Monday)</Label>
+              <Input
+                id="tpl-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tpl-dpw">Training days / week</Label>
+              <select
+                id="tpl-dpw"
+                value={daysPerWeek}
+                onChange={(e) => setDaysPerWeek(Number(e.target.value))}
+                className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              >
+                {[2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} days{template && n === template.daysPerWeek ? " (template default)" : ""}
+                  </option>
+                ))}
+              </select>
+              {template && daysPerWeek < template.daysPerWeek && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Fewer days than the template — the last {template.daysPerWeek - daysPerWeek} session
+                  {template.daysPerWeek - daysPerWeek > 1 ? "s" : ""} will be dropped.
+                </p>
+              )}
+              {template && daysPerWeek > template.daysPerWeek && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Extra days added as blank Accessory / GPP sessions for you to customize.
+                </p>
+              )}
+            </div>
           </div>
+
         </div>
 
         <DialogFooter>

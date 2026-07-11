@@ -720,12 +720,7 @@ function WeekEditor({
   sessions.forEach((s) => sessionsByDay.set(s.day_of_week, s));
   // Sessions store day_of_week as either 0..6 (legacy) or 1..7 (Mon..Sun, used by templates).
   // Detect the base so the builder renders every session that was inserted, not just 0..daysPerWeek-1.
-  const usesZeroBasedDays =
-    sessions.length === 0
-      ? false
-      : sessions.some((s) => s.day_of_week === 0) ||
-        (sessions.every((s) => s.day_of_week < daysPerWeek) &&
-          !sessions.some((s) => s.day_of_week === 7));
+  const usesZeroBasedDays = sessions.some((s) => s.day_of_week === 0);
   const dayBase = usesZeroBasedDays ? 0 : 1;
 
   return (

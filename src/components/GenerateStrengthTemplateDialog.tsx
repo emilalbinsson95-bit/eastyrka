@@ -228,15 +228,44 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
 
-          <div>
-            <Label htmlFor="tpl-start">Start date (Monday)</Label>
-            <Input
-              id="tpl-start"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="tpl-start">Start date (Monday)</Label>
+              <Input
+                id="tpl-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tpl-dpw">Training days / week</Label>
+              <select
+                id="tpl-dpw"
+                value={daysPerWeek}
+                onChange={(e) => setDaysPerWeek(Number(e.target.value))}
+                className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              >
+                {[2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} days{template && n === template.daysPerWeek ? " (template default)" : ""}
+                  </option>
+                ))}
+              </select>
+              {template && daysPerWeek < template.daysPerWeek && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Fewer days than the template — the last {template.daysPerWeek - daysPerWeek} session
+                  {template.daysPerWeek - daysPerWeek > 1 ? "s" : ""} will be dropped.
+                </p>
+              )}
+              {template && daysPerWeek > template.daysPerWeek && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Extra days added as blank Accessory / GPP sessions for you to customize.
+                </p>
+              )}
+            </div>
           </div>
+
         </div>
 
         <DialogFooter>

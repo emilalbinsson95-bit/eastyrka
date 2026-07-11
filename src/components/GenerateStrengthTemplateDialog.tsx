@@ -102,19 +102,41 @@ export function GenerateStrengthTemplateDialog({
         if (r.week_index != null) weekIdByIdx.set(r.week_index, r.id);
       }
 
-      // 3. Sessions + exercises, per week (need session ids)
+      // 3. Sessions + exercises, per week — remap onto the chosen frequency.
       for (const w of weeks) {
         const wpId = weekIdByIdx.get(w.week_index);
         if (!wpId) continue;
 
-        for (const s of w.sessions) {
+        const ordered = [...w.sessions].sort((a, b) => a.day_of_week - b.day_of_week);
+        const kept = ordered.slice(0, daysPerWeek);
+        const extraCount = Math.max(0, daysPerWeek - kept.length);
+
+        type MappedSession = { day: number; title: string; notes: string | null; exercises: typeof kept[number]["exercises"] };
+        const mapped: MappedSession[] = kept.map((s, i) => ({
+          day: schedule[i] ?? s.day_of_week,
+          title: s.title,
+          notes: s.notes ?? null,
+          exercises: s.exercises,
+        }));
+        for (let i = 0; i < extraCount; i++) {
+          const day = schedule[kept.length + i];
+          if (day == null) break;
+          mapped.push({
+            day,
+            title: "Accessory / GPP (customize)",
+            notes: "Added because you chose more training days than the template. Fill with the assistance work you need.",
+            exercises: [],
+          });
+        }
+
+        for (const s of mapped) {
           const { data: ps, error: psErr } = await supabase
             .from("planned_sessions")
             .insert({
               week_plan_id: wpId,
-              day_of_week: s.day_of_week,
+              day_of_week: s.day,
               title: s.title,
-              notes: s.notes ?? null,
+              notes: s.notes,
             })
             .select("id")
             .single();

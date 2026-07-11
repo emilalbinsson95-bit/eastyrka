@@ -74,7 +74,7 @@ export function GenerateStrengthTemplateDialog({
           goal: template.goal,
           start_date: startDate,
           total_weeks: template.weeks,
-          days_per_week: template.daysPerWeek,
+          days_per_week: daysPerWeek,
           notes: `Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.`,
         })
         .select("id")

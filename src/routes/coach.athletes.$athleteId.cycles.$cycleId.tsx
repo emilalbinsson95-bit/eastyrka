@@ -718,6 +718,10 @@ function WeekEditor({
   const exercises = sessionsQuery.data?.exercises ?? [];
   const sessionsByDay = new Map<number, PlannedSessionRow>();
   sessions.forEach((s) => sessionsByDay.set(s.day_of_week, s));
+  // Sessions store day_of_week as either 0..6 (legacy) or 1..7 (Mon..Sun, used by templates).
+  // Detect the base so the builder renders every session that was inserted, not just 0..daysPerWeek-1.
+  const usesZeroBasedDays = sessions.some((s) => s.day_of_week === 0);
+  const dayBase = usesZeroBasedDays ? 0 : 1;
 
   return (
     <div className="space-y-3">
@@ -820,8 +824,15 @@ function WeekEditor({
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
-        {Array.from({ length: daysPerWeek }, (_, day) => {
-          const dayName = dayLabel(day);
+        {(() => {
+          const slotDays = new Set<number>();
+          for (let i = 0; i < daysPerWeek; i++) slotDays.add(dayBase + i);
+          // Always include any day that already has a session, even if it's outside the
+          // configured daysPerWeek window (e.g. template with sessions on Sat/Sun).
+          sessions.forEach((s) => slotDays.add(s.day_of_week));
+          const orderedDays = Array.from(slotDays).sort((a, b) => a - b);
+          return orderedDays.map((day) => {
+          const dayName = dayLabel(day - dayBase);
           const session = sessionsByDay.get(day);
           const dayExes = session
             ? exercises
@@ -896,7 +907,8 @@ function WeekEditor({
               )}
             </Card>
           );
-        })}
+          });
+        })()}
       </div>
     </div>
   );

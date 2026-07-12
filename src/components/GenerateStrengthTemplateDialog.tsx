@@ -93,7 +93,7 @@ export function GenerateStrengthTemplateDialog({
       }));
       const { data: insertedWeeks, error: wErr } = await supabase
         .from("week_plans")
-        .insert(weekRows)
+        .upsert(weekRows, { onConflict: "athlete_id,week_start_date" })
         .select("id, week_index");
       if (wErr) throw wErr;
 

@@ -103,6 +103,9 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
     mutationFn: setOverride,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      qc.invalidateQueries({ queryKey: ["logs-today", ownerId] });
+      qc.invalidateQueries({ queryKey: ["adhoc-strength", ownerId] });
+      qc.invalidateQueries({ queryKey: ["endurance-weekly", ownerId] });
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : t("calendar.couldNotMove"));

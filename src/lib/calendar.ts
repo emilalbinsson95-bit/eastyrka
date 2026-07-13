@@ -215,7 +215,10 @@ export async function fetchReadinessDots(ownerId: string, monthDate: Date): Prom
   return (data ?? []).map((r) => ({ date: fmt(r.date as string), daily_form: r.daily_form as number }));
 }
 
-/** Upsert an override row for the owner. Confirms it (so it becomes solid). */
+/** Upsert an override row for the owner. Confirms it (so it becomes solid).
+ *  For ad-hoc strength, sourceId is the *original date* — the overrides
+ *  table's CHECK constraint forbids source_type='adhoc_strength', so we move
+ *  the underlying training_logs rows to the new date instead. */
 export async function setOverride(args: {
   ownerId: string;
   source: CalendarSource;
@@ -223,6 +226,19 @@ export async function setOverride(args: {
   date: string;
 }) {
   const { ownerId, source, sourceId, date } = args;
+
+  if (source === "adhoc_strength") {
+    if (sourceId === date) return;
+    const { error } = await supabase
+      .from("training_logs")
+      .update({ date })
+      .eq("athlete_id", ownerId)
+      .eq("date", sourceId)
+      .is("planned_exercise_id", null);
+    if (error) throw error;
+    return;
+  }
+
   const { error } = await supabase
     .from("session_schedule_overrides")
     .upsert(

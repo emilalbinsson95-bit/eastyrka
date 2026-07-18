@@ -20,15 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import { cn } from "@/lib/utils";
 
-// Weekday assignments (1=Mon..7=Sun) per training frequency — spread across the week for recovery.
-const DAY_SCHEDULES: Record<number, number[]> = {
-  2: [1, 4],
-  3: [1, 3, 5],
-  4: [1, 2, 4, 5],
-  5: [1, 2, 3, 5, 6],
-  6: [1, 2, 3, 4, 5, 6],
-};
-
 export function GenerateStrengthTemplateDialog({
   athleteId,
   coachId,
@@ -60,9 +51,7 @@ export function GenerateStrengthTemplateDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
-      const weeks = template.buildWeeks();
-      const schedule = DAY_SCHEDULES[daysPerWeek] ?? DAY_SCHEDULES[template.daysPerWeek];
-
+      const weeks = template.buildWeeks(daysPerWeek);
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase
@@ -102,10 +91,10 @@ export function GenerateStrengthTemplateDialog({
         if (r.week_index != null) weekIdByIdx.set(r.week_index, r.id);
       }
 
-      // 3. Sessions + exercises, per week — remap onto the chosen frequency.
-      // Wipe any pre-existing planned_sessions on these week_plans first, so
-      // re-running the generator (or recovering from a partial failure) doesn't
-      // pile up duplicate sessions with mixed titles.
+      // 3. Sessions + exercises, per week. Templates already own day placement +
+      // frequency shaping (see strengthTemplates.ts adaptSessions). Wipe any
+      // pre-existing planned_sessions on these week_plans first so re-running
+      // (or recovering from a partial failure) doesn't stack duplicates.
       const wpIds = Array.from(weekIdByIdx.values());
       if (wpIds.length > 0) {
         const { error: delErr } = await supabase
@@ -119,28 +108,15 @@ export function GenerateStrengthTemplateDialog({
         const wpId = weekIdByIdx.get(w.week_index);
         if (!wpId) continue;
 
+        const mapped = [...w.sessions]
+          .sort((a, b) => a.day_of_week - b.day_of_week)
+          .map((s) => ({
+            day: s.day_of_week,
+            title: s.title,
+            notes: s.notes ?? null,
+            exercises: s.exercises,
+          }));
 
-        const ordered = [...w.sessions].sort((a, b) => a.day_of_week - b.day_of_week);
-        const kept = ordered.slice(0, daysPerWeek);
-        const extraCount = Math.max(0, daysPerWeek - kept.length);
-
-        type MappedSession = { day: number; title: string; notes: string | null; exercises: typeof kept[number]["exercises"] };
-        const mapped: MappedSession[] = kept.map((s, i) => ({
-          day: schedule[i] ?? s.day_of_week,
-          title: s.title,
-          notes: s.notes ?? null,
-          exercises: s.exercises,
-        }));
-        for (let i = 0; i < extraCount; i++) {
-          const day = schedule[kept.length + i];
-          if (day == null) break;
-          mapped.push({
-            day,
-            title: "Accessory / GPP (customize)",
-            notes: "Added because you chose more training days than the template. Fill with the assistance work you need.",
-            exercises: [],
-          });
-        }
 
         for (const s of mapped) {
           const { data: ps, error: psErr } = await supabase
@@ -259,7 +235,7 @@ export function GenerateStrengthTemplateDialog({
                 onChange={(e) => setDaysPerWeek(Number(e.target.value))}
                 className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
               >
-                {[2, 3, 4, 5, 6].map((n) => (
+                {[3, 4, 5, 6].map((n) => (
                   <option key={n} value={n}>
                     {n} days{template && n === template.daysPerWeek ? " (template default)" : ""}
                   </option>
@@ -267,13 +243,14 @@ export function GenerateStrengthTemplateDialog({
               </select>
               {template && daysPerWeek < template.daysPerWeek && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Fewer days than the template — the last {template.daysPerWeek - daysPerWeek} session
-                  {template.daysPerWeek - daysPerWeek > 1 ? "s" : ""} will be dropped.
+                  Fewer days than the template — key work is folded into the remaining sessions
+                  (volume +{Math.round((Math.min(1.25, 1 + 0.1 * (template.daysPerWeek - daysPerWeek)) - 1) * 100)}% per day).
                 </p>
               )}
               {template && daysPerWeek > template.daysPerWeek && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Extra days added as blank Accessory / GPP sessions for you to customize.
+                  Extra days added as targeted hypertrophy / weak-point work; main-lift sets trimmed
+                  ~{Math.round((1 - Math.max(0.8, 1 - 0.075 * (daysPerWeek - template.daysPerWeek))) * 100)}% to keep weekly load in range.
                 </p>
               )}
             </div>

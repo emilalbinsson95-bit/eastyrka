@@ -51,9 +51,7 @@ export function GenerateStrengthTemplateDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
-      const weeks = template.buildWeeks();
-      const schedule = DAY_SCHEDULES[daysPerWeek] ?? DAY_SCHEDULES[template.daysPerWeek];
-
+      const weeks = template.buildWeeks(daysPerWeek);
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase
@@ -93,10 +91,10 @@ export function GenerateStrengthTemplateDialog({
         if (r.week_index != null) weekIdByIdx.set(r.week_index, r.id);
       }
 
-      // 3. Sessions + exercises, per week — remap onto the chosen frequency.
-      // Wipe any pre-existing planned_sessions on these week_plans first, so
-      // re-running the generator (or recovering from a partial failure) doesn't
-      // pile up duplicate sessions with mixed titles.
+      // 3. Sessions + exercises, per week. Templates already own day placement +
+      // frequency shaping (see strengthTemplates.ts adaptSessions). Wipe any
+      // pre-existing planned_sessions on these week_plans first so re-running
+      // (or recovering from a partial failure) doesn't stack duplicates.
       const wpIds = Array.from(weekIdByIdx.values());
       if (wpIds.length > 0) {
         const { error: delErr } = await supabase
@@ -110,28 +108,15 @@ export function GenerateStrengthTemplateDialog({
         const wpId = weekIdByIdx.get(w.week_index);
         if (!wpId) continue;
 
+        const mapped = [...w.sessions]
+          .sort((a, b) => a.day_of_week - b.day_of_week)
+          .map((s) => ({
+            day: s.day_of_week,
+            title: s.title,
+            notes: s.notes ?? null,
+            exercises: s.exercises,
+          }));
 
-        const ordered = [...w.sessions].sort((a, b) => a.day_of_week - b.day_of_week);
-        const kept = ordered.slice(0, daysPerWeek);
-        const extraCount = Math.max(0, daysPerWeek - kept.length);
-
-        type MappedSession = { day: number; title: string; notes: string | null; exercises: typeof kept[number]["exercises"] };
-        const mapped: MappedSession[] = kept.map((s, i) => ({
-          day: schedule[i] ?? s.day_of_week,
-          title: s.title,
-          notes: s.notes ?? null,
-          exercises: s.exercises,
-        }));
-        for (let i = 0; i < extraCount; i++) {
-          const day = schedule[kept.length + i];
-          if (day == null) break;
-          mapped.push({
-            day,
-            title: "Accessory / GPP (customize)",
-            notes: "Added because you chose more training days than the template. Fill with the assistance work you need.",
-            exercises: [],
-          });
-        }
 
         for (const s of mapped) {
           const { data: ps, error: psErr } = await supabase

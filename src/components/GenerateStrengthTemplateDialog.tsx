@@ -235,7 +235,7 @@ export function GenerateStrengthTemplateDialog({
                 onChange={(e) => setDaysPerWeek(Number(e.target.value))}
                 className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
               >
-                {[2, 3, 4, 5, 6].map((n) => (
+                {[3, 4, 5, 6].map((n) => (
                   <option key={n} value={n}>
                     {n} days{template && n === template.daysPerWeek ? " (template default)" : ""}
                   </option>
@@ -243,13 +243,14 @@ export function GenerateStrengthTemplateDialog({
               </select>
               {template && daysPerWeek < template.daysPerWeek && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Fewer days than the template — the last {template.daysPerWeek - daysPerWeek} session
-                  {template.daysPerWeek - daysPerWeek > 1 ? "s" : ""} will be dropped.
+                  Fewer days than the template — key work is folded into the remaining sessions
+                  (volume +{Math.round((Math.min(1.25, 1 + 0.1 * (template.daysPerWeek - daysPerWeek)) - 1) * 100)}% per day).
                 </p>
               )}
               {template && daysPerWeek > template.daysPerWeek && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Extra days added as blank Accessory / GPP sessions for you to customize.
+                  Extra days added as targeted hypertrophy / weak-point work; main-lift sets trimmed
+                  ~{Math.round((1 - Math.max(0.8, 1 - 0.075 * (daysPerWeek - template.daysPerWeek))) * 100)}% to keep weekly load in range.
                 </p>
               )}
             </div>

@@ -20,15 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import { cn } from "@/lib/utils";
 
-// Weekday assignments (1=Mon..7=Sun) per training frequency — spread across the week for recovery.
-const DAY_SCHEDULES: Record<number, number[]> = {
-  2: [1, 4],
-  3: [1, 3, 5],
-  4: [1, 2, 4, 5],
-  5: [1, 2, 3, 5, 6],
-  6: [1, 2, 3, 4, 5, 6],
-};
-
 export function GenerateStrengthTemplateDialog({
   athleteId,
   coachId,

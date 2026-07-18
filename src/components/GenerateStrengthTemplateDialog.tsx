@@ -103,9 +103,22 @@ export function GenerateStrengthTemplateDialog({
       }
 
       // 3. Sessions + exercises, per week — remap onto the chosen frequency.
+      // Wipe any pre-existing planned_sessions on these week_plans first, so
+      // re-running the generator (or recovering from a partial failure) doesn't
+      // pile up duplicate sessions with mixed titles.
+      const wpIds = Array.from(weekIdByIdx.values());
+      if (wpIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from("planned_sessions")
+          .delete()
+          .in("week_plan_id", wpIds);
+        if (delErr) throw delErr;
+      }
+
       for (const w of weeks) {
         const wpId = weekIdByIdx.get(w.week_index);
         if (!wpId) continue;
+
 
         const ordered = [...w.sessions].sort((a, b) => a.day_of_week - b.day_of_week);
         const kept = ordered.slice(0, daysPerWeek);

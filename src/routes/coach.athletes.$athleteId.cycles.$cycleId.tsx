@@ -237,8 +237,15 @@ function CycleDetailPage() {
     mutationFn: async () => {
       const cycle = cycleQuery.data!;
       const existing = weeksQuery.data ?? [];
+      // Cycles created by the strength-template generator index weeks from 1;
+      // older/manual cycles index from 0. Follow whatever this cycle already uses.
+      const base =
+        existing.length > 0
+          ? Math.min(...existing.map((w) => w.week_index ?? 0))
+          : 0;
       const haveIndices = new Set(existing.map((w) => w.week_index));
-      const toInsert: Array<{
+      const haveDates = new Set(existing.map((w) => w.week_start_date));
+      const toUpsert: Array<{
         coach_id: string;
         athlete_id: string;
         mesocycle_id: string;
@@ -247,27 +254,31 @@ function CycleDetailPage() {
         status: "draft";
       }> = [];
       for (let i = 0; i < cycle.total_weeks; i++) {
-        if (haveIndices.has(i)) continue;
-        toInsert.push({
+        const weekIndex = base + i;
+        const weekStart = format(addWeeks(parseISO(cycle.start_date), i), "yyyy-MM-dd");
+        if (haveIndices.has(weekIndex) || haveDates.has(weekStart)) continue;
+        toUpsert.push({
           coach_id: userId,
           athlete_id: athleteId,
           mesocycle_id: cycle.id,
-          week_index: i,
-          week_start_date: format(
-            addWeeks(parseISO(cycle.start_date), i),
-            "yyyy-MM-dd",
-          ),
+          week_index: weekIndex,
+          week_start_date: weekStart,
           status: "draft",
         });
       }
-      if (toInsert.length > 0) {
-        const { error } = await supabase.from("week_plans").insert(toInsert);
+      if (toUpsert.length > 0) {
+        // A week row may already exist for this athlete/date from another cycle —
+        // upsert adopts it instead of failing on the unique constraint.
+        const { error } = await supabase
+          .from("week_plans")
+          .upsert(toUpsert, { onConflict: "athlete_id,week_start_date" });
         if (error) throw error;
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["meso-weeks", cycleId] }),
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   useEffect(() => {
     if (

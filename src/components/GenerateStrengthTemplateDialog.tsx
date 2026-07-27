@@ -80,11 +80,13 @@ export function GenerateStrengthTemplateDialog({
         status: "draft" as const,
         notes: w.notes ?? null,
       }));
+      // Weeks may overlap with other plans/templates on the same dates — that's allowed.
       const { data: insertedWeeks, error: wErr } = await supabase
         .from("week_plans")
-        .upsert(weekRows, { onConflict: "athlete_id,week_start_date" })
+        .insert(weekRows)
         .select("id, week_index");
       if (wErr) throw wErr;
+
 
       const weekIdByIdx = new Map<number, string>();
       for (const r of insertedWeeks ?? []) {

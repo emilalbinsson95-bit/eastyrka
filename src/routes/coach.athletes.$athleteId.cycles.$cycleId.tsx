@@ -244,8 +244,7 @@ function CycleDetailPage() {
           ? Math.min(...existing.map((w) => w.week_index ?? 0))
           : 0;
       const haveIndices = new Set(existing.map((w) => w.week_index));
-      const haveDates = new Set(existing.map((w) => w.week_start_date));
-      const toUpsert: Array<{
+      const toInsert: Array<{
         coach_id: string;
         athlete_id: string;
         mesocycle_id: string;
@@ -255,25 +254,22 @@ function CycleDetailPage() {
       }> = [];
       for (let i = 0; i < cycle.total_weeks; i++) {
         const weekIndex = base + i;
-        const weekStart = format(addWeeks(parseISO(cycle.start_date), i), "yyyy-MM-dd");
-        if (haveIndices.has(weekIndex) || haveDates.has(weekStart)) continue;
-        toUpsert.push({
+        // Overlapping weeks with other plans/templates on the same date is allowed.
+        if (haveIndices.has(weekIndex)) continue;
+        toInsert.push({
           coach_id: userId,
           athlete_id: athleteId,
           mesocycle_id: cycle.id,
           week_index: weekIndex,
-          week_start_date: weekStart,
+          week_start_date: format(addWeeks(parseISO(cycle.start_date), i), "yyyy-MM-dd"),
           status: "draft",
         });
       }
-      if (toUpsert.length > 0) {
-        // A week row may already exist for this athlete/date from another cycle —
-        // upsert adopts it instead of failing on the unique constraint.
-        const { error } = await supabase
-          .from("week_plans")
-          .upsert(toUpsert, { onConflict: "athlete_id,week_start_date" });
+      if (toInsert.length > 0) {
+        const { error } = await supabase.from("week_plans").insert(toInsert);
         if (error) throw error;
       }
+
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["meso-weeks", cycleId] }),
     onError: (e: Error) => toast.error(e.message),

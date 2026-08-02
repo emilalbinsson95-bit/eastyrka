@@ -186,25 +186,155 @@ const posteriorChainAccessory = (w: number): Omit<TemplateSession, "day_of_week"
   ],
 });
 
-// Merge an "extra" session's top 1-2 exercises into an earlier day when frequency drops.
-// Priority: keep the main compound; drop 3rd/4th accessories.
+// ---------- volume categories ----------
+// Every exercise maps to a movement / muscle "volume category" so sessions can be
+// combined and ordered sensibly: same-category work lands on the same day, and
+// within a day exercises run heavy compound → assistance → isolation.
+
+export type VolumeCategory =
+  | "squat"
+  | "hinge"
+  | "horizontal-press"
+  | "vertical-press"
+  | "horizontal-pull"
+  | "vertical-pull"
+  | "quads"
+  | "hamstrings"
+  | "delts"
+  | "chest"
+  | "triceps"
+  | "biceps"
+  | "calves"
+  | "core";
+
+const CATEGORY_RULES: Array<[RegExp, VolumeCategory]> = [
+  [/split squat|leg press|leg extension|lunge|step.?up/i, "quads"],
+  [/front squat|back squat|pause squat|hack squat|\bsquat\b/i, "squat"],
+  [/leg curl|nordic|ham(string)? curl/i, "hamstrings"],
+  [/romanian|rdl|good morning|back extension|hip thrust|glute/i, "hamstrings"],
+  [/deadlift|block pull|rack pull|\bpull\b.*block/i, "hinge"],
+  [/overhead press|push press|ohp/i, "vertical-press"],
+  [/lateral raise|rear.?delt|face pull/i, "delts"],
+  [/bench|spoto|floor press|dip/i, "horizontal-press"],
+  [/incline dumbbell press|chest fly|pec deck|push.?up/i, "chest"],
+  [/pulldown|chin.?up|pull.?up/i, "vertical-pull"],
+  [/row\b|pendlay|seal row/i, "horizontal-pull"],
+  [/pushdown|skull|triceps|overhead extension/i, "triceps"],
+  [/curl/i, "biceps"],
+  [/calf/i, "calves"],
+  [/plank|ab wheel|hanging leg|crunch|core/i, "core"],
+];
+
+export function volumeCategory(e: Pick<TemplateExercise, "exercise" | "variation">): VolumeCategory {
+  const text = `${e.exercise} ${e.variation ?? ""}`;
+  for (const [re, cat] of CATEGORY_RULES) if (re.test(text)) return cat;
+  return "core";
+}
+
+// Order inside a session: primary strength patterns first, then assistance, then isolation.
+const CATEGORY_ORDER: VolumeCategory[] = [
+  "squat",
+  "hinge",
+  "horizontal-press",
+  "vertical-press",
+  "vertical-pull",
+  "horizontal-pull",
+  "quads",
+  "hamstrings",
+  "chest",
+  "delts",
+  "triceps",
+  "biceps",
+  "calves",
+  "core",
+];
+
+function categoryRank(c: VolumeCategory): number {
+  const i = CATEGORY_ORDER.indexOf(c);
+  return i === -1 ? CATEGORY_ORDER.length : i;
+}
+
+function sessionCategories(s: Omit<TemplateSession, "day_of_week">): Set<VolumeCategory> {
+  return new Set(s.exercises.map(volumeCategory));
+}
+
+// Merge duplicate movements (same exercise + variation) instead of listing them twice,
+// then order by volume category so the day reads compound → assistance → isolation.
+function normalizeExercises(exs: TemplateExercise[]): TemplateExercise[] {
+  const byKey = new Map<string, TemplateExercise>();
+  const order: string[] = [];
+  for (const e of exs) {
+    const key = `${e.exercise.toLowerCase()}|${(e.variation ?? "").toLowerCase()}`;
+    const prev = byKey.get(key);
+    if (prev) {
+      byKey.set(key, {
+        ...prev,
+        target_sets: Math.min(8, prev.target_sets + Math.max(1, Math.round(e.target_sets * 0.5))),
+        notes: prev.notes ?? e.notes,
+      });
+    } else {
+      byKey.set(key, e);
+      order.push(key);
+    }
+  }
+  return order
+    .map((k, i) => ({ e: byKey.get(k)!, i }))
+    .sort((a, b) => {
+      const d = categoryRank(volumeCategory(a.e)) - categoryRank(volumeCategory(b.e));
+      return d !== 0 ? d : a.i - b.i;
+    })
+    .map((x) => x.e);
+}
+
+function normalizeSession(s: Omit<TemplateSession, "day_of_week">): Omit<TemplateSession, "day_of_week"> {
+  return { ...s, exercises: normalizeExercises(s.exercises) };
+}
+
+// Merge an "extra" session into the day that already trains the same categories.
+// Carry the highest-priority work (by category rank) and fold the sets in.
 function mergeSessionInto(
   base: Omit<TemplateSession, "day_of_week">,
   extra: Omit<TemplateSession, "day_of_week">,
   factor: number,
 ): Omit<TemplateSession, "day_of_week"> {
-  const carryover = extra.exercises.slice(0, 2).map((e) => ({
-    ...e,
-    target_sets: scaleSets(e.target_sets, 0.6), // half-ish, folded in
-    notes: e.notes ? `${e.notes} (folded from ${extra.title})` : `Folded from ${extra.title}`,
-  }));
-  return {
+  const carryover = [...extra.exercises]
+    .sort((a, b) => categoryRank(volumeCategory(a)) - categoryRank(volumeCategory(b)))
+    .slice(0, 2)
+    .map((e) => ({
+      ...e,
+      target_sets: scaleSets(e.target_sets, 0.6), // half-ish, folded in
+      notes: e.notes ? `${e.notes} (folded from ${extra.title})` : `Folded from ${extra.title}`,
+    }));
+  return normalizeSession({
     ...base,
     exercises: [...scaleExercises(base.exercises, factor), ...carryover],
     notes: base.notes
       ? `${base.notes} Folded in top work from ${extra.title}.`
       : `Folded in top work from ${extra.title}.`,
-  };
+  });
+}
+
+// Pick the kept day that shares the most volume categories with the dropped one,
+// so e.g. a pull day folds into the other hinge/pull day rather than onto bench day.
+function bestMergeTarget(
+  kept: Omit<TemplateSession, "day_of_week">[],
+  extra: Omit<TemplateSession, "day_of_week">,
+  loads: number[],
+): number {
+  const extraCats = sessionCategories(extra);
+  let bestIdx = 0;
+  let bestScore = -Infinity;
+  kept.forEach((s, i) => {
+    const cats = sessionCategories(s);
+    let overlap = 0;
+    for (const c of extraCats) if (cats.has(c)) overlap++;
+    const score = overlap * 10 - loads[i] * 3 - s.exercises.length;
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  });
+  return bestIdx;
 }
 
 // Generic adapter: given base sessions (in priority order) and bonus builders,
@@ -219,30 +349,59 @@ function adaptSessions(
   let out: Omit<TemplateSession, "day_of_week">[];
 
   if (daysPerWeek === baseDays) {
-    out = base;
+    out = base.map(normalizeSession);
   } else if (daysPerWeek < baseDays) {
-    // Merge trailing sessions into earlier ones (round-robin).
-    const kept = base.slice(0, daysPerWeek).map((s) => ({ ...s, exercises: scaleExercises(s.exercises, factor) }));
-    const dropped = base.slice(daysPerWeek);
-    dropped.forEach((extra, i) => {
-      const targetIdx = i % kept.length;
-      kept[targetIdx] = mergeSessionInto(kept[targetIdx], extra, 1);
-    });
+    // Merge trailing sessions into the day that trains the same categories.
+    const kept = base
+      .slice(0, daysPerWeek)
+      .map((s) => normalizeSession({ ...s, exercises: scaleExercises(s.exercises, factor) }));
+    const loads = kept.map(() => 0);
+    for (const extra of base.slice(daysPerWeek)) {
+      const idx = bestMergeTarget(kept, extra, loads);
+      kept[idx] = mergeSessionInto(kept[idx], extra, 1);
+      loads[idx] += 1;
+    }
     out = kept;
   } else {
-    // More days than base — scale main sessions down slightly, add bonus sessions.
-    const scaled = base.map((s) => ({ ...s, exercises: scaleExercises(s.exercises, factor) }));
+    // More days than base — scale main sessions down slightly, then add the bonus
+    // session that covers the least-trained volume categories.
+    const scaled = base.map((s) => normalizeSession({ ...s, exercises: scaleExercises(s.exercises, factor) }));
     const need = daysPerWeek - baseDays;
     const bonuses: Omit<TemplateSession, "day_of_week">[] = [];
+    const counts = new Map<VolumeCategory, number>();
+    for (const s of scaled) for (const e of s.exercises) {
+      const c = volumeCategory(e);
+      counts.set(c, (counts.get(c) ?? 0) + e.target_sets);
+    }
+    const remaining = bonusBuilders.map((b) => b());
     for (let i = 0; i < need; i++) {
-      const builder = bonusBuilders[i % bonusBuilders.length];
-      if (builder) bonuses.push(builder());
+      if (remaining.length === 0) break;
+      // Lowest existing volume in the categories a candidate covers wins.
+      let bestIdx = 0;
+      let bestScore = Infinity;
+      remaining.forEach((cand, ci) => {
+        const cats = [...sessionCategories(cand)];
+        const score = cats.reduce((sum, c) => sum + (counts.get(c) ?? 0), 0) / Math.max(1, cats.length);
+        if (score < bestScore) {
+          bestScore = score;
+          bestIdx = ci;
+        }
+      });
+      const chosen = remaining.splice(bestIdx, 1)[0];
+      for (const e of chosen.exercises) {
+        const c = volumeCategory(e);
+        counts.set(c, (counts.get(c) ?? 0) + e.target_sets);
+      }
+      bonuses.push(normalizeSession(chosen));
+      if (remaining.length === 0) remaining.push(...bonusBuilders.map((b) => b()));
     }
     out = [...scaled, ...bonuses];
   }
 
   return assignWeekdays(out);
 }
+
+
 
 // ---------- Template 1: Standard Powerlifting ----------
 

@@ -19,6 +19,8 @@ export interface TemplateExercise {
   target_reps: number;
   target_rpe?: number;
   target_rir?: number;
+  /** Optional prescribed working weight (set by the individualisation engine). */
+  target_weight_kg?: number;
   intensity_metric: IntensityMetric;
   lengthened_partials?: boolean;
   last_set_to_failure?: boolean;

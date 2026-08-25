@@ -171,21 +171,22 @@ export function summarizeHistory(h: HistoryInputs): HistorySummary {
   const allLogDates = h.logs.map((l) => daysAgo(h.today, l.date)).filter((d) => d >= 0);
   const daysSinceLastLog = allLogDates.length ? Math.min(...allLogDates) : null;
 
+  // Days marked sick/injured/other overlapping the last 28 days.
   let offDaysLast28 = 0;
   let lastOffReason: string | null = null;
+  let lastOffEndAgo = Infinity;
   for (const u of h.unavailability) {
-    const startAgo = daysAgo(h.today, u.start_date);
+    const startAgo = daysAgo(h.today, u.start_date); // larger = further back
     const endAgo = daysAgo(h.today, u.end_date);
-    // overlap with [today-27, today]
-    const from = Math.min(startAgo, LOOKBACK_DAYS - 1);
-    const to = Math.max(endAgo, 0);
-    if (from < 0 || to > LOOKBACK_DAYS - 1) {
-      // partially/fully outside window — still clamp
-    }
-    const overlap = Math.max(0, Math.min(from, LOOKBACK_DAYS - 1) - Math.max(to, 0) + 1);
+    const from = Math.min(startAgo, LOOKBACK_DAYS - 1); // window start (older bound)
+    const to = Math.max(endAgo, 0); // window end (newer bound)
+    const overlap = Math.max(0, from - to + 1);
     if (overlap > 0) {
       offDaysLast28 += overlap;
-      if (lastOffReason == null || endAgo < daysAgo(h.today, h.today)) lastOffReason = u.reason;
+      if (endAgo < lastOffEndAgo) {
+        lastOffEndAgo = endAgo;
+        lastOffReason = u.reason;
+      }
     }
   }
 
@@ -451,11 +452,4 @@ export function applyAdjustments(
       })),
     };
   });
-}
-
-// TemplateExercise has no weight field in the template type — widen it here.
-declare module "@/lib/strengthTemplates" {
-  interface TemplateExercise {
-    target_weight_kg?: number;
-  }
 }

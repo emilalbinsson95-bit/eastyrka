@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
@@ -17,7 +17,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
+import {
+  applyAdjustments,
+  buildAdjustments,
+  type Adjustment,
+  type HistoryInputs,
+} from "@/lib/individualisation";
 import { cn } from "@/lib/utils";
 
 export function GenerateStrengthTemplateDialog({
@@ -48,10 +55,86 @@ export function GenerateStrengthTemplateDialog({
     if (template) setDaysPerWeek(template.daysPerWeek);
   }, [templateId, template]);
 
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+  const since28 = useMemo(() => format(addDays(new Date(), -28), "yyyy-MM-dd"), []);
+
+  // ---- athlete history (drives individualisation) ----
+  const historyQuery = useQuery({
+    queryKey: ["individualisation-history", athleteId, since28],
+    enabled: open,
+    queryFn: async (): Promise<HistoryInputs> => {
+      const [logs, readiness, baselines, unavail] = await Promise.all([
+        supabase
+          .from("training_logs")
+          .select("date, exercise, variation, reps, weight_kg, rpe")
+          .eq("athlete_id", athleteId)
+          .gte("date", since28),
+        supabase
+          .from("readiness_surveys")
+          .select("date, fatigue, work_stress, life_stress, daily_form, sleep_hours")
+          .eq("athlete_id", athleteId)
+          .gte("date", since28),
+        supabase.from("baselines").select("exercise, one_rm_kg").eq("athlete_id", athleteId),
+        supabase
+          .from("athlete_unavailability")
+          .select("start_date, end_date, reason")
+          .eq("athlete_id", athleteId)
+          .gte("end_date", since28),
+      ]);
+      if (logs.error) throw logs.error;
+      if (readiness.error) throw readiness.error;
+      if (baselines.error) throw baselines.error;
+      if (unavail.error) throw unavail.error;
+      return {
+        today,
+        logs: (logs.data ?? []) as HistoryInputs["logs"],
+        readiness: (readiness.data ?? []) as HistoryInputs["readiness"],
+        baselines: (baselines.data ?? []).map((b) => ({
+          exercise: b.exercise,
+          one_rm_kg: Number(b.one_rm_kg),
+        })),
+        unavailability: (unavail.data ?? []) as HistoryInputs["unavailability"],
+      };
+    },
+  });
+
+  const baseWeeks = useMemo(
+    () => (template ? template.buildWeeks(daysPerWeek) : []),
+    [template, daysPerWeek],
+  );
+
+  const suggestion = useMemo(() => {
+    if (!historyQuery.data || baseWeeks.length === 0) return null;
+    return buildAdjustments(baseWeeks, historyQuery.data);
+  }, [historyQuery.data, baseWeeks]);
+
+  const [offIds, setOffIds] = useState<Set<string>>(new Set());
+  // Reset opt-outs whenever the suggestion set changes.
+  const suggestionKey = suggestion?.adjustments.map((a) => a.id).join("|") ?? "";
+  useEffect(() => {
+    setOffIds(new Set());
+  }, [suggestionKey]);
+
+  const activeAdjustments: Adjustment[] = useMemo(
+    () => (suggestion?.adjustments ?? []).filter((a) => a.defaultOn && !offIds.has(a.id)),
+    [suggestion, offIds],
+  );
+
+  const toggle = (id: string) =>
+    setOffIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
-      const weeks = template.buildWeeks(daysPerWeek);
+      const weeks =
+        historyQuery.data && activeAdjustments.length > 0
+          ? applyAdjustments(baseWeeks, activeAdjustments, historyQuery.data)
+          : baseWeeks;
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase
@@ -64,7 +147,11 @@ export function GenerateStrengthTemplateDialog({
           start_date: startDate,
           total_weeks: template.weeks,
           days_per_week: daysPerWeek,
-          notes: `Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.`,
+          notes: `Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
+            activeAdjustments.length > 0
+              ? ` Individualised from history: ${activeAdjustments.map((a) => a.title).join("; ")}.`
+              : ""
+          }`,
         })
         .select("id")
         .single();
@@ -141,6 +228,7 @@ export function GenerateStrengthTemplateDialog({
             target_reps: e.target_reps,
             target_rpe: e.target_rpe ?? null,
             target_rir: e.target_rir ?? null,
+            target_weight_kg: e.target_weight_kg ?? null,
             intensity_metric: e.intensity_metric,
             lengthened_partials: e.lengthened_partials ?? false,
             last_set_to_failure: e.last_set_to_failure ?? false,
@@ -157,7 +245,11 @@ export function GenerateStrengthTemplateDialog({
       return meso.id;
     },
     onSuccess: (mesoId) => {
-      toast.success(`${template?.name} generated`);
+      toast.success(
+        activeAdjustments.length > 0
+          ? `${template?.name} generated — ${activeAdjustments.length} individual adjustment(s) applied`
+          : `${template?.name} generated`,
+      );
       qc.invalidateQueries({ queryKey: ["mesocycles", athleteId] });
       setOpen(false);
       onCreated?.(mesoId);
@@ -255,6 +347,59 @@ export function GenerateStrengthTemplateDialog({
                   ~{Math.round((1 - Math.max(0.8, 1 - 0.075 * (daysPerWeek - template.daysPerWeek))) * 100)}% to keep weekly load in range.
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* ---- individualisation preview ---- */}
+          <div className="rounded-lg border bg-card">
+            <div className="flex items-center justify-between border-b px-3 py-2">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
+                Individualisation
+              </div>
+              {historyQuery.isLoading && (
+                <span className="text-xs text-muted-foreground">Reading history…</span>
+              )}
+            </div>
+            <div className="max-h-60 space-y-2 overflow-y-auto p-3">
+              {suggestion == null && !historyQuery.isLoading && (
+                <p className="text-xs text-muted-foreground">Pick a template to see suggestions.</p>
+              )}
+              {suggestion && suggestion.insufficientData && (
+                <p className="text-xs text-muted-foreground">
+                  Not enough recent history for {athleteName} — generating the plain template.
+                </p>
+              )}
+              {suggestion && !suggestion.insufficientData && suggestion.adjustments.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  History looks on track — the template fits as-is.
+                </p>
+              )}
+              {suggestion?.adjustments.map((a) => {
+                const on = a.defaultOn && !offIds.has(a.id);
+                return (
+                  <label
+                    key={a.id}
+                    className={cn(
+                      "flex cursor-pointer gap-3 rounded-md border p-2 transition-colors",
+                      on ? "border-primary/40 bg-primary/5" : "border-border opacity-60",
+                    )}
+                  >
+                    <Checkbox checked={on} onCheckedChange={() => toggle(a.id)} className="mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium">{a.title}</span>
+                        <Badge
+                          variant={a.severity === "warn" ? "destructive" : "outline"}
+                          className="font-mono text-[10px]"
+                        >
+                          {a.effect}
+                        </Badge>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{a.reason}</p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
 

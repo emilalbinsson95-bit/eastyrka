@@ -242,6 +242,7 @@ export function buildAdjustments(
   const insufficientData = summary.logDays < MIN_LOG_DAYS && summary.readinessCount < 4;
 
   // 1. Readiness / fatigue → global volume
+  let readinessMult = 1;
   if (summary.readinessCount >= 4) {
     const fatigue = summary.avgFatigue ?? 5;
     const stress = summary.avgStress ?? 5;
@@ -250,6 +251,7 @@ export function buildAdjustments(
     const strain = (fatigue - 5) * 0.05 + (stress - 5) * 0.03 + (6 - form) * 0.04;
     const mult = clamp(Number((1 - strain).toFixed(2)), 0.75, 1.12);
     if (Math.abs(mult - 1) >= 0.04) {
+      readinessMult = mult;
       const down = mult < 1;
       adjustments.push({
         id: "readiness",
@@ -287,6 +289,8 @@ export function buildAdjustments(
           defaultOn: true,
         });
       } else if (ratio < 0.7) {
+        // Never add volume on top of a fatigue signal — the readiness cut wins.
+        if (readinessMult < 1) continue;
         const mult = clamp(Number(((actual * 0.85) / tplSets).toFixed(2)), 1.03, 1.35);
         adjustments.push({
           id: `cat-up-${cat}`,
@@ -302,6 +306,7 @@ export function buildAdjustments(
       }
     }
   }
+
 
   // 3. Time off / long gap → ramp-in on the first weeks
   const gap = summary.daysSinceLastLog;

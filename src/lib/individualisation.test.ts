@@ -6,9 +6,11 @@ import {
   matchBaseline,
   summarizeHistory,
   templateWeeklySets,
+  volumeWarnings,
+  DEFAULT_TUNING,
   type HistoryInputs,
 } from "@/lib/individualisation";
-import type { TemplateWeek } from "@/lib/strengthTemplates";
+import { volumeCategory, isUnclassified, type TemplateWeek } from "@/lib/strengthTemplates";
 
 const TODAY = "2026-06-15";
 const ago = (n: number) => format(addDays(new Date(TODAY), -n), "yyyy-MM-dd");
@@ -246,5 +248,96 @@ describe("applyAdjustments", () => {
       emptyHistory(),
     );
     expect(out[0].sessions[0].exercises[0].target_sets).toBe(1);
+  });
+});
+
+describe("coach tuning + distributed rounding", () => {
+  const w: TemplateWeek = {
+    week_index: 1,
+    label: "Week 1",
+    sessions: [
+      {
+        day_of_week: 1,
+        title: "Squat day",
+        exercises: [
+          { exercise: "Back squat", target_sets: 4, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+          { exercise: "Pause squat", target_sets: 3, target_reps: 5, target_rpe: 7, intensity_metric: "rpe" },
+          { exercise: "Leg press", target_sets: 3, target_reps: 10, target_rpe: 8, intensity_metric: "rpe" },
+        ],
+      },
+    ],
+  };
+
+  it("lands a small volume cut instead of rounding it away", () => {
+    const out = applyAdjustments([w], [], emptyHistory(), { ...DEFAULT_TUNING, volume: 0.85 });
+    const squatSets = out[0].sessions[0].exercises
+      .slice(0, 2)
+      .reduce((a, e) => a + e.target_sets, 0);
+    expect(squatSets).toBe(6); // 7 * 0.85 = 5.95 -> 6
+  });
+
+  it("scales main lifts and accessories independently", () => {
+    const out = applyAdjustments([w], [], emptyHistory(), {
+      ...DEFAULT_TUNING,
+      mainLifts: 1.3,
+      accessory: 0.5,
+    });
+    const ex = out[0].sessions[0].exercises;
+    expect(ex[0].target_sets + ex[1].target_sets).toBe(9); // 7 * 1.3 = 9.1
+    expect(ex[2].target_sets).toBe(2); // 3 * 0.5 -> min-clamped rounding
+  });
+
+  it("shifts RPE by the intensity slider", () => {
+    const out = applyAdjustments([w], [], emptyHistory(), { ...DEFAULT_TUNING, intensity: -1 });
+    expect(out[0].sessions[0].exercises[0].target_rpe).toBe(7);
+  });
+});
+
+describe("volume landmarks", () => {
+  it("flags weekly sets above MRV", () => {
+    const heavy: TemplateWeek = {
+      week_index: 1,
+      label: "Week 1",
+      sessions: [
+        {
+          day_of_week: 1,
+          title: "Squat",
+          exercises: [
+            { exercise: "Back squat", target_sets: 10, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+            { exercise: "Pause squat", target_sets: 10, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+            { exercise: "Front squat", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+          ],
+        },
+      ],
+    };
+    const warn = volumeWarnings([heavy]);
+    expect(warn.some((x) => x.category === "squat" && x.level === "above-mrv")).toBe(true);
+  });
+
+  it("is quiet on a sane week", () => {
+    expect(volumeWarnings([week(1, "Week 1", 8)]).length).toBe(0);
+  });
+});
+
+describe("exercise classifier coverage", () => {
+  it("classifies common gym lifts", () => {
+    const cases: Array<[string, string]> = [
+      ["Military press", "vertical-press"],
+      ["Landmine press", "vertical-press"],
+      ["Glute-ham raise", "hamstrings"],
+      ["Barbell shrug", "delts"],
+      ["Goblet squat", "quads"],
+      ["Sissy squat", "quads"],
+      ["Hyperextension", "hamstrings"],
+      ["JM press", "horizontal-press"],
+      ["Machine chest press", "chest"],
+      ["Hammer curl", "biceps"],
+      ["Standing calf raise", "calves"],
+      ["Pallof press", "core"],
+    ];
+    for (const [name, cat] of cases) {
+      expect([name, volumeCategory({ exercise: name, variation: undefined })]).toEqual([name, cat]);
+      expect(isUnclassified({ exercise: name, variation: undefined })).toBe(false);
+    }
   });
 });

@@ -392,6 +392,107 @@ export function GenerateStrengthTemplateDialog({
             </div>
           </div>
 
+          {/* ---- coach tuning sliders ---- */}
+          <div className="rounded-lg border bg-card">
+            <div className="flex items-center justify-between border-b px-3 py-2">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
+                Coach tuning
+              </div>
+              {tuningTouched && (
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground underline"
+                  onClick={() => setTuning(DEFAULT_TUNING)}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <div className="space-y-3 p-3">
+              {(
+                [
+                  {
+                    key: "volume" as const,
+                    label: "Total volume",
+                    value: tuning.volume,
+                    min: 0.7,
+                    max: 1.3,
+                    step: 0.05,
+                    fmt: (v: number) => `${v >= 1 ? "+" : "−"}${Math.round(Math.abs(v - 1) * 100)}%`,
+                  },
+                  {
+                    key: "mainLifts" as const,
+                    label: "Main lifts (SBD)",
+                    value: tuning.mainLifts,
+                    min: 0.7,
+                    max: 1.3,
+                    step: 0.05,
+                    fmt: (v: number) => `${v >= 1 ? "+" : "−"}${Math.round(Math.abs(v - 1) * 100)}%`,
+                  },
+                  {
+                    key: "accessory" as const,
+                    label: "Accessories",
+                    value: tuning.accessory,
+                    min: 0.5,
+                    max: 1.5,
+                    step: 0.05,
+                    fmt: (v: number) => `${v >= 1 ? "+" : "−"}${Math.round(Math.abs(v - 1) * 100)}%`,
+                  },
+                  {
+                    key: "intensity" as const,
+                    label: "Intensity (RPE)",
+                    value: tuning.intensity,
+                    min: -1.5,
+                    max: 1.5,
+                    step: 0.5,
+                    fmt: (v: number) => (v === 0 ? "as written" : `${v > 0 ? "+" : ""}${v} RPE`),
+                  },
+                ]
+              ).map((s) => (
+                <div key={s.key}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{s.label}</span>
+                    <span className="font-mono tabular-nums">{s.fmt(s.value)}</span>
+                  </div>
+                  <Slider
+                    value={[s.value]}
+                    min={s.min}
+                    max={s.max}
+                    step={s.step}
+                    onValueChange={([v]) => setTune(s.key, v)}
+                  />
+                </div>
+              ))}
+
+              {weeklySets.length > 0 && (
+                <div className="rounded-md border bg-muted/30 p-2">
+                  <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Weekly sets (working weeks)
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {weeklySets.map((r) => (
+                      <Badge key={r.cat} variant="outline" className="font-mono text-[10px]">
+                        {categoryLabel(r.cat)} {r.sets}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {warnings.map((w) => (
+                <p
+                  key={`${w.category}-${w.level}`}
+                  className={cn(
+                    "text-[11px]",
+                    w.level === "above-mrv" ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
+                  {w.message}
+                </p>
+              ))}
+            </div>
+          </div>
+
           {/* ---- individualisation preview ---- */}
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">

@@ -18,10 +18,16 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import {
   applyAdjustments,
   buildAdjustments,
+  categoryLabel,
+  templateWeeklySets,
+  volumeWarnings,
+  DEFAULT_TUNING,
+  type CoachTuning,
   type Adjustment,
   type HistoryInputs,
 } from "@/lib/individualisation";

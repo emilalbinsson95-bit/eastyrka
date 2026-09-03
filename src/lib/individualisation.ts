@@ -394,16 +394,156 @@ function countLoadableExercises(weeks: TemplateWeek[], baselines: HistBaseline[]
   return { matched, total: seen.size };
 }
 
+// ---------- coach tuning (manual sliders on top of the engine) ----------
+
+export interface CoachTuning {
+  /** Global set multiplier applied to every working week. 0.7 – 1.3 */
+  volume: number;
+  /** RPE offset applied to working weeks (RIR moves the opposite way). −1.5 – +1.5 */
+  intensity: number;
+  /** Extra multiplier on isolation / accessory categories only. 0.5 – 1.5 */
+  accessory: number;
+  /** Extra multiplier on the main competition lifts (squat / bench / deadlift patterns). */
+  mainLifts: number;
+}
+
+export const DEFAULT_TUNING: CoachTuning = {
+  volume: 1,
+  intensity: 0,
+  accessory: 1,
+  mainLifts: 1,
+};
+
+const MAIN_CATS: VolumeCategory[] = ["squat", "hinge", "horizontal-press"];
+const ACCESSORY_CATS: VolumeCategory[] = [
+  "quads",
+  "hamstrings",
+  "delts",
+  "chest",
+  "triceps",
+  "biceps",
+  "calves",
+  "core",
+];
+
+export function isMainCategory(c: VolumeCategory): boolean {
+  return MAIN_CATS.includes(c);
+}
+export function isAccessoryCategory(c: VolumeCategory): boolean {
+  return ACCESSORY_CATS.includes(c);
+}
+
+// ---------- volume landmarks (Israetel-style weekly set ranges) ----------
+
+/** [MEV, MRV] weekly working sets per category for an intermediate lifter. */
+export const VOLUME_LANDMARKS: Record<VolumeCategory, [number, number]> = {
+  squat: [6, 20],
+  hinge: [4, 16],
+  "horizontal-press": [6, 22],
+  "vertical-press": [4, 16],
+  "horizontal-pull": [6, 25],
+  "vertical-pull": [6, 25],
+  quads: [6, 22],
+  hamstrings: [6, 20],
+  delts: [6, 26],
+  chest: [6, 22],
+  triceps: [4, 20],
+  biceps: [4, 20],
+  calves: [6, 20],
+  core: [0, 25],
+};
+
+export interface VolumeWarning {
+  category: VolumeCategory;
+  sets: number;
+  level: "below-mev" | "above-mrv";
+  message: string;
+}
+
+/** Weekly-set sanity check against MEV/MRV for the working (non-deload) weeks. */
+export function volumeWarnings(weeks: TemplateWeek[]): VolumeWarning[] {
+  const perWeek = templateWeeklySets(weeks);
+  const out: VolumeWarning[] = [];
+  for (const [cat, sets] of perWeek) {
+    const [mev, mrv] = VOLUME_LANDMARKS[cat] ?? [0, 99];
+    const n = Math.round(sets);
+    if (n > mrv) {
+      out.push({
+        category: cat,
+        sets: n,
+        level: "above-mrv",
+        message: `${categoryLabel(cat)}: ${n} sets/week is above the usual max recoverable volume (~${mrv}).`,
+      });
+    } else if (mev > 0 && n > 0 && n < mev) {
+      out.push({
+        category: cat,
+        sets: n,
+        level: "below-mev",
+        message: `${categoryLabel(cat)}: ${n} sets/week is below the usual minimum effective volume (~${mev}).`,
+      });
+    }
+  }
+  return out.sort((a, b) => (a.level === b.level ? b.sets - a.sets : a.level === "above-mrv" ? -1 : 1));
+}
+
 // ---------- application ----------
 
-function scaleSets(sets: number, mult: number): number {
-  return clamp(Math.round(sets * mult), 1, 10);
+interface SetSlot {
+  key: string; // week|session|exercise index
+  base: number;
+  mult: number;
+  cat: VolumeCategory;
+}
+
+/**
+ * Round a group of scaled set counts so the group total matches the exact
+ * scaled total (largest-remainder). Without this, a −8% multiplier on 3-set
+ * exercises rounds away to nothing.
+ */
+function distributeSets(slots: SetSlot[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const byCat = new Map<VolumeCategory, SetSlot[]>();
+  for (const s of slots) {
+    const arr = byCat.get(s.cat) ?? [];
+    arr.push(s);
+    byCat.set(s.cat, arr);
+  }
+  for (const [, group] of byCat) {
+    const exact = group.map((g) => g.base * g.mult);
+    const target = clamp(Math.round(exact.reduce((a, b) => a + b, 0)), group.length, 999);
+    const floors = exact.map((v) => clamp(Math.floor(v), 1, 10));
+    let remaining = target - floors.reduce((a, b) => a + b, 0);
+    const order = exact
+      .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+      .sort((a, b) => b.frac - a.frac);
+    let idx = 0;
+    while (remaining > 0 && idx < order.length * 4) {
+      const i = order[idx % order.length].i;
+      if (floors[i] < 10) {
+        floors[i] += 1;
+        remaining -= 1;
+      }
+      idx += 1;
+    }
+    idx = 0;
+    while (remaining < 0 && idx < order.length * 4) {
+      const i = order[order.length - 1 - (idx % order.length)].i;
+      if (floors[i] > 1) {
+        floors[i] -= 1;
+        remaining += 1;
+      }
+      idx += 1;
+    }
+    group.forEach((g, i) => out.set(g.key, floors[i]));
+  }
+  return out;
 }
 
 export function applyAdjustments(
   weeks: TemplateWeek[],
   adjustments: Adjustment[],
   h: HistoryInputs,
+  tuning: CoachTuning = DEFAULT_TUNING,
 ): TemplateWeek[] {
   const global = adjustments.find((a) => a.kind === "global-volume")?.multiplier ?? 1;
   const byCat = new Map<VolumeCategory, number>();
@@ -420,24 +560,43 @@ export function applyAdjustments(
     const inRamp = ramp && !isDeload && w.week_index <= (ramp.rampWeeks ?? 1);
     const rampMult = inRamp ? (ramp!.multiplier ?? 0.8) : 1;
 
+    // 1. Collect every exercise in the week and its combined multiplier.
+    const slots: SetSlot[] = [];
+    w.sessions.forEach((s, si) => {
+      s.exercises.forEach((e, ei) => {
+        const cat = volumeCategory(e);
+        const catMult = byCat.get(cat) ?? 1;
+        const manual =
+          tuning.volume *
+          (isMainCategory(cat) ? tuning.mainLifts : 1) *
+          (isAccessoryCategory(cat) ? tuning.accessory : 1);
+        const mult = isDeload ? manual : global * catMult * rampMult * manual;
+        slots.push({ key: `${si}:${ei}`, base: e.target_sets, mult, cat });
+      });
+    });
+    const setsByKey = distributeSets(slots);
+
     return {
       ...w,
       notes: inRamp
         ? `${w.notes ? `${w.notes} ` : ""}Ramp-in week — reduced sets and RPE after time off.`
         : w.notes,
-      sessions: w.sessions.map((s) => ({
+      sessions: w.sessions.map((s, si) => ({
         ...s,
-        exercises: s.exercises.map((e) => {
-          const cat = volumeCategory(e);
-          const catMult = byCat.get(cat) ?? 1;
-          const mult = isDeload ? 1 : global * catMult * rampMult;
+        exercises: s.exercises.map((e, ei) => {
           const next: TemplateExercise = {
             ...e,
-            target_sets: isDeload ? e.target_sets : scaleSets(e.target_sets, mult),
+            target_sets: setsByKey.get(`${si}:${ei}`) ?? e.target_sets,
           };
-          if (inRamp) {
-            if (next.target_rpe != null) next.target_rpe = Math.max(5, next.target_rpe - 1);
-            if (next.target_rir != null) next.target_rir = Math.min(6, next.target_rir + 1);
+          // Intensity: ramp-in cut first, then the coach's manual offset.
+          const rpeDelta = (inRamp ? -1 : 0) + (isDeload ? 0 : tuning.intensity);
+          if (rpeDelta !== 0) {
+            if (next.target_rpe != null) {
+              next.target_rpe = clamp(Number((next.target_rpe + rpeDelta).toFixed(1)), 5, 10);
+            }
+            if (next.target_rir != null) {
+              next.target_rir = clamp(Math.round(next.target_rir - rpeDelta), 0, 6);
+            }
           }
           if (doLoads) {
             const b = matchBaseline(e, h.baselines);

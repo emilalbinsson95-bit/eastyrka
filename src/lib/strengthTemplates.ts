@@ -210,27 +210,34 @@ export type VolumeCategory =
   | "core";
 
 const CATEGORY_RULES: Array<[RegExp, VolumeCategory]> = [
-  [/split squat|leg press|leg extension|lunge|step.?up/i, "quads"],
-  [/front squat|back squat|pause squat|hack squat|\bsquat\b/i, "squat"],
-  [/leg curl|nordic|ham(string)? curl/i, "hamstrings"],
-  [/romanian|rdl|good morning|back extension|hip thrust|glute/i, "hamstrings"],
-  [/deadlift|block pull|rack pull|\bpull\b.*block/i, "hinge"],
-  [/overhead press|push press|ohp/i, "vertical-press"],
-  [/lateral raise|rear.?delt|face pull/i, "delts"],
-  [/bench|spoto|floor press|dip/i, "horizontal-press"],
-  [/incline dumbbell press|chest fly|pec deck|push.?up/i, "chest"],
-  [/pulldown|chin.?up|pull.?up/i, "vertical-pull"],
-  [/row\b|pendlay|seal row/i, "horizontal-pull"],
-  [/pushdown|skull|triceps|overhead extension/i, "triceps"],
-  [/curl/i, "biceps"],
-  [/calf/i, "calves"],
-  [/plank|ab wheel|hanging leg|crunch|core/i, "core"],
+  // quads-biased accessories before the generic squat rule
+  [/split squat|leg press|leg extension|lunge|step.?up|sissy squat|goblet squat|belt squat|cyclist squat|smith squat|leg machine/i, "quads"],
+  [/front squat|back squat|pause squat|hack squat|box squat|safety bar|ssb|zercher|\bsquat\b/i, "squat"],
+  [/leg curl|nordic|ham(string)? curl|ghr|glute.?ham raise/i, "hamstrings"],
+  [/romanian|rdl|stiff.?leg|good morning|back extension|hyperextension|reverse hyper|hip thrust|glute bridge|glute|pull.?through|kettlebell swing/i, "hamstrings"],
+  [/deadlift|\bdl\b|block pull|rack pull|deficit|snatch grip|clean pull|trap bar/i, "hinge"],
+  [/overhead press|shoulder press|military press|push press|jerk|landmine press|\bohp\b|arnold press|z press|machine shoulder press/i, "vertical-press"],
+  [/lateral raise|side raise|rear.?delt|reverse fly|face pull|upright row|shrug/i, "delts"],
+  [/bench|spoto|floor press|board press|pin press|larsen|\bdip\b|dips|jm press/i, "horizontal-press"],
+  [/incline dumbbell press|incline press|chest fly|pec deck|cable fly|push.?up|chest press|machine press/i, "chest"],
+  [/pulldown|chin.?up|pull.?up|lat prayer|straight.?arm|pullover/i, "vertical-pull"],
+  [/row\b|rows\b|pendlay|seal row|t.?bar|meadows|inverted row/i, "horizontal-pull"],
+  [/pushdown|skull|triceps|tricep|overhead extension|kickback|close.?grip/i, "triceps"],
+  [/curl|biceps|bicep|hammer|preacher/i, "biceps"],
+  [/calf|calves|soleus|tibialis/i, "calves"],
+  [/plank|ab wheel|hanging leg|leg raise|crunch|sit.?up|core|pallof|dead bug|copenhagen|rotation/i, "core"],
 ];
 
 export function volumeCategory(e: Pick<TemplateExercise, "exercise" | "variation">): VolumeCategory {
   const text = `${e.exercise} ${e.variation ?? ""}`;
   for (const [re, cat] of CATEGORY_RULES) if (re.test(text)) return cat;
   return "core";
+}
+
+/** True when the name matched no classifier rule (fell through to "core"). */
+export function isUnclassified(e: Pick<TemplateExercise, "exercise" | "variation">): boolean {
+  const text = `${e.exercise} ${e.variation ?? ""}`;
+  return !CATEGORY_RULES.some(([re]) => re.test(text));
 }
 
 // Order inside a session: primary strength patterns first, then assistance, then isolation.

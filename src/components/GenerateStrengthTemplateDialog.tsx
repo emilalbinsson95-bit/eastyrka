@@ -189,6 +189,10 @@ export function GenerateStrengthTemplateDialog({
             activeAdjustments.length > 0
               ? ` Individualised from history: ${activeAdjustments.map((a) => a.title).join("; ")}.`
               : ""
+          }${
+            tuningTouched
+              ? ` Coach tuning: volume ×${tuning.volume.toFixed(2)}, main lifts ×${tuning.mainLifts.toFixed(2)}, accessories ×${tuning.accessory.toFixed(2)}, RPE ${tuning.intensity >= 0 ? "+" : ""}${tuning.intensity}.`
+              : ""
           }`,
         })
         .select("id")

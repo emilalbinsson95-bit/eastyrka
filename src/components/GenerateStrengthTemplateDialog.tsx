@@ -128,13 +128,45 @@ export function GenerateStrengthTemplateDialog({
       return next;
     });
 
+  // ---- coach tuning sliders ----
+  const [tuning, setTuning] = useState<CoachTuning>(DEFAULT_TUNING);
+  const setTune = (k: keyof CoachTuning, v: number) =>
+    setTuning((t) => ({ ...t, [k]: v }));
+  const tuningTouched =
+    tuning.volume !== 1 || tuning.intensity !== 0 || tuning.accessory !== 1 || tuning.mainLifts !== 1;
+
+  const emptyHistory: HistoryInputs = useMemo(
+    () => ({ today, logs: [], readiness: [], baselines: [], unavailability: [] }),
+    [today],
+  );
+
+  const finalWeeks = useMemo(
+    () =>
+      baseWeeks.length === 0
+        ? []
+        : applyAdjustments(
+            baseWeeks,
+            activeAdjustments,
+            historyQuery.data ?? emptyHistory,
+            tuning,
+          ),
+    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning],
+  );
+
+  const weeklySets = useMemo(() => {
+    const m = templateWeeklySets(finalWeeks);
+    return Array.from(m.entries())
+      .map(([cat, sets]) => ({ cat, sets: Math.round(sets) }))
+      .filter((r) => r.sets > 0)
+      .sort((a, b) => b.sets - a.sets);
+  }, [finalWeeks]);
+
+  const warnings = useMemo(() => volumeWarnings(finalWeeks), [finalWeeks]);
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
-      const weeks =
-        historyQuery.data && activeAdjustments.length > 0
-          ? applyAdjustments(baseWeeks, activeAdjustments, historyQuery.data)
-          : baseWeeks;
+      const weeks = finalWeeks.length > 0 ? finalWeeks : baseWeeks;
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase

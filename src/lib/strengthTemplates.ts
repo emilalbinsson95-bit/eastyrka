@@ -799,6 +799,18 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     inspiration: "Wolf hypertrophy + Tuscherer autoregulation",
     buildWeeks: benchOnlyAccessories,
   },
+  {
+    id: "athletic-power",
+    name: "Athletic / power",
+    short: "Power cleans + jumps — 2–4 days / 4 weeks",
+    goal: "Explosive full-body power for sport and general fitness: cleans, jumps, throws, unilateral strength. Coexists with running or practice.",
+    weeks: 4,
+    daysPerWeek: 3,
+    minDays: 2,
+    maxDays: 4,
+    inspiration: "Olympic-lifting power work + Tuscherer RPE autoregulation",
+    buildWeeks: athleticPower,
+  },
 ];
 
 export function getTemplate(id: string): StrengthTemplate | undefined {

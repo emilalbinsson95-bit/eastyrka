@@ -24,6 +24,7 @@ export type VolumeQuality =
   | "acceptable"
   | "fatigue_limit"
   | "sandbag"
+  | "planned"
   | "unknown";
 
 /**
@@ -130,6 +131,8 @@ export function volumeQualityLabel(q: VolumeQuality): string {
       return "Fatigue limit";
     case "sandbag":
       return "Set 1 sandbagged?";
+    case "planned":
+      return "Planned light";
     default:
       return "—";
   }
@@ -139,6 +142,8 @@ export function volumeQualityClasses(q: VolumeQuality): string {
   const base =
     "font-mono uppercase tracking-[0.12em] tabular-nums ring-1 ring-inset";
   switch (q) {
+    case "planned":
+      return `${base} bg-muted text-muted-foreground ring-border`;
     case "optimal":
       return `${base} bg-status-adapting text-status-adapting-foreground ring-status-adapting-foreground/20`;
     case "acceptable":

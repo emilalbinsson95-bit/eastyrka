@@ -185,6 +185,7 @@ export interface RawLog extends SetInput {
 export function processLogs<T extends RawLog>(
   logs: T[],
   baselines: Record<string, number>,
+  plannedLightDates?: ReadonlySet<string>,
 ): Array<ProcessedSet<T>> {
   // Build set-1 reference per (date, exercise)
   const set1Map = new Map<string, number>();
@@ -199,17 +200,25 @@ export function processLogs<T extends RawLog>(
     const baseline = baselines[log.exercise] ?? 0;
     const e1rm = dailyE1RM(log);
     const eak = eaKoefficient(log, baseline);
-    const status = readinessFromEAk(eak);
+    const planned = plannedLightDates?.has(log.date) ?? false;
+    // On a planned light / deload day the load is intentionally reduced, so a
+    // low EAkoefficient is the plan working — never alarm "exhausted" for it.
+    let status = readinessFromEAk(eak);
+    if (planned && status === "exhausted") status = "adapting";
 
     const key = `${log.date}::${log.exercise}`;
     const set1 = set1Map.get(key) ?? 0;
     const drop = set1 > 0 && log.set_number > 1 ? ((set1 - e1rm) / set1) * 100 : 0;
-    const volume =
+    let volume =
       log.set_number === 1
         ? "baseline"
         : set1 > 0
           ? volumeQualityFromDrop(log.set_number, drop)
           : "unknown";
+    // A within-session drop during a planned light day is expected, not a
+    // fatigue alarm. Sandbagging stays flagged — inconsistent effort is still
+    // inconsistent effort.
+    if (planned && volume === "fatigue_limit") volume = "planned";
 
     return {
       source: log,

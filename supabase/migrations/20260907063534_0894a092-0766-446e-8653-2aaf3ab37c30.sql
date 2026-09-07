@@ -1,0 +1,1 @@
+ALTER TABLE public.week_plans ADD COLUMN IF NOT EXISTS is_deload boolean NOT NULL DEFAULT false;

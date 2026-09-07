@@ -215,7 +215,9 @@ const CATEGORY_RULES: Array<[RegExp, VolumeCategory]> = [
   [/front squat|back squat|pause squat|hack squat|box squat|safety bar|ssb|zercher|\bsquat\b/i, "squat"],
   [/leg curl|nordic|ham(string)? curl|ghr|glute.?ham raise/i, "hamstrings"],
   [/romanian|rdl|stiff.?leg|good morning|back extension|hyperextension|reverse hyper|hip thrust|glute bridge|glute|pull.?through|kettlebell swing/i, "hamstrings"],
-  [/deadlift|\bdl\b|block pull|rack pull|deficit|snatch grip|clean pull|trap bar/i, "hinge"],
+  [/deadlift|\bdl\b|block pull|rack pull|deficit|snatch grip|clean pull|trap bar|power clean|hang clean|\bclean\b|snatch\b|high pull/i, "hinge"],
+  [/box jump|broad jump|jump squat|hurdle hop|depth jump|plyo|bounding|skip/i, "quads"],
+  [/medicine ball|med ball|\bthrow\b|sled|carry|farmer|sprint/i, "core"],
   [/overhead press|shoulder press|military press|push press|jerk|landmine press|\bohp\b|arnold press|z press|machine shoulder press/i, "vertical-press"],
   [/lateral raise|side raise|rear.?delt|reverse fly|face pull|upright row|shrug/i, "delts"],
   [/bench|spoto|floor press|board press|pin press|larsen|\bdip\b|dips|jm press/i, "horizontal-press"],
@@ -667,6 +669,73 @@ function benchOnlyAccessories(daysPerWeek: number): TemplateWeek[] {
   });
 }
 
+// ---------- Template 6: Athletic / Power (base 3 days, 2–4) ----------
+// For field-sport, running and general-fitness athletes: explosive triple-extension
+// work (power cleans, jumps, throws) paired with full-body strength. Lower RPE
+// ceilings on speed work — power dies under fatigue, so never grind cleans.
+
+function athleticPower(daysPerWeek: number): TemplateWeek[] {
+  return [1, 2, 3, 4].map((w) => {
+    const isDeload = w === 4;
+    const powerSets = isDeload ? 2 : w === 3 ? 4 : 3;
+    // Speed work stays submaximal: RPE 6.5–7.5, never to failure.
+    const speedRpe = Math.min(7.5, rpe(w, -1.5));
+
+    const base: Omit<TemplateSession, "day_of_week">[] = [
+      {
+        title: "Power — clean + jumps + squat",
+        notes: "Explosive work first, fresh. Full recovery between power sets.",
+        exercises: [
+          { exercise: "Power clean", variation: "From hang", target_sets: powerSets, target_reps: 3, target_rpe: speedRpe, intensity_metric: "rpe", notes: "Fast reps only — stop the set when bar speed drops." },
+          { exercise: "Box jump", target_sets: 3, target_reps: 5, target_rpe: speedRpe, intensity_metric: "rpe", notes: "Max intent, full rest. Step down, don't jump down." },
+          { exercise: "Back squat", variation: "High-bar", target_sets: isDeload ? 2 : 3, target_reps: 5, target_rpe: rpe(w, -1), intensity_metric: "rpe", notes: "Athletic stance, controlled — strength base, not maxing." },
+          { exercise: "Romanian deadlift", target_sets: isDeload ? 2 : 3, target_reps: 8, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true },
+        ],
+      },
+      {
+        title: "Upper power + strength",
+        exercises: [
+          { exercise: "Push press", target_sets: powerSets, target_reps: 3, target_rpe: speedRpe, intensity_metric: "rpe", notes: "Leg drive into the press — power transfer like a throw." },
+          { exercise: "Medicine ball chest throw", target_sets: 3, target_reps: 5, target_rpe: speedRpe, intensity_metric: "rpe", notes: "Max intent against a wall. Replaces heavy bench volume." },
+          { exercise: "Bench press", target_sets: isDeload ? 2 : 3, target_reps: 6, target_rpe: rpe(w, -1), intensity_metric: "rpe" },
+          { exercise: "Weighted chin-up", target_sets: isDeload ? 2 : 3, target_reps: 6, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true },
+          { exercise: "Face pull", target_sets: 3, target_reps: 15, target_rpe: rpe(w, -1), intensity_metric: "rpe", notes: "Shoulder health for throwing / contact." },
+        ],
+      },
+      {
+        title: "Full body strength + unilateral",
+        exercises: [
+          { exercise: "Trap bar deadlift", target_sets: isDeload ? 2 : 3, target_reps: 5, target_rpe: rpe(w, -1), intensity_metric: "rpe", notes: "Athlete-friendly pull — easier to recover from around running." },
+          { exercise: "Bulgarian split squat", target_sets: 3, target_reps: 8, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", notes: "Single-leg strength + balance — carries to sprinting and cutting." },
+          { exercise: "Nordic hamstring curl", target_sets: 3, target_reps: 5, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", notes: "Eccentric hamstring protection. Control the way down." },
+          { exercise: "Pallof press", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -1), intensity_metric: "rpe", notes: "Anti-rotation core — transfers force between hips and shoulders." },
+          { exercise: "Standing calf raise", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true },
+        ],
+      },
+    ];
+
+    const speedDay = (): Omit<TemplateSession, "day_of_week"> => ({
+      title: "Speed + core (bonus)",
+      notes: "Low CNS cost — pairs fine with a running schedule.",
+      exercises: [
+        { exercise: "Jump squat", variation: "Bar or trap bar, ~30% squat", target_sets: 4, target_reps: 3, target_rpe: speedRpe, intensity_metric: "rpe", notes: "Max intent. Reset every rep." },
+        { exercise: "Broad jump", target_sets: 3, target_reps: 4, target_rpe: speedRpe, intensity_metric: "rpe" },
+        { exercise: "Ab wheel rollout", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe" },
+        { exercise: "Hanging leg raise", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe" },
+      ],
+    });
+
+    return {
+      week_index: w,
+      label: isDeload ? "Deload" : `Athletic block W${w}`,
+      notes: isDeload
+        ? "Deload — half sets, keep the explosive work crisp at low volume."
+        : `Week ${w}/3. Power work is intent-based: stop sets when speed drops, never grind. Built to coexist with running or sport practice — lift after speed work, or on separate days.`,
+      sessions: adaptSessions(base, [() => speedDay(), () => upperHypertrophy(w)], daysPerWeek),
+    };
+  });
+}
+
 // ---------- Registry ----------
 
 export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
@@ -729,6 +798,18 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     maxDays: 6,
     inspiration: "Wolf hypertrophy + Tuscherer autoregulation",
     buildWeeks: benchOnlyAccessories,
+  },
+  {
+    id: "athletic-power",
+    name: "Athletic / power",
+    short: "Power cleans + jumps — 2–4 days / 4 weeks",
+    goal: "Explosive full-body power for sport and general fitness: cleans, jumps, throws, unilateral strength. Coexists with running or practice.",
+    weeks: 4,
+    daysPerWeek: 3,
+    minDays: 2,
+    maxDays: 4,
+    inspiration: "Olympic-lifting power work + Tuscherer RPE autoregulation",
+    buildWeeks: athleticPower,
   },
 ];
 

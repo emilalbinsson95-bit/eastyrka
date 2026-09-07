@@ -371,7 +371,10 @@ export function GenerateStrengthTemplateDialog({
                 onChange={(e) => setDaysPerWeek(Number(e.target.value))}
                 className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
               >
-                {[3, 4, 5, 6].map((n) => (
+                {Array.from(
+                  { length: (template?.maxDays ?? 6) - (template?.minDays ?? 3) + 1 },
+                  (_, i) => (template?.minDays ?? 3) + i,
+                ).map((n) => (
                   <option key={n} value={n}>
                     {n} days{template && n === template.daysPerWeek ? " (template default)" : ""}
                   </option>

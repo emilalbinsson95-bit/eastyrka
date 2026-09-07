@@ -1545,6 +1545,7 @@ export type Database = {
           coach_id: string
           created_at: string
           id: string
+          is_deload: boolean
           mesocycle_id: string | null
           notes: string | null
           status: Database["public"]["Enums"]["plan_status"]
@@ -1557,6 +1558,7 @@ export type Database = {
           coach_id: string
           created_at?: string
           id?: string
+          is_deload?: boolean
           mesocycle_id?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
@@ -1569,6 +1571,7 @@ export type Database = {
           coach_id?: string
           created_at?: string
           id?: string
+          is_deload?: boolean
           mesocycle_id?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["plan_status"]

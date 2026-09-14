@@ -18,8 +18,10 @@ import {
   readinessClasses,
   readinessLabel,
   eaKoefficient,
+  dailyE1RM,
   readinessFromEAk,
 } from "@/lib/eakoefficient";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/coach/")({

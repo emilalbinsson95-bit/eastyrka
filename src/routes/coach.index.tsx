@@ -75,13 +75,18 @@ function CoachRosterPage() {
         (profiles ?? []).map((p) => [p.id, p.full_name]),
       );
 
-      // 3. Recent logs to compute latest EAkoefficient per athlete
+      // 3. Recent logs (120d) to compute latest EAkoefficient per athlete
+      const since = new Date();
+      since.setDate(since.getDate() - 120);
+      const sinceIso = since.toISOString().slice(0, 10);
+
       const { data: recentLogs } = await supabase
         .from("training_logs")
-        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe, form_score, created_at")
+        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe")
         .in("athlete_id", athleteIds)
-        .order("created_at", { ascending: false })
-        .limit(500);
+        .gte("date", sinceIso)
+        .order("date", { ascending: false })
+        .limit(3000);
 
       const { data: baselines } = await supabase
         .from("baselines")
@@ -94,36 +99,86 @@ function CoachRosterPage() {
         baselineMap.set(b.athlete_id, m);
       }
 
-      const latestByAthlete = new Map<string, { date: string; eak: number; form: number | null }>();
+      // Derive per-athlete/exercise baselines from set-1 logs (median of top 5 × 0.98)
+      const e1rmPool = new Map<string, number[]>();
       for (const log of recentLogs ?? []) {
-        if (latestByAthlete.has(log.athlete_id)) continue;
-        const baseline =
-          baselineMap.get(log.athlete_id)?.[log.exercise] ?? 0;
-        const eak = baseline > 0
-          ? eaKoefficient(
-              {
-                weight_kg: Number(log.weight_kg),
-                reps: log.reps,
-                rpe: Number(log.rpe),
-              },
-              baseline,
-            )
-          : 0;
-        latestByAthlete.set(log.athlete_id, {
-          date: log.date,
-          eak,
-          form: log.form_score,
+        if (Number(log.set_number) !== 1) continue;
+        const e1rm = dailyE1RM({
+          reps: Number(log.reps),
+          weight_kg: Number(log.weight_kg),
+          rpe: Number(log.rpe),
         });
+        if (!isFinite(e1rm) || e1rm <= 0) continue;
+        const key = `${log.athlete_id}::${log.exercise}`;
+        const arr = e1rmPool.get(key) ?? [];
+        arr.push(e1rm);
+        e1rmPool.set(key, arr);
+      }
+      const derived = new Map<string, number>();
+      for (const [key, arr] of e1rmPool) {
+        arr.sort((a, b) => b - a);
+        const top = arr.slice(0, Math.min(5, arr.length)).sort((a, b) => a - b);
+        const mid = Math.floor(top.length / 2);
+        const median = top.length % 2 ? top[mid] : (top[mid - 1] + top[mid]) / 2;
+        derived.set(key, Math.round(median * 0.98 * 2) / 2);
       }
 
-      return athleteIds.map((id) => ({
-        athlete_id: id,
-        full_name: profileMap.get(id) ?? null,
-        tag: tagMap.get(id) ?? null,
-        last_log_date: latestByAthlete.get(id)?.date ?? null,
-        last_eak: latestByAthlete.get(id)?.eak ?? null,
-        last_form: latestByAthlete.get(id)?.form ?? null,
-      }));
+      const baselineFor = (athleteId: string, exercise: string) =>
+        baselineMap.get(athleteId)?.[exercise] ??
+        derived.get(`${athleteId}::${exercise}`) ??
+        0;
+
+      // Latest session per athlete: average EAk across that day's sets
+      const latestByAthlete = new Map<string, { date: string; eaks: number[] }>();
+      for (const log of recentLogs ?? []) {
+        const current = latestByAthlete.get(log.athlete_id);
+        if (current && current.date !== log.date) continue;
+        const baseline = baselineFor(log.athlete_id, log.exercise as string);
+        if (baseline <= 0) {
+          if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, eaks: [] });
+          continue;
+        }
+        const eak = eaKoefficient(
+          {
+            weight_kg: Number(log.weight_kg),
+            reps: Number(log.reps),
+            rpe: Number(log.rpe),
+          },
+          baseline,
+        );
+        const entry = current ?? { date: log.date, eaks: [] };
+        entry.eaks.push(eak);
+        latestByAthlete.set(log.athlete_id, entry);
+      }
+
+      // 4. Latest daily form from readiness surveys
+      const { data: surveys } = await supabase
+        .from("readiness_surveys")
+        .select("athlete_id, date, daily_form")
+        .in("athlete_id", athleteIds)
+        .order("date", { ascending: false })
+        .limit(500);
+      const formMap = new Map<string, number>();
+      for (const s of surveys ?? []) {
+        if (formMap.has(s.athlete_id) || s.daily_form == null) continue;
+        formMap.set(s.athlete_id, Number(s.daily_form));
+      }
+
+      return athleteIds.map((id) => {
+        const latest = latestByAthlete.get(id);
+        const eaks = latest?.eaks ?? [];
+        return {
+          athlete_id: id,
+          full_name: profileMap.get(id) ?? null,
+          tag: tagMap.get(id) ?? null,
+          last_log_date: latest?.date ?? null,
+          last_eak: eaks.length
+            ? eaks.reduce((a, b) => a + b, 0) / eaks.length
+            : null,
+          last_form: formMap.get(id) ?? null,
+        };
+      });
+
     },
   });
 

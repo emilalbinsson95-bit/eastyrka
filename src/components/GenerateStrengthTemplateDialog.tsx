@@ -205,7 +205,12 @@ export function GenerateStrengthTemplateDialog({
             tuningTouched
               ? ` Coach tuning: volume ×${tuning.volume.toFixed(2)}, main lifts ×${tuning.mainLifts.toFixed(2)}, accessories ×${tuning.accessory.toFixed(2)}, RPE ${tuning.intensity >= 0 ? "+" : ""}${tuning.intensity}.`
               : ""
+          }${
+            overloadTouched(overload)
+              ? ` Overload: ${overloadSummary(overload).join("; ")}.`
+              : ""
           }`,
+
         })
         .select("id")
         .single();

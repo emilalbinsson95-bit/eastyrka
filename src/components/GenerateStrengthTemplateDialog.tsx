@@ -159,20 +159,24 @@ export function GenerateStrengthTemplateDialog({
     [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning],
   );
 
+  const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
+  const plannedWeeks = useMemo(() => applyOverload(finalWeeks, overload), [finalWeeks, overload]);
+
   const weeklySets = useMemo(() => {
-    const m = templateWeeklySets(finalWeeks);
+    const m = templateWeeklySets(plannedWeeks);
     return Array.from(m.entries())
       .map(([cat, sets]) => ({ cat, sets: Math.round(sets) }))
       .filter((r) => r.sets > 0)
       .sort((a, b) => b.sets - a.sets);
-  }, [finalWeeks]);
+  }, [plannedWeeks]);
 
-  const warnings = useMemo(() => volumeWarnings(finalWeeks), [finalWeeks]);
+  const warnings = useMemo(() => volumeWarnings(plannedWeeks), [plannedWeeks]);
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
-      const weeks = finalWeeks.length > 0 ? finalWeeks : baseWeeks;
+      const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
+
 
       // 1. Mesocycle
       const { data: meso, error: mesoErr } = await supabase

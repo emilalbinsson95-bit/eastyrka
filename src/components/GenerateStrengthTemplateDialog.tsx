@@ -412,6 +412,94 @@ export function GenerateStrengthTemplateDialog({
             </div>
           </div>
 
+          {/* ---- overload pushing ---- */}
+          <div className="rounded-lg border bg-card">
+            <div className="flex items-center justify-between border-b px-3 py-2">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
+                Overload pushing
+              </div>
+              {overloadTouched(overload) && (
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground underline"
+                  onClick={() => setOverload(DEFAULT_OVERLOAD)}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 p-3">
+              {(
+                [
+                  {
+                    key: "overWarmSingles" as const,
+                    title: "Heavy over-warm singles (RPE 8)",
+                    desc: "Work up to one clean single at ~90–92% before working sets — keeps neural familiarity with heavy bar speeds.",
+                  },
+                  {
+                    key: "waveLoading" as const,
+                    title: "Structured wave loading",
+                    desc: "Replaces flat weekly work with 5s @70–75% → 4s @77–82% → 3s/2s @85%+ → deload.",
+                  },
+                  {
+                    key: "benchConsolidation" as const,
+                    title: "Reduce weekly bench redundancy",
+                    desc: "Consolidates bench into heavy comp-pause, hypertrophy and close-grip days instead of several semi-heavy ones.",
+                  },
+                ]
+              ).map((o) => {
+                const on = overload[o.key];
+                return (
+                  <label
+                    key={o.key}
+                    className={cn(
+                      "flex cursor-pointer gap-3 rounded-md border p-2 transition-colors",
+                      on ? "border-primary/40 bg-primary/5" : "border-border",
+                    )}
+                  >
+                    <Checkbox
+                      checked={on}
+                      onCheckedChange={(v) =>
+                        setOverload((prev) => ({ ...prev, [o.key]: v === true }))
+                      }
+                      className="mt-0.5"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium">{o.title}</div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{o.desc}</p>
+                    </div>
+                  </label>
+                );
+              })}
+
+              <div className="rounded-md border p-2">
+                <Label htmlFor="stance" className="text-sm font-medium">
+                  Commit to one deadlift stance
+                </Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Trains one stance for the whole block; the second pull of the week becomes an RDL
+                  or deficit builder instead of splitting main-stance adaptations.
+                </p>
+                <select
+                  id="stance"
+                  value={overload.deadliftStance}
+                  onChange={(e) =>
+                    setOverload((prev) => ({
+                      ...prev,
+                      deadliftStance: e.target.value as OverloadOptions["deadliftStance"],
+                    }))
+                  }
+                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="keep">Keep template (both stances / as written)</option>
+                  <option value="conventional">Conventional only</option>
+                  <option value="sumo">Sumo only</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+
           {/* ---- coach tuning sliders ---- */}
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">

@@ -31,7 +31,15 @@ import {
   type Adjustment,
   type HistoryInputs,
 } from "@/lib/individualisation";
+import {
+  applyOverload,
+  overloadSummary,
+  overloadTouched,
+  DEFAULT_OVERLOAD,
+  type OverloadOptions,
+} from "@/lib/overload";
 import { cn } from "@/lib/utils";
+
 
 export function GenerateStrengthTemplateDialog({
   athleteId,

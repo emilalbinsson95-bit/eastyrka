@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import {
   applyAdjustments,
+  enforceTemplateFloors,
   buildAdjustments,
   categoryLabel,
   templateWeeklySets,
@@ -113,9 +114,10 @@ export function GenerateStrengthTemplateDialog({
   });
 
   const baseWeeks = useMemo(
-    () => (template ? template.buildWeeks(daysPerWeek) : []),
+    () => (template ? enforceTemplateFloors(template.buildWeeks(daysPerWeek)) : []),
     [template, daysPerWeek],
   );
+
 
   const suggestion = useMemo(() => {
     if (!historyQuery.data || baseWeeks.length === 0) return null;

@@ -493,14 +493,34 @@ interface SetSlot {
   base: number;
   mult: number;
   cat: VolumeCategory;
+  session: number;
 }
+
+/**
+ * Hard floors so stacked reductions (fatigue + ease-in + ramp + coach slider)
+ * can never collapse a plan into junk volume like "1 set of 3".
+ */
+export const VOLUME_FLOORS = {
+  /** Lowest combined multiplier allowed on a working week. */
+  minWorkingMultiplier: 0.6,
+  /** Highest combined multiplier allowed on a working week. */
+  maxWorkingMultiplier: 1.6,
+  /** Minimum sets per exercise on a working week. */
+  minSetsPerExercise: 2,
+  /** Minimum sets per exercise on a deload week. */
+  minSetsPerExerciseDeload: 1,
+  /** A working session should never fall below this many working sets. */
+  minSetsPerSession: 9,
+  /** Main lifts (squat/bench/deadlift patterns) keep at least this many sets. */
+  minSetsMainLift: 3,
+} as const;
 
 /**
  * Round a group of scaled set counts so the group total matches the exact
  * scaled total (largest-remainder). Without this, a −8% multiplier on 3-set
  * exercises rounds away to nothing.
  */
-function distributeSets(slots: SetSlot[]): Map<string, number> {
+function distributeSets(slots: SetSlot[], minPerSlot: number): Map<string, number> {
   const out = new Map<string, number>();
   const byCat = new Map<VolumeCategory, SetSlot[]>();
   for (const s of slots) {
@@ -509,9 +529,11 @@ function distributeSets(slots: SetSlot[]): Map<string, number> {
     byCat.set(s.cat, arr);
   }
   for (const [, group] of byCat) {
-    const exact = group.map((g) => g.base * g.mult);
-    const target = clamp(Math.round(exact.reduce((a, b) => a + b, 0)), group.length, 999);
-    const floors = exact.map((v) => clamp(Math.floor(v), 1, 10));
+    const floorFor = (g: SetSlot) => Math.min(g.base, minPerSlot);
+    const exact = group.map((g) => Math.max(g.base * g.mult, floorFor(g)));
+    const minTotal = group.reduce((a, g) => a + floorFor(g), 0);
+    const target = clamp(Math.round(exact.reduce((a, b) => a + b, 0)), minTotal, 999);
+    const floors = exact.map((v, i) => clamp(Math.floor(v), floorFor(group[i]), 10));
     let remaining = target - floors.reduce((a, b) => a + b, 0);
     const order = exact
       .map((v, i) => ({ i, frac: v - Math.floor(v) }))
@@ -528,7 +550,7 @@ function distributeSets(slots: SetSlot[]): Map<string, number> {
     idx = 0;
     while (remaining < 0 && idx < order.length * 4) {
       const i = order[order.length - 1 - (idx % order.length)].i;
-      if (floors[i] > 1) {
+      if (floors[i] > floorFor(group[i])) {
         floors[i] -= 1;
         remaining += 1;
       }
@@ -538,6 +560,72 @@ function distributeSets(slots: SetSlot[]): Map<string, number> {
   }
   return out;
 }
+
+/**
+ * After scaling, top sets back up where the result is no longer a stimulus:
+ * main lifts below 3 sets, weekly category volume under MEV (when the template
+ * intended at least MEV), or a session that shrank below ~9 working sets.
+ */
+function enforceFloors(
+  slots: SetSlot[],
+  sets: Map<string, number>,
+  isDeload: boolean,
+): void {
+  if (isDeload) return;
+
+  const get = (s: SetSlot) => sets.get(s.key) ?? s.base;
+  const bump = (s: SetSlot) => sets.set(s.key, Math.min(get(s) + 1, Math.max(s.base, 10)));
+  const canBump = (s: SetSlot) => get(s) < Math.max(s.base, VOLUME_FLOORS.minSetsPerExercise);
+
+  // 1. Main lifts keep a real top-set block.
+  for (const s of slots) {
+    if (!isMainCategory(s.cat)) continue;
+    const floor = Math.min(s.base, VOLUME_FLOORS.minSetsMainLift);
+    if (get(s) < floor) sets.set(s.key, floor);
+  }
+
+  // 2. Weekly category volume vs MEV, never above what the template intended.
+  const byCat = new Map<VolumeCategory, SetSlot[]>();
+  for (const s of slots) {
+    const arr = byCat.get(s.cat) ?? [];
+    arr.push(s);
+    byCat.set(s.cat, arr);
+  }
+  for (const [cat, group] of byCat) {
+    const baseTotal = group.reduce((a, g) => a + g.base, 0);
+    const [mev] = VOLUME_LANDMARKS[cat] ?? [0, 99];
+    const floor = Math.min(baseTotal, mev);
+    let guard = 0;
+    while (group.reduce((a, g) => a + get(g), 0) < floor && guard++ < 60) {
+      const next = group
+        .filter(canBump)
+        .sort((a, b) => get(a) / a.base - get(b) / b.base)[0];
+      if (!next) break;
+      bump(next);
+    }
+  }
+
+  // 3. A session should still be worth travelling to the gym for.
+  const bySession = new Map<number, SetSlot[]>();
+  for (const s of slots) {
+    const arr = bySession.get(s.session) ?? [];
+    arr.push(s);
+    bySession.set(s.session, arr);
+  }
+  for (const [, group] of bySession) {
+    const baseTotal = group.reduce((a, g) => a + g.base, 0);
+    const floor = Math.min(baseTotal, VOLUME_FLOORS.minSetsPerSession);
+    let guard = 0;
+    while (group.reduce((a, g) => a + get(g), 0) < floor && guard++ < 60) {
+      const next = group
+        .filter(canBump)
+        .sort((a, b) => get(a) / a.base - get(b) / b.base)[0];
+      if (!next) break;
+      bump(next);
+    }
+  }
+}
+
 
 export function applyAdjustments(
   weeks: TemplateWeek[],

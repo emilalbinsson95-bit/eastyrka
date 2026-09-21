@@ -714,3 +714,78 @@ export function applyAdjustments(
     };
   });
 }
+
+// ---------- template-level volume floors ----------
+
+/** Per-exercise set caps used when topping a thin template back up to MEV. */
+const SET_CAP_MAIN = 6;
+const SET_CAP_ACCESSORY = 4;
+
+/**
+ * Raise a generated template's weekly volume to a realistic progressive-overload
+ * floor: every trained category reaches at least MEV, and no working session is
+ * left with token volume. Deload weeks are untouched (they are meant to be light).
+ */
+export function enforceTemplateFloors(weeks: TemplateWeek[]): TemplateWeek[] {
+  return weeks.map((w) => {
+    if (/deload/i.test(w.label)) return w;
+
+    // Mutable copy of set counts.
+    const counts = w.sessions.map((s) => s.exercises.map((e) => e.target_sets));
+    const slots: Array<{ si: number; ei: number; cat: VolumeCategory; cap: number }> = [];
+    w.sessions.forEach((s, si) =>
+      s.exercises.forEach((e, ei) => {
+        const cat = volumeCategory(e);
+        slots.push({
+          si,
+          ei,
+          cat,
+          cap: isAccessoryCategory(cat) ? SET_CAP_ACCESSORY : SET_CAP_MAIN,
+        });
+      }),
+    );
+    const get = (s: { si: number; ei: number }) => counts[s.si][s.ei];
+
+    const topUp = (group: typeof slots, floor: number) => {
+      let guard = 0;
+      const total = () => group.reduce((a, g) => a + get(g), 0);
+      while (total() < floor && guard++ < 80) {
+        const next = group
+          .filter((g) => get(g) < g.cap)
+          .sort((a, b) => get(a) - get(b))[0];
+        if (!next) break;
+        counts[next.si][next.ei] += 1;
+      }
+    };
+
+    // 1. Weekly category volume ≥ MEV (only for categories the template trains).
+    const byCat = new Map<VolumeCategory, typeof slots>();
+    for (const s of slots) {
+      const arr = byCat.get(s.cat) ?? [];
+      arr.push(s);
+      byCat.set(s.cat, arr);
+    }
+    for (const [cat, group] of byCat) {
+      const [mev, mrv] = VOLUME_LANDMARKS[cat] ?? [0, 99];
+      if (mev <= 0) continue;
+      topUp(group, Math.min(mev, mrv));
+    }
+
+    // 2. No token sessions.
+    const bySession = new Map<number, typeof slots>();
+    for (const s of slots) {
+      const arr = bySession.get(s.si) ?? [];
+      arr.push(s);
+      bySession.set(s.si, arr);
+    }
+    for (const [, group] of bySession) topUp(group, VOLUME_FLOORS.minSetsPerSession);
+
+    return {
+      ...w,
+      sessions: w.sessions.map((s, si) => ({
+        ...s,
+        exercises: s.exercises.map((e, ei) => ({ ...e, target_sets: counts[si][ei] })),
+      })),
+    };
+  });
+}

@@ -113,9 +113,10 @@ export function GenerateStrengthTemplateDialog({
   });
 
   const baseWeeks = useMemo(
-    () => (template ? template.buildWeeks(daysPerWeek) : []),
+    () => (template ? enforceTemplateFloors(template.buildWeeks(daysPerWeek)) : []),
     [template, daysPerWeek],
   );
+
 
   const suggestion = useMemo(() => {
     if (!historyQuery.data || baseWeeks.length === 0) return null;

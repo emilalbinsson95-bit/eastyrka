@@ -768,6 +768,9 @@ export function enforceTemplateFloors(weeks: TemplateWeek[]): TemplateWeek[] {
     for (const [cat, group] of byCat) {
       const [mev, mrv] = VOLUME_LANDMARKS[cat] ?? [0, 99];
       if (mev <= 0) continue;
+      // A category trained by a single exercise may carry a few more sets so it
+      // can still reach MEV instead of sitting at token volume.
+      if (isAccessoryCategory(cat) && group.length === 1) group[0].cap = 6;
       topUp(group, Math.min(mev, mrv));
     }
 

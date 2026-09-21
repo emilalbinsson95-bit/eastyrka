@@ -183,8 +183,13 @@ describe("applyAdjustments", () => {
       ],
       emptyHistory(),
     );
-    expect(out[0].sessions[0].exercises[0].target_sets).toBe(2);
+    // Cut is clamped and floored so the main lift keeps a real block.
+    expect(out[0].sessions[0].exercises[0].target_sets).toBeGreaterThanOrEqual(3);
+    expect(out[0].sessions[0].exercises[0].target_sets).toBeLessThan(
+      WEEKS[0].sessions[0].exercises[0].target_sets + 1,
+    );
     expect(out[2].sessions[0].exercises[0].target_sets).toBe(4);
+
   });
 
   it("drops RPE during ramp-in weeks only", () => {

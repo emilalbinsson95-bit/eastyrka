@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import {
   applyAdjustments,
+  enforceTemplateFloors,
   buildAdjustments,
   categoryLabel,
   templateWeeklySets,

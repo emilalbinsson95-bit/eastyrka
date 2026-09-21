@@ -658,11 +658,20 @@ export function applyAdjustments(
           tuning.volume *
           (isMainCategory(cat) ? tuning.mainLifts : 1) *
           (isAccessoryCategory(cat) ? tuning.accessory : 1);
-        const mult = isDeload ? manual : global * catMult * rampMult * manual;
-        slots.push({ key: `${si}:${ei}`, base: e.target_sets, mult, cat });
+        const raw = isDeload ? manual : global * catMult * rampMult * manual;
+        // Stacked cuts can multiply into junk volume — clamp the combined effect.
+        const mult = isDeload
+          ? raw
+          : clamp(raw, VOLUME_FLOORS.minWorkingMultiplier, VOLUME_FLOORS.maxWorkingMultiplier);
+        slots.push({ key: `${si}:${ei}`, base: e.target_sets, mult, cat, session: si });
       });
     });
-    const setsByKey = distributeSets(slots);
+    const setsByKey = distributeSets(
+      slots,
+      isDeload ? VOLUME_FLOORS.minSetsPerExerciseDeload : VOLUME_FLOORS.minSetsPerExercise,
+    );
+    enforceFloors(slots, setsByKey, isDeload);
+
 
     return {
       ...w,

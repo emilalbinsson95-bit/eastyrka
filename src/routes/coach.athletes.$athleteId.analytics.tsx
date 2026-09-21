@@ -1037,8 +1037,8 @@ function AnalyticsPage() {
                     <LineChart data={dailyStats}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis yAxisId="right" orientation="right" stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis yAxisId="left" domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 5)), (dataMax: number) => Math.ceil(dataMax + 5)]} stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis yAxisId="right" orientation="right" domain={["auto", "auto"]} stroke="var(--muted-foreground)" fontSize={11} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
                       <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />

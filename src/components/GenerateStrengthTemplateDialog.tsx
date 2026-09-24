@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveVariantExercise } from "@/lib/exerciseVariants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -290,8 +291,7 @@ export function GenerateStrengthTemplateDialog({
 
           const exRows = s.exercises.map((e, idx) => ({
             planned_session_id: ps.id,
-            exercise: e.exercise,
-            variation: e.variation ?? null,
+            ...resolveVariantExercise(e.exercise, e.variation),
             target_sets: e.target_sets,
             target_reps: e.target_reps,
             target_rpe: e.target_rpe ?? null,

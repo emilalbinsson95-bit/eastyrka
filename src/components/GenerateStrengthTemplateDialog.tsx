@@ -100,14 +100,21 @@ export function GenerateStrengthTemplateDialog({
       if (readiness.error) throw readiness.error;
       if (baselines.error) throw baselines.error;
       if (unavail.error) throw unavail.error;
+      const merged = new Map<string, number>();
+      try {
+        const { deriveBaselinesFromLogs } = await import("@/lib/baselineFromLogs");
+        for (const d of await deriveBaselinesFromLogs(athleteId)) merged.set(d.exercise, d.oneRmKg);
+      } catch {
+        /* ignore */
+      }
+      for (const b of baselines.data ?? []) {
+        if (Number(b.one_rm_kg) > 0) merged.set(b.exercise, Number(b.one_rm_kg));
+      }
       return {
         today,
         logs: (logs.data ?? []) as HistoryInputs["logs"],
         readiness: (readiness.data ?? []) as HistoryInputs["readiness"],
-        baselines: (baselines.data ?? []).map((b) => ({
-          exercise: b.exercise,
-          one_rm_kg: Number(b.one_rm_kg),
-        })),
+        baselines: [...merged].map(([exercise, one_rm_kg]) => ({ exercise, one_rm_kg })),
         unavailability: (unavail.data ?? []) as HistoryInputs["unavailability"],
       };
     },

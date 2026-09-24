@@ -226,8 +226,15 @@ function CycleDetailPage() {
         .eq("athlete_id", athleteId);
       if (error) throw error;
       const map: Record<string, number> = {};
+      // Fallback: derive from recent set-1 logs; coach baselines override.
+      try {
+        const { deriveBaselinesFromLogs } = await import("@/lib/baselineFromLogs");
+        for (const d of await deriveBaselinesFromLogs(athleteId)) map[d.exercise] = d.oneRmKg;
+      } catch {
+        /* ignore */
+      }
       for (const row of (data ?? []) as BaselineRow[]) {
-        map[row.exercise] = Number(row.one_rm_kg);
+        if (Number(row.one_rm_kg) > 0) map[row.exercise] = Number(row.one_rm_kg);
       }
       return map;
     },

@@ -149,7 +149,7 @@ function PreviewBody({
   });
 
   const detailQuery = useQuery({
-    queryKey: ["calendar-preview", item.source, item.sourceId],
+    queryKey: ["calendar-preview", item.source, item.sourceId, item.ownerId, item.effectiveDate],
     queryFn: async () => loadDetail(item),
   });
 
@@ -209,6 +209,20 @@ function PreviewBody({
             </div>
           )}
 
+          {detail.done && detail.done.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">What was done</div>
+              <ul className="space-y-1 text-sm">
+                {detail.done.map((l, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-primary" />
+                    <span className="tabular-nums">{l}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {detail.notes && (
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               {detail.notes}
@@ -242,10 +256,59 @@ function PreviewBody({
   );
 }
 
-type Detail = { chips: string[]; lines: string[]; strain: number; notes?: string | null };
+type Detail = { chips: string[]; lines: string[]; strain: number; notes?: string | null; done?: string[] };
+
+type LogRow = { exercise: string; set_number: number; reps: number; weight_kg: number; rpe: number; planned_exercise_id: string | null };
+
+function summarizeLogs(rows: LogRow[]): string[] {
+  const by = new Map<string, LogRow[]>();
+  for (const r of rows) {
+    if (!by.has(r.exercise)) by.set(r.exercise, []);
+    by.get(r.exercise)!.push(r);
+  }
+  return Array.from(by.entries()).map(([ex, sets]) => {
+    const parts = sets
+      .sort((a, b) => a.set_number - b.set_number)
+      .map((s) => `${Number(s.weight_kg)}kg×${s.reps} @${Number(s.rpe)}`);
+    return `${ex} · ${parts.join(", ")}`;
+  });
+}
+
+async function loadLogs(ownerId: string, date: string, plannedIds: string[] | null): Promise<LogRow[]> {
+  const { data } = await supabase
+    .from("training_logs")
+    .select("exercise, set_number, reps, weight_kg, rpe, planned_exercise_id")
+    .eq("athlete_id", ownerId)
+    .eq("date", date)
+    .order("created_at", { ascending: true });
+  const rows = (data ?? []) as LogRow[];
+  if (plannedIds === null) return rows.filter((r) => !r.planned_exercise_id);
+  const set = new Set(plannedIds);
+  return rows.filter((r) => !r.planned_exercise_id || set.has(r.planned_exercise_id));
+}
 
 async function loadDetail(item: CalendarItem): Promise<Detail> {
-  if (item.source === "planned") return loadStrength(item.sourceId);
+  if (item.source === "adhoc_strength") {
+    const rows = await loadLogs(item.ownerId, item.sourceId, null);
+    const avg = rows.length ? rows.reduce((a, r) => a + Number(r.rpe), 0) / rows.length : 7;
+    return {
+      chips: [`${new Set(rows.map((r) => r.exercise)).size} exercises`, `${rows.length} sets`, `avg RPE ${avg.toFixed(1)}`],
+      lines: [],
+      strain: rows.length * (avg / 5),
+      done: summarizeLogs(rows),
+    };
+  }
+  if (item.source === "planned") {
+    const d = await loadStrength(item.sourceId);
+    const { data: pe } = await supabase.from("planned_exercises").select("id").eq("planned_session_id", item.sourceId);
+    const ids = (pe ?? []).map((r) => r.id as string);
+    const { data: linked } = ids.length
+      ? await supabase.from("training_logs").select("date").eq("athlete_id", item.ownerId).in("planned_exercise_id", ids).limit(1)
+      : { data: [] as { date: string }[] };
+    const date = (linked?.[0]?.date as string | undefined) ?? item.effectiveDate;
+    d.done = summarizeLogs(await loadLogs(item.ownerId, date, ids));
+    return d;
+  }
   if (item.source === "endurance") return loadEndurance(item.sourceId);
   return loadRehab(item.sourceId);
 }

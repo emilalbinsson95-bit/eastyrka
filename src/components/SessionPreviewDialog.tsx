@@ -149,7 +149,7 @@ function PreviewBody({
   });
 
   const detailQuery = useQuery({
-    queryKey: ["calendar-preview", item.source, item.sourceId],
+    queryKey: ["calendar-preview", item.source, item.sourceId, item.ownerId, item.effectiveDate],
     queryFn: async () => loadDetail(item),
   });
 

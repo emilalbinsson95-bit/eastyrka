@@ -218,16 +218,20 @@ const CATEGORY_RULES: Array<[RegExp, VolumeCategory]> = [
   [/deadlift|\bdl\b|block pull|rack pull|deficit|snatch grip|clean pull|trap bar|power clean|hang clean|\bclean\b|snatch\b|high pull/i, "hinge"],
   [/box jump|broad jump|jump squat|hurdle hop|depth jump|plyo|bounding|skip/i, "quads"],
   [/medicine ball|med ball|\bthrow\b|sled|carry|farmer|sprint/i, "core"],
-  [/overhead press|shoulder press|military press|push press|jerk|landmine press|\bohp\b|arnold press|z press|machine shoulder press/i, "vertical-press"],
-  [/lateral raise|side raise|rear.?delt|reverse fly|face pull|upright row|shrug/i, "delts"],
+  [/overhead press|shoulder press|military press|push press|jerk|landmine press|\bohp\b|arnold press|z press|machine shoulder press|strict press|behind.?the.?neck press/i, "vertical-press"],
+  [/lateral raise|side raise|front raise|rear.?delt|reverse fly|face pull|upright row|shrug|pull.?apart|ytw|y.?raise/i, "delts"],
   [/bench|spoto|floor press|board press|pin press|larsen|\bdip\b|dips|jm press/i, "horizontal-press"],
-  [/incline dumbbell press|incline press|chest fly|pec deck|cable fly|push.?up|chest press|machine press/i, "chest"],
+  [/incline dumbbell press|incline press|chest fly|pec deck|cable fly|\bfly\b|flyes?\b|crossover|push.?up|chest press|machine press/i, "chest"],
   [/pulldown|chin.?up|pull.?up|lat prayer|straight.?arm|pullover/i, "vertical-pull"],
   [/row\b|rows\b|pendlay|seal row|t.?bar|meadows|inverted row/i, "horizontal-pull"],
   [/pushdown|skull|triceps|tricep|overhead extension|kickback|close.?grip/i, "triceps"],
   [/curl|biceps|bicep|hammer|preacher/i, "biceps"],
   [/calf|calves|soleus|tibialis/i, "calves"],
-  [/plank|ab wheel|hanging leg|leg raise|crunch|sit.?up|core|pallof|dead bug|copenhagen|rotation/i, "core"],
+  [/abductor|hip abduction|clamshell|monster walk/i, "hamstrings"],
+  [/adductor|hip adduction/i, "quads"],
+  [/plank|ab wheel|hanging leg|leg raise|crunch|sit.?up|core|pallof|dead.?bug|bird.?dog|copenhagen|rotation/i, "core"],
+  // grip & conditioning — tracked as general/core work
+  [/dead hang|plate pinch|grip|wrist|assault bike|air bike|stairmaster|jump rope|rower|erg|bike|treadmill/i, "core"],
 ];
 
 export function volumeCategory(e: Pick<TemplateExercise, "exercise" | "variation">): VolumeCategory {

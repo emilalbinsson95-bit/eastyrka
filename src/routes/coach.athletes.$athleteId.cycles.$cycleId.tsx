@@ -34,6 +34,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
+import { WeeklyReviewDialog } from "@/components/WeeklyReviewDialog";
 import { useAuth } from "@/lib/auth";
 import {
   Card,
@@ -751,6 +752,7 @@ function WeekEditor({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <WeeklyReviewDialog athleteId={athleteId} weekId={week.id} weekStartDate={week.week_start_date} />
           {allWeeks.filter((w) => w.id !== week.id).length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

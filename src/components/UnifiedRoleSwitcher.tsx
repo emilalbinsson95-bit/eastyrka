@@ -32,8 +32,10 @@ import {
  * Renders nothing if the account holds no roles yet (loading state).
  */
 
+type ViewRole = Exclude<AppRole, "admin">;
+
 const ROLE_META: Record<
-  AppRole,
+  ViewRole,
   {
     label: string;
     Icon: typeof Users;
@@ -46,7 +48,7 @@ const ROLE_META: Record<
   patient: { label: "Patient view", Icon: HeartPulse, route: "/patient" },
 };
 
-const ROLE_ORDER: AppRole[] = ["coach", "athlete", "physio", "patient"];
+const ROLE_ORDER: ViewRole[] = ["coach", "athlete", "physio", "patient"];
 
 export function UnifiedRoleSwitcher() {
   const { user, role, roles, refreshRole, setViewMode } = useAuth();

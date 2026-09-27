@@ -60,6 +60,9 @@ function CoachLayout() {
             <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
             <CoachNavLink to="/coach/methodology" icon={<FlaskConical className="h-4 w-4" />} label={t("nav.methodology")} />
             <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
+            {isAdmin && (
+              <CoachNavLink to="/coach/admin" icon={<ShieldCheck className="h-4 w-4" />} label="Admin" />
+            )}
           </nav>
           <div className="flex items-center gap-1">
             <NotificationsBell />

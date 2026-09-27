@@ -8,6 +8,13 @@
       "when": 1790497045791,
       "tag": "0000_add_admin_to_app_role",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790497067514,
+      "tag": "0001_admin_policies_and_rpcs",
+      "breakpoints": true
     }
   ]
 }

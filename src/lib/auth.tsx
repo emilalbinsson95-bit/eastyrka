@@ -10,9 +10,9 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "coach" | "athlete" | "physio" | "patient";
+export type AppRole = "coach" | "athlete" | "physio" | "patient" | "admin";
 
-const ALL_ROLES: AppRole[] = ["coach", "athlete", "physio", "patient"];
+const ALL_ROLES: AppRole[] = ["coach", "athlete", "physio", "patient", "admin"];
 
 const VIEW_MODE_KEY = "ea-view-mode";
 

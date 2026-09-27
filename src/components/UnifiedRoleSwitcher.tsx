@@ -32,8 +32,10 @@ import {
  * Renders nothing if the account holds no roles yet (loading state).
  */
 
+type ViewRole = Exclude<AppRole, "admin">;
+
 const ROLE_META: Record<
-  AppRole,
+  ViewRole,
   {
     label: string;
     Icon: typeof Users;
@@ -46,7 +48,7 @@ const ROLE_META: Record<
   patient: { label: "Patient view", Icon: HeartPulse, route: "/patient" },
 };
 
-const ROLE_ORDER: AppRole[] = ["coach", "athlete", "physio", "patient"];
+const ROLE_ORDER: ViewRole[] = ["coach", "athlete", "physio", "patient"];
 
 export function UnifiedRoleSwitcher() {
   const { user, role, roles, refreshRole, setViewMode } = useAuth();
@@ -56,7 +58,7 @@ export function UnifiedRoleSwitcher() {
   if (!user || roles.length === 0) return null;
 
   const enableMutation = useMutation({
-    mutationFn: async (target: AppRole) => {
+    mutationFn: async (target: ViewRole) => {
       const { error: roleErr } = await supabase
         .from("user_roles")
         .upsert(
@@ -109,8 +111,10 @@ export function UnifiedRoleSwitcher() {
     navigate({ to: ROLE_META[next].route });
   };
 
-  const CurrentIcon = role ? ROLE_META[role].Icon : ArrowRightLeft;
-  const currentLabel = role ? ROLE_META[role].label : "Switch view";
+  const viewRole: ViewRole | null =
+    role && role !== "admin" ? role : null;
+  const CurrentIcon = viewRole ? ROLE_META[viewRole].Icon : ArrowRightLeft;
+  const currentLabel = viewRole ? ROLE_META[viewRole].label : "Switch view";
 
   return (
     <DropdownMenu>

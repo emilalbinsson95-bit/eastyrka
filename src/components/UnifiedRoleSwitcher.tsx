@@ -58,7 +58,7 @@ export function UnifiedRoleSwitcher() {
   if (!user || roles.length === 0) return null;
 
   const enableMutation = useMutation({
-    mutationFn: async (target: AppRole) => {
+    mutationFn: async (target: ViewRole) => {
       const { error: roleErr } = await supabase
         .from("user_roles")
         .upsert(

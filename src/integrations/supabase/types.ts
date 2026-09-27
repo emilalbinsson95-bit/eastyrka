@@ -1625,7 +1625,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "coach" | "athlete" | "physio" | "patient"
+      app_role: "coach" | "athlete" | "physio" | "patient" | "admin"
       cycle_status: "draft" | "active" | "archived"
       endurance_discipline: "run" | "bike" | "swim" | "other"
       endurance_mode: "quick" | "structured"
@@ -1760,7 +1760,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["coach", "athlete", "physio", "patient"],
+      app_role: ["coach", "athlete", "physio", "patient", "admin"],
       cycle_status: ["draft", "active", "archived"],
       endurance_discipline: ["run", "bike", "swim", "other"],
       endurance_mode: ["quick", "structured"],

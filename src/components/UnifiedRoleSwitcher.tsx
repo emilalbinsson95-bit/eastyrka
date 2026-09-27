@@ -111,8 +111,10 @@ export function UnifiedRoleSwitcher() {
     navigate({ to: ROLE_META[next].route });
   };
 
-  const CurrentIcon = role ? ROLE_META[role].Icon : ArrowRightLeft;
-  const currentLabel = role ? ROLE_META[role].label : "Switch view";
+  const viewRole: ViewRole | null =
+    role && role !== "admin" ? role : null;
+  const CurrentIcon = viewRole ? ROLE_META[viewRole].Icon : ArrowRightLeft;
+  const currentLabel = viewRole ? ROLE_META[viewRole].label : "Switch view";
 
   return (
     <DropdownMenu>

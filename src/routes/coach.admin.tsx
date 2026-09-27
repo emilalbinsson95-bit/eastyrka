@@ -34,7 +34,7 @@ function AdminPage() {
     enabled: isAdmin,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_users", {
-        _query: query.trim() || null,
+        _query: query.trim() || undefined,
       });
       if (error) throw error;
       return (data ?? []) as AdminUser[];

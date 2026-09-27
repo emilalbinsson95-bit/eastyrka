@@ -2,7 +2,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle, User, FlaskConical } from "lucide-react";
+import { Users, BookOpen, Mail, LogOut, Activity, MessageCircle, User, FlaskConical, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,8 @@ export const Route = createFileRoute("/coach")({
 });
 
 function CoachLayout() {
-  const { user, role, loading, signOut } = useAuth();
+  const { user, role, roles, loading, signOut } = useAuth();
+  const isAdmin = roles.includes("admin");
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -87,6 +88,9 @@ function CoachLayout() {
           <CoachNavLink to="/coach/invites" icon={<Mail className="h-4 w-4" />} label={t("nav.invites")} />
           <CoachNavLink to="/coach/methodology" icon={<FlaskConical className="h-4 w-4" />} label={t("nav.methodology")} />
           <CoachNavLink to="/coach/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
+          {isAdmin && (
+            <CoachNavLink to="/coach/admin" icon={<ShieldCheck className="h-4 w-4" />} label="Admin" />
+          )}
         </nav>
       </header>
 
@@ -103,7 +107,7 @@ function CoachNavLink({
   label,
   exact,
 }: {
-  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/coach/methodology" | "/messages";
+  to: "/coach" | "/coach/exercises" | "/coach/invites" | "/coach/me" | "/coach/methodology" | "/coach/admin" | "/messages";
   icon: React.ReactNode;
   label: string;
   exact?: boolean;

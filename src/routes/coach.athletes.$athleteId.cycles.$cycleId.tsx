@@ -128,6 +128,7 @@ interface WeekPlanRow {
   week_index: number | null;
   week_start_date: string;
   status: "draft" | "published" | "archived";
+  is_deload?: boolean;
 }
 
 interface PlannedExerciseRow {
@@ -196,7 +197,7 @@ function CycleDetailPage() {
     queryFn: async (): Promise<WeekPlanRow[]> => {
       const { data, error } = await supabase
         .from("week_plans")
-        .select("id, week_index, week_start_date, status")
+        .select("id, week_index, week_start_date, status, is_deload")
         .eq("mesocycle_id", cycleId)
         .order("week_index", { ascending: true });
       if (error) throw error;
@@ -752,6 +753,21 @@ function WeekEditor({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={week.is_deload ? "secondary" : "outline"}
+            onClick={async () => {
+              const { error } = await supabase
+                .from("week_plans")
+                .update({ is_deload: !week.is_deload })
+                .eq("id", week.id);
+              if (error) return toast.error(error.message);
+              qc.invalidateQueries();
+              toast.success(week.is_deload ? "Unmarked light week" : "Marked as planned light week");
+            }}
+          >
+            {week.is_deload ? "Planned light ✓" : "Mark light week"}
+          </Button>
           <WeeklyReviewDialog athleteId={athleteId} weekId={week.id} weekStartDate={week.week_start_date} />
           {allWeeks.filter((w) => w.id !== week.id).length > 0 && (
             <DropdownMenu>
@@ -1104,6 +1120,9 @@ function ExerciseRow({
         rpe: rpeVal,
         rir: rirVal,
       });
+    } else if (overrides.weight === undefined && ex.target_weight_kg != null) {
+      // No 1RM known (e.g. renamed variation): keep the generated weight.
+      kgVal = Number(ex.target_weight_kg);
     }
     return {
       target_sets: s,

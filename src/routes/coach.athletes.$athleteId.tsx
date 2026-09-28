@@ -1,3 +1,4 @@
+import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
@@ -203,6 +204,10 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     },
   });
 
+  const lightDatesQuery = useQuery({
+    queryKey: ["planned-light-dates", athleteId],
+    queryFn: () => fetchPlannedLightDates(athleteId),
+  });
   const baselinesQuery = useQuery({
     queryKey: ["athlete-baselines", athleteId],
     queryFn: async () => {
@@ -299,8 +304,9 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
         rpe: Number(l.rpe),
       })),
       baselines,
+      lightDatesQuery.data,
     );
-  }, [logsQuery.data, baselinesQuery.data]);
+  }, [logsQuery.data, baselinesQuery.data, lightDatesQuery.data]);
 
   const editsById = useMemo(() => {
     const map = new Map<string, { editedAt: string | null; origReps: number | null; origRpe: number | null }>();

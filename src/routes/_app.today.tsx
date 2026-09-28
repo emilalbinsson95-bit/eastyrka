@@ -1,3 +1,4 @@
+import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -243,6 +244,10 @@ function TodayPage() {
     },
   });
 
+  const lightDatesQuery = useQuery({
+    queryKey: ["planned-light-dates", userId],
+    queryFn: () => fetchPlannedLightDates(userId),
+  });
   const baselinesQuery = useQuery({
     queryKey: ["baselines", userId],
     queryFn: async () => {
@@ -410,8 +415,9 @@ function TodayPage() {
           rpe: Number(l.rpe),
         })),
         baselines,
+        lightDatesQuery.data,
       ),
-    [logs, baselines],
+    [logs, baselines, lightDatesQuery.data],
   );
 
   const isLoading =

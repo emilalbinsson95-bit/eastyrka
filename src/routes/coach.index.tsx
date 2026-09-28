@@ -131,13 +131,13 @@ function CoachRosterPage() {
         0;
 
       // Latest session per athlete: average EAk across that day's sets
-      const latestByAthlete = new Map<string, { date: string; eaks: number[] }>();
+      const latestByAthlete = new Map<string, { date: string; byEx: Map<string, number> }>();
       for (const log of recentLogs ?? []) {
         const current = latestByAthlete.get(log.athlete_id);
         if (current && current.date !== log.date) continue;
         const baseline = baselineFor(log.athlete_id, log.exercise as string);
         if (baseline <= 0) {
-          if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, eaks: [] });
+          if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, byEx: new Map() });
           continue;
         }
         const eak = eaKoefficient(
@@ -148,8 +148,9 @@ function CoachRosterPage() {
           },
           baseline,
         );
-        const entry = current ?? { date: log.date, eaks: [] };
-        entry.eaks.push(eak);
+        const entry = current ?? { date: log.date, byEx: new Map<string, number>() };
+        const exKey = log.exercise as string;
+        entry.byEx.set(exKey, Math.max(entry.byEx.get(exKey) ?? 0, eak));
         latestByAthlete.set(log.athlete_id, entry);
       }
 
@@ -168,7 +169,7 @@ function CoachRosterPage() {
 
       return athleteIds.map((id) => {
         const latest = latestByAthlete.get(id);
-        const eaks = latest?.eaks ?? [];
+        const eaks = latest ? Array.from(latest.byEx.values()) : [];
         return {
           athlete_id: id,
           full_name: profileMap.get(id) ?? null,

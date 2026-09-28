@@ -1,3 +1,4 @@
+import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -69,6 +70,10 @@ function HistoryPage() {
     },
   });
 
+  const lightDatesQuery = useQuery({
+    queryKey: ["planned-light-dates", userId],
+    queryFn: () => fetchPlannedLightDates(userId),
+  });
   const baselinesQuery = useQuery({
     queryKey: ["baselines", userId],
     queryFn: async () => {
@@ -123,6 +128,7 @@ function HistoryPage() {
         rpe: Number(l.rpe),
       })),
       baselines,
+      lightDatesQuery.data,
     );
     const meta = new Map(logs.map((l) => [l.id, l]));
     const byDate = new Map<string, Array<{ p: typeof processed[number]; row: LogRow }>>();
@@ -133,7 +139,7 @@ function HistoryPage() {
       byDate.set(p.source.date, arr);
     }
     return Array.from(byDate.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [logsQuery.data, baselinesQuery.data]);
+  }, [logsQuery.data, baselinesQuery.data, lightDatesQuery.data]);
 
   return (
     <div className="space-y-4">

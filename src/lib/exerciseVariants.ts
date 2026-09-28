@@ -7,8 +7,8 @@ const KEEP = /^(competition stance|competition grip & pause|over-warm single|con
 
 const EXPLICIT: Array<[RegExp, RegExp, string]> = [
   [/^back squat$/i, /pause/i, "Pause squat"],
-  [/^back squat$/i, /tempo/i, "Tempo squat"],
   [/^back squat$/i, /high-?bar/i, "High-bar squat"],
+  [/^back squat$/i, /tempo/i, "Tempo squat"],
   [/^back squat$/i, /low-?bar/i, "Low-bar squat"],
   [/^bench press$/i, /touch.?and.?go/i, "Touch-and-go bench press"],
   [/^bench press$/i, /spoto/i, "Spoto press"],

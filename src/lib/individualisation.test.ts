@@ -299,6 +299,20 @@ describe("coach tuning + distributed rounding", () => {
 });
 
 describe("volume landmarks", () => {
+  it("applies separate lift tolerance to squat, bench and deadlift sets", () => {
+    const mixed: TemplateWeek = { week_index: 1, label: "Week 1", sessions: [{ day_of_week: 1, title: "Main lifts", exercises: [
+      { exercise: "Back squat", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+      { exercise: "Bench press", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+      { exercise: "Deadlift", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
+    ] }] };
+    const out = applyAdjustments([mixed], [], emptyHistory(), DEFAULT_TUNING, { squat: 0.75, bench: 1.25, deadlift: 0.6 });
+    const exercises = out[0].sessions[0].exercises;
+    expect(exercises[0].target_sets).toBe(6);
+    expect(exercises[1].target_sets).toBe(10);
+    expect(exercises[2].target_sets).toBe(5);
+    expect(volumeWarnings([mixed], { squat: 0.6, bench: 1, deadlift: 1 }).some((x) => x.category === "squat" && x.level === "above-mrv")).toBe(false);
+  });
+
   it("flags weekly sets above MRV", () => {
     const heavy: TemplateWeek = {
       week_index: 1,

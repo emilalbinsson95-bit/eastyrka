@@ -41,6 +41,7 @@ import {
   type OverloadOptions,
 } from "@/lib/overload";
 import { cn } from "@/lib/utils";
+import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 
 
 export function GenerateStrengthTemplateDialog({
@@ -121,6 +122,18 @@ export function GenerateStrengthTemplateDialog({
     },
   });
 
+  const volumeProfileQuery = useQuery({
+    queryKey: ["strength-volume-profile", athleteId],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("athlete_strength_volume_profiles")
+        .select("squat_factor, bench_factor, deadlift_factor").eq("athlete_id", athleteId).maybeSingle();
+      if (error) throw error;
+      return volumeProfileFromRow(data);
+    },
+  });
+  const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
+
   const baseWeeks = useMemo(
     () => (template ? enforceTemplateFloors(template.buildWeeks(daysPerWeek)) : []),
     [template, daysPerWeek],
@@ -173,8 +186,9 @@ export function GenerateStrengthTemplateDialog({
             activeAdjustments,
             historyQuery.data ?? emptyHistory,
             tuning,
+             volumeProfile,
           ),
-    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning],
+    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile],
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
@@ -188,11 +202,12 @@ export function GenerateStrengthTemplateDialog({
       .sort((a, b) => b.sets - a.sets);
   }, [plannedWeeks]);
 
-  const warnings = useMemo(() => volumeWarnings(plannedWeeks), [plannedWeeks]);
+  const warnings = useMemo(() => volumeWarnings(plannedWeeks, volumeProfile), [plannedWeeks, volumeProfile]);
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
+      if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
 
 
@@ -211,7 +226,7 @@ export function GenerateStrengthTemplateDialog({
             activeAdjustments.length > 0
               ? ` Individualised from history: ${activeAdjustments.map((a) => a.title).join("; ")}.`
               : ""
-          }${
+          } Athlete volume profile: squat ×${volumeProfile.squat.toFixed(2)}, bench ×${volumeProfile.bench.toFixed(2)}, deadlift ×${volumeProfile.deadlift.toFixed(2)}.${
             tuningTouched
               ? ` Coach tuning: volume ×${tuning.volume.toFixed(2)}, main lifts ×${tuning.mainLifts.toFixed(2)}, accessories ×${tuning.accessory.toFixed(2)}, RPE ${tuning.intensity >= 0 ? "+" : ""}${tuning.intensity}.`
               : ""
@@ -510,6 +525,9 @@ export function GenerateStrengthTemplateDialog({
 
 
           {/* ---- coach tuning sliders ---- */}
+          <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+            Athlete volume baseline: squat {Math.round(volumeProfile.squat * 100)}%, bench {Math.round(volumeProfile.bench * 100)}%, deadlift {Math.round(volumeProfile.deadlift * 100)}%. Set this on the athlete's Baselines page; the preview below includes it.
+          </div>
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">
               <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
@@ -671,7 +689,7 @@ export function GenerateStrengthTemplateDialog({
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={!template || mutation.isPending}
+            disabled={!template || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
           >
             {mutation.isPending ? "Generating…" : "Generate mesocycle"}
           </Button>

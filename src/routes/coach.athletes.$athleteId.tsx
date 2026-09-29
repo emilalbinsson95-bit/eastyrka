@@ -42,6 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import { EnduranceSummaryCard } from "@/components/EnduranceSummary";
 import { RpePaceEstimateCard } from "@/components/RpePaceEstimateCard";
+import { StrengthVolumeProfileCard } from "@/components/StrengthVolumeProfileCard";
 import { MesocycleProgressCard } from "@/components/MesocycleProgressCard";
 import { E1rmPrCard, RpePaceTrendCard } from "@/components/StrengthTrendCards";
 
@@ -178,6 +179,7 @@ function AthleteDetailPage() {
         </TabsContent>
 
         <TabsContent value="baselines">
+          <div className="mb-4"><StrengthVolumeProfileCard athleteId={athleteId} /></div>
           <BaselinesEditor athleteId={athleteId} />
         </TabsContent>
       </Tabs>

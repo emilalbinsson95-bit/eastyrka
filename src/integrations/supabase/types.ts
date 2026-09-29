@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_strength_volume_profiles: {
+        Row: {
+          athlete_id: string
+          bench_factor: number
+          deadlift_factor: number
+          squat_factor: number
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          bench_factor?: number
+          deadlift_factor?: number
+          squat_factor?: number
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          bench_factor?: number
+          deadlift_factor?: number
+          squat_factor?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       athlete_unavailability: {
         Row: {
           athlete_id: string

@@ -5,3 +5,4 @@
 - [x] Review and correct coach invitation status/visibility and send an in-app request notification.
 - [x] Add email notification preferences for messages and coach invitations; sending waits for a verified sender domain.
 - [x] Add password recovery by email with a public new-password page.
+- [x] Add athlete-specific squat, bench, and deadlift volume controls to automatic program generation.

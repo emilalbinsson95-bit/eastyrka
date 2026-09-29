@@ -20,6 +20,7 @@ import { parseTimeToSeconds, secondsToTimeStr } from "@/lib/endurancePaceHr";
 import { ConnectionsCard } from "@/components/ConnectionsCard";
 import { PendingCoachInvites } from "@/components/PendingCoachInvites";
 import { EmailPreferences } from "@/components/EmailPreferences";
+import { StrengthVolumeProfileCard } from "@/components/StrengthVolumeProfileCard";
 
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
@@ -127,6 +128,7 @@ function MePage() {
 
       <ConnectionsCard />
       <EmailPreferences userId={userId} />
+      <StrengthVolumeProfileCard athleteId={userId} />
 
       <Card>
         <CardHeader>

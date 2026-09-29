@@ -28,23 +28,21 @@ function ResetPasswordPage() {
 
   useEffect(() => {
     let active = true;
+    let invalidTimer: ReturnType<typeof setTimeout> | undefined;
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const query = new URLSearchParams(window.location.search);
     const isRecovery = hash.get("type") === "recovery" || query.get("type") === "recovery";
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (active && event === "PASSWORD_RECOVERY") setState("ready");
+      if (active && isRecovery && event === "PASSWORD_RECOVERY") {
+        if (invalidTimer) clearTimeout(invalidTimer);
+        // This event comes from the verified email link, not an existing signed-in session.
+        setState("ready");
+      }
     });
 
-    async function checkLink() {
-      if (!isRecovery) {
-        if (active) setState("invalid");
-        return;
-      }
-      const { data, error } = await supabase.auth.getUser();
-      if (active) setState(!error && data.user ? "ready" : "invalid");
-    }
-    void checkLink();
-    return () => { active = false; subscription.unsubscribe(); };
+    if (!isRecovery) setState("invalid");
+    else invalidTimer = setTimeout(() => { if (active) setState((current) => current === "ready" ? current : "invalid"); }, 3000);
+    return () => { active = false; if (invalidTimer) clearTimeout(invalidTimer); subscription.unsubscribe(); };
   }, []);
 
   async function submit(e: FormEvent) {

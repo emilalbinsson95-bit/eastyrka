@@ -304,6 +304,39 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
       </Section>
         </TabsContent>
         <TabsContent value="coaching" className="space-y-6">
+      <Section title="Målet: en självständig atlet">
+        <p>Den bästa coachen gör sig själv överflödig. Utifrån referenslistan nedan
+          kan coachningen sammanfattas i sex principer:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Behovsanpassa ledarskapet</b> (Söderfjäll): ny atlet behöver tydlig
+            styrning; erfaren atlet behöver mandat. Mät mognad, inte bara styrka —
+            och trappa ner din styrning medvetet allteftersom.</li>
+          <li><b>Bygg psykologisk trygghet först</b> (Edmondson; Googles Project
+            Aristotle): atleten måste våga rapportera smärta, missade pass och
+            tvivel utan att det straffar sig. Utan trygghet loggas brus — och alla
+            våra modeller (EAk, ACWR, drift) matas med dålig data.</li>
+          <li><b>Överlämna rollen successivt</b> (Sundlin & Sundlin): låt atleten
+            successivt äga sina beslut — först logga ärligt, sedan tolka sin egen
+            dagsform, sist föreslå egna justeringar som du bara granskar.</li>
+          <li><b>Kommunicera klart</b> (SAVI-modellen, Benjamin & Yeager): säg vad
+            du ser, vad du tror det betyder, och fråga vad atleten upplever —
+            innan du ger råd. Feedback som börjar med atletens egen bild fastnar.</li>
+          <li><b>Balansera transformativt och transaktionellt</b> (Bass & Avolio;
+            Lowe 1996; Ng 2017): inspiration och mening lyfter motivationen, men
+            tydliga mål, uppföljning och konsekvenser (transaktionellt) är det som
+            faktiskt driver prestation. Bägge behövs — meta-analyserna visar att de
+            kompletterar varandra.</li>
+          <li><b>Behandla coach–atlet som ett team av två</b> (Wheelan; Hoffer
+            Gittell; Tomasello): relationell koordinering — delade mål, delad
+            kunskap, ömsesidig respekt — slår instruktioner. Människor är byggda
+            för samarbete; använd det istället för att coacha ovanifrån.</li>
+        </ul>
+        <p><b>I praktiken i SETPOINT:</b> börja med att logga åt atleten, gå över
+          till att atleten loggar och du kommenterar, och avsluta med att atleten
+          föreslår ändringar (t.ex. via Review & adjust) som du bara godkänner.
+          När atletens egna förslag konsekvent matchar dina — är målet nått.</p>
+      </Section>
+
       <Section title="Träningslast: Foster sRPE">
         <p>Per pass: <code>load = minuter × RPE</code> (linjär, validerad). När
           per-steg/per-rep actuals finns används tidsviktad segment-summa istället för
@@ -392,6 +425,81 @@ ratio   = 2400 / 1960 = 1.22  → sweet spot`}
           <li>Re-tune rör aldrig race-passet eller pass markerade som testfönster.</li>
           <li>HIIT-tungt schema vid låg volym förutsätter att atleten är skadefri — vid
             ACWR &gt; 1.3 prioriterar systemet alltid easy oavsett volymbucket.</li>
+        </ul>
+      </Section>
+
+      <Section title="Forskningsgrund — coachning & ledarskap">
+        <p className="font-semibold text-foreground mt-3">Självledarskap och rolltagning</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Sundlin AL, Sundlin P. (2018). <em>Ta din roll på jobbet</em>. Liber.</li>
+          <li>Sundlin AL, Sundlin P. (2020). <em>Jaget och jobbet</em>. Liber.</li>
+          <li>Sandahl C, Falkenström E, Knorring M. (2017). <em>Chef med känsla och
+            förnuft — om professionalism och etik i ledarskap</em>, 2 uppl. Natur och Kultur.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Ledarskap</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Söderfjäll S. (2012). <em>Behovsanpassat ledarskap</em>.</li>
+          <li>Söderfjäll S. (2018). <em>En liten bok om ledarskap</em>.</li>
+          <li>Savén B. (2020). <em>Bygga ledarskap</em>.</li>
+          <li>Gospic K. (2015). <em>Neuroledarskap</em>. Natur & Kultur.</li>
+          <li>Bushe G. (2010). <em>Klart ledarskap</em>. Ekerlids.</li>
+          <li>Lowe KB. (1996). <em>Effectiveness correlates of transformational and
+            transactional leadership: A meta-analytic review</em>. The Leadership Quarterly 7(3).</li>
+          <li>Ng TWH. (2017). <em>Transformational leadership and performance outcomes</em>.
+            The Leadership Quarterly 28(3).</li>
+          <li>Piccolo RF et al. (2012). <em>The relative impact of complementary leader
+            behaviors</em>. The Leadership Quarterly 23(3).</li>
+          <li>Bass BM, Avolio BJ. (1994). <em>Improving organizational effectiveness
+            through transformational leadership</em>. Sage.</li>
+          <li>Bass BM. (1997). <em>Does the transactional-transformational leadership
+            paradigm transcend organizational and national boundaries?</em> American
+            Psychologist 52(2).</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Kommunikation</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Benjamin BE, Yeager A, Simon A. (2015). <em>Klar kommunikation — SAVI</em>.
+            Studentlitteratur.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Psykologisk trygghet</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Edmondson AC. (2018). <em>The Fearless Organization</em>. Wiley.</li>
+          <li>Porath CL. (2016). <em>Mastering Civility</em>. Grand Central Publishing.</li>
+          <li>Edmondson AC, Nickisch C. (2019). <em>Creating psychological safety in the
+            workplace</em>. Harvard Business Review.</li>
+          <li>Frazier ML et al. (2016). <em>Psychological safety: A meta-analytic review
+            and extension</em>. Personnel Psychology.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Team</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Wheelan SA. (2010). <em>Att bygga effektiva team</em>. Studentlitteratur.</li>
+          <li>Wheelan SA. (2005). <em>Group Processes: A Developmental Perspective</em>,
+            2nd ed. Allyn & Bacon.</li>
+          <li>Söderfjäll S. (2017). <em>To team or not to team</em>. Type and Tell.</li>
+          <li>Jacobsson C, Åkerlund M. (2019). <em>Teamutveckling i teori och praktik</em>.
+            Natur och Kultur.</li>
+          <li>Edmondson AC. (2012). <em>Teaming</em>. Pfeiffer Wiley.</li>
+          <li>De Jong BA, Dirks KT, Gillespie N. (2016). <em>Trust and team performance:
+            a meta-analysis</em>. Journal of Applied Psychology 101(8).</li>
+          <li>Lacerenza CN et al. (2018). <em>Team development interventions</em>.
+            American Psychologist 73(4).</li>
+          <li>Burke CS et al. (2006). <em>What type of leadership behaviors are functional
+            in teams?</em> The Leadership Quarterly 17(3).</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Relationell koordinering och mentalisering</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Hoffer Gittell J. (2016). <em>Transforming Relationships for High Performance</em>.
+            Stanford University Press.</li>
+          <li>Tomasello M. (2009). <em>Why We Cooperate</em>. MIT Press.</li>
+          <li>Sapolsky RM. (2018). <em>Varför vi beter oss som vi gör</em>. Natur och Kultur.</li>
+          <li>Swami V. (2013). <em>Evolutionspsykologi — en kritisk introduktion</em>.
+            Studentlitteratur.</li>
+          <li>Tomasello M, Rakoczy H. (2003). <em>What makes human cognition unique?</em>
+            Mind and Language 18.</li>
         </ul>
       </Section>
 

@@ -42,6 +42,7 @@ import {
 } from "@/lib/overload";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
+import { summarizePeaking, peakingBasis } from "@/lib/peaking";
 
 
 export function GenerateStrengthTemplateDialog({
@@ -74,10 +75,13 @@ export function GenerateStrengthTemplateDialog({
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const since28 = useMemo(() => format(addDays(new Date(), -28), "yyyy-MM-dd"), []);
+  // Logs go back 3 months: the 4-week engine filters internally, the peaking
+  // block needs the full quarter.
+  const since92 = useMemo(() => format(addDays(new Date(), -92), "yyyy-MM-dd"), []);
 
   // ---- athlete history (drives individualisation) ----
   const historyQuery = useQuery({
-    queryKey: ["individualisation-history", athleteId, since28],
+    queryKey: ["individualisation-history", athleteId, since92],
     enabled: open,
     queryFn: async (): Promise<HistoryInputs> => {
       const [logs, readiness, baselines, unavail] = await Promise.all([
@@ -85,7 +89,7 @@ export function GenerateStrengthTemplateDialog({
           .from("training_logs")
           .select("date, exercise, variation, reps, weight_kg, rpe")
           .eq("athlete_id", athleteId)
-          .gte("date", since28),
+          .gte("date", since92),
         supabase
           .from("readiness_surveys")
           .select("date, fatigue, work_stress, life_stress, daily_form, sleep_hours")
@@ -134,10 +138,23 @@ export function GenerateStrengthTemplateDialog({
   });
   const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
 
-  const baseWeeks = useMemo(
-    () => (template ? enforceTemplateFloors(template.buildWeeks(daysPerWeek)) : []),
-    [template, daysPerWeek],
-  );
+  const peakSummary = useMemo(() => {
+    if (!template?.buildFromHistory || !historyQuery.data) return null;
+    return summarizePeaking({
+      today: historyQuery.data.today,
+      logs: historyQuery.data.logs,
+      baselines: historyQuery.data.baselines,
+    });
+  }, [template, historyQuery.data]);
+
+  const baseWeeks = useMemo(() => {
+    if (!template) return [];
+    if (template.buildFromHistory && peakSummary) {
+      return template.buildFromHistory(daysPerWeek, peakSummary);
+    }
+    if (template.skipVolumeFloors) return template.buildWeeks(daysPerWeek);
+    return enforceTemplateFloors(template.buildWeeks(daysPerWeek));
+  }, [template, daysPerWeek, peakSummary]);
 
 
   const suggestion = useMemo(() => {
@@ -152,9 +169,21 @@ export function GenerateStrengthTemplateDialog({
     setOffIds(new Set());
   }, [suggestionKey]);
 
+  const isPeaking = Boolean(template?.buildFromHistory);
+
+  // A peak is already derived from history — only the load prescription and
+  // genuine fatigue cuts apply; never let the engine add volume back into a taper.
+  const visibleAdjustments: Adjustment[] = useMemo(
+    () =>
+      (suggestion?.adjustments ?? []).filter(
+        (a) => !isPeaking || a.kind === "loads" || (a.kind === "global-volume" && (a.multiplier ?? 1) < 1),
+      ),
+    [suggestion, isPeaking],
+  );
+
   const activeAdjustments: Adjustment[] = useMemo(
-    () => (suggestion?.adjustments ?? []).filter((a) => a.defaultOn && !offIds.has(a.id)),
-    [suggestion, offIds],
+    () => visibleAdjustments.filter((a) => a.defaultOn && !offIds.has(a.id)),
+    [visibleAdjustments, offIds],
   );
 
   const toggle = (id: string) =>
@@ -187,12 +216,16 @@ export function GenerateStrengthTemplateDialog({
             historyQuery.data ?? emptyHistory,
             tuning,
              volumeProfile,
+            { skipFloors: template?.skipVolumeFloors === true },
           ),
-    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile],
+    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile, template],
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
-  const plannedWeeks = useMemo(() => applyOverload(finalWeeks, overload), [finalWeeks, overload]);
+  const plannedWeeks = useMemo(
+    () => (isPeaking ? finalWeeks : applyOverload(finalWeeks, overload)),
+    [finalWeeks, overload, isPeaking],
+  );
 
   const weeklySets = useMemo(() => {
     const m = templateWeeklySets(plannedWeeks);
@@ -202,7 +235,10 @@ export function GenerateStrengthTemplateDialog({
       .sort((a, b) => b.sets - a.sets);
   }, [plannedWeeks]);
 
-  const warnings = useMemo(() => volumeWarnings(plannedWeeks, volumeProfile), [plannedWeeks, volumeProfile]);
+  const warnings = useMemo(
+    () => (isPeaking ? [] : volumeWarnings(plannedWeeks, volumeProfile)),
+    [plannedWeeks, volumeProfile, isPeaking],
+  );
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -437,6 +473,7 @@ export function GenerateStrengthTemplateDialog({
           </div>
 
           {/* ---- overload pushing ---- */}
+          {!isPeaking && (
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">
               <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
@@ -522,7 +559,27 @@ export function GenerateStrengthTemplateDialog({
               </div>
             </div>
           </div>
+          )}
 
+          {/* ---- what the peak is based on ---- */}
+          {isPeaking && (
+            <div className="rounded-lg border bg-card">
+              <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
+                Based on the last 3 months
+              </div>
+              <div className="space-y-1 p-3 text-xs text-muted-foreground">
+                {historyQuery.isLoading && <p>Reading training history…</p>}
+                {peakSummary?.thin && (
+                  <p className="text-destructive">
+                    Only {peakSummary.logDays} logged training days in the last 3 months — the peak
+                    falls back to conventional volumes. Check every session before publishing.
+                  </p>
+                )}
+                {peakSummary &&
+                  peakingBasis(peakSummary).map((line) => <p key={line}>{line}</p>)}
+              </div>
+            </div>
+          )}
 
           {/* ---- coach tuning sliders ---- */}
           <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
@@ -647,12 +704,12 @@ export function GenerateStrengthTemplateDialog({
                   Not enough recent history for {athleteName} — generating the plain template.
                 </p>
               )}
-              {suggestion && !suggestion.insufficientData && suggestion.adjustments.length === 0 && (
+              {suggestion && !suggestion.insufficientData && visibleAdjustments.length === 0 && (
                 <p className="text-xs text-muted-foreground">
                   History looks on track — the template fits as-is.
                 </p>
               )}
-              {suggestion?.adjustments.map((a) => {
+              {visibleAdjustments.map((a) => {
                 const on = a.defaultOn && !offIds.has(a.id);
                 return (
                   <label

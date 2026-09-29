@@ -10,6 +10,8 @@
 // for 3 / 4 / 5 / 6 days — condensing key work when frequency drops, adding targeted
 // hypertrophy / weak-point days when it climbs. No blank "Day N" placeholders.
 
+import { buildPeakingWeeks, type PeakSummary } from "@/lib/peaking";
+
 export type IntensityMetric = "rpe" | "rir";
 
 export interface TemplateExercise {
@@ -52,6 +54,13 @@ export interface StrengthTemplate {
   maxDays: number;
   inspiration: string;
   buildWeeks: (daysPerWeek: number) => TemplateWeek[];
+  /**
+   * When present, the block is generated from the athlete's own logged history
+   * (last ~3 months) instead of a fixed prescription.
+   */
+  buildFromHistory?: (daysPerWeek: number, summary: PeakSummary) => TemplateWeek[];
+  /** Skip the generic MEV volume floors — used by intentionally low-volume blocks. */
+  skipVolumeFloors?: boolean;
 }
 
 // ---------- helpers ----------
@@ -814,6 +823,21 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     maxDays: 4,
     inspiration: "Olympic-lifting power work + Tuscherer RPE autoregulation",
     buildWeeks: athleticPower,
+  },
+  {
+    id: "peak-3w",
+    name: "3-week peak (from history)",
+    short: "Taper to a meet — 3–4 days / 3 weeks",
+    goal:
+      "Peak for a meet or a max-out day. Built from the athlete's own last 3 months: their lifts, their recent weekly set counts, their estimated 1RMs. Volume drops ~35% → ~60% → ~80% while intensity is held.",
+    weeks: 3,
+    daysPerWeek: 3,
+    minDays: 3,
+    maxDays: 4,
+    inspiration: "Bosquet 2007 taper meta-analysis + Tuchscherer RPE openers",
+    buildWeeks: (d: number) => buildPeakingWeeks(d, null),
+    buildFromHistory: (d: number, summary: PeakSummary) => buildPeakingWeeks(d, summary),
+    skipVolumeFloors: true,
   },
 ];
 

@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { Search, UserPlus, Copy, Trash2 } from "lucide-react";
-import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -27,15 +26,11 @@ export const Route = createFileRoute("/coach/invites")({
   component: InvitesPage,
 });
 
-const linkSchema = z.object({
-  email: z.string().trim().email("Invalid email address").max(255),
-});
-
 function InvitesPage() {
   const { user } = useAuth();
   const coachId = user!.id;
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState("");
+  const [athleteCode, setAthleteCode] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   useEffect(() => {
@@ -48,7 +43,7 @@ function InvitesPage() {
     queryFn: async () => {
       const { data: links, error } = await supabase
         .from("coach_athletes")
-        .select("id, athlete_id, created_at")
+        .select("id, athlete_id, created_at, status")
         .eq("coach_id", coachId);
       if (error) throw error;
       const ids = (links ?? []).map((l) => l.athlete_id);
@@ -82,12 +77,6 @@ function InvitesPage() {
     },
   });
 
-  // Connect by email — looks up existing user by email via profiles. Since we
-  // can't query auth.users from the client, we look up profiles whose owner has
-  // a matching email by attempting a connect-by-id flow only after the athlete
-  // signs up. For v1 we connect by athlete user id (athlete shares it from /me).
-  // Simpler real flow: ask the athlete to sign up first, then paste their User
-  // ID here.
   const connectMutation = useMutation({
     mutationFn: async (athleteUserId: string) => {
       const trimmed = athleteUserId.trim();
@@ -103,11 +92,11 @@ function InvitesPage() {
         throw error;
       }
     },
-    onSuccess: () => {
-      toast.success("Request sent — the athlete accepts it on their Profile page");
+    onSuccess: (_data, athleteUserId) => {
+      toast.success(athleteUserId.trim() === coachId ? "Connected" : "Request sent — the athlete accepts it on their Profile page");
       queryClient.invalidateQueries({ queryKey: ["coach-links", coachId] });
       queryClient.invalidateQueries({ queryKey: ["coach-roster", coachId] });
-      setEmail("");
+      setAthleteCode("");
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -179,7 +168,7 @@ function InvitesPage() {
                       onClick={() => connectMutation.mutate(a.id)}
                     >
                       <UserPlus className="mr-1 h-3.5 w-3.5" />
-                      {linked ? "Connected" : "Connect"}
+                      {linked ? (linksQuery.data?.find((l) => l.athlete_id === a.id)?.status === "pending" ? "Pending" : "Connected") : "Connect"}
                     </Button>
                   </div>
                 );
@@ -205,14 +194,14 @@ function InvitesPage() {
               <Label htmlFor="athlete-id">Athlete User ID</Label>
               <Input
                 id="athlete-id"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={athleteCode}
+                onChange={(e) => setAthleteCode(e.target.value)}
                 placeholder="00000000-0000-0000-0000-000000000000"
               />
             </div>
             <Button
-              onClick={() => connectMutation.mutate(email)}
-              disabled={connectMutation.isPending || !email.trim()}
+              onClick={() => connectMutation.mutate(athleteCode)}
+              disabled={connectMutation.isPending || !athleteCode.trim()}
             >
               <UserPlus className="mr-1 h-4 w-4" />
               {connectMutation.isPending ? "Connecting…" : "Connect"}
@@ -223,7 +212,7 @@ function InvitesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Linked athletes</CardTitle>
+          <CardTitle>Connections and requests</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {linksQuery.isLoading && (
@@ -239,6 +228,7 @@ function InvitesPage() {
             >
               <div>
                 <div className="font-semibold">{l.full_name ?? "Unnamed"}</div>
+                <div className="text-xs text-muted-foreground">{l.status === "pending" ? "Waiting for athlete approval" : "Connected"}</div>
                 <div className="font-mono text-xs text-muted-foreground">
                   {l.athlete_id}
                 </div>

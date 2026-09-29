@@ -62,7 +62,8 @@ function CoachRosterPage() {
       const { data: links, error: linkErr } = await supabase
         .from("coach_athletes")
         .select("athlete_id, tag")
-        .eq("coach_id", coachId);
+        .eq("coach_id", coachId)
+        .eq("status", "accepted");
       if (linkErr) throw linkErr;
       const athleteIds = (links ?? []).map((l) => l.athlete_id);
       if (athleteIds.length === 0) return [];
@@ -259,7 +260,7 @@ function CoachRosterPage() {
               <Users className="h-5 w-5 text-primary" /> No athletes yet
             </CardTitle>
             <CardDescription>
-              Invite athletes by email — once they sign up, they'll appear here.
+               Send a request from Connect athletes. They appear here once they accept.
             </CardDescription>
           </CardHeader>
           <CardContent>

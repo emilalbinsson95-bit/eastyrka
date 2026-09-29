@@ -474,6 +474,106 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
         <p>Målet är nått när atletens egna förslag stämmer med mina gång på gång.</p>
       </Section>
 
+      <Section title="Tränaren som projektledare">
+        <p>Som tränare ansvarar man för mer än programmet. Skador, energi och kost, sömn, stress och
+          livet runt träningen påverkar resultatet minst lika mycket som valet av övningar. Jag ser
+          därför tränarrollen som en projektledarroll. Jag håller ihop helheten, ser till att rätt
+          person gör rätt sak och följer upp att det blir gjort. Men en projektledare gör inte allt
+          själv. En stor del av jobbet är att veta var min kompetens tar slut och när jag ska lämna
+          över till någon annan.</p>
+
+        <p className="mt-3"><b>Grundregeln: coacha inom din kompetens</b></p>
+        <p>Min tumregel är att jag får anpassa träningen efter nästan allt, men att jag inte
+          diagnostiserar eller behandlar någonting. Jag kan sänka volymen när atleten sover dåligt,
+          men jag behandlar inte sömnproblem. Jag kan byta böj mot benpress när knät krånglar, men
+          jag säger inte vad som är fel på knät. Jag kan ge allmänna kostråd, men jag skriver inte
+          behandlingsupplägg.</p>
+        <p>I Sverige är det lätt att se var gränsen går, eftersom fysioterapeut, legitimerad
+          dietist, psykolog och läkare är skyddade yrkestitlar. "Nutritionist", "kostrådgivare" och
+          "mental coach" är det inte, och där varierar kompetensen mycket.</p>
+
+        <p className="mt-3"><b>Skador</b></p>
+        <p>Det här gör jag själv: Jag ser skaderapporter som information och inte som något
+          misslyckande. Här blir den psykologiska tryggheten från förra avsnittet konkret. Jag
+          anpassar övningar, belastning och rörelseomfång så att atleten kan fortsätta träna runt
+          skadan, och jag följer smärtan över tid i loggen. Lätt och övergående träningsvärk eller
+          stelhet som inte blir värre av träningen kan man oftast hantera med ändrad belastning.</p>
+        <p>Här skickar jag vidare till fysioterapeut eller läkare:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Smärtan blir värre vecka för vecka, eller har inte blivit bättre efter ungefär två
+            veckor med anpassad belastning.</li>
+          <li>Det gör ont i vila eller på natten, eller det är svullet, varmt eller instabilt.</li>
+          <li>Det domnar, sticker eller känns svagt i en arm eller ett ben.</li>
+          <li>Något hände plötsligt under ett lyft, till exempel ett smäll- eller knäppljud, eller
+            atleten kan inte längre belasta.</li>
+          <li>Smärtan tvingar fram en förändrad teknik som inte går att rätta till.</li>
+        </ul>
+        <p>Akut via 1177 eller 112: Ryggsmärta som kommer tillsammans med domningar i underlivet
+          eller problem att kissa eller bajsa, kraftig bröstsmärta eller andningssvårigheter.</p>
+
+        <p className="mt-3"><b>Energi och kost</b></p>
+        <p>Det här gör jag själv: Jag ger allmänna råd utifrån Livsmedelsverkets riktlinjer och
+          grundläggande idrottsnutrition, som tillräckligt med energi, protein fördelat över dagen,
+          kolhydrater kring passen och vätska. Jag följer vikt och prestation i loggen och kopplar
+          ihop dem med EAk, alltså hur mycket energi som finns kvar till kroppen när träningen är
+          betald.</p>
+        <p>Här skickar jag vidare till legitimerad dietist eller läkare:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tecken på låg energitillgänglighet (RED-S): utebliven eller oregelbunden mens,
+            upprepade stressfrakturer, oförklarlig trötthet, att man blir sjuk ofta, sjunkande
+            prestation trots bra träning eller att vikten går ner fast den inte ska.</li>
+          <li>Medicinska tillstånd som påverkar kosten, till exempel diabetes, celiaki, IBS,
+            allergier eller graviditet.</li>
+          <li>Tecken på ett stört förhållande till mat. Det kan vara stark oro kring mat, strikta
+            regler, kompensationsträning, stora viktsvängningar eller att atleten döljer vad den
+            äter. Då slutar jag ge kostråd helt. Skicka vidare, och fortsätt vara ett stöd i
+            relationen.</li>
+        </ul>
+
+        <p className="mt-3"><b>Livsstil, stress och mående</b></p>
+        <p>Det här gör jag själv: Jag frågar om sömn, stress, jobb och relationer som en del av
+          uppföljningen. Jag anpassar träningen efter hur livet ser ut just nu, pratar om målbild
+          och motivation och hjälper till med vanor och struktur. Det mesta av det här är vanligt
+          tränarjobb, och SAVI-modellen gör de samtalen bättre.</p>
+        <p>Här skickar jag vidare till psykolog, vårdcentral eller företagshälsovård:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Nedstämdhet, oro eller sömnproblem som varar mer än ett par veckor eller påverkar
+            vardagen.</li>
+          <li>Tydlig personlighetsförändring, att atleten drar sig undan eller att intresset
+            försvinner, även för träningen.</li>
+          <li>Tävlingsångest eller prestationsångest som inte släpper trots anpassning.</li>
+          <li>Alkohol, spel eller andra beroenden som påverkar livet.</li>
+        </ul>
+        <p>Akut via 112 eller psykiatrisk akutmottagning: Om atleten pratar om att inte vilja leva
+          eller om att skada sig själv. Fråga rakt, ta det på allvar och se till att atleten får
+          hjälp samma dag. Som tränare behöver du inte kunna hantera situationen. Du behöver se
+          till att den inte stannar hos dig.</p>
+
+        <p className="mt-3"><b>Så lämnar du över på ett bra sätt</b></p>
+        <p>Att skicka vidare är inte att släppa taget, och det är där projektledarrollen syns som
+          tydligast.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Ha kontaktnätet klart i förväg. Ha namnen på en fysioterapeut, en dietist och en
+            psykolog du litar på innan du behöver dem. Det är mycket lättare att säga "ring Anna"
+            än "sök hjälp någonstans".</li>
+          <li>Säg varför, rakt och utan dramatik. "Det här ligger utanför vad jag kan bedöma, och
+            jag vill att någon som kan det här tittar på det. Vi fortsätter träna under tiden."</li>
+          <li>Be om lov innan du delar information. Atleten bestämmer vad som får föras vidare
+            mellan dig och vården.</li>
+          <li>Följ en plan. Jag anpassar träningen efter vad den som behandlar säger, och inte
+            tvärtom. Be om konkreta ramar, till exempel vilka rörelser som är okej, vilken
+            belastning som gäller och vilka tecken som betyder stopp.</li>
+          <li>Följ upp. Fråga hur besöket gick, logga det och stäm av med jämna mellanrum.</li>
+        </ul>
+
+        <p className="mt-3"><b>I SETPOINT</b></p>
+        <p>Allt som gäller en skada, en remiss eller en anpassning loggas på samma ställe som
+          träningen, så att helheten syns. Varningssignalerna ovan kan fungera som trafikljus i
+          uppföljningen. Grönt betyder att vi anpassar själva, gult att vi följer upp extra noga
+          och sätter en tidsgräns, och rött att vi skickar vidare nu. Det gör besluten mindre
+          beroende av magkänsla och gör det tydligt för atleten varför vi gör som vi gör.</p>
+      </Section>
+
       <Section title="Träningslast: Foster sRPE">
         <p>Per pass: <code>load = minuter × RPE</code> (linjär, validerad). När
           per-steg/per-rep actuals finns används tidsviktad segment-summa istället för

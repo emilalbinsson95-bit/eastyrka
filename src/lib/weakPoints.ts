@@ -98,7 +98,7 @@ export const WEAK_POINTS: WeakPoint[] = [
     variation: { exercise: "Pause deadlift", reps: 3, notes: "Pause 2–3 cm off the floor. Push the floor away." },
     accessory: { exercise: "Front squat", sets: 3, reps: 6, notes: "Quad strength." } },
   { id: "dl-drift", lift: "deadlift", label: "Bar drifts away from the body", why: "Lats not engaged.",
-    variation: { exercise: "Romanian deadlift", reps: 6, notes: "Bar grazes the thighs — protect the armpits." },
+    variation: { exercise: "Pause deadlift", reps: 3, notes: "Pause below the knee, bar touching the thighs — protect the armpits." },
     accessory: { exercise: "Straight-arm pulldown", sets: 3, reps: 12, notes: "Lat activation." } },
   { id: "dl-grip", lift: "deadlift", label: "Grip fails", why: "Grip strength.",
     variation: { exercise: "Double-overhand deadlift", reps: 3, notes: "No mixed grip. Hold the top 10–20 s after the last rep. Chalk." },

@@ -1,0 +1,4 @@
+DROP POLICY "Athlete or accepted coach creates strength volume profile" ON public.athlete_strength_volume_profiles;
+DROP POLICY "Athlete or accepted coach updates strength volume profile" ON public.athlete_strength_volume_profiles;
+CREATE POLICY "Accepted coach creates strength volume profile" ON public.athlete_strength_volume_profiles FOR INSERT TO authenticated WITH CHECK (public.is_coach_of(auth.uid(), athlete_id));
+CREATE POLICY "Accepted coach updates strength volume profile" ON public.athlete_strength_volume_profiles FOR UPDATE TO authenticated USING (public.is_coach_of(auth.uid(), athlete_id)) WITH CHECK (public.is_coach_of(auth.uid(), athlete_id));

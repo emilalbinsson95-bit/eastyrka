@@ -39,6 +39,7 @@ import { Route as CoachAdminRouteImport } from './routes/coach.admin'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
 import { Route as AppStatsRouteImport } from './routes/_app.stats'
 import { Route as AppMeRouteImport } from './routes/_app.me'
+import { Route as AppLearnRouteImport } from './routes/_app.learn'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as AppEnduranceRouteImport } from './routes/_app.endurance'
 import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
@@ -206,6 +207,11 @@ const AppMeRoute = AppMeRouteImport.update({
   path: '/me',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLearnRoute = AppLearnRouteImport.update({
+  id: '/learn',
+  path: '/learn',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHistoryRoute = AppHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -319,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AppCalendarRoute
   '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
+  '/learn': typeof AppLearnRoute
   '/me': typeof AppMeRoute
   '/stats': typeof AppStatsRoute
   '/today': typeof AppTodayRoute
@@ -364,6 +371,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof AppCalendarRoute
   '/endurance': typeof AppEnduranceRoute
   '/history': typeof AppHistoryRoute
+  '/learn': typeof AppLearnRoute
   '/me': typeof AppMeRoute
   '/stats': typeof AppStatsRoute
   '/today': typeof AppTodayRoute
@@ -414,6 +422,7 @@ export interface FileRoutesById {
   '/_app/calendar': typeof AppCalendarRoute
   '/_app/endurance': typeof AppEnduranceRoute
   '/_app/history': typeof AppHistoryRoute
+  '/_app/learn': typeof AppLearnRoute
   '/_app/me': typeof AppMeRoute
   '/_app/stats': typeof AppStatsRoute
   '/_app/today': typeof AppTodayRoute
@@ -464,6 +473,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/endurance'
     | '/history'
+    | '/learn'
     | '/me'
     | '/stats'
     | '/today'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/endurance'
     | '/history'
+    | '/learn'
     | '/me'
     | '/stats'
     | '/today'
@@ -558,6 +569,7 @@ export interface FileRouteTypes {
     | '/_app/calendar'
     | '/_app/endurance'
     | '/_app/history'
+    | '/_app/learn'
     | '/_app/me'
     | '/_app/stats'
     | '/_app/today'
@@ -819,6 +831,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/learn': {
+      id: '/_app/learn'
+      path: '/learn'
+      fullPath: '/learn'
+      preLoaderRoute: typeof AppLearnRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/history': {
       id: '/_app/history'
       path: '/history'
@@ -945,6 +964,7 @@ interface AppRouteChildren {
   AppCalendarRoute: typeof AppCalendarRoute
   AppEnduranceRoute: typeof AppEnduranceRoute
   AppHistoryRoute: typeof AppHistoryRoute
+  AppLearnRoute: typeof AppLearnRoute
   AppMeRoute: typeof AppMeRoute
   AppStatsRoute: typeof AppStatsRoute
   AppTodayRoute: typeof AppTodayRoute
@@ -954,6 +974,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCalendarRoute: AppCalendarRoute,
   AppEnduranceRoute: AppEnduranceRoute,
   AppHistoryRoute: AppHistoryRoute,
+  AppLearnRoute: AppLearnRoute,
   AppMeRoute: AppMeRoute,
   AppStatsRoute: AppStatsRoute,
   AppTodayRoute: AppTodayRoute,

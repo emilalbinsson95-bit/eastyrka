@@ -40,10 +40,6 @@ function ResetPasswordPage() {
         if (active) setState("invalid");
         return;
       }
-      if (query.get("code")) {
-        const { error } = await supabase.auth.exchangeCodeForSession(query.get("code") ?? "");
-        if (error) { if (active) setState("invalid"); return; }
-      }
       const { data, error } = await supabase.auth.getUser();
       if (active) setState(!error && data.user ? "ready" : "invalid");
     }

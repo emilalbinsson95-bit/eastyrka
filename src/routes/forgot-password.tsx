@@ -31,7 +31,7 @@ function ForgotPasswordPage() {
     setErrorMessage("");
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password?type=recovery`,
       });
       if (error) setErrorMessage("The link could not be sent right now. Please try again shortly.");
       else setSent(true);

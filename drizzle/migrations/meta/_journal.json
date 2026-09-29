@@ -71,6 +71,13 @@
       "when": 1790705676006,
       "tag": "0009_fix_weak_points_policy_args",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790705952468,
+      "tag": "0010_add_deadlift_style",
+      "breakpoints": true
     }
   ]
 }

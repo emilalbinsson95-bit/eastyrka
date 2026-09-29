@@ -19,6 +19,7 @@ export type Database = {
           athlete_id: string
           bench_factor: number
           deadlift_factor: number
+          deadlift_style: string | null
           squat_factor: number
           updated_at: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           athlete_id: string
           bench_factor?: number
           deadlift_factor?: number
+          deadlift_style?: string | null
           squat_factor?: number
           updated_at?: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           athlete_id?: string
           bench_factor?: number
           deadlift_factor?: number
+          deadlift_style?: string | null
           squat_factor?: number
           updated_at?: string
         }

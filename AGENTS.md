@@ -5,3 +5,4 @@
 
 - Keep the coach methodology on one route with three tabs (running, strength, coaching) so existing links remain valid and future coaching notes have a dedicated home.
 - Weak points are solved by exercise selection in `src/lib/weakPoints.ts`: one per lift, swap the variation slot + one accessory/week only within a session cap (8/7/6 working exercises for 2/3/4+ days), replacing the least specific exercise by priority (comp > weak-point variation > comp variations > compound support > isolation > core), skipped in deloads; coach-only writes, because one fault per block keeps the stimulus clear and sessions realistic.
+- Competition deadlift style (conventional/sumo) lives on athlete_strength_volume_profiles.deadlift_style and is applied last in generation (`applyDeadliftStyle`): sumo lifters may get conventional accessories, conventional lifters never get sumo work, because most conventional lifters can't reach a sumo stance.

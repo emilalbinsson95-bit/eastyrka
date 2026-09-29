@@ -304,6 +304,39 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
       </Section>
         </TabsContent>
         <TabsContent value="coaching" className="space-y-6">
+      <Section title="Målet: en självständig atlet">
+        <p>Den bästa coachen gör sig själv överflödig. Utifrån referenslistan nedan
+          kan coachningen sammanfattas i sex principer:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Behovsanpassa ledarskapet</b> (Söderfjäll): ny atlet behöver tydlig
+            styrning; erfaren atlet behöver mandat. Mät mognad, inte bara styrka —
+            och trappa ner din styrning medvetet allteftersom.</li>
+          <li><b>Bygg psykologisk trygghet först</b> (Edmondson; Googles Project
+            Aristotle): atleten måste våga rapportera smärta, missade pass och
+            tvivel utan att det straffar sig. Utan trygghet loggas brus — och alla
+            våra modeller (EAk, ACWR, drift) matas med dålig data.</li>
+          <li><b>Överlämna rollen successivt</b> (Sundlin & Sundlin): låt atleten
+            successivt äga sina beslut — först logga ärligt, sedan tolka sin egen
+            dagsform, sist föreslå egna justeringar som du bara granskar.</li>
+          <li><b>Kommunicera klart</b> (SAVI-modellen, Benjamin & Yeager): säg vad
+            du ser, vad du tror det betyder, och fråga vad atleten upplever —
+            innan du ger råd. Feedback som börjar med atletens egen bild fastnar.</li>
+          <li><b>Balansera transformativt och transaktionellt</b> (Bass & Avolio;
+            Lowe 1996; Ng 2017): inspiration och mening lyfter motivationen, men
+            tydliga mål, uppföljning och konsekvenser (transaktionellt) är det som
+            faktiskt driver prestation. Bägge behövs — meta-analyserna visar att de
+            kompletterar varandra.</li>
+          <li><b>Behandla coach–atlet som ett team av två</b> (Wheelan; Hoffer
+            Gittell; Tomasello): relationell koordinering — delade mål, delad
+            kunskap, ömsesidig respekt — slår instruktioner. Människor är byggda
+            för samarbete; använd det istället för att coacha ovanifrån.</li>
+        </ul>
+        <p><b>I praktiken i SETPOINT:</b> börja med att logga åt atleten, gå över
+          till att atleten loggar och du kommenterar, och avsluta med att atleten
+          föreslår ändringar (t.ex. via Review & adjust) som du bara godkänner.
+          När atletens egna förslag konsekvent matchar dina — är målet nått.</p>
+      </Section>
+
       <Section title="Träningslast: Foster sRPE">
         <p>Per pass: <code>load = minuter × RPE</code> (linjär, validerad). När
           per-steg/per-rep actuals finns används tidsviktad segment-summa istället för

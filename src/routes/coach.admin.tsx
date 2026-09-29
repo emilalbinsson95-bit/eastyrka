@@ -41,11 +41,28 @@ interface AthleteDiagnostic {
   coaches: string[];
 }
 
+interface AthleteInspection {
+  recent_logs: { date: string; exercise: string; reps: number; weight_kg: number; rpe: number }[];
+  recent_plans: { week_start_date: string; status: string; is_deload: boolean }[];
+  recent_readiness: { date: string; daily_form: number }[];
+}
+
 function AdminPage() {
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin" as AppRole);
   const qc = useQueryClient();
   const [query, setQuery] = useState("");
+  const [selectedAthlete, setSelectedAthlete] = useState<AthleteDiagnostic | null>(null);
+
+  const inspectionQuery = useQuery({
+    queryKey: ["admin-athlete-inspection", selectedAthlete?.id],
+    enabled: isAdmin && !!selectedAthlete,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_inspect_athlete", { _athlete_id: selectedAthlete!.id });
+      if (error) throw error;
+      return data as unknown as AthleteInspection;
+    },
+  });
 
   const usersQuery = useQuery({
     queryKey: ["admin-users", query],
@@ -120,10 +137,23 @@ function AdminPage() {
               <p className="break-all text-muted-foreground">{a.email}</p>
               <p className="mt-2 text-muted-foreground">{a.training_set_count} sets · {a.plan_count} plans</p>
               <p className="text-muted-foreground">Last session: {a.last_training_date ?? "None"}</p>
-              <p className="text-muted-foreground">Coach: {a.coaches.length ? a.coaches.join(", ") : "None"}</p>
+               <p className="text-muted-foreground">Coach: {a.coaches.length ? a.coaches.join(", ") : "None"}</p>
+               <Button size="sm" variant="outline" className="mt-3" onClick={() => setSelectedAthlete(a)}>Inspect activity</Button>
             </div>
           ))}
         </div>
+        {selectedAthlete && <Card>
+          <CardHeader><CardTitle className="flex items-center justify-between gap-2 text-base">Read-only activity: {selectedAthlete.full_name || "Unnamed athlete"}<Button size="sm" variant="ghost" onClick={() => setSelectedAthlete(null)}>Close</Button></CardTitle></CardHeader>
+          <CardContent className="grid gap-5 text-sm md:grid-cols-3">
+            {inspectionQuery.isLoading && <p>Loading activity…</p>}
+            {inspectionQuery.isError && <p role="alert" className="text-destructive">Could not load athlete activity.</p>}
+            {inspectionQuery.data && <>
+              <div><h2 className="mb-2 font-semibold">Recent training sets</h2>{inspectionQuery.data.recent_logs.length ? inspectionQuery.data.recent_logs.map((log, i) => <p key={i} className="border-t py-1">{log.date} · {log.exercise} · {log.weight_kg} kg × {log.reps} · RPE {log.rpe}</p>) : <p className="text-muted-foreground">No sets logged.</p>}</div>
+              <div><h2 className="mb-2 font-semibold">Recent plans</h2>{inspectionQuery.data.recent_plans.length ? inspectionQuery.data.recent_plans.map((plan, i) => <p key={i} className="border-t py-1">{plan.week_start_date} · {plan.status}{plan.is_deload ? " · Planned light" : ""}</p>) : <p className="text-muted-foreground">No plans.</p>}</div>
+              <div><h2 className="mb-2 font-semibold">Recent daily form</h2>{inspectionQuery.data.recent_readiness.length ? inspectionQuery.data.recent_readiness.map((item, i) => <p key={i} className="border-t py-1">{item.date} · {item.daily_form}/10</p>) : <p className="text-muted-foreground">No check-ins.</p>}</div>
+            </>}
+          </CardContent>
+        </Card>}
       </section>
       <Card>
         <CardHeader>

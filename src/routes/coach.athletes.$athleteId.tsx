@@ -19,6 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -46,13 +53,6 @@ import { StrengthVolumeProfileCard } from "@/components/StrengthVolumeProfileCar
 import { MesocycleProgressCard } from "@/components/MesocycleProgressCard";
 import { E1rmPrCard, RpePaceTrendCard } from "@/components/StrengthTrendCards";
 
-const DEFAULT_EXERCISES = [
-  "Knäböj",
-  "Bänkpress",
-  "Marklyft",
-  "Axelpress",
-  "Lår Curl",
-];
 
 export const Route = createFileRoute("/coach/athletes/$athleteId")({
   head: () => ({
@@ -870,8 +870,28 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
     },
   });
 
+  const exercisesQuery = useQuery({
+    queryKey: ["exercise-library-for-baselines"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exercises")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const upsertMutation = useMutation({
-    mutationFn: async ({ exercise, kg }: { exercise: string; kg: number }) => {
+    mutationFn: async ({
+      exercise,
+      exerciseId,
+      kg,
+    }: {
+      exercise: string;
+      exerciseId?: string | null;
+      kg: number;
+    }) => {
       const parsed = baselineSchema.parse({ exercise, one_rm_kg: kg });
       const { error } = await supabase
         .from("baselines")
@@ -879,6 +899,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
           {
             athlete_id: athleteId,
             exercise: parsed.exercise,
+            exercise_id: exerciseId,
             one_rm_kg: parsed.one_rm_kg,
           },
           { onConflict: "athlete_id,exercise" },
@@ -908,9 +929,10 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
 
   const existing = baselinesQuery.data ?? [];
   const existingExercises = new Set(existing.map((b) => b.exercise));
-  const suggested = DEFAULT_EXERCISES.filter((e) => !existingExercises.has(e));
+  const library = exercisesQuery.data ?? [];
+  const selectable = library.filter((e) => !existingExercises.has(e.name));
 
-  const [newExercise, setNewExercise] = useState("");
+  const [newExerciseId, setNewExerciseId] = useState<string>("");
   const [newKg, setNewKg] = useState<number>(100);
 
   return (
@@ -949,19 +971,18 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <Label htmlFor="new-ex">Exercise</Label>
-              <Input
-                id="new-ex"
-                list="suggested"
-                value={newExercise}
-                onChange={(e) => setNewExercise(e.target.value)}
-                placeholder="e.g. Knäböj"
-                maxLength={100}
-              />
-              <datalist id="suggested">
-                {suggested.map((e) => (
-                  <option key={e} value={e} />
-                ))}
-              </datalist>
+              <Select value={newExerciseId} onValueChange={setNewExerciseId}>
+                <SelectTrigger id="new-ex">
+                  <SelectValue placeholder="Choose an exercise…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectable.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="w-32 space-y-1">
               <Label htmlFor="new-kg">1RM (kg)</Label>
@@ -977,12 +998,17 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
             </div>
             <Button
               onClick={() => {
-                if (!newExercise.trim()) {
-                  toast.error("Enter an exercise name");
+                const ex = library.find((e) => e.id === newExerciseId);
+                if (!ex) {
+                  toast.error("Choose an exercise from the list");
                   return;
                 }
-                upsertMutation.mutate({ exercise: newExercise.trim(), kg: newKg });
-                setNewExercise("");
+                upsertMutation.mutate({
+                  exercise: ex.name,
+                  exerciseId: ex.id,
+                  kg: newKg,
+                });
+                setNewExerciseId("");
               }}
               disabled={upsertMutation.isPending}
             >

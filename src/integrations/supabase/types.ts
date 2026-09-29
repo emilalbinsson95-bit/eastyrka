@@ -109,6 +109,7 @@ export type Database = {
           athlete_id: string
           created_at: string
           exercise: string
+          exercise_id: string | null
           id: string
           one_rm_kg: number
           updated_at: string
@@ -117,6 +118,7 @@ export type Database = {
           athlete_id: string
           created_at?: string
           exercise: string
+          exercise_id?: string | null
           id?: string
           one_rm_kg: number
           updated_at?: string
@@ -125,11 +127,20 @@ export type Database = {
           athlete_id?: string
           created_at?: string
           exercise?: string
+          exercise_id?: string | null
           id?: string
           one_rm_kg?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "baselines_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       coach_athletes: {
         Row: {

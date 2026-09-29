@@ -5,10 +5,10 @@
 //  - Taper meta-analysis (Bosquet et al. 2007, MSSE): performance is maximised by a
 //    ~41–60% reduction in training VOLUME over ~2 weeks, while INTENSITY and
 //    FREQUENCY are maintained. Cutting intensity instead of volume loses adaptation.
-//  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing,
-//    keep heavy singles/doubles in the final week at reduced set count.
-//  - RTS / Tuchscherer RPE table: openers and last heavy work are prescribed by RPE so
-//    the athlete auto-regulates on the day instead of chasing a fixed percentage.
+//  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing;
+//    no evidence that final-week heavy singles add anything beyond confidence.
+//  - Design choice: the taper here is a pure VOLUME reduction. Working weights and
+//    rep schemes stay in the athlete's normal range — no heavy singles, no openers.
 //
 // Everything here is pure — no Supabase, no React.
 
@@ -225,37 +225,37 @@ interface WeekCfg {
 
 const WEEK_CFG: WeekCfg[] = [
   {
-    label: "Peak W1 — intensification",
-    volFactor: 0.65,
-    accFactor: 0.55,
+    label: "Peak W1 — last full week",
+    volFactor: 0.85,
+    accFactor: 0.8,
+    topReps: 4,
+    topRpe: 8,
+    backoffReps: 4,
+    backoffRpe: 7.5,
+    notes:
+      "Train as normal — this is the last hard week. Working weights and reps stay in the athlete's usual range; volume only trimmed slightly (~15%). No singles, nothing new.",
+  },
+  {
+    label: "Peak W2 — volume reduction",
+    volFactor: 0.55,
+    accFactor: 0.5,
     topReps: 3,
     topRpe: 8,
     backoffReps: 3,
-    backoffRpe: 7,
-    notes:
-      "Volume down ~35% from the last 6 weeks, intensity up. Top set by RPE, then back-offs at the same reps and a lower RPE. Accessories trimmed to what actually supports the three lifts.",
-  },
-  {
-    label: "Peak W2 — heavy singles",
-    volFactor: 0.42,
-    accFactor: 0.3,
-    topReps: 1,
-    topRpe: 8.5,
-    backoffReps: 2,
     backoffRpe: 7.5,
     notes:
-      "Volume roughly halved again while the bar gets heaviest. One crisp single per lift at RPE 8.5, small double back-off. Stop any set where bar speed collapses — grinders here cost the meet.",
+      "Volume cut roughly in half while intensity is maintained — same working weights, fewer sets. This is the taper mechanism with real evidence behind it; accessories trimmed to maintenance.",
   },
   {
     label: "Peak W3 — taper / meet week",
-    volFactor: 0.22,
+    volFactor: 0.3,
     accFactor: 0,
-    topReps: 1,
-    topRpe: 6.5,
+    topReps: 3,
+    topRpe: 7,
     backoffReps: 2,
-    backoffRpe: 6,
+    backoffRpe: 6.5,
     notes:
-      "Opener week: one easy single per lift early in the week (~opener weight, RPE 6.5), one short technique session, then full rest into the meet. No accessories, no new PRs in training.",
+      "Final week: volume down ~70% from normal, weights kept moderate and crisp. Two short sessions early in the week, then full rest, food and sleep into the meet. No accessories.",
   },
 ];
 
@@ -271,7 +271,7 @@ function mainExercises(
   info: MainLiftInfo,
   cfg: WeekCfg,
   sessionsForLift: number,
-  opts: { technique?: boolean; opener?: boolean } = {},
+  opts: { technique?: boolean } = {},
 ): TemplateExercise[] {
   const total = mainSetsFor(info, cfg, sessionsForLift);
   const out: TemplateExercise[] = [];
@@ -299,11 +299,11 @@ function mainExercises(
     intensity_metric: "rpe",
     notes:
       info.e1rm != null
-        ? `Top set. Current estimated 1RM from the last 3 months: ${Math.round(info.e1rm)} kg.`
+        ? `Top set at normal working weight. Current estimated 1RM from the last 3 months: ${Math.round(info.e1rm)} kg.`
         : "Top set by feel — no 1RM on file yet.",
   });
 
-  const backoffs = opts.opener ? 0 : total - 1;
+  const backoffs = total - 1;
   if (backoffs > 0) {
     out.push({
       exercise: info.name,
@@ -369,19 +369,24 @@ export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null):
     const sessions: Omit<TemplateSession, "day_of_week">[] = [];
 
     if (meetWeek) {
-      // Openers, one technique session, then rest.
+      // Two short sessions at reduced volume, normal moderate weights, then rest.
       sessions.push({
-        title: "Openers",
-        notes: "One single per lift at opener weight (~RPE 6.5). Full competition setup and commands.",
-        exercises: active.flatMap((k) => mainExercises(L(k), cfg, 1, { opener: true })),
-      });
-      sessions.push({
-        title: "Technique flush",
-        notes:
-          "Very light, fast doubles. Last touch of the bar — everything after this is rest, food and sleep.",
+        title: "Squat + bench (light)",
+        notes: "Short and crisp — moderate weights, low set count. Full competition setup and commands.",
         exercises: active
           .filter((k) => k !== "deadlift")
-          .flatMap((k) => mainExercises(L(k), cfg, 1, { technique: true })),
+          .flatMap((k) => mainExercises(L(k), cfg, 2)),
+      });
+      sessions.push({
+        title: "Deadlift + technique flush",
+        notes:
+          "Last touch of the bar. Very light, fast work — everything after this is rest, food and sleep.",
+        exercises: [
+          ...(has("deadlift") ? mainExercises(L("deadlift"), cfg, 1) : []),
+          ...active
+            .filter((k) => k !== "deadlift")
+            .flatMap((k) => mainExercises(L(k), cfg, 1, { technique: true })),
+        ],
       });
     } else {
       // Squat + bench day

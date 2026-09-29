@@ -225,37 +225,37 @@ interface WeekCfg {
 
 const WEEK_CFG: WeekCfg[] = [
   {
-    label: "Peak W1 — intensification",
-    volFactor: 0.65,
-    accFactor: 0.55,
+    label: "Peak W1 — last full week",
+    volFactor: 0.85,
+    accFactor: 0.8,
+    topReps: 4,
+    topRpe: 8,
+    backoffReps: 4,
+    backoffRpe: 7.5,
+    notes:
+      "Train as normal — this is the last hard week. Working weights and reps stay in the athlete's usual range; volume only trimmed slightly (~15%). No singles, nothing new.",
+  },
+  {
+    label: "Peak W2 — volume reduction",
+    volFactor: 0.55,
+    accFactor: 0.5,
     topReps: 3,
     topRpe: 8,
     backoffReps: 3,
-    backoffRpe: 7,
-    notes:
-      "Volume down ~35% from the last 6 weeks, intensity up. Top set by RPE, then back-offs at the same reps and a lower RPE. Accessories trimmed to what actually supports the three lifts.",
-  },
-  {
-    label: "Peak W2 — heavy singles",
-    volFactor: 0.42,
-    accFactor: 0.3,
-    topReps: 1,
-    topRpe: 8.5,
-    backoffReps: 2,
     backoffRpe: 7.5,
     notes:
-      "Volume roughly halved again while the bar gets heaviest. One crisp single per lift at RPE 8.5, small double back-off. Stop any set where bar speed collapses — grinders here cost the meet.",
+      "Volume cut roughly in half while intensity is maintained — same working weights, fewer sets. This is the taper mechanism with real evidence behind it; accessories trimmed to maintenance.",
   },
   {
     label: "Peak W3 — taper / meet week",
-    volFactor: 0.22,
+    volFactor: 0.3,
     accFactor: 0,
-    topReps: 1,
-    topRpe: 6.5,
+    topReps: 3,
+    topRpe: 7,
     backoffReps: 2,
-    backoffRpe: 6,
+    backoffRpe: 6.5,
     notes:
-      "Opener week: one easy single per lift early in the week (~opener weight, RPE 6.5), one short technique session, then full rest into the meet. No accessories, no new PRs in training.",
+      "Final week: volume down ~70% from normal, weights kept moderate and crisp. Two short sessions early in the week, then full rest, food and sleep into the meet. No accessories.",
   },
 ];
 

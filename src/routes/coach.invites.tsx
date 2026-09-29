@@ -94,16 +94,17 @@ function InvitesPage() {
       if (!/^[0-9a-f-]{36}$/i.test(trimmed)) {
         throw new Error("That doesn't look like a valid user ID (UUID)");
       }
+      const isSelf = trimmed === coachId;
       const { error } = await supabase
         .from("coach_athletes")
-        .insert({ coach_id: coachId, athlete_id: trimmed, status: "accepted" });
+        .insert({ coach_id: coachId, athlete_id: trimmed, status: isSelf ? "accepted" : "pending" });
       if (error) {
-        if (error.code === "23505") throw new Error("Athlete is already linked");
+        if (error.code === "23505") throw new Error("Already linked or request already sent");
         throw error;
       }
     },
     onSuccess: () => {
-      toast.success("Athlete connected");
+      toast.success("Request sent — the athlete accepts it on their Profile page");
       queryClient.invalidateQueries({ queryKey: ["coach-links", coachId] });
       queryClient.invalidateQueries({ queryKey: ["coach-roster", coachId] });
       setEmail("");

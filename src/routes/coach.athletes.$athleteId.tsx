@@ -998,12 +998,17 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
             </div>
             <Button
               onClick={() => {
-                if (!newExercise.trim()) {
-                  toast.error("Enter an exercise name");
+                const ex = library.find((e) => e.id === newExerciseId);
+                if (!ex) {
+                  toast.error("Choose an exercise from the list");
                   return;
                 }
-                upsertMutation.mutate({ exercise: newExercise.trim(), kg: newKg });
-                setNewExercise("");
+                upsertMutation.mutate({
+                  exercise: ex.name,
+                  exerciseId: ex.id,
+                  kg: newKg,
+                });
+                setNewExerciseId("");
               }}
               disabled={upsertMutation.isPending}
             >

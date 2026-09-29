@@ -370,37 +370,108 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
       </Section>
         </TabsContent>
         <TabsContent value="coaching" className="space-y-6">
-      <Section title="Målet: en självständig atlet">
-        <p>Den bästa coachen gör sig själv överflödig. Utifrån referenslistan nedan
-          kan coachningen sammanfattas i sex principer:</p>
+      <Section title="Målet: en atlet som klarar sig själv">
+        <p>Den bästa coachen är den som till slut inte behövs. Jag har sammanfattat
+          mitt sätt att coacha i sex principer. De bygger på källorna under varje
+          rubrik.</p>
+
+        <p className="mt-3"><b>1. Anpassa ledarskapet efter atleten (Söderfjäll)</b></p>
+        <p>En ny atlet behöver tydlig styrning. En erfaren atlet behöver mandat.
+          Poängen med behovsanpassat ledarskap är att samma person kan behöva olika
+          typer av ledning i olika frågor. Någon som har tränat i tio år kan vara
+          helt självgående i sin knäböj men fortfarande behöva hjälp med att
+          planera en tävlingstopp. Därför bedömer jag mognaden område för område
+          och inte atleten som helhet.</p>
+        <p>Mognad handlar om två saker: kompetens (vet atleten vad som ska göras
+          och varför?) och engagemang (vill och orkar atleten ta ansvar för det?).
+          Den som är ny men väldigt motiverad behöver främst instruktioner. Den som
+          kan mycket men har tappat gnistan behöver snarare stöd och delaktighet än
+          fler instruktioner. Det viktigaste är att trappa ner styrningen medvetet
+          och säga det högt, till exempel "från nästa block planerar du dina
+          accessoarer själv". Annars fortsätter coachen styra av gammal vana.</p>
+
+        <p className="mt-3"><b>2. Bygg psykologisk trygghet först (Edmondson; Googles
+          Project Aristotle)</b></p>
+        <p>Atleten måste kunna berätta om smärta, missade pass och tvivel utan att
+          det får negativa följder. Edmondson definierar psykologisk trygghet som
+          en delad uppfattning om att det är säkert att ta mellanmänskliga risker,
+          alltså att erkänna misstag, fråga och säga emot. I Googles Project
+          Aristotle var det den faktor som betydde mest för om ett team fungerade,
+          före både struktur och tydlighet.</p>
+        <p>För oss är det framför allt en fråga om datakvalitet. Om atleten skriver
+          RPE 7 när det egentligen var 9, eller hoppar över att logga knät som gjorde
+          ont, får alla modeller (EAk, ACWR, drift) dåliga data och ger fel svar.
+          Hur jag reagerar första gången någon rapporterar något jobbigt avgör om
+          jag får veta det nästa gång. Tacka för informationen, var nyfiken och
+          justera utan dramatik. Ett missat pass är något att lära av, inte ett
+          misslyckande.</p>
+
+        <p className="mt-3"><b>3. Lämna över rollen stegvis (Sundlin &amp; Sundlin)</b></p>
+        <p>Atleten ska successivt ta över sina egna beslut i tre steg:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><b>Behovsanpassa ledarskapet</b> (Söderfjäll): ny atlet behöver tydlig
-            styrning; erfaren atlet behöver mandat. Mät mognad, inte bara styrka —
-            och trappa ner din styrning medvetet allteftersom.</li>
-          <li><b>Bygg psykologisk trygghet först</b> (Edmondson; Googles Project
-            Aristotle): atleten måste våga rapportera smärta, missade pass och
-            tvivel utan att det straffar sig. Utan trygghet loggas brus — och alla
-            våra modeller (EAk, ACWR, drift) matas med dålig data.</li>
-          <li><b>Överlämna rollen successivt</b> (Sundlin & Sundlin): låt atleten
-            successivt äga sina beslut — först logga ärligt, sedan tolka sin egen
-            dagsform, sist föreslå egna justeringar som du bara granskar.</li>
-          <li><b>Kommunicera klart</b> (SAVI-modellen, Benjamin & Yeager): säg vad
-            du ser, vad du tror det betyder, och fråga vad atleten upplever —
-            innan du ger råd. Feedback som börjar med atletens egen bild fastnar.</li>
-          <li><b>Balansera transformativt och transaktionellt</b> (Bass & Avolio;
-            Lowe 1996; Ng 2017): inspiration och mening lyfter motivationen, men
-            tydliga mål, uppföljning och konsekvenser (transaktionellt) är det som
-            faktiskt driver prestation. Bägge behövs — meta-analyserna visar att de
-            kompletterar varandra.</li>
-          <li><b>Behandla coach–atlet som ett team av två</b> (Wheelan; Hoffer
-            Gittell; Tomasello): relationell koordinering — delade mål, delad
-            kunskap, ömsesidig respekt — slår instruktioner. Människor är byggda
-            för samarbete; använd det istället för att coacha ovanifrån.</li>
+          <li>Logga ärligt. Atleten lär sig beskriva vad som faktiskt hände, alltså
+            vikter, RPE, sömn och känsla, utan att försköna.</li>
+          <li>Tolka sin egen dagsform. Atleten börjar se mönster, till exempel att
+            tunga ben efter dålig sömn betyder att toppsetet kan sänkas en nivå.</li>
+          <li>Föreslå egna justeringar. Atleten lägger fram förslag och jag granskar
+            dem. Jag frågar hellre "varför?" än säger "nej".</li>
         </ul>
-        <p><b>I praktiken i SETPOINT:</b> börja med att logga åt atleten, gå över
-          till att atleten loggar och du kommenterar, och avsluta med att atleten
-          föreslår ändringar (t.ex. via Review & adjust) som du bara godkänner.
-          När atletens egna förslag konsekvent matchar dina — är målet nått.</p>
+        <p>Hoppa inte över något steg. En atlet som inte loggar ärligt kan inte
+          tolka sin form, och den som inte kan tolka sin form kan inte föreslå
+          rimliga ändringar.</p>
+
+        <p className="mt-3"><b>4. Kommunicera tydligt (SAVI, Benjamin &amp; Yeager)</b></p>
+        <p>SAVI delar in det vi säger i sådant som ökar chansen att bli förstådd,
+          som fakta, raka frågor, svar på frågan, att återge vad den andra sa och
+          att berätta om egna upplevelser. Sedan finns det som minskar chansen, som
+          anklagelser, sarkasm, retoriska frågor och "ja, men". I coachingen blir
+          det en enkel ordning:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Säg vad du ser: "Stången åkte framåt på de två sista repsen."</li>
+          <li>Säg vad du tror att det betyder: "Jag tror att bröstryggen tröttnar."</li>
+          <li>Fråga hur atleten upplevde det: "Hur kändes det från ditt håll?"</li>
+        </ul>
+        <p>Först efter det kommer råden. Feedback som utgår från atletens egen
+          bild fastnar bättre, och ibland visar det sig att atleten har en bättre
+          förklaring än jag.</p>
+
+        <p className="mt-3"><b>5. Balansera det inspirerande och det konkreta (Bass &amp;
+          Avolio; Lowe m.fl. 1996; Ng 2017)</b></p>
+        <p>Bass och Avolio skiljer mellan transformativt ledarskap, som bygger på
+          mening, visioner och personlig utveckling, och transaktionellt
+          ledarskap, som handlar om tydliga mål, uppföljning och belöning när man
+          levererar. En atlet behöver båda. Meningen gör att man orkar ett helt år.
+          Målen och uppföljningen gör att man vet vad som ska göras på tisdag.</p>
+        <p>Forskningen stöder att de kompletterar varandra, men man ska inte påstå
+          att det transaktionella är det som egentligen driver prestation. Lowe
+          m.fl. (1996) fann tvärtom att transformativt ledarskap hade starkare
+          samband med effektivitet. Inom det transaktionella är det också främst
+          "belöning mot prestation" som fungerar, alltså tydliga överenskommelser
+          och uppföljning. Att bara ingripa när något går fel ger betydligt sämre
+          resultat. Så jag menar tydliga mål och ärlig uppföljning, inte straff.</p>
+
+        <p className="mt-3"><b>6. Se coach och atlet som ett lag på två (Wheelan; Hoffer
+          Gittell; Tomasello)</b></p>
+        <p>Wheelan: Grupper går igenom faser, från osäkerhet och beroende via
+          konflikt och förhandling till tillit och till slut produktivt arbete. Det
+          gäller även en grupp på två. Den första friktionen, som när atleten
+          ifrågasätter programmet, är ofta ett tecken på att relationen mognar och
+          inte att något är fel.</p>
+        <p>Hoffer Gittell: Relationell koordination bygger på delade mål, delad
+          kunskap och ömsesidig respekt, och den bärs upp av kommunikation som är
+          ofta, i tid, korrekt och inriktad på att lösa problem. Det fungerar
+          bättre än instruktioner uppifrån.</p>
+        <p>Tomasello: Människan är byggd för att samarbeta mot gemensamma mål. Den
+          förmågan ska jag använda i stället för att coacha ovanifrån.</p>
+
+        <p className="mt-3"><b>Så ser det ut i SETPOINT</b></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Fas 1: Jag loggar åt atleten och visar hur det görs.</li>
+          <li>Fas 2: Atleten loggar själv och jag kommenterar.</li>
+          <li>Fas 3: Atleten föreslår ändringar, till exempel via Review &amp;
+            adjust, och jag godkänner dem.</li>
+        </ul>
+        <p>Målet är nått när atletens egna förslag stämmer med mina gång på gång.</p>
       </Section>
 
       <Section title="Träningslast: Foster sRPE">

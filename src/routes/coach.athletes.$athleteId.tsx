@@ -46,13 +46,6 @@ import { StrengthVolumeProfileCard } from "@/components/StrengthVolumeProfileCar
 import { MesocycleProgressCard } from "@/components/MesocycleProgressCard";
 import { E1rmPrCard, RpePaceTrendCard } from "@/components/StrengthTrendCards";
 
-const DEFAULT_EXERCISES = [
-  "Knäböj",
-  "Bänkpress",
-  "Marklyft",
-  "Axelpress",
-  "Lår Curl",
-];
 
 export const Route = createFileRoute("/coach/athletes/$athleteId")({
   head: () => ({

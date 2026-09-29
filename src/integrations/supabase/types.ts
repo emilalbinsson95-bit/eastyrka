@@ -1619,6 +1619,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_inspect_athlete: { Args: { _athlete_id: string }; Returns: Json }
       admin_list_users: {
         Args: { _query?: string }
         Returns: {

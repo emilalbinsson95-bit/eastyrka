@@ -41,6 +41,29 @@ function LearnPage() {
         <p className="text-sm text-muted-foreground">Det här betyder orden i ditt program.</p>
       </div>
 
+      <Topic title="Uppvärmning för styrkelyft (10–15 min)">
+        <p>Värm upp hela kroppen först, sedan lyftet. Håll det kort — målet är att bli varm och rörlig, inte trött.</p>
+        <p className="font-medium text-foreground">1. Puls (3–5 min)</p>
+        <p>Cykel, roddmaskin eller rask promenad tills du blir lite varm.</p>
+        <p className="font-medium text-foreground">2. Rörlighet och aktivering (5 min, 1 varv)</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Cat–camel × 8 — rörlig rygg.</li>
+          <li>World's greatest stretch × 5/sida — höft, bröstrygg.</li>
+          <li>Djup knäböj med vikt framför bröstet (goblet) × 8 — häng i botten 2–3 s.</li>
+          <li>Höftlyft (glute bridge) × 10.</li>
+          <li>Band pull-apart × 15 + band dislocates × 10 — axlar inför bänk.</li>
+          <li>Dead bug × 6/sida — bål och andning.</li>
+        </ul>
+        <p className="font-medium text-foreground">3. Specifik uppvärmning med stången</p>
+        <p>Öka stegvis mot dagens första arbetsset, med färre reps ju tyngre det blir. Exempel mot 150 kg × 5:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Tom stång × 10 · 60 kg × 5 · 90 kg × 3 · 115 kg × 2 · 135 kg × 1 · sedan arbetsset.</li>
+          <li>Ungefär 40 / 60 / 75 / 90 % av arbetsvikten. Vila kort i början, längre mot slutet.</li>
+          <li>Nästa lyft i passet behöver bara 2–3 uppvärmningsset — du är redan varm.</li>
+        </ul>
+        <p>Långa statiska stretchar precis före tunga lyft behövs inte. Spara dem till efter passet om du vill.</p>
+      </Topic>
+
       <Topic title="RPE — hur tungt var setet?">
         <p>RPE (Rating of Perceived Exertion) är en skala 1–10 för hur ansträngande ett set var. I styrketräning
           betyder den i praktiken: <strong>hur många reps hade du kvar?</strong></p>

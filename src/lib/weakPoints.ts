@@ -151,8 +151,8 @@ const isWeakRow = (e: TemplateExercise) => /^Weak point —/.test(e.notes ?? "")
  */
 export function exercisePriority(e: TemplateExercise): number {
   if (isCompSlot(e) || OVER_WARM.test(e.variation ?? "")) return 100;
-  if (isWeakRow(e)) return /^Weak point —/.test(e.notes ?? "") && ISOLATION.test(e.exercise) ? 55 : 85;
   const cat = volumeCategory(e);
+  if (isWeakRow(e)) return cat === "squat" || cat === "hinge" || cat === "horizontal-press" ? 85 : 60;
   if (cat === "squat" || cat === "hinge" || cat === "horizontal-press") return 75;
   if (cat === "core") return 15;
   if (ISOLATION.test(e.exercise)) return 25;

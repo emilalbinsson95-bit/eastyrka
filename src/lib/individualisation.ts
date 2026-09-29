@@ -638,6 +638,7 @@ export function applyAdjustments(
   h: HistoryInputs,
   tuning: CoachTuning = DEFAULT_TUNING,
   profile: StrengthVolumeProfile = DEFAULT_STRENGTH_VOLUME,
+  opts: { skipFloors?: boolean } = {},
 ): TemplateWeek[] {
   const global = adjustments.find((a) => a.kind === "global-volume")?.multiplier ?? 1;
   const byCat = new Map<VolumeCategory, number>();
@@ -650,7 +651,7 @@ export function applyAdjustments(
   const doLoads = adjustments.some((a) => a.kind === "loads");
 
   return weeks.map((w) => {
-    const isDeload = /deload/i.test(w.label);
+    const isDeload = /deload/i.test(w.label) || opts.skipFloors === true;
     const inRamp = ramp && !isDeload && w.week_index <= (ramp.rampWeeks ?? 1);
     const rampMult = inRamp ? (ramp!.multiplier ?? 0.8) : 1;
 

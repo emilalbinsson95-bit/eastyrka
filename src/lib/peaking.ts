@@ -270,7 +270,7 @@ function mainExercises(
   info: MainLiftInfo,
   cfg: WeekCfg,
   sessionsForLift: number,
-  opts: { technique?: boolean } = {},
+  opts: { technique?: boolean; opener?: boolean } = {},
 ): TemplateExercise[] {
   const total = mainSetsFor(info, cfg, sessionsForLift);
   const out: TemplateExercise[] = [];
@@ -280,7 +280,7 @@ function mainExercises(
       {
         exercise: info.name,
         variation: "Competition technique",
-        target_sets: Math.max(2, Math.min(3, total)),
+        target_sets: clamp(total, 2, 3),
         target_reps: 2,
         target_rpe: 6,
         intensity_metric: "rpe",
@@ -302,7 +302,7 @@ function mainExercises(
         : "Top set by feel — no 1RM on file yet.",
   });
 
-  const backoffs = total - 1;
+  const backoffs = opts.opener ? 0 : total - 1;
   if (backoffs > 0) {
     out.push({
       exercise: info.name,
@@ -372,7 +372,7 @@ export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null):
       sessions.push({
         title: "Openers",
         notes: "One single per lift at opener weight (~RPE 6.5). Full competition setup and commands.",
-        exercises: active.flatMap((k) => mainExercises(L(k), cfg, 1)),
+        exercises: active.flatMap((k) => mainExercises(L(k), cfg, 1, { opener: true })),
       });
       sessions.push({
         title: "Technique flush",

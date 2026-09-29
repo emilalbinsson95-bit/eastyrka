@@ -354,7 +354,11 @@ const DAYS_MEET = [1, 3];
  * Build the 3-week peak. `sum` is derived from the athlete's own logs;
  * pass null for a generic preview when no history is available yet.
  */
-export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null): TemplateWeek[] {
+export function buildPeakingWeeks(
+  daysPerWeek: number,
+  sum: PeakSummary | null,
+  opts: { openers?: boolean } = {},
+): TemplateWeek[] {
   const summary: PeakSummary =
     sum ??
     ({

@@ -42,7 +42,7 @@ import {
 } from "@/lib/overload";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
-import { summarizePeaking, peakingBasis } from "@/lib/peaking";
+import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
 
 
 export function GenerateStrengthTemplateDialog({
@@ -138,14 +138,15 @@ export function GenerateStrengthTemplateDialog({
   });
   const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
 
+  const [peakReference, setPeakReference] = useState<PeakReference>("robust");
   const peakSummary = useMemo(() => {
     if (!template?.buildFromHistory || !historyQuery.data) return null;
     return summarizePeaking({
       today: historyQuery.data.today,
       logs: historyQuery.data.logs,
       baselines: historyQuery.data.baselines,
-    });
-  }, [template, historyQuery.data]);
+    }, peakReference);
+  }, [template, historyQuery.data, peakReference]);
 
   const [openers, setOpeners] = useState(false);
 
@@ -480,7 +481,31 @@ export function GenerateStrengthTemplateDialog({
               <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
                 Peaking options
               </div>
-              <div className="p-3">
+              <div className="space-y-3 p-3">
+                <div>
+                  <span className="block text-sm font-medium">Reference volume</span>
+                  <span className="block text-xs text-muted-foreground">
+                    The "normal" weekly volume the taper cuts from.
+                  </span>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    {(["recent", "median", "robust"] as PeakReference[]).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setPeakReference(r)}
+                        className={cn(
+                          "rounded-md border p-2 text-left text-xs transition-colors",
+                          peakReference === r ? "border-primary/40 bg-primary/5" : "border-border",
+                        )}
+                      >
+                        <span className="block font-medium capitalize">
+                          {r === "recent" ? "6-week mean" : r === "median" ? "12-week median" : "Robust (recommended)"}
+                        </span>
+                        <span className="block text-muted-foreground">{PEAK_REFERENCE_LABEL[r]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <label
                   className={cn(
                     "flex cursor-pointer gap-3 rounded-md border p-2 transition-colors",

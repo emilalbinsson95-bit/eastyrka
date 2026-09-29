@@ -407,6 +407,8 @@ export function buildPeakingWeeks(
       weeksCovered: 0,
       sessionsPerWeek: 0,
       thin: true,
+      reference: "recent",
+      referenceLabel: PEAK_REFERENCE_LABEL.recent,
       accessories: [],
       lifts: {
         squat: { key: "squat", name: "Back squat", trained: true, e1rm: null, weeklySets: 0, bestSingleKg: null },

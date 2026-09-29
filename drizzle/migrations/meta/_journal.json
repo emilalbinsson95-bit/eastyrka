@@ -15,6 +15,13 @@
       "when": 1790497067514,
       "tag": "0001_admin_policies_and_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790661106322,
+      "tag": "0002_admin_athlete_diagnostics_and_notification_preferences",
+      "breakpoints": true
     }
   ]
 }

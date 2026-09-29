@@ -1,0 +1,1 @@
+ALTER TABLE public.athlete_strength_volume_profiles ADD COLUMN IF NOT EXISTS deadlift_style text CHECK (deadlift_style IN ('conventional','sumo'));

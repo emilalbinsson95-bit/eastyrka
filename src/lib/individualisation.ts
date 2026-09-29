@@ -15,6 +15,7 @@ import {
   type VolumeCategory,
 } from "@/lib/strengthTemplates";
 import { prescribedWeightKg } from "@/lib/intensity";
+import { DEFAULT_STRENGTH_VOLUME, volumeFactorForCategory, type StrengthVolumeProfile } from "@/lib/strengthVolumeProfile";
 
 // ---------- inputs ----------
 
@@ -461,11 +462,14 @@ export interface VolumeWarning {
 }
 
 /** Weekly-set sanity check against MEV/MRV for the working (non-deload) weeks. */
-export function volumeWarnings(weeks: TemplateWeek[]): VolumeWarning[] {
+export function volumeWarnings(weeks: TemplateWeek[], profile: StrengthVolumeProfile = DEFAULT_STRENGTH_VOLUME): VolumeWarning[] {
   const perWeek = templateWeeklySets(weeks);
   const out: VolumeWarning[] = [];
   for (const [cat, sets] of perWeek) {
-    const [mev, mrv] = VOLUME_LANDMARKS[cat] ?? [0, 99];
+    const factor = volumeFactorForCategory(cat, profile);
+    const [baseMev, baseMrv] = VOLUME_LANDMARKS[cat] ?? [0, 99];
+    const mev = Math.max(1, Math.round(baseMev * factor));
+    const mrv = Math.max(mev, Math.round(baseMrv * factor));
     const n = Math.round(sets);
     if (n > mrv) {
       out.push({
@@ -570,6 +574,7 @@ function enforceFloors(
   slots: SetSlot[],
   sets: Map<string, number>,
   isDeload: boolean,
+  profile: StrengthVolumeProfile,
 ): void {
   if (isDeload) return;
 
@@ -594,7 +599,7 @@ function enforceFloors(
   for (const [cat, group] of byCat) {
     const baseTotal = group.reduce((a, g) => a + g.base, 0);
     const [mev] = VOLUME_LANDMARKS[cat] ?? [0, 99];
-    const floor = Math.min(baseTotal, mev);
+    const floor = Math.min(Math.round(baseTotal * volumeFactorForCategory(cat, profile)), Math.round(mev * volumeFactorForCategory(cat, profile)));
     let guard = 0;
     while (group.reduce((a, g) => a + get(g), 0) < floor && guard++ < 60) {
       const next = group
@@ -632,6 +637,7 @@ export function applyAdjustments(
   adjustments: Adjustment[],
   h: HistoryInputs,
   tuning: CoachTuning = DEFAULT_TUNING,
+  profile: StrengthVolumeProfile = DEFAULT_STRENGTH_VOLUME,
 ): TemplateWeek[] {
   const global = adjustments.find((a) => a.kind === "global-volume")?.multiplier ?? 1;
   const byCat = new Map<VolumeCategory, number>();
@@ -657,7 +663,8 @@ export function applyAdjustments(
         const manual =
           tuning.volume *
           (isMainCategory(cat) ? tuning.mainLifts : 1) *
-          (isAccessoryCategory(cat) ? tuning.accessory : 1);
+          (isAccessoryCategory(cat) ? tuning.accessory : 1) *
+          volumeFactorForCategory(cat, profile);
         const raw = isDeload ? manual : global * catMult * rampMult * manual;
         // Stacked cuts can multiply into junk volume — clamp the combined effect.
         const mult = isDeload
@@ -670,7 +677,7 @@ export function applyAdjustments(
       slots,
       isDeload ? VOLUME_FLOORS.minSetsPerExerciseDeload : VOLUME_FLOORS.minSetsPerExercise,
     );
-    enforceFloors(slots, setsByKey, isDeload);
+    enforceFloors(slots, setsByKey, isDeload, profile);
 
 
     return {

@@ -5,7 +5,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
-import { WEAK_POINTS, MAX_WEAK_POINTS, applyWeakPoints, getWeakPoints } from "@/lib/weakPoints";
+import { WEAK_POINTS, applyWeakPoints, getWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,11 +151,11 @@ export function GenerateStrengthTemplateDialog({
     },
   });
   useEffect(() => {
-    if (weakQuery.data) setWeakIds(weakQuery.data);
+    if (weakQuery.data) setWeakIds(normalizeWeakIds(weakQuery.data));
   }, [weakQuery.data]);
   const toggleWeak = (id: string) =>
     setWeakIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= MAX_WEAK_POINTS ? prev : [...prev, id],
+      prev.includes(id) ? prev.filter((x) => x !== id) : normalizeWeakIds([id, ...prev]),
     );
 
   const [peakReference, setPeakReference] = useState<PeakReference>("robust");
@@ -653,12 +653,13 @@ export function GenerateStrengthTemplateDialog({
           {!isPeaking && (
             <div className="rounded-lg border bg-card">
               <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
-                Weak points (max {MAX_WEAK_POINTS})
+                Weak points (one per lift)
               </div>
               <div className="space-y-3 p-3">
                 <p className="text-xs text-muted-foreground">
-                  Solved with exercise selection: swaps the lift's variation slot for a targeted variation and adds
-                  one targeted accessory per week (not in deloads). Saved on the athlete for the next block.
+                  Pick the one fault that limits each lift most — fix one thing per block. Swaps the lift's variation
+                  slot and adds one targeted accessory per week if the session has room; otherwise it replaces the
+                  least specific exercise (isolation/core first). Competition lifts are never removed. Not in deloads.
                 </p>
                 {(["squat", "bench", "deadlift"] as const).map((lift) => (
                   <div key={lift}>

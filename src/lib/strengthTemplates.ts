@@ -586,7 +586,7 @@ function benchFocus(daysPerWeek: number): TemplateWeek[] {
       label: isDeload ? "Deload" : `Bench block W${w}`,
       notes: isDeload
         ? "Deload — keep bench technique via light singles, drop volume."
-        : "3× bench / week. Comp bench heavy, variation for volume, accessories for weak points.",
+        : "3× bench / week. Comp bench heavy, variation for volume, accessories for balanced training.",
       sessions: adaptSessions(base, [() => armsShouldersPump(w), () => backHypertrophy(w)], daysPerWeek),
     };
   });

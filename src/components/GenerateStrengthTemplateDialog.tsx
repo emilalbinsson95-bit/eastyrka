@@ -5,7 +5,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
-import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, getWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
+import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -307,10 +307,6 @@ export function GenerateStrengthTemplateDialog({
           }${
             overloadTouched(overload)
               ? ` Overload: ${overloadSummary(overload).join("; ")}.`
-              : ""
-          }${
-            !isPeaking && weakIds.length > 0
-              ? ` Weak points: ${getWeakPoints(weakIds).map((w) => w.label).join("; ")}.`
               : ""
           }`,
 

@@ -971,6 +971,8 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           css_per_100m_seconds: number | null
+          email_coach_invites_enabled: boolean
+          email_messages_enabled: boolean
           ftp_watts: number | null
           full_name: string | null
           id: string
@@ -984,6 +986,8 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           css_per_100m_seconds?: number | null
+          email_coach_invites_enabled?: boolean
+          email_messages_enabled?: boolean
           ftp_watts?: number | null
           full_name?: string | null
           id: string
@@ -997,6 +1001,8 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           css_per_100m_seconds?: number | null
+          email_coach_invites_enabled?: boolean
+          email_messages_enabled?: boolean
           ftp_watts?: number | null
           full_name?: string | null
           id?: string
@@ -1594,6 +1600,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_athlete_diagnostics: {
+        Args: { _query?: string }
+        Returns: {
+          coaches: string[]
+          email: string
+          full_name: string
+          id: string
+          last_training_date: string
+          plan_count: number
+          training_set_count: number
+        }[]
+      }
       admin_grant_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1601,6 +1619,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_inspect_athlete: { Args: { _athlete_id: string }; Returns: Json }
       admin_list_users: {
         Args: { _query?: string }
         Returns: {

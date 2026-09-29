@@ -128,13 +128,13 @@ function MessagesPage() {
         const { data } = await supabase
           .from("coach_athletes")
           .select("athlete_id")
-          .eq("coach_id", user!.id);
+          .eq("coach_id", user!.id).eq("status", "accepted");
         (data ?? []).forEach((r) => ids.add(r.athlete_id));
       } else if (role === "athlete") {
         const { data } = await supabase
           .from("coach_athletes")
           .select("coach_id")
-          .eq("athlete_id", user!.id);
+          .eq("athlete_id", user!.id).eq("status", "accepted");
         (data ?? []).forEach((r) => ids.add(r.coach_id));
       } else if (role === "physio") {
         const { data } = await supabase

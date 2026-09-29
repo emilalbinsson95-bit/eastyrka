@@ -15,6 +15,27 @@
       "when": 1790497067514,
       "tag": "0001_admin_policies_and_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790661106322,
+      "tag": "0002_admin_athlete_diagnostics_and_notification_preferences",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790661197303,
+      "tag": "0003_notify_athlete_on_coach_request",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790661260927,
+      "tag": "0004_admin_readonly_athlete_inspection",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmailPreferences } from "@/components/EmailPreferences";
 
 export const Route = createFileRoute("/coach/me")({
   head: () => ({
@@ -48,7 +49,8 @@ function CoachMePage() {
       const { data: links, error } = await supabase
         .from("coach_athletes")
         .select("athlete_id, created_at")
-        .eq("coach_id", coachId);
+        .eq("coach_id", coachId)
+        .eq("status", "accepted");
       if (error) throw error;
       const ids = (links ?? []).map((l) => l.athlete_id);
       if (ids.length === 0) return [];
@@ -142,6 +144,7 @@ function CoachMePage() {
           )}
         </CardContent>
       </Card>
+      <EmailPreferences userId={coachId} />
     </div>
   );
 }

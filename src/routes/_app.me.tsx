@@ -19,6 +19,7 @@ import {
 import { parseTimeToSeconds, secondsToTimeStr } from "@/lib/endurancePaceHr";
 import { ConnectionsCard } from "@/components/ConnectionsCard";
 import { PendingCoachInvites } from "@/components/PendingCoachInvites";
+import { EmailPreferences } from "@/components/EmailPreferences";
 
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
@@ -125,6 +126,7 @@ function MePage() {
       </Card>
 
       <ConnectionsCard />
+      <EmailPreferences userId={userId} />
 
       <Card>
         <CardHeader>

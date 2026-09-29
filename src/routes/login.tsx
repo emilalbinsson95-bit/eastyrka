@@ -1,7 +1,6 @@
 import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +15,11 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Sign in to your coach, athlete, physiotherapist or patient account." },
       { property: "og:title", content: "Sign in — SETPOINT" },
       { property: "og:description", content: "Access your readiness dashboard, athlete roster or rehab sessions." },
-      { property: "og:url", content: "https://set-smart-guide.lovable.app/login" },
+      { property: "og:url", content: "https://eastyrka.lovable.app/login" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://set-smart-guide.lovable.app/login" }],
+    links: [{ rel: "canonical", href: "https://eastyrka.lovable.app/login" }],
   }),
   component: LoginPage,
 });
@@ -59,7 +60,7 @@ function LoginPage() {
             <BrandMark className="scale-125" showWordmark />
           </div>
           <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Sign in to your SETPOINT account</CardDescription>
+          <CardDescription>Enter your account details.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

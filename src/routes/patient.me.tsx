@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmailPreferences } from "@/components/EmailPreferences";
 
 export const Route = createFileRoute("/patient/me")({
   head: () => ({
@@ -145,6 +146,7 @@ function PatientMePage() {
           )}
         </CardContent>
       </Card>
+      <EmailPreferences userId={patientId} />
 
       <div>
         <Button asChild variant="outline" size="sm">

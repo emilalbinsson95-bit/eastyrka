@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmailPreferences } from "@/components/EmailPreferences";
 
 export const Route = createFileRoute("/physio/me")({
   head: () => ({
@@ -139,6 +140,7 @@ function PhysioMePage() {
           )}
         </CardContent>
       </Card>
+      <EmailPreferences userId={physioId} />
     </div>
   );
 }

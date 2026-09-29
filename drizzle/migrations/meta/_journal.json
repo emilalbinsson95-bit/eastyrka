@@ -64,6 +64,13 @@
       "when": 1790703344718,
       "tag": "0008_athlete_weak_points",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790705676006,
+      "tag": "0009_fix_weak_points_policy_args",
+      "breakpoints": true
     }
   ]
 }

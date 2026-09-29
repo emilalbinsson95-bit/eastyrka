@@ -147,6 +147,8 @@ export function GenerateStrengthTemplateDialog({
     });
   }, [template, historyQuery.data]);
 
+  const [openers, setOpeners] = useState(false);
+
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory && peakSummary) {
@@ -222,7 +224,6 @@ export function GenerateStrengthTemplateDialog({
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
-  const [openers, setOpeners] = useState(false);
   const plannedWeeks = useMemo(
     () => (isPeaking ? finalWeeks : applyOverload(finalWeeks, overload)),
     [finalWeeks, overload, isPeaking],

@@ -334,6 +334,10 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
             mid-range. Pin squat vid sticking point, pausböj, high-bar/front squat, 1¼-squats.</li>
           <li><strong>"Good morning"-squat (höften först):</strong> quads för svaga relativt baksida →
             front squat, high-bar, benpress, safety bar squat.</li>
+          <li><strong>Går för grunt:</strong> ofta rädsla för botten eller rörlighet i fotled/höft,
+            sällan ren styrka. Tidigt → cue och filma djupet (box/band som djupmarkör). Sen → tempoböj
+            under parallellt, pausböj, goblet squat med förhöjda hälar; testa squatskor eller något
+            smalare/bredare stans. Sänk vikten tills djupet sitter — grunda reps räknas inte på tävling.</li>
           <li><strong>Knän faller in (valgus):</strong> lätt valgus i sticking region är normalt hos starka
             lyftare. Tydlig kollaps → adduktor- och höftstyrka, split squats, tempo.</li>
         </ul>
@@ -348,6 +352,10 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
           <li><strong>Stången driver/tappar bana:</strong> tidigt → cue ("böj stången", "armbågar under
             stången"); sen → tempobänk och paus för att nöta in banan.</li>
         </ul>
+        <p className="font-semibold text-foreground">I programgeneratorn</p>
+        <p>Välj upp till tre svagheter under "Weak points" när du genererar ett program. Lyftets
+          variationsplats byts mot den riktade variationen, och en riktad assistansövning läggs till
+          varje vecka (inte i deload). Valen sparas på atleten och är förvalda nästa block.</p>
         <p className="font-semibold text-foreground">Hur mycket?</p>
         <p>Byt 1–2 variationer per block, 1–2 pass/vecka, RPE 7–8. Variationen ska vara nära huvudlyftet
           (specificitet) men överbelasta den svaga delen. Utvärdera efter 4–8 veckor: om variationen

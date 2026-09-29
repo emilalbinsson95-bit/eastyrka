@@ -5,6 +5,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
+import { WEAK_POINTS, MAX_WEAK_POINTS, applyWeakPoints, getWeakPoints } from "@/lib/weakPoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,6 +139,25 @@ export function GenerateStrengthTemplateDialog({
   });
   const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
 
+  const [weakIds, setWeakIds] = useState<string[]>([]);
+  const weakQuery = useQuery({
+    queryKey: ["athlete-weak-points", athleteId],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("athlete_weak_points")
+        .select("weak_points").eq("athlete_id", athleteId).maybeSingle();
+      if (error) throw error;
+      return (data?.weak_points ?? []) as string[];
+    },
+  });
+  useEffect(() => {
+    if (weakQuery.data) setWeakIds(weakQuery.data);
+  }, [weakQuery.data]);
+  const toggleWeak = (id: string) =>
+    setWeakIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= MAX_WEAK_POINTS ? prev : [...prev, id],
+    );
+
   const [peakReference, setPeakReference] = useState<PeakReference>("robust");
   const peakSummary = useMemo(() => {
     if (!template?.buildFromHistory || !historyQuery.data) return null;
@@ -226,8 +246,8 @@ export function GenerateStrengthTemplateDialog({
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
   const plannedWeeks = useMemo(
-    () => (isPeaking ? finalWeeks : applyOverload(finalWeeks, overload)),
-    [finalWeeks, overload, isPeaking],
+    () => (isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds)),
+    [finalWeeks, overload, isPeaking, weakIds],
   );
 
   const weeklySets = useMemo(() => {
@@ -248,6 +268,13 @@ export function GenerateStrengthTemplateDialog({
       if (!template) throw new Error("Pick a template");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
+      if (!isPeaking) {
+        const { error: wpErr } = await supabase.from("athlete_weak_points").upsert(
+          { athlete_id: athleteId, weak_points: weakIds, updated_at: new Date().toISOString() },
+          { onConflict: "athlete_id" },
+        );
+        if (wpErr) throw wpErr;
+      }
 
 
       // 1. Mesocycle
@@ -272,6 +299,10 @@ export function GenerateStrengthTemplateDialog({
           }${
             overloadTouched(overload)
               ? ` Overload: ${overloadSummary(overload).join("; ")}.`
+              : ""
+          }${
+            !isPeaking && weakIds.length > 0
+              ? ` Weak points: ${getWeakPoints(weakIds).map((w) => w.label).join("; ")}.`
               : ""
           }`,
 
@@ -617,6 +648,39 @@ export function GenerateStrengthTemplateDialog({
               </div>
             </div>
           </div>
+          )}
+
+          {!isPeaking && (
+            <div className="rounded-lg border bg-card">
+              <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
+                Weak points (max {MAX_WEAK_POINTS})
+              </div>
+              <div className="space-y-3 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Solved with exercise selection: swaps the lift's variation slot for a targeted variation and adds
+                  one targeted accessory per week (not in deloads). Saved on the athlete for the next block.
+                </p>
+                {(["squat", "bench", "deadlift"] as const).map((lift) => (
+                  <div key={lift}>
+                    <div className="mb-1 text-xs font-medium capitalize">{lift}</div>
+                    <div className="grid gap-1.5 sm:grid-cols-2">
+                      {WEAK_POINTS.filter((w) => w.lift === lift).map((w) => {
+                        const on = weakIds.includes(w.id);
+                        return (
+                          <label key={w.id} className={cn("flex cursor-pointer gap-2 rounded-md border p-2", on ? "border-primary/40 bg-primary/5" : "border-border")}>
+                            <Checkbox checked={on} onCheckedChange={() => toggleWeak(w.id)} className="mt-0.5" aria-label={w.label} />
+                            <div className="min-w-0">
+                              <div className="text-sm">{w.label}</div>
+                              <p className="text-[11px] text-muted-foreground">{w.variation.exercise} + {w.accessory.exercise}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* ---- what the peak is based on ---- */}

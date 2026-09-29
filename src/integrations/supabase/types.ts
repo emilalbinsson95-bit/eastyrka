@@ -74,6 +74,24 @@ export type Database = {
         }
         Relationships: []
       }
+      athlete_weak_points: {
+        Row: {
+          athlete_id: string
+          updated_at: string
+          weak_points: string[]
+        }
+        Insert: {
+          athlete_id: string
+          updated_at?: string
+          weak_points?: string[]
+        }
+        Update: {
+          athlete_id?: string
+          updated_at?: string
+          weak_points?: string[]
+        }
+        Relationships: []
+      }
       baseline_history: {
         Row: {
           athlete_id: string

@@ -8,7 +8,9 @@
 //  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing;
 //    no evidence that final-week heavy singles add anything beyond confidence.
 //  - Design choice: the taper here is a pure VOLUME reduction. Working weights and
-//    rep schemes stay in the athlete's normal range — no heavy singles, no openers.
+//    rep schemes stay in the athlete's normal range. Heavy opener singles are
+//    available as an OPT-IN — they don't move performance measurably, but some
+//    lifters want the confidence rep, so the coach can switch them on.
 //
 // Everything here is pure — no Supabase, no React.
 
@@ -271,10 +273,24 @@ function mainExercises(
   info: MainLiftInfo,
   cfg: WeekCfg,
   sessionsForLift: number,
-  opts: { technique?: boolean } = {},
+  opts: { technique?: boolean; opener?: boolean } = {},
 ): TemplateExercise[] {
   const total = mainSetsFor(info, cfg, sessionsForLift);
   const out: TemplateExercise[] = [];
+
+  if (opts.opener) {
+    out.push({
+      exercise: info.name,
+      variation: "Opener single",
+      target_sets: 1,
+      target_reps: 1,
+      target_rpe: 8,
+      intensity_metric: "rpe",
+      notes:
+        "Optional confidence single at roughly opener weight (~90% of est. 1RM). " +
+        "Evidence says it changes nothing physically — keep it crisp and move on.",
+    });
+  }
 
   if (opts.technique) {
     return [
@@ -338,7 +354,11 @@ const DAYS_MEET = [1, 3];
  * Build the 3-week peak. `sum` is derived from the athlete's own logs;
  * pass null for a generic preview when no history is available yet.
  */
-export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null): TemplateWeek[] {
+export function buildPeakingWeeks(
+  daysPerWeek: number,
+  sum: PeakSummary | null,
+  opts: { openers?: boolean } = {},
+): TemplateWeek[] {
   const summary: PeakSummary =
     sum ??
     ({
@@ -395,8 +415,8 @@ export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null):
           title: [has("squat") && "Squat", has("bench") && "Bench"].filter(Boolean).join(" + ") + " (heavy)",
           notes: "Main platform day. Competition commands on every top set.",
           exercises: [
-            ...(has("squat") ? mainExercises(L("squat"), cfg, 2) : []),
-            ...(has("bench") ? mainExercises(L("bench"), cfg, 2) : []),
+            ...(has("squat") ? mainExercises(L("squat"), cfg, 2, { opener: opts.openers }) : []),
+            ...(has("bench") ? mainExercises(L("bench"), cfg, 2, { opener: opts.openers }) : []),
             ...accessoryExercises(summary, cfg, 1),
           ],
         });
@@ -407,7 +427,7 @@ export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null):
           title: "Deadlift (heavy)",
           notes: "Single pull stance for the whole block — no switching sumo/conventional now.",
           exercises: [
-            ...mainExercises(L("deadlift"), cfg, 1),
+            ...mainExercises(L("deadlift"), cfg, 1, { opener: opts.openers }),
             ...accessoryExercises(summary, cfg, 1).slice(0, 1),
           ],
         });

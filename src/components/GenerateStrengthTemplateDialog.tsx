@@ -147,14 +147,16 @@ export function GenerateStrengthTemplateDialog({
     });
   }, [template, historyQuery.data]);
 
+  const [openers, setOpeners] = useState(false);
+
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory && peakSummary) {
-      return template.buildFromHistory(daysPerWeek, peakSummary);
+      return template.buildFromHistory(daysPerWeek, peakSummary, { openers });
     }
     if (template.skipVolumeFloors) return template.buildWeeks(daysPerWeek);
     return enforceTemplateFloors(template.buildWeeks(daysPerWeek));
-  }, [template, daysPerWeek, peakSummary]);
+  }, [template, daysPerWeek, peakSummary, openers]);
 
 
   const suggestion = useMemo(() => {
@@ -471,6 +473,37 @@ export function GenerateStrengthTemplateDialog({
               )}
             </div>
           </div>
+
+          {/* ---- peaking options ---- */}
+          {isPeaking && (
+            <div className="rounded-lg border bg-card">
+              <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
+                Peaking options
+              </div>
+              <div className="p-3">
+                <label
+                  className={cn(
+                    "flex cursor-pointer gap-3 rounded-md border p-2 transition-colors",
+                    openers ? "border-primary/40 bg-primary/5" : "border-border",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={openers}
+                    onChange={(e) => setOpeners(e.target.checked)}
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Opener singles (optional)</span>
+                    <span className="block text-xs text-muted-foreground">
+                      Adds one single at ~opener weight (RPE 8) before the top set in weeks 1–2.
+                      Research shows no measurable performance effect — pure confidence rep.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* ---- overload pushing ---- */}
           {!isPeaking && (

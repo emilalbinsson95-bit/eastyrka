@@ -222,6 +222,7 @@ export function GenerateStrengthTemplateDialog({
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
+  const [openers, setOpeners] = useState(false);
   const plannedWeeks = useMemo(
     () => (isPeaking ? finalWeeks : applyOverload(finalWeeks, overload)),
     [finalWeeks, overload, isPeaking],

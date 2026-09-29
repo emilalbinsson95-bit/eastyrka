@@ -52,6 +52,13 @@ export interface StrengthTemplate {
   maxDays: number;
   inspiration: string;
   buildWeeks: (daysPerWeek: number) => TemplateWeek[];
+  /**
+   * When present, the block is generated from the athlete's own logged history
+   * (last ~3 months) instead of a fixed prescription.
+   */
+  buildFromHistory?: (daysPerWeek: number, summary: PeakSummary) => TemplateWeek[];
+  /** Skip the generic MEV volume floors — used by intentionally low-volume blocks. */
+  skipVolumeFloors?: boolean;
 }
 
 // ---------- helpers ----------

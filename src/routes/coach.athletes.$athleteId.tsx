@@ -929,9 +929,10 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
 
   const existing = baselinesQuery.data ?? [];
   const existingExercises = new Set(existing.map((b) => b.exercise));
-  const suggested = DEFAULT_EXERCISES.filter((e) => !existingExercises.has(e));
+  const library = exercisesQuery.data ?? [];
+  const selectable = library.filter((e) => !existingExercises.has(e.name));
 
-  const [newExercise, setNewExercise] = useState("");
+  const [newExerciseId, setNewExerciseId] = useState<string>("");
   const [newKg, setNewKg] = useState<number>(100);
 
   return (

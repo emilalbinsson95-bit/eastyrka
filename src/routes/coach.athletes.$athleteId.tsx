@@ -889,7 +889,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
       kg,
     }: {
       exercise: string;
-      exerciseId: string | null;
+      exerciseId?: string | null;
       kg: number;
     }) => {
       const parsed = baselineSchema.parse({ exercise, one_rm_kg: kg });

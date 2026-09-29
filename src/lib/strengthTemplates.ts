@@ -58,7 +58,11 @@ export interface StrengthTemplate {
    * When present, the block is generated from the athlete's own logged history
    * (last ~3 months) instead of a fixed prescription.
    */
-  buildFromHistory?: (daysPerWeek: number, summary: PeakSummary) => TemplateWeek[];
+  buildFromHistory?: (
+    daysPerWeek: number,
+    summary: PeakSummary,
+    opts?: { openers?: boolean },
+  ) => TemplateWeek[];
   /** Skip the generic MEV volume floors — used by intentionally low-volume blocks. */
   skipVolumeFloors?: boolean;
 }
@@ -836,7 +840,8 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     maxDays: 4,
     inspiration: "Bosquet 2007 taper meta-analysis — pure volume reduction, intensity held",
     buildWeeks: (d: number) => buildPeakingWeeks(d, null),
-    buildFromHistory: (d: number, summary: PeakSummary) => buildPeakingWeeks(d, summary),
+    buildFromHistory: (d: number, summary: PeakSummary, opts?: { openers?: boolean }) =>
+      buildPeakingWeeks(d, summary, opts),
     skipVolumeFloors: true,
   },
 ];

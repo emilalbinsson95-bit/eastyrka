@@ -117,10 +117,13 @@ const LIFT_CAT: Record<WeakLift, ReturnType<typeof volumeCategory>> = {
   deadlift: "hinge",
 };
 
-const COMP = /^(competition|over-warm)/i;
+// A named comp lift is the comp slot unless its variation describes a true
+// variant. Stance/grip notes (e.g. "Sumo stance", "Competition grip & pause")
+// and over-warm singles still count as the competition lift.
+const VARIANT = /pause squat|tempo|pin|deficit|block|spoto|larsen|touch|close|wide|board|floor/i;
 
 function isCompSlot(e: TemplateExercise): boolean {
-  return /^(back squat|bench press|deadlift)$/i.test(e.exercise) && (!e.variation || COMP.test(e.variation));
+  return /^(back squat|bench press|deadlift|sumo deadlift)$/i.test(e.exercise) && (!e.variation || !VARIANT.test(e.variation));
 }
 
 export function getWeakPoints(ids: string[]): WeakPoint[] {
@@ -141,6 +144,7 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
       // 1. swap the lift's secondary slot for the targeted variation
       let slot: TemplateExercise | undefined;
       for (const s of sessions) {
+        if (s.exercises.some((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase())) continue;
         slot = s.exercises.find((e) => !usedSlots.has(e) && volumeCategory(e) === cat && !isCompSlot(e));
         if (slot) break;
       }
@@ -151,7 +155,8 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
         slot.target_reps = wp.variation.reps;
         slot.notes = `Weak point — ${wp.label}: ${wp.variation.notes}`;
       } else {
-        const host = sessions.find((s) => s.exercises.some((e) => volumeCategory(e) === cat));
+        const hasVar = sessions.some((s) => s.exercises.some((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase()));
+        const host = hasVar ? undefined : sessions.find((s) => s.exercises.some((e) => volumeCategory(e) === cat));
         if (host && !deload) {
           const comp = host.exercises.find((e) => volumeCategory(e) === cat)!;
           const idx = host.exercises.indexOf(comp);

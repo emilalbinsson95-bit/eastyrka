@@ -171,14 +171,19 @@ export function GenerateStrengthTemplateDialog({
 
   const isPeaking = Boolean(template?.buildFromHistory);
 
-  const activeAdjustments: Adjustment[] = useMemo(
+  // A peak is already derived from history — only the load prescription and
+  // genuine fatigue cuts apply; never let the engine add volume back into a taper.
+  const visibleAdjustments: Adjustment[] = useMemo(
     () =>
-      (suggestion?.adjustments ?? [])
-        .filter((a) => a.defaultOn && !offIds.has(a.id))
-        // A peak is already derived from history — only keep the load prescription
-        // and genuine fatigue cuts; never let the engine add volume back in.
-        .filter((a) => !isPeaking || a.kind === "loads" || (a.kind === "global-volume" && (a.multiplier ?? 1) < 1)),
-    [suggestion, offIds, isPeaking],
+      (suggestion?.adjustments ?? []).filter(
+        (a) => !isPeaking || a.kind === "loads" || (a.kind === "global-volume" && (a.multiplier ?? 1) < 1),
+      ),
+    [suggestion, isPeaking],
+  );
+
+  const activeAdjustments: Adjustment[] = useMemo(
+    () => visibleAdjustments.filter((a) => a.defaultOn && !offIds.has(a.id)),
+    [visibleAdjustments, offIds],
   );
 
   const toggle = (id: string) =>
@@ -699,12 +704,12 @@ export function GenerateStrengthTemplateDialog({
                   Not enough recent history for {athleteName} — generating the plain template.
                 </p>
               )}
-              {suggestion && !suggestion.insufficientData && suggestion.adjustments.length === 0 && (
+              {suggestion && !suggestion.insufficientData && visibleAdjustments.length === 0 && (
                 <p className="text-xs text-muted-foreground">
                   History looks on track — the template fits as-is.
                 </p>
               )}
-              {suggestion?.adjustments.map((a) => {
+              {visibleAdjustments.map((a) => {
                 const on = a.defaultOn && !offIds.has(a.id);
                 return (
                   <label

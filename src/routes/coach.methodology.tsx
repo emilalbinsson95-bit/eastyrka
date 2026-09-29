@@ -302,69 +302,71 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
             innan baseline justeras (signal vs. brus).</li>
         </ul>
       </Section>
-      <Section title="Svagheter i lyften: cues först, sedan övningsval">
-        <p><strong>Grundprincip:</strong> cues används tidigt för att rätta större tekniska brister
-          (säkerhet, grundposition). Därefter löses svagheter och obalanser med övningsval, inte med
-          fler cues. Det stöds av forskningen: externt fokus-cues hjälper inlärning (Wulf 2013), men
-          en sticking point beror oftast på att en muskelgrupp eller position är svag, och den
-          tränas bäst med variationer som överbelastar just den delen (Kompf &amp; Arandjelović 2016;
-          van den Tillaar 2012–2019).</p>
-        <p className="font-semibold text-foreground">Diagnostik innan åtgärd</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Filma från sidan på RPE 8–10. Var sker hastighetsminimum (sticking region)?</li>
-          <li>Skilj teknik från styrka: ser positionen likadan ut på RPE 7 som på RPE 9.5? Om ja → styrka.</li>
-          <li>Jämför variationer: t.ex. är pausböj eller front squat relativt svagare än back squat?</li>
-          <li>Ändra en sak per block och följ E1RM i variationen och huvudlyftet.</li>
-        </ul>
+      <Section title="Svagheter i lyften – först cues, sen övningsval">
+        <p>Min grundregel är att använda cues tidigt, när det finns större tekniska fel att rätta till,
+          framför allt sådant som påverkar säkerheten eller grundpositionen. När tekniken väl sitter
+          löser jag svagheter och obalanser med övningsval i stället för att lägga på fler cues. Det
+          finns stöd för det i forskningen. Cues med externt fokus hjälper inlärningen (Wulf 2013), men
+          när man fastnar i ett lyft beror det oftast på att en muskelgrupp eller en position är svag.
+          Det tränar man bäst med variationer som belastar just den delen extra (Kompf &amp;
+          Arandjelović 2016; van den Tillaar 2012–2019).</p>
+        <p className="font-semibold text-foreground">Ta reda på problemet innan du åtgärdar det</p>
+        <p>Filma lyftet från sidan på RPE 8–10 och kolla var stången går långsammast, alltså var du
+          fastnar. Jämför sedan med ett lättare set. Ser positionen likadan ut på RPE 7 som på RPE 9,5
+          är det troligen styrkan och inte tekniken som brister. Det säger också en del att jämföra
+          variationer, till exempel om pausböj eller front squat är relativt sett svagare än vanlig böj.
+          Ändra bara en sak per block och följ e1RM både i variationen och i huvudlyftet, annars vet du
+          inte vad som gjorde skillnad.</p>
         <p className="font-semibold text-foreground">Marklyft</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Långsam från golvet:</strong> oftast quads/position. Deficitmark, pausmark under knä
-            (start), front squat. Konventionell som fastnar tidigt kan testa sumo och vice versa.</li>
-          <li><strong>Svag hinge / fastnar vid knä–lockout:</strong> höftextensorer och ryggstyrka.
-            RDL, good mornings, block pulls/rack pulls strax under knä, hip thrust. Pausmark vid knä.</li>
-          <li><strong>Ryggen rundar:</strong> tidigt → cue ("bröstet mot väggen", "armhålor över stången");
-            sen → övningsval: pausmark, tempo-RDL, front squat, radvarianter, deadlift med lägre vikt och
-            högre krav på position.</li>
+          <li><strong>Långsam från golvet:</strong> Oftast quads eller startpositionen. Kör deficitmark,
+            pausmark strax under knät och front squat. Om du drar konventionellt och fastnar tidigt kan
+            det vara värt att testa sumo, och tvärtom.</li>
+          <li><strong>Fastnar vid knät eller i lockout:</strong> Oftast höftsträckare och ryggstyrka.
+            RDL, good mornings, rack pulls från strax under knät, hip thrust och pausmark vid knät.</li>
+          <li><strong>Ryggen rundar sig:</strong> I början räcker det ofta med en cue som "bröstet mot
+            väggen" eller "armhålorna över stången". Senare handlar det mer om övningsval: pausmark, RDL
+            med tempo, front squat, rodd och mark på lägre vikt med hårdare krav på positionen.</li>
         </ul>
         <p className="font-semibold text-foreground">Knäböj</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Kollapsar i botten / tappar spänning:</strong> pausböj (2–3 s), tempo ned (3–5 s),
-            pin squat från botten. Bygger styrka och kontroll där lyftet faller.</li>
-          <li><strong>Fastnar strax ovanför parallellt (vanligast):</strong> höftextensorer och quads i
-            mid-range. Pin squat vid sticking point, pausböj, high-bar/front squat, 1¼-squats.</li>
-          <li><strong>"Good morning"-squat (höften först):</strong> quads för svaga relativt baksida →
-            front squat, high-bar, benpress, safety bar squat.</li>
-          <li><strong>Går för grunt:</strong> ofta rädsla för botten eller rörlighet i fotled/höft,
-            sällan ren styrka. Tidigt → cue och filma djupet (box/band som djupmarkör). Sen → tempoböj
-            under parallellt, pausböj, goblet squat med förhöjda hälar; testa squatskor eller något
-            smalare/bredare stans. Sänk vikten tills djupet sitter — grunda reps räknas inte på tävling.</li>
-          <li><strong>Knän faller in (valgus):</strong> lätt valgus i sticking region är normalt hos starka
-            lyftare. Tydlig kollaps → adduktor- och höftstyrka, split squats, tempo.</li>
+          <li><strong>Tappar spänningen i botten:</strong> Pausböj (2–3 s), långsam nedfas (3–5 s) och
+            pin squat från botten. Det bygger styrka och kontroll precis där lyftet faller ihop.</li>
+          <li><strong>Fastnar strax ovanför parallellt (vanligast):</strong> Höftsträckare och quads i
+            mittpartiet. Pin squat vid sticking point, pausböj, high bar eller front squat och
+            1¼-böj.</li>
+          <li><strong>Höften åker upp först (good morning-böj):</strong> Quadsen är för svaga jämfört med
+            baksidan. Front squat, high bar, benpress och safety bar squat.</li>
+          <li><strong>Knäna faller in:</strong> Lite valgus där man fastnar är normalt, även hos starka
+            lyftare. Faller knäna in tydligt jobbar du med adduktorer och höftstyrka, split squats och
+            tempo.</li>
         </ul>
         <p className="font-semibold text-foreground">Bänkpress</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Från bröstet:</strong> bröst och främre axel. Pausbänk (lång paus), Spoto press,
-            bred grepp, dumbbell press, deficit/cambered.</li>
-          <li><strong>Mitten (vanligaste sticking region, ~5–15 cm över bröstet):</strong> triceps + bröst i
-            övergång. Spoto press, pin press vid sticking point, close-grip, Larsen press.</li>
-          <li><strong>Lockout:</strong> triceps. Close-grip, board/pin press högt, JM press, dips,
-            overhead triceps.</li>
-          <li><strong>Stången driver/tappar bana:</strong> tidigt → cue ("böj stången", "armbågar under
-            stången"); sen → tempobänk och paus för att nöta in banan.</li>
+          <li><strong>Från bröstet:</strong> Bröst och främre axel. Bänk med lång paus, Spoto press,
+            brett grepp, hantelpress och deficit eller cambered bar.</li>
+          <li><strong>Mitten, 5–15 cm ovanför bröstet (vanligast):</strong> Triceps och bröst i
+            övergången mellan dem. Spoto press, pin press vid sticking point, smalt grepp och Larsen
+            press.</li>
+          <li><strong>Lockout:</strong> Triceps. Smalt grepp, board eller pin press högt upp, JM press,
+            dips och triceps över huvudet.</li>
+          <li><strong>Stången tappar banan:</strong> I början cues som "böj stången" och "armbågarna
+            under stången". Senare bänk med tempo och paus för att nöta in banan.</li>
         </ul>
         <p className="font-semibold text-foreground">I programgeneratorn</p>
         <p>Välj upp till tre svagheter under "Weak points" när du genererar ett program. Lyftets
           variationsplats byts mot den riktade variationen, och en riktad assistansövning läggs till
           varje vecka (inte i deload). Valen sparas på atleten och är förvalda nästa block.</p>
         <p className="font-semibold text-foreground">Hur mycket?</p>
-        <p>Byt 1–2 variationer per block, 1–2 pass/vecka, RPE 7–8. Variationen ska vara nära huvudlyftet
-          (specificitet) men överbelasta den svaga delen. Utvärdera efter 4–8 veckor: om variationen
-          ökar men huvudlyftet inte gör det, var det troligen inte flaskhalsen — byt hypotes.</p>
+        <p>Byt ut 1–2 variationer per block och kör dem 1–2 pass i veckan på RPE 7–8. Variationen ska
+          ligga nära huvudlyftet men belasta den svaga delen hårdare. Utvärdera efter 4–8 veckor. Går
+          variationen upp men inte huvudlyftet var det förmodligen inte där problemet satt, och då får
+          du testa en ny hypotes.</p>
         <p className="text-xs">Källor: Wulf G (2013) Int Rev Sport Exerc Psychol; Kompf J &amp; Arandjelović O
-          (2016) Sports Med 46; van den Tillaar R &amp; Ettema G (2010, 2013) bänk sticking region;
-          van den Tillaar R et al. (2014) knäböj sticking region; Escamilla RJ et al. (2000) sumo vs
-          konventionell; Nuckols G, Stronger by Science — sticking points; Swinton PA et al. (2011)
-          box/pin-övningar.</p>
+          (2016) Sports Med 46; van den Tillaar R &amp; Ettema G (2010, 2013), sticking region i bänk;
+          van den Tillaar R et al. (2014), sticking region i knäböj; Escamilla RJ et al. (2000), sumo vs
+          konventionell; Nuckols G, Stronger by Science, om sticking points; Swinton PA et al. (2011),
+          box- och pinövningar.</p>
       </Section>
         </TabsContent>
         <TabsContent value="coaching" className="space-y-6">

@@ -113,7 +113,7 @@ function LearnPage() {
       <Topic title="Huvudlyft, variationer och assistans">
         <p><strong>Huvudlyft</strong> är knäböj, bänk och mark. <strong>Variationer</strong> (pausböj, tempobänk,
           deficitmark) är egna övningar som tränar en viss del av lyftet. <strong>Assistans</strong> bygger muskler
-          som hjälper lyften. Din coach väljer dem efter just dina svagheter.</p>
+          som hjälper lyften. Din coach väljer dem efter dina mål och hur du tränar.</p>
       </Topic>
     </div>
   );

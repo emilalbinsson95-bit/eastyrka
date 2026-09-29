@@ -870,8 +870,28 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
     },
   });
 
+  const exercisesQuery = useQuery({
+    queryKey: ["exercise-library-for-baselines"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exercises")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const upsertMutation = useMutation({
-    mutationFn: async ({ exercise, kg }: { exercise: string; kg: number }) => {
+    mutationFn: async ({
+      exercise,
+      exerciseId,
+      kg,
+    }: {
+      exercise: string;
+      exerciseId: string | null;
+      kg: number;
+    }) => {
       const parsed = baselineSchema.parse({ exercise, one_rm_kg: kg });
       const { error } = await supabase
         .from("baselines")
@@ -879,6 +899,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
           {
             athlete_id: athleteId,
             exercise: parsed.exercise,
+            exercise_id: exerciseId,
             one_rm_kg: parsed.one_rm_kg,
           },
           { onConflict: "athlete_id,exercise" },

@@ -132,20 +132,70 @@ export function getWeakPoints(ids: string[]): WeakPoint[] {
 
 const isDeloadWeek = (w: TemplateWeek) => /deload|taper|meet/i.test(w.label);
 
+/** Keep at most one weak point per lift — the primary limiter. Fixing
+ *  several faults in one lift at once dilutes the stimulus and makes it
+ *  impossible to tell which change worked. */
+export function normalizeWeakIds(ids: string[]): string[] {
+  const seen = new Set<WeakLift>();
+  return getWeakPoints(ids).filter((w) => (seen.has(w.lift) ? false : (seen.add(w.lift), true))).map((w) => w.id).slice(0, MAX_WEAK_POINTS);
+}
+
+const ISOLATION = /curl|pushdown|extension|raise|fly|flye|crossover|calf|shrug|kickback|pec deck|pull-apart|abductor|adductor/i;
+const OVER_WARM = /over-warm/i;
+const isWeakRow = (e: TemplateExercise) => /^Weak point —/.test(e.notes ?? "");
+
+/**
+ * Priority for keeping an exercise when a session is full. Specificity first:
+ * competition lifts > weak-point work > comp-lift variations > compound
+ * support for the same muscles > isolation > core/conditioning.
+ */
+export function exercisePriority(e: TemplateExercise): number {
+  if (isCompSlot(e) || OVER_WARM.test(e.variation ?? "")) return 100;
+  const cat = volumeCategory(e);
+  if (isWeakRow(e)) return cat === "squat" || cat === "hinge" || cat === "horizontal-press" ? 85 : 60;
+  if (cat === "squat" || cat === "hinge" || cat === "horizontal-press") return 75;
+  if (cat === "core") return 15;
+  if (ISOLATION.test(e.exercise)) return 25;
+  return 50; // compound support: rows, pulldowns, OHP, quads/hams compounds
+}
+
+/** Working-exercise cap per session; fewer days allow slightly longer sessions. */
+export function sessionCap(daysPerWeek: number): number {
+  return daysPerWeek <= 2 ? 8 : daysPerWeek === 3 ? 7 : 6;
+}
+const workingCount = (s: { exercises: TemplateExercise[] }) => s.exercises.filter((e) => !OVER_WARM.test(e.variation ?? "")).length;
+
+/** Put `add` into the session: append if there is room, otherwise replace the
+ *  lowest-priority exercise that ranks below it. Returns false if skipped. */
+function placeWithCap(s: { exercises: TemplateExercise[] }, add: TemplateExercise, cap: number, at?: number): boolean {
+  if (workingCount(s) < cap) {
+    if (at === undefined) s.exercises.push(add); else s.exercises.splice(at, 0, add);
+    return true;
+  }
+  const pr = exercisePriority(add);
+  let low: TemplateExercise | undefined;
+  for (const e of s.exercises) if (exercisePriority(e) < pr && (!low || exercisePriority(e) < exercisePriority(low))) low = e;
+  if (!low) return false;
+  s.exercises[s.exercises.indexOf(low)] = add;
+  return true;
+}
+
 export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateWeek[] {
-  const selected = getWeakPoints(ids).slice(0, MAX_WEAK_POINTS);
+  const selected = getWeakPoints(normalizeWeakIds(ids));
   if (selected.length === 0) return weeks;
   return weeks.map((week) => {
     const deload = isDeloadWeek(week);
+    const cap = sessionCap(week.sessions.length);
     const sessions = week.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => ({ ...e })) }));
     const usedSlots = new Set<TemplateExercise>();
     for (const wp of selected) {
       const cat = LIFT_CAT[wp.lift];
+      const has = (name: string) => sessions.some((s) => s.exercises.some((e) => e.exercise.toLowerCase() === name.toLowerCase()));
       // 1. swap the lift's secondary slot for the targeted variation
       let slot: TemplateExercise | undefined;
       for (const s of sessions) {
         if (s.exercises.some((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase())) continue;
-        slot = s.exercises.find((e) => !usedSlots.has(e) && volumeCategory(e) === cat && !isCompSlot(e));
+        slot = s.exercises.find((e) => !usedSlots.has(e) && volumeCategory(e) === cat && !isCompSlot(e) && !OVER_WARM.test(e.variation ?? ""));
         if (slot) break;
       }
       if (slot) {
@@ -154,31 +204,26 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
         slot.variation = undefined;
         slot.target_reps = wp.variation.reps;
         slot.notes = `Weak point — ${wp.label}: ${wp.variation.notes}`;
-      } else {
-        const hasVar = sessions.some((s) => s.exercises.some((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase()));
-        const host = hasVar ? undefined : sessions.find((s) => s.exercises.some((e) => volumeCategory(e) === cat));
-        if (host && !deload) {
+      } else if (!deload && !has(wp.variation.exercise)) {
+        const host = sessions.find((s) => s.exercises.some((e) => volumeCategory(e) === cat));
+        if (host) {
           const comp = host.exercises.find((e) => volumeCategory(e) === cat)!;
-          const idx = host.exercises.indexOf(comp);
           const added: TemplateExercise = {
             exercise: wp.variation.exercise, target_sets: 3, target_reps: wp.variation.reps,
             target_rpe: Math.min(8, (comp.target_rpe ?? 8) - 0.5), intensity_metric: "rpe",
             notes: `Weak point — ${wp.label}: ${wp.variation.notes}`,
           };
-          usedSlots.add(added);
-          host.exercises.splice(idx + 1, 0, added);
+          if (placeWithCap(host, added, cap, host.exercises.indexOf(comp) + 1)) usedSlots.add(added);
         }
       }
-      // 2. one targeted accessory per week, skipped in deloads
-      if (deload) continue;
-      const already = sessions.some((s) => s.exercises.some((e) => e.exercise.toLowerCase() === wp.accessory.exercise.toLowerCase()));
-      if (already) continue;
+      // 2. one targeted accessory per week, skipped in deloads, only if it fits
+      if (deload || has(wp.accessory.exercise)) continue;
       const hosts = sessions.filter((s) => s.exercises.some((e) => volumeCategory(e) === cat));
-      const target = (hosts.length ? hosts : sessions).reduce((a, b) => (b.exercises.length < a.exercises.length ? b : a));
-      target.exercises.push({
+      const target = (hosts.length ? hosts : sessions).reduce((a, b) => (workingCount(b) < workingCount(a) ? b : a));
+      placeWithCap(target, {
         exercise: wp.accessory.exercise, target_sets: wp.accessory.sets, target_reps: wp.accessory.reps,
         target_rpe: 8, intensity_metric: "rpe", notes: `Weak point — ${wp.label}: ${wp.accessory.notes}`,
-      });
+      }, cap);
     }
     return { ...week, sessions };
   });

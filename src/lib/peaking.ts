@@ -375,7 +375,7 @@ export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null):
         notes: "Short and crisp — moderate weights, low set count. Full competition setup and commands.",
         exercises: active
           .filter((k) => k !== "deadlift")
-          .flatMap((k) => mainExercises(L(k), cfg, 1)),
+          .flatMap((k) => mainExercises(L(k), cfg, 2)),
       });
       sessions.push({
         title: "Deadlift + technique flush",

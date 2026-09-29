@@ -101,7 +101,7 @@ export const WEAK_POINTS: WeakPoint[] = [
     variation: { exercise: "Romanian deadlift", reps: 6, notes: "Bar grazes the thighs — protect the armpits." },
     accessory: { exercise: "Straight-arm pulldown", sets: 3, reps: 12, notes: "Lat activation." } },
   { id: "dl-grip", lift: "deadlift", label: "Grip fails", why: "Grip strength.",
-    variation: { exercise: "Deadlift", reps: 3, notes: "Hold the top 10–20 s after the last rep. Chalk." },
+    variation: { exercise: "Double-overhand deadlift", reps: 3, notes: "No mixed grip. Hold the top 10–20 s after the last rep. Chalk." },
     accessory: { exercise: "Snatch-grip hold", sets: 3, reps: 1, notes: "10–20 s holds." } },
   { id: "dl-upper-back", lift: "deadlift", label: "Upper back rounds", why: "Upper-back strength.",
     variation: { exercise: "Snatch-grip deadlift", reps: 4, notes: "Wide grip, longer pull." },

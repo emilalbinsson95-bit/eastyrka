@@ -415,8 +415,8 @@ export function buildPeakingWeeks(
           title: [has("squat") && "Squat", has("bench") && "Bench"].filter(Boolean).join(" + ") + " (heavy)",
           notes: "Main platform day. Competition commands on every top set.",
           exercises: [
-            ...(has("squat") ? mainExercises(L("squat"), cfg, 2) : []),
-            ...(has("bench") ? mainExercises(L("bench"), cfg, 2) : []),
+            ...(has("squat") ? mainExercises(L("squat"), cfg, 2, { opener: opts.openers }) : []),
+            ...(has("bench") ? mainExercises(L("bench"), cfg, 2, { opener: opts.openers }) : []),
             ...accessoryExercises(summary, cfg, 1),
           ],
         });
@@ -427,7 +427,7 @@ export function buildPeakingWeeks(
           title: "Deadlift (heavy)",
           notes: "Single pull stance for the whole block — no switching sumo/conventional now.",
           exercises: [
-            ...mainExercises(L("deadlift"), cfg, 1),
+            ...mainExercises(L("deadlift"), cfg, 1, { opener: opts.openers }),
             ...accessoryExercises(summary, cfg, 1).slice(0, 1),
           ],
         });

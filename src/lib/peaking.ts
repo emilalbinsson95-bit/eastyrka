@@ -69,7 +69,23 @@ export interface PeakSummary {
   accessories: PeakAccessory[];
   /** True when there is not enough history to individualise safely. */
   thin: boolean;
+  /** Which reference the weekly main-lift sets were derived from. */
+  reference: PeakReference;
+  referenceLabel: string;
 }
+
+/**
+ * How the "normal" weekly volume that the taper cuts from is measured.
+ * - recent: mean of the last 6 weeks (reacts fast, but one sick/deload week drags it down)
+ * - median: median of trained weeks over ~12 weeks (ignores single odd weeks)
+ * - robust: the higher of the two — a dip never makes the taper too light
+ */
+export type PeakReference = "recent" | "median" | "robust";
+export const PEAK_REFERENCE_LABEL: Record<PeakReference, string> = {
+  recent: "mean of the last 6 weeks",
+  median: "median of trained weeks, last 12 weeks",
+  robust: "higher of 6-week mean and 12-week median",
+};
 
 const HISTORY_DAYS = 92; // ~3 months
 const VOLUME_WINDOW_DAYS = 42; // recent 6 weeks set the taper reference volume
@@ -125,7 +141,7 @@ function median(nums: number[]): number {
 }
 
 /** Summarise the last ~3 months of logs into everything the peak needs. */
-export function summarizePeaking(h: PeakHistoryInput): PeakSummary {
+export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference = "recent"): PeakSummary {
   const ago = (d: string) => differenceInCalendarDays(parseISO(h.today), parseISO(d));
   const logs = h.logs.filter((l) => {
     const d = ago(l.date);
@@ -167,6 +183,21 @@ export function summarizePeaking(h: PeakHistoryInput): PeakSummary {
     const base = baselineFor(key);
     const e1rm = logE1rm != null || base != null ? Math.max(logE1rm ?? 0, base ?? 0) : null;
 
+    // Weekly set counts over ~12 weeks (only weeks with any training count).
+    const weekCounts = new Map<number, number>();
+    for (const l of logs) {
+      const w = Math.floor(ago(l.date) / 7);
+      if (w < 12) weekCounts.set(w, weekCounts.get(w) ?? 0);
+    }
+    for (const l of hits) {
+      const w = Math.floor(ago(l.date) / 7);
+      if (w < 12) weekCounts.set(w, (weekCounts.get(w) ?? 0) + 1);
+    }
+    const meanRecent = weeksCovered > 0 ? recentHits.length / weeksCovered : 0;
+    const med = weekCounts.size ? median([...weekCounts.values()]) : 0;
+    const weeklySets =
+      reference === "recent" ? meanRecent : reference === "median" ? med : Math.max(meanRecent, med);
+
     const singles = hits.filter((l) => l.reps === 1).map((l) => l.weight_kg);
 
     lifts[key] = {
@@ -175,7 +206,7 @@ export function summarizePeaking(h: PeakHistoryInput): PeakSummary {
       // A lift counts as part of the peak when it has recent logs OR a 1RM on file.
       trained: hits.length > 0 || base != null,
       e1rm: e1rm ? Math.round(e1rm * 10) / 10 : null,
-      weeklySets: weeksCovered > 0 ? recentHits.length / weeksCovered : 0,
+      weeklySets,
       bestSingleKg: singles.length ? Math.max(...singles) : null,
     };
   }
@@ -208,6 +239,8 @@ export function summarizePeaking(h: PeakHistoryInput): PeakSummary {
     lifts,
     accessories,
     thin: dates.size < 8,
+    reference,
+    referenceLabel: PEAK_REFERENCE_LABEL[reference],
   };
 }
 
@@ -334,9 +367,17 @@ function mainExercises(
   return out;
 }
 
+const PROTECTIVE = /(nordic|hamstring|leg curl|rdl|romanian|good ?morning|back ?ext|hyperext|face ?pull|pull-?apart|external rot|rotator|row|pallof|plank|dead ?bug|bird ?dog|copenhagen)/i;
+const isProtective = (name: string) => PROTECTIVE.test(name);
+
 function accessoryExercises(sum: PeakSummary, cfg: WeekCfg, slots: number): TemplateExercise[] {
   if (cfg.accFactor <= 0 || slots <= 0) return [];
-  return sum.accessories.slice(0, slots).map((a) => ({
+  // Protective work (hamstrings, upper back, rotator cuff, core) is picked
+  // first so the injury-prevention dose survives the cut.
+  const ranked = [...sum.accessories].sort(
+    (a, b) => Number(isProtective(b.exercise)) - Number(isProtective(a.exercise)),
+  );
+  return ranked.slice(0, slots).map((a) => ({
     exercise: a.exercise,
     target_sets: clamp(Math.round((a.weeklySets || 3) * cfg.accFactor), 1, 4),
     target_reps: a.reps,
@@ -475,7 +516,7 @@ export function buildPeakingWeeks(
       notes:
         `${cfg.notes}` +
         (drop != null
-          ? ` Main-lift volume this week: ${plannedSets} sets vs ~${Math.round(referenceSets)}/week over the athlete's last 6 weeks (${drop >= 0 ? "−" : "+"}${Math.abs(drop)}%).`
+          ? ` Main-lift volume this week: ${plannedSets} sets vs ~${Math.round(referenceSets)}/week (${summary.referenceLabel ?? "last 6 weeks"}) (${drop >= 0 ? "−" : "+"}${Math.abs(drop)}%).`
           : ""),
       sessions: filled.map((s, idx) => ({ ...s, day_of_week: schedule[idx] ?? idx + 1 })),
     };
@@ -485,6 +526,7 @@ export function buildPeakingWeeks(
 /** Human-readable lines describing what the peak was based on. */
 export function peakingBasis(sum: PeakSummary): string[] {
   const out: string[] = [];
+  if (sum.referenceLabel) out.push(`Reference volume: ${sum.referenceLabel}.`);
   out.push(
     `${sum.logDays} logged training days in the last 3 months, ~${sum.sessionsPerWeek.toFixed(1)} sessions/week recently.`,
   );

@@ -368,6 +368,115 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
           konventionell; Nuckols G, Stronger by Science, om sticking points; Swinton PA et al. (2011),
           box- och pinövningar.</p>
       </Section>
+
+      <Section title="Varianter som fungerar på alla tre lyften">
+        <p><b>1½-reps:</b> Den fulla rörelsen, sedan en halv, sedan den fulla igen. Det ger dubbelt
+          så mycket tid i den svåraste delen, och spänningen måste hållas genom hela seten.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Bänk:</b> Ner till bröstet, halvvägs upp, ner till bröstet igen, sedan upp och lås
+            ut.</li>
+          <li><b>Böj:</b> Ner i botten, upp till strax ovanför parallellt, ner i botten igen, sedan
+            upp. Bra för att lära sig att inte tappa spänningen när man vänder i botten.</li>
+          <li><b>Mark:</b> Dra upp till knät, sänk kontrollerat tills stången nuddar golvet utan att
+            släppa spänningen, sedan drar du hela lyftet. Bra för den som är långsam från golvet och
+            tappar positionen när stången lämnar det.</li>
+        </ul>
+        <p><b>Belastning:</b> Ungefär 60–75 % av 1RM. Räkna varje 1½ som en rep.</p>
+        <p><b>Paus på väg upp:</b> De flesta pausar i botten. Prova i stället att stanna 1–2 sekunder
+          mitt i lyftet på väg upp, precis där du fastnar. Då måste du bygga upp kraften igen på
+          exakt den punkten. Det fungerar mycket bra på bänk (5–10 cm över bröstet) och böj (strax
+          över parallellt).</p>
+        <p><b>Pauser på flera ställen:</b> En rep med två eller tre stopp. För mark kan det vara ett
+          stopp 2–3 cm över golvet och ett vid knät. För böj ett halvvägs ned och ett i botten. Man
+          får positionskontroll genom hela rörelsen och kan inte fuska sig förbi de svaga lägena.</p>
+        <p><b>Svävande reps:</b> Vänd precis innan du når botten eller golvet, utan att vila där. På
+          bänk betyder det att stoppa 1–2 cm ovanför bröstet (som en Spoto). På mark lyfter du
+          stången 1 cm från golvet och håller där innan du drar vidare. Man lär sig att spänningen
+          ska finnas innan rörelsen börjar.</p>
+        <p><b>Isometriskt mot pinnar:</b> Ställ pinnarna vid din sticking point och tryck eller dra
+          maximalt mot dem i 3–6 sekunder. Effekten sitter framför allt runt just den vinkeln, så
+          det passar när du vet exakt var du fastnar. Kör 3–5 set efter huvudlyftet.</p>
+        <p><b>Tempo:</b> Utöver långsam nedfas kan du prova 3-3-0, alltså tre sekunder ned, tre
+          sekunders paus och explosivt upp. Det är tufft men avslöjar direkt var du tappar
+          positionen.</p>
+        <p><b>Från stillastående:</b> Varje rep börjar från stillhet utan studs eller elastisk
+          energi. Mark från golvet med full omstart per rep, Anderson squat (böj från pinnar i
+          botten) och dead bench (bänk från pinnar vid bröstet).</p>
+        <p><b>Band och kedjor:</b> Motståndet ökar ju högre upp i lyftet du kommer. Det passar för
+          lockout och för att öva på att accelerera genom hela lyftet. Forskningen är blandad, så
+          jag ser det som ett komplement och inte som en grundpelare.</p>
+        <p><b>Omvända band:</b> Band från ställningens topp som avlastar i botten. Du får känna
+          tyngre vikter i toppen och det bygger självförtroende inför maxförsök. Använd det
+          sparsamt.</p>
+        <p><b>Kombinationsreps:</b> Till exempel 1 pausrep + 2 vanliga reps i samma set, eller en
+          tempo-rep följd av vanliga reps. Du får den tekniska effekten utan att tappa så mycket
+          vikt.</p>
+
+        <p className="mt-3"><b>Marklyft – fler fel</b></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Höften åker upp först från golvet:</b> Benen gör för lite i starten. Pausmark 2–3 cm
+            över golvet, deficitmark och front squat. Cue: "tryck bort golvet" i stället för "dra
+            stången".</li>
+          <li><b>Stången glider bort från kroppen:</b> Latsen är inte aktiva. Straight-arm pulldown
+            som aktivering, RDL med fokus på att stången nuddar låren och cue: "skydda armhålorna"
+            eller "böj stången runt benen".</li>
+          <li><b>Greppet släpper:</b> Håll i toppen 10–20 sekunder efter sista setet, dubbelt
+            överhandsgrepp i uppvärmningen, snatch grip-hållningar och fat grips. Glöm inte kalk.</li>
+          <li><b>Övre ryggen rundar:</b> Snatch grip-mark (bredare grepp, längre dragväg, mer övre
+            rygg), Zercher-mark eller Zercher squat, rodd och face pulls.</li>
+          <li><b>Hitchar i lockout, alltså stöttar stången mot låren:</b> Oftast svaga
+            höftsträckare och sätesmuskler. Hip thrust med paus i toppen, rack pulls strax ovanför
+            knät och block pulls med tempo.</li>
+          <li><b>Tappar spänningen mellan reps (touch and go):</b> Kör varje rep från stillastående
+            och gör en ny bracing för varje rep.</li>
+        </ul>
+
+        <p className="mt-3"><b>Knäböj – fler fel</b></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Faller framåt eller vikten hamnar på tårna:</b> Balansen ligger inte över mitten av
+            foten. Tempo med fokus på att ha tyngden där, pausböj, goblet squat som teknikövning
+            och cue: "hela foten i golvet".</li>
+          <li><b>Tappar bracingen under lyftet:</b> Andningen eller buken släpper. Pausböj med
+            andningen hållen genom pausen, bracing-övningar med bälte ("magen mot bältet") och
+            front squat, som straffar direkt om du släpper.</li>
+          <li><b>Studsar ur botten utan kontroll:</b> Studsen tar över. Pausböj, pin squat och tempo
+            ned. Studsen är okej, men den ska vara kontrollerad.</li>
+          <li><b>Svagt i botten men stark i toppen:</b> Pin squat från botten, box squat under
+            parallellt och 1½-böj.</li>
+          <li><b>Quads är den svaga länken:</b> Hälupphöjd böj eller cyclist squat, hack squat, belt
+            squat och front squat.</li>
+          <li><b>Ryggen tröttnar innan benen:</b> Belt squat eller benpress för mer benvolym utan
+            ryggbelastning, och safety bar squat.</li>
+          <li><b>Olika på vänster och höger sida (höften skiftar):</b> Split squats, bulgarian split
+            squats och step-ups. Filma framifrån.</li>
+        </ul>
+
+        <p className="mt-3"><b>Bänkpress – fler fel</b></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Rumpan lyfter från bänken:</b> Bendriften är okontrollerad. Larsen press, bänk med
+            fötterna lugnt i golvet och cue: "tryck golvet framåt, inte uppåt".</li>
+          <li><b>Axlarna rullar fram i lockout:</b> Skulderbladen släpper. Rodd, face pulls och bänk
+            med paus i lockout där du aktivt håller kvar skulderbladen.</li>
+          <li><b>En arm går före den andra:</b> Hantelpress, enarmad hantelpress och tempo. Filma
+            framifrån.</li>
+          <li><b>Stannar direkt när stången vänder:</b> Pausbänk, dead bench från pinnar och bänk
+            med paus på väg upp.</li>
+          <li><b>Studsar på bröstet:</b> Pausbänk, Spoto och tempo ned (3 sekunder).</li>
+          <li><b>Svag lockout trots stark triceps:</b> Kolla armbågsbanan. Ofta flaras armbågarna
+            för tidigt. Floor press, pin press högt upp och tempo för att nöta in banan.</li>
+        </ul>
+
+        <p className="mt-3"><b>Idéer för att lägga upp det</b></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>Toppset + back-off med variation:</b> Ett tungt set i huvudlyftet och sedan 2–3 set
+            i den variation som tränar din svaghet, till exempel toppset i bänk och sedan
+            1½-bänk.</li>
+          <li><b>Byt variation per block men behåll principen:</b> Om 1½-bänk hjälpte i mitten av
+            lyftet kan du testa paus på väg upp i nästa block. Samma svaghet, ny stimulans.</li>
+          <li><b>Teknikreps i uppvärmningen:</b> Kör uppvärmningen som pausreps eller tempo-reps.
+            Det kostar nästan ingen energi, och du får in positionerna utan extra pass.</li>
+        </ul>
+      </Section>
         </TabsContent>
         <TabsContent value="coaching" className="space-y-6">
       <Section title="Målet: en atlet som klarar sig själv">
@@ -472,6 +581,106 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
             adjust, och jag godkänner dem.</li>
         </ul>
         <p>Målet är nått när atletens egna förslag stämmer med mina gång på gång.</p>
+      </Section>
+
+      <Section title="Tränaren som projektledare">
+        <p>Som tränare ansvarar man för mer än programmet. Skador, energi och kost, sömn, stress och
+          livet runt träningen påverkar resultatet minst lika mycket som valet av övningar. Jag ser
+          därför tränarrollen som en projektledarroll. Jag håller ihop helheten, ser till att rätt
+          person gör rätt sak och följer upp att det blir gjort. Men en projektledare gör inte allt
+          själv. En stor del av jobbet är att veta var min kompetens tar slut och när jag ska lämna
+          över till någon annan.</p>
+
+        <p className="mt-3"><b>Grundregeln: coacha inom din kompetens</b></p>
+        <p>Min tumregel är att jag får anpassa träningen efter nästan allt, men att jag inte
+          diagnostiserar eller behandlar någonting. Jag kan sänka volymen när atleten sover dåligt,
+          men jag behandlar inte sömnproblem. Jag kan byta böj mot benpress när knät krånglar, men
+          jag säger inte vad som är fel på knät. Jag kan ge allmänna kostråd, men jag skriver inte
+          behandlingsupplägg.</p>
+        <p>I Sverige är det lätt att se var gränsen går, eftersom fysioterapeut, legitimerad
+          dietist, psykolog och läkare är skyddade yrkestitlar. "Nutritionist", "kostrådgivare" och
+          "mental coach" är det inte, och där varierar kompetensen mycket.</p>
+
+        <p className="mt-3"><b>Skador</b></p>
+        <p>Det här gör jag själv: Jag ser skaderapporter som information och inte som något
+          misslyckande. Här blir den psykologiska tryggheten från förra avsnittet konkret. Jag
+          anpassar övningar, belastning och rörelseomfång så att atleten kan fortsätta träna runt
+          skadan, och jag följer smärtan över tid i loggen. Lätt och övergående träningsvärk eller
+          stelhet som inte blir värre av träningen kan man oftast hantera med ändrad belastning.</p>
+        <p>Här skickar jag vidare till fysioterapeut eller läkare:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Smärtan blir värre vecka för vecka, eller har inte blivit bättre efter ungefär två
+            veckor med anpassad belastning.</li>
+          <li>Det gör ont i vila eller på natten, eller det är svullet, varmt eller instabilt.</li>
+          <li>Det domnar, sticker eller känns svagt i en arm eller ett ben.</li>
+          <li>Något hände plötsligt under ett lyft, till exempel ett smäll- eller knäppljud, eller
+            atleten kan inte längre belasta.</li>
+          <li>Smärtan tvingar fram en förändrad teknik som inte går att rätta till.</li>
+        </ul>
+        <p>Akut via 1177 eller 112: Ryggsmärta som kommer tillsammans med domningar i underlivet
+          eller problem att kissa eller bajsa, kraftig bröstsmärta eller andningssvårigheter.</p>
+
+        <p className="mt-3"><b>Energi och kost</b></p>
+        <p>Det här gör jag själv: Jag ger allmänna råd utifrån Livsmedelsverkets riktlinjer och
+          grundläggande idrottsnutrition, som tillräckligt med energi, protein fördelat över dagen,
+          kolhydrater kring passen och vätska. Jag följer vikt och prestation i loggen och kopplar
+          ihop dem med EAk, alltså hur mycket energi som finns kvar till kroppen när träningen är
+          betald.</p>
+        <p>Här skickar jag vidare till legitimerad dietist eller läkare:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tecken på låg energitillgänglighet (RED-S): utebliven eller oregelbunden mens,
+            upprepade stressfrakturer, oförklarlig trötthet, att man blir sjuk ofta, sjunkande
+            prestation trots bra träning eller att vikten går ner fast den inte ska.</li>
+          <li>Medicinska tillstånd som påverkar kosten, till exempel diabetes, celiaki, IBS,
+            allergier eller graviditet.</li>
+          <li>Tecken på ett stört förhållande till mat. Det kan vara stark oro kring mat, strikta
+            regler, kompensationsträning, stora viktsvängningar eller att atleten döljer vad den
+            äter. Då slutar jag ge kostråd helt. Skicka vidare, och fortsätt vara ett stöd i
+            relationen.</li>
+        </ul>
+
+        <p className="mt-3"><b>Livsstil, stress och mående</b></p>
+        <p>Det här gör jag själv: Jag frågar om sömn, stress, jobb och relationer som en del av
+          uppföljningen. Jag anpassar träningen efter hur livet ser ut just nu, pratar om målbild
+          och motivation och hjälper till med vanor och struktur. Det mesta av det här är vanligt
+          tränarjobb, och SAVI-modellen gör de samtalen bättre.</p>
+        <p>Här skickar jag vidare till psykolog, vårdcentral eller företagshälsovård:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Nedstämdhet, oro eller sömnproblem som varar mer än ett par veckor eller påverkar
+            vardagen.</li>
+          <li>Tydlig personlighetsförändring, att atleten drar sig undan eller att intresset
+            försvinner, även för träningen.</li>
+          <li>Tävlingsångest eller prestationsångest som inte släpper trots anpassning.</li>
+          <li>Alkohol, spel eller andra beroenden som påverkar livet.</li>
+        </ul>
+        <p>Akut via 112 eller psykiatrisk akutmottagning: Om atleten pratar om att inte vilja leva
+          eller om att skada sig själv. Fråga rakt, ta det på allvar och se till att atleten får
+          hjälp samma dag. Som tränare behöver du inte kunna hantera situationen. Du behöver se
+          till att den inte stannar hos dig.</p>
+
+        <p className="mt-3"><b>Så lämnar du över på ett bra sätt</b></p>
+        <p>Att skicka vidare är inte att släppa taget, och det är där projektledarrollen syns som
+          tydligast.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Ha kontaktnätet klart i förväg. Ha namnen på en fysioterapeut, en dietist och en
+            psykolog du litar på innan du behöver dem. Det är mycket lättare att säga "ring Anna"
+            än "sök hjälp någonstans".</li>
+          <li>Säg varför, rakt och utan dramatik. "Det här ligger utanför vad jag kan bedöma, och
+            jag vill att någon som kan det här tittar på det. Vi fortsätter träna under tiden."</li>
+          <li>Be om lov innan du delar information. Atleten bestämmer vad som får föras vidare
+            mellan dig och vården.</li>
+          <li>Följ en plan. Jag anpassar träningen efter vad den som behandlar säger, och inte
+            tvärtom. Be om konkreta ramar, till exempel vilka rörelser som är okej, vilken
+            belastning som gäller och vilka tecken som betyder stopp.</li>
+          <li>Följ upp. Fråga hur besöket gick, logga det och stäm av med jämna mellanrum.</li>
+        </ul>
+
+        <p className="mt-3"><b>I SETPOINT</b></p>
+        <p>Allt som gäller en skada, en remiss eller en anpassning loggas på samma ställe som
+          träningen, så att helheten syns. Varningssignalerna ovan kan fungera som trafikljus i
+          uppföljningen. Grönt betyder att vi anpassar själva, gult att vi följer upp extra noga
+          och sätter en tidsgräns, och rött att vi skickar vidare nu. Det gör besluten mindre
+          beroende av magkänsla och gör det tydligt för atleten varför vi gör som vi gör.</p>
       </Section>
 
       <Section title="Träningslast: Foster sRPE">

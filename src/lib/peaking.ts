@@ -271,7 +271,7 @@ function mainExercises(
   info: MainLiftInfo,
   cfg: WeekCfg,
   sessionsForLift: number,
-  opts: { technique?: boolean; opener?: boolean } = {},
+  opts: { technique?: boolean } = {},
 ): TemplateExercise[] {
   const total = mainSetsFor(info, cfg, sessionsForLift);
   const out: TemplateExercise[] = [];
@@ -299,11 +299,11 @@ function mainExercises(
     intensity_metric: "rpe",
     notes:
       info.e1rm != null
-        ? `Top set. Current estimated 1RM from the last 3 months: ${Math.round(info.e1rm)} kg.`
+        ? `Top set at normal working weight. Current estimated 1RM from the last 3 months: ${Math.round(info.e1rm)} kg.`
         : "Top set by feel — no 1RM on file yet.",
   });
 
-  const backoffs = opts.opener ? 0 : total - 1;
+  const backoffs = total - 1;
   if (backoffs > 0) {
     out.push({
       exercise: info.name,

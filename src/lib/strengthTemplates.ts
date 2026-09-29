@@ -834,7 +834,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 3,
     minDays: 3,
     maxDays: 4,
-    inspiration: "Bosquet 2007 taper meta-analysis + Tuchscherer RPE openers",
+    inspiration: "Bosquet 2007 taper meta-analysis — pure volume reduction, intensity held",
     buildWeeks: (d: number) => buildPeakingWeeks(d, null),
     buildFromHistory: (d: number, summary: PeakSummary) => buildPeakingWeeks(d, summary),
     skipVolumeFloors: true,

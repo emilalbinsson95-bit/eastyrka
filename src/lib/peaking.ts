@@ -5,10 +5,10 @@
 //  - Taper meta-analysis (Bosquet et al. 2007, MSSE): performance is maximised by a
 //    ~41–60% reduction in training VOLUME over ~2 weeks, while INTENSITY and
 //    FREQUENCY are maintained. Cutting intensity instead of volume loses adaptation.
-//  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing,
-//    keep heavy singles/doubles in the final week at reduced set count.
-//  - RTS / Tuchscherer RPE table: openers and last heavy work are prescribed by RPE so
-//    the athlete auto-regulates on the day instead of chasing a fixed percentage.
+//  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing;
+//    no evidence that final-week heavy singles add anything beyond confidence.
+//  - Design choice: the taper here is a pure VOLUME reduction. Working weights and
+//    rep schemes stay in the athlete's normal range — no heavy singles, no openers.
 //
 // Everything here is pure — no Supabase, no React.
 

@@ -106,7 +106,7 @@ export function UnifiedRoleSwitcher() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const switchTo = (next: AppRole) => {
+  const switchTo = (next: ViewRole) => {
     setViewMode(next);
     navigate({ to: ROLE_META[next].route });
   };

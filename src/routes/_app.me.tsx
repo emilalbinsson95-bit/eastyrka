@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { parseTimeToSeconds, secondsToTimeStr } from "@/lib/endurancePaceHr";
 import { ConnectionsCard } from "@/components/ConnectionsCard";
+import { PendingCoachInvites } from "@/components/PendingCoachInvites";
 
 export const Route = createFileRoute("/_app/me")({
   head: () => ({
@@ -62,6 +63,7 @@ function MePage() {
 
   return (
     <div className="space-y-4">
+      {user && <PendingCoachInvites athleteId={user.id} />}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
         <p className="text-sm text-muted-foreground">

@@ -117,10 +117,13 @@ const LIFT_CAT: Record<WeakLift, ReturnType<typeof volumeCategory>> = {
   deadlift: "hinge",
 };
 
-const COMP = /^(competition|over-warm)/i;
+// A named comp lift is the comp slot unless its variation describes a true
+// variant. Stance/grip notes (e.g. "Sumo stance", "Competition grip & pause")
+// and over-warm singles still count as the competition lift.
+const VARIANT = /pause squat|tempo|pin|deficit|block|spoto|larsen|high-bar|low-bar|touch|close|wide|board|floor/i;
 
 function isCompSlot(e: TemplateExercise): boolean {
-  return /^(back squat|bench press|deadlift)$/i.test(e.exercise) && (!e.variation || COMP.test(e.variation));
+  return /^(back squat|bench press|deadlift|sumo deadlift)$/i.test(e.exercise) && (!e.variation || !VARIANT.test(e.variation));
 }
 
 export function getWeakPoints(ids: string[]): WeakPoint[] {

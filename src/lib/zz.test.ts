@@ -1,8 +1,8 @@
 import { test } from "vitest";
 import { applyWeakPoints, WEAK_POINTS } from "@/lib/weakPoints";
 import { STRENGTH_TEMPLATES, volumeCategory } from "@/lib/strengthTemplates";
-import { applyOverload } from "@/lib/overload";
-test("scan",()=>{
+import { applyOverload, DEFAULT_OVERLOAD } from "@/lib/overload";
+for (const OV of [DEFAULT_OVERLOAD,{overWarmSingles:true,deadliftStance:"sumo",waveLoading:true,benchConsolidation:true}] as any[]) test("scan"+OV.waveLoading,()=>{
  const issues=new Map<string,number>();const add=(k:string)=>issues.set(k,(issues.get(k)??0)+1);
  const ids=WEAK_POINTS.map(w=>w.id);let runs=0;
  for(const t of STRENGTH_TEMPLATES as any[]){ if(!t.buildWeeks) continue;
@@ -10,7 +10,7 @@ test("scan",()=>{
    const combos:string[][]=[[]];for(const a of ids)combos.push([a]);
    for(let i=0;i<ids.length;i+=3)combos.push(ids.slice(i,i+3));
    combos.push(["squat-bottom","squat-midrange","squat-bounce"],["bench-mid","bench-lockout","bench-elbows"],["dl-hinge","dl-hitch","dl-upper-back"]);
-   for(const c of combos){runs++;let out:any[];try{out=applyWeakPoints(applyOverload?applyOverload(base,{} as any):base,c)}catch(e:any){add(`CRASH ${t.id} ${c} ${e.message}`);continue}
+   for(const c of combos){runs++;let out:any[];try{out=applyWeakPoints(applyOverload(base,OV),c)}catch(e:any){add(`CRASH ${t.id} ${c} ${e.message}`);continue}
     for(const w of out){const dl=/deload|taper|meet/i.test(w.label);
      for(const s of w.sessions){const names=s.exercises.map((e:any)=>e.exercise.toLowerCase());
       const dup=names.filter((n:string,i:number)=>names.indexOf(n)!==i);if(dup.length)add(`DUP in session: ${dup[0]} [${c}] ${t.id}`);

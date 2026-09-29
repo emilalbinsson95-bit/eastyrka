@@ -191,14 +191,28 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
     for (const wp of selected) {
       const cat = LIFT_CAT[wp.lift];
       const has = (name: string) => sessions.some((s) => s.exercises.some((e) => e.exercise.toLowerCase() === name.toLowerCase()));
-      // 1. swap the lift's secondary slot for the targeted variation
+      // 1. swap the lift's secondary slot for the targeted variation.
+      // Realism: if the week already has that exercise (template or another
+      // weak point), prioritise it with +1 set (max 5) instead of adding a
+      // second or third session of the same movement.
+      const existing = sessions.flatMap((s) => s.exercises).find((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase());
+      if (existing) {
+        if (!deload && !isWeakRow(existing)) {
+          existing.target_sets = Math.min(5, existing.target_sets + 1);
+          existing.notes = `Weak point — ${wp.label}: prioritised (+1 set). ${existing.notes ?? ""}`.trim();
+        }
+        usedSlots.add(existing);
+      }
       let slot: TemplateExercise | undefined;
+      if (!existing)
       for (const s of sessions) {
         if (s.exercises.some((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase())) continue;
         slot = s.exercises.find((e) => !usedSlots.has(e) && volumeCategory(e) === cat && !isCompSlot(e) && !OVER_WARM.test(e.variation ?? ""));
         if (slot) break;
       }
-      if (slot) {
+      if (existing) {
+        // already handled above
+      } else if (slot) {
         usedSlots.add(slot);
         slot.exercise = wp.variation.exercise;
         slot.variation = undefined;
@@ -227,4 +241,39 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
     }
     return { ...week, sessions };
   });
+}
+
+export type DeadliftStyle = "conventional" | "sumo";
+
+/**
+ * Apply the athlete's competition deadlift style. Sumo lifters: the comp pull
+ * becomes Sumo deadlift and conventional pulls stay as useful accessories.
+ * Conventional lifters: no sumo work at all (many can't get into the stance),
+ * any sumo exercise is converted to its conventional counterpart.
+ */
+export function applyDeadliftStyle(weeks: TemplateWeek[], style: DeadliftStyle | null | undefined): TemplateWeek[] {
+  if (!style) return weeks;
+  return weeks.map((week) => ({
+    ...week,
+    sessions: week.sessions.map((s) => ({
+      ...s,
+      exercises: s.exercises.map((e) => {
+        if (style === "sumo") {
+          if (/^deadlift$/i.test(e.exercise) && isCompSlot(e)) {
+            return { ...e, exercise: "Sumo deadlift", variation: e.variation && /stance/i.test(e.variation) ? "Competition stance" : e.variation };
+          }
+          return e;
+        }
+        if (/sumo/i.test(e.exercise) || /sumo/i.test(e.variation ?? "")) {
+          const name = e.exercise.replace(/sumo\s*/i, "").trim();
+          return {
+            ...e,
+            exercise: /^deadlift$/i.test(name) || !name ? "Deadlift" : name.charAt(0).toUpperCase() + name.slice(1),
+            variation: e.variation && /sumo/i.test(e.variation) ? "Conventional stance" : e.variation,
+          };
+        }
+        return e;
+      }),
+    })),
+  }));
 }

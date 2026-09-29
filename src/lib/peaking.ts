@@ -8,7 +8,9 @@
 //  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing;
 //    no evidence that final-week heavy singles add anything beyond confidence.
 //  - Design choice: the taper here is a pure VOLUME reduction. Working weights and
-//    rep schemes stay in the athlete's normal range — no heavy singles, no openers.
+//    rep schemes stay in the athlete's normal range. Heavy opener singles are
+//    available as an OPT-IN — they don't move performance measurably, but some
+//    lifters want the confidence rep, so the coach can switch them on.
 //
 // Everything here is pure — no Supabase, no React.
 
@@ -271,10 +273,24 @@ function mainExercises(
   info: MainLiftInfo,
   cfg: WeekCfg,
   sessionsForLift: number,
-  opts: { technique?: boolean } = {},
+  opts: { technique?: boolean; opener?: boolean } = {},
 ): TemplateExercise[] {
   const total = mainSetsFor(info, cfg, sessionsForLift);
   const out: TemplateExercise[] = [];
+
+  if (opts.opener) {
+    out.push({
+      exercise: info.name,
+      variation: "Opener single",
+      target_sets: 1,
+      target_reps: 1,
+      target_rpe: 8,
+      intensity_metric: "rpe",
+      notes:
+        "Optional confidence single at roughly opener weight (~90% of est. 1RM). " +
+        "Evidence says it changes nothing physically — keep it crisp and move on.",
+    });
+  }
 
   if (opts.technique) {
     return [

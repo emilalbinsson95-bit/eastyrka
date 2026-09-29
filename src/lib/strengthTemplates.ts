@@ -226,18 +226,21 @@ const CATEGORY_RULES: Array<[RegExp, VolumeCategory]> = [
   // quads-biased accessories before the generic squat rule
   [/split squat|leg press|leg extension|lunge|step.?up|sissy squat|goblet squat|belt squat|cyclist squat|smith squat|leg machine/i, "quads"],
   [/front squat|back squat|pause squat|hack squat|box squat|safety bar|ssb|zercher|\bsquat\b/i, "squat"],
+  [/reverse nordic/i, "quads"], // reverse nordic curl is quad-dominant
   [/leg curl|nordic|ham(string)? curl|ghr|glute.?ham raise/i, "hamstrings"],
   [/romanian|rdl|stiff.?leg|good morning|back extension|hyperextension|reverse hyper|hip thrust|glute bridge|glute|pull.?through|kettlebell swing/i, "hamstrings"],
+  [/deficit push/i, "chest"], // deficit push-up, not a deficit deadlift
   [/deadlift|\bdl\b|block pull|rack pull|deficit|snatch grip|clean pull|trap bar|power clean|hang clean|\bclean\b|snatch\b|high pull/i, "hinge"],
   [/box jump|broad jump|jump squat|hurdle hop|depth jump|plyo|bounding|skip/i, "quads"],
   [/medicine ball|med ball|\bthrow\b|sled|carry|farmer|sprint/i, "core"],
   [/overhead press|shoulder press|military press|push press|jerk|landmine press|\bohp\b|arnold press|z press|machine shoulder press|strict press|behind.?the.?neck press/i, "vertical-press"],
-  [/lateral raise|side raise|front raise|rear.?delt|reverse fly|face pull|upright row|shrug|pull.?apart|ytw|y.?raise/i, "delts"],
+  [/lateral raise|side raise|front raise|rear.?delt|reverse fly|reverse pec|face pull|upright row|shrug|pull.?apart|ytw|y.?raise/i, "delts"],
   [/bench|spoto|floor press|board press|pin press|larsen|\bdip\b|dips|jm press/i, "horizontal-press"],
   [/incline dumbbell press|incline press|chest fly|pec deck|cable fly|\bfly\b|flyes?\b|crossover|push.?up|chest press|machine press/i, "chest"],
   [/pulldown|chin.?up|pull.?up|lat prayer|straight.?arm|pullover/i, "vertical-pull"],
   [/row\b|rows\b|pendlay|seal row|t.?bar|meadows|inverted row/i, "horizontal-pull"],
   [/pushdown|skull|triceps|tricep|overhead extension|kickback|close.?grip/i, "triceps"],
+  [/wrist curl/i, "core"], // forearm/grip work, not biceps
   [/curl|biceps|bicep|hammer|preacher/i, "biceps"],
   [/calf|calves|soleus|tibialis/i, "calves"],
   [/abductor|hip abduction|clamshell|monster walk/i, "hamstrings"],

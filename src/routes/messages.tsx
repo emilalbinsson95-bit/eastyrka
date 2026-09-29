@@ -20,6 +20,7 @@ const messagesSearchSchema = z.object({
 
 export const Route = createFileRoute("/messages")({
   validateSearch: (s) => messagesSearchSchema.parse(s),
+  ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) throw redirect({ to: "/login" });

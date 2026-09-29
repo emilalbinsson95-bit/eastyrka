@@ -170,7 +170,8 @@ export function summarizePeaking(h: PeakHistoryInput): PeakSummary {
     lifts[key] = {
       key,
       name,
-      trained: hits.length > 0,
+      // A lift counts as part of the peak when it has recent logs OR a 1RM on file.
+      trained: hits.length > 0 || base != null,
       e1rm: e1rm ? Math.round(e1rm * 10) / 10 : null,
       weeklySets: weeksCovered > 0 ? recentHits.length / weeksCovered : 0,
       bestSingleKg: singles.length ? Math.max(...singles) : null,
@@ -465,7 +466,13 @@ export function peakingBasis(sum: PeakSummary): string[] {
   for (const k of ["squat", "bench", "deadlift"] as MainLiftKey[]) {
     const l = sum.lifts[k];
     if (!l.trained) {
-      out.push(`${LIFT_LABEL[k]}: not logged in the last 3 months — left out of the peak.`);
+      out.push(`${LIFT_LABEL[k]}: no logged sets and no 1RM on file — left out of the peak.`);
+      continue;
+    }
+    if (l.weeklySets <= 0) {
+      out.push(
+        `${LIFT_LABEL[k]}: nothing logged in the last 3 months — planned from the 1RM on file (${l.e1rm ? `${Math.round(l.e1rm)} kg` : "unknown"}) at conventional peak volume. Check it before publishing.`,
+      );
       continue;
     }
     out.push(

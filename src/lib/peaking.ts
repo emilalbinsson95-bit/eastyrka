@@ -369,19 +369,24 @@ export function buildPeakingWeeks(daysPerWeek: number, sum: PeakSummary | null):
     const sessions: Omit<TemplateSession, "day_of_week">[] = [];
 
     if (meetWeek) {
-      // Openers, one technique session, then rest.
+      // Two short sessions at reduced volume, normal moderate weights, then rest.
       sessions.push({
-        title: "Openers",
-        notes: "One single per lift at opener weight (~RPE 6.5). Full competition setup and commands.",
-        exercises: active.flatMap((k) => mainExercises(L(k), cfg, 1, { opener: true })),
-      });
-      sessions.push({
-        title: "Technique flush",
-        notes:
-          "Very light, fast doubles. Last touch of the bar — everything after this is rest, food and sleep.",
+        title: "Squat + bench (light)",
+        notes: "Short and crisp — moderate weights, low set count. Full competition setup and commands.",
         exercises: active
           .filter((k) => k !== "deadlift")
-          .flatMap((k) => mainExercises(L(k), cfg, 1, { technique: true })),
+          .flatMap((k) => mainExercises(L(k), cfg, 1)),
+      });
+      sessions.push({
+        title: "Deadlift + technique flush",
+        notes:
+          "Last touch of the bar. Very light, fast work — everything after this is rest, food and sleep.",
+        exercises: [
+          ...(has("deadlift") ? mainExercises(L("deadlift"), cfg, 1) : []),
+          ...active
+            .filter((k) => k !== "deadlift")
+            .flatMap((k) => mainExercises(L(k), cfg, 1, { technique: true })),
+        ],
       });
     } else {
       // Squat + bench day

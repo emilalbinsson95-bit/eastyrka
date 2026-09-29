@@ -35,7 +35,7 @@ describe("weak points", () => {
     const weeks = STRENGTH_TEMPLATES.find((t) => t.id !== "peak-3w")?.buildWeeks(3) ?? [];
     const out = applyWeakPoints(weeks, ["squat-hips-up", "dl-hips-up", "bench-mid"]);
     const exercises = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises));
-    expect(exercises.some((e) => e.notes?.includes("Upright torso"))).toBe(true);
+    expect(exercises.some((e) => e.notes?.includes("Keep your chest tall"))).toBe(true);
     expect(exercises.some((e) => /weak point|weakness|hips shoot up|prioritised/i.test(e.notes ?? ""))).toBe(false);
   });
 });

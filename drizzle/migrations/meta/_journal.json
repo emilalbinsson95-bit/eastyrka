@@ -50,6 +50,13 @@
       "when": 1790662765404,
       "tag": "0006_coach_only_strength_volume_profile_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790664487242,
+      "tag": "0007_link_baselines_to_exercises",
+      "breakpoints": true
     }
   ]
 }

@@ -1,11 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/coach/methodology")({
   head: () => ({
     meta: [
-      { title: "Metodik — Logik & beräkningar" },
-      { name: "description", content: "Förklarar EAkoefficient, RPE→pace/HR, ACWR, drift, 80/20-viktning, plan-generering och retune-logik." },
+      { title: "Metodik: löpning, styrka och coachning — SETPOINT" },
+      { property: "og:title", content: "Metodik: löpning, styrka och coachning — SETPOINT" },
+      { property: "og:description", content: "Metoder och beräkningar för löpning, styrka och coachning i SETPOINT." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "description", content: "Metoder och beräkningar för löpning, styrka och coachning i SETPOINT." },
     ],
   }),
   component: MethodologyPage,
@@ -36,41 +41,17 @@ function MethodologyPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Metodik — logik & beräkningar</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Alla formler och beslutsregler bakom appen. Tänkt för coacher som vill förstå
-          varför ett pass får en viss intensitet eller varför planen justeras.
+          Metoder och beräkningar för löpning, styrka och coachning.
         </p>
       </div>
 
-      <Section title="EAkoefficient (styrke-autoregulering)">
-        <p>Dagligt estimerat 1RM från ett loggat set, normaliserat mot baseline 1RM:</p>
-        <Formula>
-{`cappedReps = min(reps, 8)
-E1RM       = vikt × (1 + (cappedReps + (10 − RPE)) / 30)
-EAk %      = (dagens E1RM ÷ baseline 1RM) × 100`}
-        </Formula>
-        <p>Statusband ger snabb läsning av dagsformen:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li><b>&lt; 92 %</b> Exhausted — sänk volym/intensitet</li>
-          <li><b>92–97 %</b> Undertrained — kör som planerat, lite extra</li>
-          <li><b>97–102 %</b> Adapting — sweet spot</li>
-          <li><b>&gt; 102 %</b> Peaking — möjligt PB-fönster</li>
-        </ul>
-        <p>Volymkvalitet inom passet: jämför set 2+ mot set 1:s E1RM samma dag.
-          ≤ 4 % drop = optimal, 4–5 % = acceptabel, ≥ 5 % = fatigue limit nått.</p>
-        <p className="mt-2"><b>Auto-flytande baseline (trögt):</b> när atleten har samlat
-          ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste baseline-ändringen höjs baseline
-          till <code>median(peak-E1RM) × 0.98</code>, avrundat till 0.5 kg. Endast höjningar
-          tillåts; coach hanterar nedjusteringar manuellt. Enstaka topp-pass flyttar
-          alltså aldrig baseline — det krävs sustained progression.</p>
-      </Section>
-
-      <Section title="RPE → %1RM (RTS / Helms-tabell)">
-        <p>Föreskriven vikt vid given RPE och rep-mål använder standard-tabellen
-          (RPE 10 @ 1 rep = 100 %). Vi snappar RPE nedåt till närmsta 0.5 i [6, 10],
-          klampar reps till [1, 12], och avrundar vikten till närmsta 2.5 kg.</p>
-        <p>RIR konverteras till RPE som <code>RPE = 10 − RIR</code> (klampat till ≥ 6).</p>
-      </Section>
-
+      <Tabs defaultValue="running" className="space-y-6">
+        <TabsList className="grid h-auto w-full grid-cols-3 sm:w-fit">
+          <TabsTrigger value="running">Löpning</TabsTrigger>
+          <TabsTrigger value="strength">Styrka</TabsTrigger>
+          <TabsTrigger value="coaching">Coachning</TabsTrigger>
+        </TabsList>
+        <TabsContent value="running" className="space-y-6">
       <Section title="RPE → pace / HR / watt (uthållighet)">
         <p>Löppace härleds från VDOT (Jack Daniels), som vi räknar ut från senaste 10 km-PB:</p>
         <Formula>
@@ -96,37 +77,6 @@ VDOT    = VO2 / %VO2max`}
         <Formula>{`blended = α · current + (1 − α) · prevEMA`}</Formula>
       </Section>
 
-      <Section title="Träningslast: Foster sRPE">
-        <p>Per pass: <code>load = minuter × RPE</code> (linjär, validerad). När
-          per-steg/per-rep actuals finns används tidsviktad segment-summa istället för
-          ett snitt-RPE för hela passet (så 4×4 min @ RPE 9 inte späds ut av jogg-vila).</p>
-        <p>Vi använder aldrig <code>peak_rpe</code> i fallback-kedjan — den överskattar last.</p>
-      </Section>
-
-      <Section title="ACWR (skaderisk-indikator)">
-        <Formula>
-{`acute   = summa sRPE senaste 7 dagarna
-chronic = (snitt daglig last senaste 28 dagarna) × 7
-ratio   = acute / chronic`}
-        </Formula>
-        <ul className="list-disc pl-5 space-y-1">
-          <li><b>&lt; 0.8</b> låg (undertränad)</li>
-          <li><b>0.8 – 1.3</b> optimal sweet spot</li>
-          <li><b>1.3 – 1.5</b> hög (varning)</li>
-          <li><b>&gt; 1.5</b> danger (skaderisk-spik)</li>
-        </ul>
-        <p>Vi visar inget ratio förrän kronisk last &gt; 50 AU — annars är talet brus.</p>
-      </Section>
-
-      <Section title="Banister fitness/fatigue (CTL/ATL/TSB)">
-        <Formula>
-{`CTL = EMA av daglig last,  τ = 42 dagar  → "fitness"
-ATL = EMA av daglig last,  τ = 7 dagar   → "fatigue"
-TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
-        </Formula>
-        <p>60 dagars warm-up före synligt fönster så CTL hinner stabilisera sig.</p>
-      </Section>
-
       <Section title="Polariseringsmål — volymanpassad (HIIT-tungt → 80/20)">
         <p>Klassisk Seiler 80/20 antar elitvolym. Vid låg volym vänder vi förhållandet:
           då är HIIT-tunga pass mer effektiva per minut för VO2max, blodtryck och löpekonomi
@@ -139,16 +89,6 @@ TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
         </ul>
         <p>Rationale: lite total volym → kvalitet driver adaptationen och hälsovinsten.
           Hög volym → aerob bas är redan stor; mer hårt arbete ger främst skaderisk.</p>
-      </Section>
-
-      <Section title="Drift-detektion (feedback-loop)">
-        <p>Vi inspekterar de 5 senaste avslutade kvalitetspassen (planerad RPE ≥ 6).
-          Räknar drift som <code>actual − planned</code>:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li><b>avgDelta ≥ +1.5 eller 4 av 5 driftade</b> → reduce_volume (×0.85)</li>
-          <li><b>3 av 5 driftade eller avgDelta ≥ +1.0</b> → easy_week (×0.90)</li>
-          <li>annars → hold (×1.00)</li>
-        </ul>
       </Section>
 
       <Section title="Maratonplan-generering (20 veckor)">
@@ -168,31 +108,6 @@ TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
           för planerade pass de närmsta 28 dagarna. Avslutade/pågående pass rörs aldrig.</p>
       </Section>
 
-      <Section title="Räkneexempel — EAkoefficient">
-        <p>Atlet med baseline 1RM knäböj 150 kg. Idag: 130 kg × 5 reps @ RPE 8.</p>
-        <Formula>
-{`E1RM = 130 × (1 + (5 + (10 − 8)) / 30)
-     = 130 × (1 + 7/30)
-     = 130 × 1.2333
-     = 160.3 kg
-EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
-        </Formula>
-        <p>Tolkning: dagsformen är 6.9 % över baseline → grönt ljus för tungt set
-          eller test, men logga och se om det håller två pass i rad innan baseline justeras.</p>
-      </Section>
-
-      <Section title="Räkneexempel — ACWR efter en tung vecka">
-        <p>Senaste 7 dagar: 4 pass à 60 min RPE 7 + 1 långpass 120 min RPE 6.</p>
-        <Formula>
-{`acute   = 4 × (60 × 7) + 1 × (120 × 6)
-        = 1680 + 720 = 2400 AU
-chronic = (snitt 28d ~ 280 AU/dag) × 7 = 1960 AU
-ratio   = 2400 / 1960 = 1.22  → sweet spot`}
-        </Formula>
-        <p>Hade samma vecka kommit på en kronisk bas på 1200 AU blev ratio 2.0
-          → danger, och drift-/retune-logiken skulle skala kommande veckor × 0.85.</p>
-      </Section>
-
       <Section title="Räkneexempel — RPE → pace via VDOT">
         <p>Atlet: 10k-PB 42:00. v = 10000/42 = 238 m/min.</p>
         <Formula>
@@ -205,32 +120,6 @@ VDOT    = 44.6 / 0.838 ≈ 53.2`}
 {`mål-VO2 = 0.82 × 53.2 ≈ 43.6
 lös     0.000104·v² + 0.182258·v − 48.2 = 0
 v       ≈ 232 m/min  →  4:18 / km`}
-        </Formula>
-      </Section>
-
-      <Section title="Beslutsdiagram — drift → retune">
-        <Formula>
-{`           ┌─────────────────────────────┐
-           │  5 senaste kvalitetspass    │
-           │  delta_i = actual − planned │
-           └──────────────┬──────────────┘
-                          │
-              avgDelta, n_drifted (Δ ≥ 1)
-                          │
-        ┌─────────────────┼──────────────────┐
-        ▼                 ▼                  ▼
-  avgΔ ≥ +1.5         avgΔ ≥ +1.0        annars
-  ELLER ≥ 4/5         ELLER ≥ 3/5
-        │                 │                  │
-        ▼                 ▼                  ▼
-  reduce_volume       easy_week           hold
-   × 0.85              × 0.90            × 1.00
-        │                 │                  │
-        └─────────┬───────┴──────────────────┘
-                  ▼
-   kombinera med ACWR-faktor (konservativast vinner)
-                  ▼
-   klamp [0.75, 1.10]  →  skala 28d planerade pass`}
         </Formula>
       </Section>
 
@@ -286,27 +175,7 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
           (öppningsintervall i v19, race-pace-tune i v20).</p>
       </Section>
 
-      <Section title="Forskningsgrund — vad varje metod vilar på">
-        <p>Varje formel och tröskel i appen är vald från peer-reviewed litteratur. Här är
-          de viktigaste källorna, grupperade per metod.</p>
-
-        <p className="font-semibold text-foreground mt-3">Epley 1RM-formel (EAkoefficient)</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Epley B. (1985). <em>Poundage Chart</em>. Boyd Epley Workout. Original-källan
-            till <code>1RM = vikt × (1 + reps/30)</code>.</li>
-          <li>LeSuer DA et al. (1997). <em>The Accuracy of Prediction Equations for
-            Estimating 1-RM Performance in the Bench Press, Squat, and Deadlift</em>.
-            J Strength Cond Res 11(4). Visar att Epley håller r &gt; 0.95 upp till ~10 reps —
-            varför vi klampar reps till 8.</li>
-          <li>Helms ER et al. (2016). <em>RPE and Velocity Relationships for the Back Squat,
-            Bench Press, and Deadlift in Powerlifters</em>. J Strength Cond Res 30(11).
-            Validerar RIR-baserad RPE som autoregleringsmått — grunden för
-            <code>RPE = 10 − RIR</code>.</li>
-          <li>Zourdos MC et al. (2016). <em>Novel Resistance Training-Specific Rating of
-            Perceived Exertion Scale Measuring Repetitions in Reserve</em>. JSCR 30(1).
-            Definierar RPE@reps-tabellen vi använder för preskription.</li>
-        </ul>
-
+      <Section title="Forskningsgrund — löpning">
         <p className="font-semibold text-foreground mt-3">VDOT, %VO2max och löppace</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Daniels J. (2014). <em>Daniels' Running Formula</em>, 3rd ed. Human Kinetics.
@@ -317,37 +186,6 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
           <li>Léger L, Mercier D. (1984). <em>Gross energy cost of horizontal treadmill and
             track running</em>. Sports Med 1. Stödbevis för linjär energi-kostnad mellan
             8–22 km/h som motiverar zon-skalningen.</li>
-        </ul>
-
-        <p className="font-semibold text-foreground mt-3">Foster sRPE (träningslast)</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Foster C et al. (2001). <em>A New Approach to Monitoring Exercise Training</em>.
-            J Strength Cond Res 15(1). Originalet för <code>load = min × RPE</code>.</li>
-          <li>Haddad M et al. (2017). <em>Session-RPE Method for Training Load Monitoring:
-            Validity, Ecological Usefulness, and Influencing Factors</em>. Front Neurosci 11.
-            Bekräftar validitet mot HR-baserad TRIMP r = 0.75–0.90.</li>
-        </ul>
-
-        <p className="font-semibold text-foreground mt-3">ACWR — akut:kronisk last</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Gabbett TJ. (2016). <em>The training-injury prevention paradox</em>.
-            BJSM 50(5). Källan till sweet-spot 0.8–1.3 och danger &gt; 1.5.</li>
-          <li>Hulin BT et al. (2016). <em>The acute:chronic workload ratio predicts injury</em>.
-            BJSM 50. Hög kronisk last skyddar — varför vi inte rapporterar ratio under
-            chronic ≤ 50 AU.</li>
-          <li>Impellizzeri FM et al. (2020). <em>What role do chronic workloads play in the
-            ACWR?</em> Sports Med 50. Kritisk replik som motiverar 28-dagars warm-up
-            och att vi presenterar ACWR som varning, inte diagnos.</li>
-        </ul>
-
-        <p className="font-semibold text-foreground mt-3">Banister fitness/fatigue (CTL/ATL/TSB)</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Banister EW. (1991). <em>Modeling Elite Athletic Performance</em>.
-            Originalmodellen med τ = 42 / τ = 7-konstanterna.</li>
-          <li>Coggan AR. (2003). <em>TrainingPeaks Performance Management Chart</em>.
-            Operationaliseringen till CTL/ATL/TSB som vi följer.</li>
-          <li>Busso T. (2003). <em>Variable dose-response relationship between exercise
-            training and performance</em>. MSSE 35.</li>
         </ul>
 
         <p className="font-semibold text-foreground mt-3">Polariserad träning (80/20)</p>
@@ -390,6 +228,69 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
             meta-analysis</em>. MSSE 39. 8–14 d taper med 41–60 % volymsänkning ger
             störst prestationslyft.</li>
         </ul>
+      </Section>
+        </TabsContent>
+        <TabsContent value="strength" className="space-y-6">
+      <Section title="EAkoefficient (styrke-autoregulering)">
+        <p>Dagligt estimerat 1RM från ett loggat set, normaliserat mot baseline 1RM:</p>
+        <Formula>
+{`cappedReps = min(reps, 8)
+E1RM       = vikt × (1 + (cappedReps + (10 − RPE)) / 30)
+EAk %      = (dagens E1RM ÷ baseline 1RM) × 100`}
+        </Formula>
+        <p>Statusband ger snabb läsning av dagsformen:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>&lt; 92 %</b> Exhausted — sänk volym/intensitet</li>
+          <li><b>92–97 %</b> Undertrained — kör som planerat, lite extra</li>
+          <li><b>97–102 %</b> Adapting — sweet spot</li>
+          <li><b>&gt; 102 %</b> Peaking — möjligt PB-fönster</li>
+        </ul>
+        <p>Volymkvalitet inom passet: jämför set 2+ mot set 1:s E1RM samma dag.
+          ≤ 4 % drop = optimal, 4–5 % = acceptabel, ≥ 5 % = fatigue limit nått.</p>
+        <p className="mt-2"><b>Auto-flytande baseline (trögt):</b> när atleten har samlat
+          ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste baseline-ändringen höjs baseline
+          till <code>median(peak-E1RM) × 0.98</code>, avrundat till 0.5 kg. Endast höjningar
+          tillåts; coach hanterar nedjusteringar manuellt. Enstaka topp-pass flyttar
+          alltså aldrig baseline — det krävs sustained progression.</p>
+      </Section>
+
+      <Section title="RPE → %1RM (RTS / Helms-tabell)">
+        <p>Föreskriven vikt vid given RPE och rep-mål använder standard-tabellen
+          (RPE 10 @ 1 rep = 100 %). Vi snappar RPE nedåt till närmsta 0.5 i [6, 10],
+          klampar reps till [1, 12], och avrundar vikten till närmsta 2.5 kg.</p>
+        <p>RIR konverteras till RPE som <code>RPE = 10 − RIR</code> (klampat till ≥ 6).</p>
+      </Section>
+
+      <Section title="Räkneexempel — EAkoefficient">
+        <p>Atlet med baseline 1RM knäböj 150 kg. Idag: 130 kg × 5 reps @ RPE 8.</p>
+        <Formula>
+{`E1RM = 130 × (1 + (5 + (10 − 8)) / 30)
+     = 130 × (1 + 7/30)
+     = 130 × 1.2333
+     = 160.3 kg
+EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
+        </Formula>
+        <p>Tolkning: dagsformen är 6.9 % över baseline → grönt ljus för tungt set
+          eller test, men logga och se om det håller två pass i rad innan baseline justeras.</p>
+      </Section>
+
+      <Section title="Forskningsgrund — styrka">
+        <p className="font-semibold text-foreground mt-3">Epley 1RM-formel (EAkoefficient)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Epley B. (1985). <em>Poundage Chart</em>. Boyd Epley Workout. Original-källan
+            till <code>1RM = vikt × (1 + reps/30)</code>.</li>
+          <li>LeSuer DA et al. (1997). <em>The Accuracy of Prediction Equations for
+            Estimating 1-RM Performance in the Bench Press, Squat, and Deadlift</em>.
+            J Strength Cond Res 11(4). Visar att Epley håller r &gt; 0.95 upp till ~10 reps —
+            varför vi klampar reps till 8.</li>
+          <li>Helms ER et al. (2016). <em>RPE and Velocity Relationships for the Back Squat,
+            Bench Press, and Deadlift in Powerlifters</em>. J Strength Cond Res 30(11).
+            Validerar RIR-baserad RPE som autoregleringsmått — grunden för
+            <code>RPE = 10 − RIR</code>.</li>
+          <li>Zourdos MC et al. (2016). <em>Novel Resistance Training-Specific Rating of
+            Perceived Exertion Scale Measuring Repetitions in Reserve</em>. JSCR 30(1).
+            Definierar RPE@reps-tabellen vi använder för preskription.</li>
+        </ul>
 
         <p className="font-semibold text-foreground mt-3">Autoregulering & RIR-baserad styrka</p>
         <ul className="list-disc pl-5 space-y-1">
@@ -400,9 +301,86 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
             the inconsistencies</em>. Sports Med 50. Varför vi kräver ≥ 12 observationer
             innan baseline justeras (signal vs. brus).</li>
         </ul>
+      </Section>
+        </TabsContent>
+        <TabsContent value="coaching" className="space-y-6">
+      <Section title="Träningslast: Foster sRPE">
+        <p>Per pass: <code>load = minuter × RPE</code> (linjär, validerad). När
+          per-steg/per-rep actuals finns används tidsviktad segment-summa istället för
+          ett snitt-RPE för hela passet (så 4×4 min @ RPE 9 inte späds ut av jogg-vila).</p>
+        <p>Vi använder aldrig <code>peak_rpe</code> i fallback-kedjan — den överskattar last.</p>
+      </Section>
 
-        <p className="text-xs italic mt-4">Inga källor är cherry-pickade — där forskningen
-          är svagare (t.ex. ACWR-debatten 2019–2022) är trösklarna medvetet konservativa.</p>
+      <Section title="ACWR (skaderisk-indikator)">
+        <Formula>
+{`acute   = summa sRPE senaste 7 dagarna
+chronic = (snitt daglig last senaste 28 dagarna) × 7
+ratio   = acute / chronic`}
+        </Formula>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>&lt; 0.8</b> låg (undertränad)</li>
+          <li><b>0.8 – 1.3</b> optimal sweet spot</li>
+          <li><b>1.3 – 1.5</b> hög (varning)</li>
+          <li><b>&gt; 1.5</b> danger (skaderisk-spik)</li>
+        </ul>
+        <p>Vi visar inget ratio förrän kronisk last &gt; 50 AU — annars är talet brus.</p>
+      </Section>
+
+      <Section title="Banister fitness/fatigue (CTL/ATL/TSB)">
+        <Formula>
+{`CTL = EMA av daglig last,  τ = 42 dagar  → "fitness"
+ATL = EMA av daglig last,  τ = 7 dagar   → "fatigue"
+TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
+        </Formula>
+        <p>60 dagars warm-up före synligt fönster så CTL hinner stabilisera sig.</p>
+      </Section>
+
+      <Section title="Drift-detektion (feedback-loop)">
+        <p>Vi inspekterar de 5 senaste avslutade kvalitetspassen (planerad RPE ≥ 6).
+          Räknar drift som <code>actual − planned</code>:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>avgDelta ≥ +1.5 eller 4 av 5 driftade</b> → reduce_volume (×0.85)</li>
+          <li><b>3 av 5 driftade eller avgDelta ≥ +1.0</b> → easy_week (×0.90)</li>
+          <li>annars → hold (×1.00)</li>
+        </ul>
+      </Section>
+
+      <Section title="Räkneexempel — ACWR efter en tung vecka">
+        <p>Senaste 7 dagar: 4 pass à 60 min RPE 7 + 1 långpass 120 min RPE 6.</p>
+        <Formula>
+{`acute   = 4 × (60 × 7) + 1 × (120 × 6)
+        = 1680 + 720 = 2400 AU
+chronic = (snitt 28d ~ 280 AU/dag) × 7 = 1960 AU
+ratio   = 2400 / 1960 = 1.22  → sweet spot`}
+        </Formula>
+        <p>Hade samma vecka kommit på en kronisk bas på 1200 AU blev ratio 2.0
+          → danger, och drift-/retune-logiken skulle skala kommande veckor × 0.85.</p>
+      </Section>
+
+      <Section title="Beslutsdiagram — drift → retune">
+        <Formula>
+{`           ┌─────────────────────────────┐
+           │  5 senaste kvalitetspass    │
+           │  delta_i = actual − planned │
+           └──────────────┬──────────────┘
+                          │
+              avgDelta, n_drifted (Δ ≥ 1)
+                          │
+        ┌─────────────────┼──────────────────┐
+        ▼                 ▼                  ▼
+  avgΔ ≥ +1.5         avgΔ ≥ +1.0        annars
+  ELLER ≥ 4/5         ELLER ≥ 3/5
+        │                 │                  │
+        ▼                 ▼                  ▼
+  reduce_volume       easy_week           hold
+   × 0.85              × 0.90            × 1.00
+        │                 │                  │
+        └─────────┬───────┴──────────────────┘
+                  ▼
+   kombinera med ACWR-faktor (konservativast vinner)
+                  ▼
+   klamp [0.75, 1.10]  →  skala 28d planerade pass`}
+        </Formula>
       </Section>
 
       <Section title="Antaganden & begränsningar">
@@ -416,6 +394,41 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
             ACWR &gt; 1.3 prioriterar systemet alltid easy oavsett volymbucket.</li>
         </ul>
       </Section>
+
+      <Section title="Forskningsgrund — träningsstyrning">
+        <p className="font-semibold text-foreground mt-3">Foster sRPE (träningslast)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Foster C et al. (2001). <em>A New Approach to Monitoring Exercise Training</em>.
+            J Strength Cond Res 15(1). Originalet för <code>load = min × RPE</code>.</li>
+          <li>Haddad M et al. (2017). <em>Session-RPE Method for Training Load Monitoring:
+            Validity, Ecological Usefulness, and Influencing Factors</em>. Front Neurosci 11.
+            Bekräftar validitet mot HR-baserad TRIMP r = 0.75–0.90.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">ACWR — akut:kronisk last</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Gabbett TJ. (2016). <em>The training-injury prevention paradox</em>.
+            BJSM 50(5). Källan till sweet-spot 0.8–1.3 och danger &gt; 1.5.</li>
+          <li>Hulin BT et al. (2016). <em>The acute:chronic workload ratio predicts injury</em>.
+            BJSM 50. Hög kronisk last skyddar — varför vi inte rapporterar ratio under
+            chronic ≤ 50 AU.</li>
+          <li>Impellizzeri FM et al. (2020). <em>What role do chronic workloads play in the
+            ACWR?</em> Sports Med 50. Kritisk replik som motiverar 28-dagars warm-up
+            och att vi presenterar ACWR som varning, inte diagnos.</li>
+        </ul>
+
+        <p className="font-semibold text-foreground mt-3">Banister fitness/fatigue (CTL/ATL/TSB)</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Banister EW. (1991). <em>Modeling Elite Athletic Performance</em>.
+            Originalmodellen med τ = 42 / τ = 7-konstanterna.</li>
+          <li>Coggan AR. (2003). <em>TrainingPeaks Performance Management Chart</em>.
+            Operationaliseringen till CTL/ATL/TSB som vi följer.</li>
+          <li>Busso T. (2003). <em>Variable dose-response relationship between exercise
+            training and performance</em>. MSSE 35.</li>
+        </ul>
+      </Section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -20,7 +20,10 @@ export function EmailPreferences({ userId }: { userId: string }) {
   });
   const mutation = useMutation({
     mutationFn: async ({ key, value }: { key: Preference; value: boolean }) => {
-      const { error } = await supabase.from("profiles").update({ [key]: value }).eq("id", userId);
+      const patch = key === "email_messages_enabled"
+        ? { email_messages_enabled: value }
+        : { email_coach_invites_enabled: value };
+      const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["email-preferences", userId] }); toast.success("Preference saved"); },

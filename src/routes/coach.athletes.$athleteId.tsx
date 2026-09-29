@@ -971,19 +971,18 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <Label htmlFor="new-ex">Exercise</Label>
-              <Input
-                id="new-ex"
-                list="suggested"
-                value={newExercise}
-                onChange={(e) => setNewExercise(e.target.value)}
-                placeholder="e.g. Knäböj"
-                maxLength={100}
-              />
-              <datalist id="suggested">
-                {suggested.map((e) => (
-                  <option key={e} value={e} />
-                ))}
-              </datalist>
+              <Select value={newExerciseId} onValueChange={setNewExerciseId}>
+                <SelectTrigger id="new-ex">
+                  <SelectValue placeholder="Choose an exercise…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectable.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="w-32 space-y-1">
               <Label htmlFor="new-kg">1RM (kg)</Label>

@@ -12,14 +12,12 @@ export const Route = createFileRoute("/")({
       { title: "SETPOINT — Train at your readiness" },
       {
         name: "description",
-        content:
-          "The readiness baseline for strength. Per-set fatigue-limit detection and EAkoefficient readiness for serious lifters and their coaches.",
+        content: "Training, coaching and rehabilitation in one place.",
       },
       { property: "og:title", content: "SETPOINT — Train at your readiness" },
       {
         property: "og:description",
-        content:
-          "The readiness baseline for strength. Every set tells you if you should push or pull back.",
+        content: "Training, coaching and rehabilitation in one place.",
       },
       { property: "og:url", content: "https://eastyrka.lovable.app/" },
       { property: "og:type", content: "website" },
@@ -37,17 +35,10 @@ export const Route = createFileRoute("/")({
           name: "SETPOINT",
           applicationCategory: "HealthApplication",
           operatingSystem: "Web, iOS, Android",
-          description:
-            "Per-set readiness tracking and fatigue-limit detection for serious lifters and strength coaches.",
+          description: "Training, coaching and rehabilitation in one place.",
           url: "https://eastyrka.lovable.app/",
           image: "https://eastyrka.lovable.app/__l5e/assets-v1/4bf5e6a5-90ae-4231-a3ba-35d301d670a7/setpoint-logo.png",
           offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-          featureList: [
-            "EAkoefficient — per-set readiness as a percentage of your baseline",
-            "Fatigue-limit detection (≥5% E1RM drop signals the limit)",
-            "Mesocycle planning and load progression",
-            "Coach roster with color-coded readiness across athletes",
-          ],
         }),
       },
     ],

@@ -69,14 +69,16 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
     queryKey: ["strength-volume-profile", athleteId],
     queryFn: async () => {
       const { data, error } = await supabase.from("athlete_strength_volume_profiles")
-        .select("squat_factor, bench_factor, deadlift_factor")
+        .select("squat_factor, bench_factor, deadlift_factor, deadlift_style")
         .eq("athlete_id", athleteId).maybeSingle();
       if (error) throw error;
-      return volumeProfileFromRow(data);
+      return { ...volumeProfileFromRow(data), style: (data?.deadlift_style ?? null) as "conventional" | "sumo" | null };
     },
   });
+  const [style, setStyle] = useState<"conventional" | "sumo" | null>(null);
+  useEffect(() => { if (query.data) setStyle(query.data.style); }, [query.data]);
   const [draft, setDraft] = useState<StrengthVolumeProfile>(DEFAULT_STRENGTH_VOLUME);
-  useEffect(() => { if (query.data) setDraft(query.data); }, [query.data]);
+  useEffect(() => { if (query.data) setDraft({ squat: query.data.squat, bench: query.data.bench, deadlift: query.data.deadlift }); }, [query.data]);
 
   const medianQuery = useQuery({
     queryKey: ["strength-volume-median", athleteId],
@@ -101,16 +103,17 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
         squat_factor: draft.squat,
         bench_factor: draft.bench,
         deadlift_factor: draft.deadlift,
+        deadlift_style: style,
         updated_at: new Date().toISOString(),
       }, { onConflict: "athlete_id" });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["strength-volume-profile", athleteId] }); toast.success("Volume profile saved"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["strength-volume-profile", athleteId] }); qc.invalidateQueries({ queryKey: ["deadlift-style", athleteId] }); toast.success("Volume profile saved"); },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const changed = (Object.keys(draft) as Array<keyof StrengthVolumeProfile>)
-    .some((key) => draft[key] !== (query.data ?? DEFAULT_STRENGTH_VOLUME)[key]);
+    .some((key) => draft[key] !== (query.data ?? DEFAULT_STRENGTH_VOLUME)[key]) || style !== (query.data?.style ?? null);
 
   return <Card>
     <CardHeader>
@@ -148,9 +151,18 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
           </div>
         );
       })}
+      <div className="space-y-2">
+        <Label>Competition deadlift style</Label>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Competition deadlift style">
+          {([[null, "Not set"], ["conventional", "Conventional"], ["sumo", "Sumo"]] as const).map(([value, text]) => (
+            <Button key={text} type="button" size="sm" role="radio" aria-checked={style === value} variant={style === value ? "default" : "outline"} disabled={query.isLoading || save.isPending} onClick={() => setStyle(value)}>{text}</Button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Used by generated programs. Sumo: comp pull is sumo, conventional pulls can appear as accessories. Conventional: no sumo work is programmed.</p>
+      </div>
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" disabled={!changed || save.isPending} onClick={() => setDraft(query.data ?? DEFAULT_STRENGTH_VOLUME)}>Reset</Button>
-        <Button type="button" disabled={!changed || query.isError || save.isPending} onClick={() => save.mutate()}>{save.isPending ? "Saving…" : "Save volume profile"}</Button>
+        <Button type="button" variant="ghost" disabled={!changed || save.isPending} onClick={() => { setDraft(query.data ? { squat: query.data.squat, bench: query.data.bench, deadlift: query.data.deadlift } : DEFAULT_STRENGTH_VOLUME); setStyle(query.data?.style ?? null); }}>Reset</Button>
+        <Button type="button" disabled={!changed || query.isError || save.isPending} onClick={() => save.mutate()}>{save.isPending ? "Saving…" : "Save profile"}</Button>
       </div>
     </CardContent>
   </Card>;

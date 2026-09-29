@@ -5,7 +5,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
-import { WEAK_POINTS, applyWeakPoints, getWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
+import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, getWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,6 +140,14 @@ export function GenerateStrengthTemplateDialog({
   const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
 
   const [weakIds, setWeakIds] = useState<string[]>([]);
+  const styleQuery = useQuery({
+    queryKey: ["deadlift-style", athleteId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("athlete_strength_volume_profiles").select("deadlift_style").eq("athlete_id", athleteId).maybeSingle();
+      if (error) throw error;
+      return (data?.deadlift_style ?? null) as "conventional" | "sumo" | null;
+    },
+  });
   const weakQuery = useQuery({
     queryKey: ["athlete-weak-points", athleteId],
     enabled: open,
@@ -246,8 +254,8 @@ export function GenerateStrengthTemplateDialog({
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
   const plannedWeeks = useMemo(
-    () => (isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds)),
-    [finalWeeks, overload, isPeaking, weakIds],
+    () => applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data),
+    [finalWeeks, overload, isPeaking, weakIds, styleQuery.data],
   );
 
   const weeklySets = useMemo(() => {

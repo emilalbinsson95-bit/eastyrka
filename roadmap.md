@@ -1,8 +1,6 @@
 # Roadmap
 
-## Admin role for Emil (in progress)
-- [ ] Add `admin` to `app_role` enum + grant it to emil.albinsson95@gmail.com
-- [ ] RLS: admins can read/insert/delete `user_roles` for all users
-- [ ] Security-definer RPCs: list users with roles, grant/revoke roles (admin-only)
-- [ ] Admin page `/coach/admin`: search users, toggle coach/athlete/physio/patient roles
-- [ ] Nav link visible only to admins; verify build + live check
+- [ ] Simplify public front page and sign-in presentation.
+- [ ] Give admins a cross-app athlete troubleshooting overview.
+- [ ] Review and correct coach invitation status/visibility.
+- [ ] Add email notification preferences for messages and coach invitations; sending waits for a verified sender domain.

@@ -115,6 +115,23 @@ function LearnPage() {
           deficitmark) är egna övningar som tränar en viss del av lyftet. <strong>Assistans</strong> bygger muskler
           som hjälper lyften. Din coach väljer dem efter dina mål och hur du tränar.</p>
       </Topic>
+
+      <Topic title="Ha SETPOINT som app på mobilen">
+        <p>Öppna <strong>eastyrka.lovable.app</strong> i mobilens webbläsare och lägg sidan på hemskärmen. Då får du en SETPOINT-ikon som öppnar träningen direkt.</p>
+        <p className="font-medium text-foreground">iPhone (Safari)</p>
+        <ol className="list-decimal space-y-1 pl-5">
+          <li>Öppna hemsidan i Safari.</li>
+          <li>Tryck på Dela-symbolen (fyrkanten med pil uppåt). Skrolla ned i menyn.</li>
+          <li>Välj <strong>Lägg till på hemskärmen</strong> och tryck på <strong>Lägg till</strong>.</li>
+        </ol>
+        <p className="font-medium text-foreground">Android (Chrome)</p>
+        <ol className="list-decimal space-y-1 pl-5">
+          <li>Öppna hemsidan i Chrome.</li>
+          <li>Tryck på de tre prickarna uppe till höger.</li>
+          <li>Välj <strong>Installera app</strong> eller <strong>Lägg till på startskärmen</strong> och bekräfta.</li>
+        </ol>
+        <p>Du behöver fortfarande internet för att använda träningen. Inget behöver laddas ner från App Store eller Google Play.</p>
+      </Topic>
     </div>
   );
 }

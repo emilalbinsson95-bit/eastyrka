@@ -1,3 +1,4 @@
+import { isOneAndHalfRep, oneAndHalfParent, ONE_AND_HALF_LOAD_FACTOR, setVolumeWeight } from "@/lib/exerciseVariants";
 // Individualisation engine for auto-generated strength plans.
 //
 // Takes an athlete's recent history (training logs, readiness surveys, 1RM
@@ -214,7 +215,7 @@ export function templateWeeklySets(weeks: TemplateWeek[]): Map<VolumeCategory, n
     for (const s of w.sessions) {
       for (const e of s.exercises) {
         const c = volumeCategory(e);
-        total.set(c, (total.get(c) ?? 0) + e.target_sets);
+        total.set(c, (total.get(c) ?? 0) + e.target_sets * setVolumeWeight(e));
       }
     }
   }
@@ -704,10 +705,13 @@ export function applyAdjustments(
             }
           }
           if (doLoads) {
-            const b = matchBaseline(e, h.baselines);
+            // 1.5-reps: load from the main lift's 1RM with a −20 % cut.
+            const oneHalf = isOneAndHalfRep(e.exercise, e.variation);
+            const parent = oneHalf ? oneAndHalfParent(e.exercise) : null;
+            const b = parent ? matchBaseline({ exercise: parent }, h.baselines) : matchBaseline(e, h.baselines);
             if (b) {
               const kg = prescribedWeightKg({
-                oneRmKg: b.one_rm_kg,
+                oneRmKg: b.one_rm_kg * (parent ? ONE_AND_HALF_LOAD_FACTOR : 1),
                 reps: next.target_reps,
                 metric: next.intensity_metric,
                 rpe: next.target_rpe ?? null,

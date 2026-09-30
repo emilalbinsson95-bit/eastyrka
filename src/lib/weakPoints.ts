@@ -4,6 +4,7 @@
  * lift's secondary (variation) slot for a targeted variation and adds one
  * targeted accessory per week (not in deload weeks).
  */
+import { isOneAndHalfRep } from "@/lib/exerciseVariants";
 import { volumeCategory, type TemplateExercise, type TemplateWeek } from "@/lib/strengthTemplates";
 
 export type WeakLift = "squat" | "bench" | "deadlift";
@@ -33,6 +34,9 @@ export const WEAK_POINTS: WeakPoint[] = [
   { id: "squat-hips-up", lift: "squat", label: "Hips shoot up first", why: "Quads weak relative to posterior chain.",
      variation: { exercise: "Front squat", reps: 5, notes: "Keep your chest tall and drive evenly through the whole foot." },
      accessory: { exercise: "Leg extension", sets: 3, reps: 12, notes: "Straighten the knees smoothly; lower with control." } },
+  { id: "squat-chest-falls", lift: "squat", label: "Chest falls / loses position out of the hole", why: "Brace and position through the bottom and sticking region, twice per rep.",
+    variation: { exercise: "1.5-rep squat", reps: 4, notes: "Down, up halfway, down again, stand up = 1 rep. One brace per full rep. End the set if the chest drops or you need a new breath mid-rep." },
+    accessory: { exercise: "Pause squat", sets: 3, reps: 3, notes: "2 s pause in the hole, stay tall." } },
   { id: "squat-valgus", lift: "squat", label: "Knees cave clearly", why: "Adductor/hip strength and control (mild valgus is normal).",
     variation: { exercise: "Tempo squat", reps: 5, notes: "3 s down, knees tracking over toes." },
     accessory: { exercise: "Bulgarian split squat", sets: 3, reps: 8, notes: "Per leg, controlled." } },
@@ -244,6 +248,13 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
       };
       targeted.add(accessory);
       placeWithCap(target, accessory, cap, targeted);
+    }
+    // 1.5-reps: 3–5 sets × 3–5 reps at RPE 6–8 — longer sets break the brace.
+    for (const s of sessions) for (const e of s.exercises) {
+      if (!isOneAndHalfRep(e.exercise, e.variation)) continue;
+      e.target_sets = Math.min(5, Math.max(deload ? 2 : 3, e.target_sets));
+      e.target_reps = Math.min(5, Math.max(3, e.target_reps));
+      if (e.target_rpe != null) e.target_rpe = Math.min(8, Math.max(6, e.target_rpe));
     }
     return { ...week, sessions };
   });

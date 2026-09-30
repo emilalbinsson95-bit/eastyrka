@@ -6,6 +6,8 @@
 const KEEP = /^(competition stance|competition grip & pause|over-warm single|conventional stance|sumo stance)$/i;
 
 const EXPLICIT: Array<[RegExp, RegExp, string]> = [
+  [/^back squat$/i, /1[.,]5/i, "1.5-rep squat"],
+  [/^bench press$/i, /1[.,]5/i, "1.5-rep bench press"],
   [/^back squat$/i, /pause/i, "Pause squat"],
   [/^back squat$/i, /high-?bar/i, "High-bar squat"],
   [/^back squat$/i, /tempo/i, "Tempo squat"],
@@ -32,4 +34,22 @@ export function resolveVariantExercise(
     return { exercise: `${v} ${exercise.toLowerCase()}`, variation: null };
   }
   return { exercise, variation: v };
+}
+
+/** 1.5-rep variations (e.g. "1.5-rep squat"). */
+export const ONE_AND_HALF_REP = /1[.,]5[- ]?reps?\b/i;
+export const isOneAndHalfRep = (exercise: string, variation?: string | null) =>
+  ONE_AND_HALF_REP.test(exercise) || ONE_AND_HALF_REP.test(variation ?? "");
+/** Load vs. the main lift's e1RM-based prescription (−20 %). */
+export const ONE_AND_HALF_LOAD_FACTOR = 0.8;
+/** Weekly-volume weight: a 1.5-rep set costs ~1.25 normal sets. */
+export function setVolumeWeight(e: { exercise: string; variation?: string | null }): number {
+  return isOneAndHalfRep(e.exercise, e.variation) ? 1.25 : 1;
+}
+/** Main competition lift whose 1RM drives a 1.5-rep variation's load. */
+export function oneAndHalfParent(exercise: string): string | null {
+  if (/bench/i.test(exercise)) return "Bench press";
+  if (/squat/i.test(exercise)) return "Back squat";
+  if (/dead|pull/i.test(exercise)) return "Deadlift";
+  return null;
 }

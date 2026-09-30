@@ -39,3 +39,16 @@ describe("weak points", () => {
     expect(exercises.some((e) => /weak point|weakness|hips shoot up|prioritised/i.test(e.notes ?? ""))).toBe(false);
   });
 });
+
+import { setVolumeWeight, resolveVariantExercise } from "@/lib/exerciseVariants";
+import { templateWeeklySets } from "@/lib/individualisation";
+describe("1.5-reps", () => {
+  it("counts 1.25 sets and resolves as own exercise", () => {
+    expect(setVolumeWeight({ exercise: "1.5-rep squat" })).toBe(1.25);
+    expect(resolveVariantExercise("Back squat", "1.5 reps").exercise).toBe("1.5-rep squat");
+    const w = [{ week_index: 1, label: "Week 1", sessions: [{ day_of_week: 1, title: "S", exercises: [
+      { exercise: "1.5-rep squat", target_sets: 4, target_reps: 4, target_rpe: 7, intensity_metric: "rpe" as const },
+    ] }] }];
+    expect(templateWeeklySets(w as never).get("squat")).toBe(5);
+  });
+});

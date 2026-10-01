@@ -51,20 +51,35 @@ export function GenerateStrengthTemplateDialog({
   coachId,
   athleteName,
   onCreated,
+  defaultTemplateId,
+  defaultStartDate,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger,
 }: {
   athleteId: string;
   coachId: string;
   athleteName: string;
   onCreated?: (mesoId: string) => void;
+  /** Preselect a template (e.g. "peak-3w" when launched from a competition). */
+  defaultTemplateId?: string;
+  /** Preselect a start date (yyyy-MM-dd). */
+  defaultStartDate?: string;
+  /** Controlled open state — use together with hideTrigger. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [templateId, setTemplateId] = useState<string>(STRENGTH_TEMPLATES[0].id);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+  const [templateId, setTemplateId] = useState<string>(defaultTemplateId ?? STRENGTH_TEMPLATES[0].id);
   const nextMonday = useMemo(
     () => format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 7), "yyyy-MM-dd"),
     [],
   );
-  const [startDate, setStartDate] = useState(nextMonday);
+  const [startDate, setStartDate] = useState(defaultStartDate ?? nextMonday);
 
   const template = getTemplate(templateId);
   const [daysPerWeek, setDaysPerWeek] = useState<number>(template?.daysPerWeek ?? 4);
@@ -416,12 +431,14 @@ export function GenerateStrengthTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Dumbbell className="mr-1 h-4 w-4" />
-          Generate from template
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <Dumbbell className="mr-1 h-4 w-4" />
+            Generate from template
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

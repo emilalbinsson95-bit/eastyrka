@@ -741,13 +741,14 @@ function SessionCard({
   onPreview: (it: CalendarItem) => void;
 }) {
   const { t } = useTranslation();
-  const draggable = !readOnly && !item.isCancelled;
+  const isComp = item.source === "competition";
+  const draggable = !readOnly && !item.isCancelled && !isComp;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${item.source}:${item.sourceId}`,
     disabled: !draggable,
   });
 
-  const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
+  const Icon = isComp ? Trophy : item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
   const moved = !!item.override && item.override.scheduledDate !== item.suggestedDate;
 
   return (
@@ -763,6 +764,7 @@ function SessionCard({
       }
       className={cn(
         "group relative flex items-start gap-1 rounded-md border px-1.5 py-1 text-[11px] leading-tight",
+        isComp && "border-amber-500/60 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-300",
         item.isCancelled
           ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
           : item.isGhost
@@ -788,7 +790,7 @@ function SessionCard({
           <span className="ml-1 font-medium no-underline">· {item.cancelReason}</span>
         )}
       </span>
-      {!readOnly && item.isGhost && !item.isCancelled && (
+      {!readOnly && !isComp && item.isGhost && !item.isCancelled && (
         <button
           type="button"
           onClick={(e) => {
@@ -801,7 +803,7 @@ function SessionCard({
           <Check className="h-3 w-3" />
         </button>
       )}
-      {!readOnly && !item.isCancelled && (
+      {!readOnly && !isComp && !item.isCancelled && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -828,7 +830,7 @@ function SessionCard({
           <RotateCcw className="h-3 w-3" />
         </button>
       )}
-      {canDelete && (
+      {(canDelete || (!readOnly && isComp)) && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}

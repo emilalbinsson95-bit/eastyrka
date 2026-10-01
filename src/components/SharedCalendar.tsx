@@ -11,8 +11,8 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { addDays, addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight } from "lucide-react";
+import { addDays, addMonths, format, isSameMonth, isToday, parseISO, startOfWeek } from "date-fns";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight, Trophy } from "lucide-react";
 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { createCompetition, deleteCompetition } from "@/lib/competitions";
+import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 import {
   CalendarItem,
   cancelSession,
@@ -149,6 +152,35 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
   const [addForDate, setAddForDate] = useState<string | null>(null);
+  const [compDialogOpen, setCompDialogOpen] = useState(false);
+  const [compForm, setCompForm] = useState({ name: "", date: format(new Date(), "yyyy-MM-dd"), notes: "" });
+  const [compTarget, setCompTarget] = useState<CalendarItem | null>(null);
+  const [peakingFor, setPeakingFor] = useState<CalendarItem | null>(null);
+
+  const compMutation = useMutation({
+    mutationFn: createCompetition,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      setCompDialogOpen(false);
+      setCompForm({ name: "", date: format(new Date(), "yyyy-MM-dd"), notes: "" });
+      toast.success("Tävling tillagd");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Kunde inte lägga till tävlingen");
+    },
+  });
+
+  const compDeleteMutation = useMutation({
+    mutationFn: deleteCompetition,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      setCompTarget(null);
+      toast.success("Tävling borttagen");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Kunde inte ta bort tävlingen");
+    },
+  });
   const [unavailDialogOpen, setUnavailDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Unavailability | null>(null);
   const [pushPeriod, setPushPeriod] = useState<Unavailability | null>(null);
@@ -277,6 +309,15 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 <Thermometer className="mr-1 h-3.5 w-3.5" /> Mark sick / hurt
               </Button>
             )}
+            {canManageUnavailability && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCompDialogOpen(true)}
+              >
+                <Trophy className="mr-1 h-3.5 w-3.5" /> Lägg till tävling
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
           </div>
         </div>
@@ -342,6 +383,10 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
                 onRequestDelete={(it) => setDeleteTarget(it)}
                 onPreview={(it) => {
+                  if (it.source === "competition") {
+                    setCompTarget(it);
+                    return;
+                  }
                   if (!readOnly && it.source === "adhoc_strength") {
                     setEditorTarget({ kind: "adhoc_strength", date: it.sourceId });
                     return;
@@ -508,6 +553,119 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
         }}
       />
+
+      <Dialog open={compDialogOpen} onOpenChange={setCompDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" /> Lägg till tävling
+            </DialogTitle>
+            <DialogDescription>
+              Tävlingsdagen syns i kalendern för både atlet och coach.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="comp-name">Namn</Label>
+              <Input
+                id="comp-name"
+                value={compForm.name}
+                onChange={(e) => setCompForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="T.ex. SM i styrkelyft"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="comp-date">Datum</Label>
+              <Input
+                id="comp-date"
+                type="date"
+                value={compForm.date}
+                onChange={(e) => setCompForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="comp-notes">Anteckningar (valfritt)</Label>
+              <Textarea
+                id="comp-notes"
+                value={compForm.notes}
+                onChange={(e) => setCompForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={2}
+                placeholder="Viktklass, mål, plats …"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCompDialogOpen(false)}>Avbryt</Button>
+            <Button
+              disabled={!compForm.name.trim() || !compForm.date || compMutation.isPending}
+              onClick={() =>
+                compMutation.mutate({
+                  athleteId: ownerId,
+                  name: compForm.name.trim(),
+                  date: compForm.date,
+                  notes: compForm.notes.trim() || null,
+                  createdBy: currentUserId,
+                })
+              }
+            >
+              Spara
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!compTarget} onOpenChange={(o) => !o && setCompTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-amber-500" /> {compTarget?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {compTarget && format(parseISO(compTarget.effectiveDate), "EEEE d MMMM yyyy")}
+            </DialogDescription>
+          </DialogHeader>
+          {compTarget?.cancelReason && (
+            <p className="text-sm text-muted-foreground">{compTarget.cancelReason}</p>
+          )}
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              disabled={compDeleteMutation.isPending}
+              onClick={() => compTarget && compDeleteMutation.mutate(compTarget.sourceId)}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> Ta bort
+            </Button>
+            {viewerRole === "coach" && compTarget && (
+              <Button
+                onClick={() => {
+                  setPeakingFor(compTarget);
+                  setCompTarget(null);
+                }}
+              >
+                Generera toppningsplan
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {peakingFor && viewerRole === "coach" && (
+        <GenerateStrengthTemplateDialog
+          athleteId={ownerId}
+          coachId={currentUserId}
+          athleteName="atleten"
+          hideTrigger
+          open
+          onOpenChange={(o) => !o && setPeakingFor(null)}
+          defaultTemplateId="peak-3w"
+          defaultStartDate={format(
+            addDays(startOfWeek(parseISO(peakingFor.effectiveDate), { weekStartsOn: 1 }), -14),
+            "yyyy-MM-dd",
+          )}
+          onCreated={() => setPeakingFor(null)}
+        />
+      )}
     </DndContext>
   );
 }
@@ -696,13 +854,14 @@ function SessionCard({
   onPreview: (it: CalendarItem) => void;
 }) {
   const { t } = useTranslation();
-  const draggable = !readOnly && !item.isCancelled;
+  const isComp = item.source === "competition";
+  const draggable = !readOnly && !item.isCancelled && !isComp;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${item.source}:${item.sourceId}`,
     disabled: !draggable,
   });
 
-  const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
+  const Icon = isComp ? Trophy : item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
   const moved = !!item.override && item.override.scheduledDate !== item.suggestedDate;
 
   return (
@@ -718,6 +877,7 @@ function SessionCard({
       }
       className={cn(
         "group relative flex items-start gap-1 rounded-md border px-1.5 py-1 text-[11px] leading-tight",
+        isComp && "border-amber-500/60 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-300",
         item.isCancelled
           ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
           : item.isGhost
@@ -743,7 +903,7 @@ function SessionCard({
           <span className="ml-1 font-medium no-underline">· {item.cancelReason}</span>
         )}
       </span>
-      {!readOnly && item.isGhost && !item.isCancelled && (
+      {!readOnly && !isComp && item.isGhost && !item.isCancelled && (
         <button
           type="button"
           onClick={(e) => {
@@ -756,7 +916,7 @@ function SessionCard({
           <Check className="h-3 w-3" />
         </button>
       )}
-      {!readOnly && !item.isCancelled && (
+      {!readOnly && !isComp && !item.isCancelled && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -783,7 +943,7 @@ function SessionCard({
           <RotateCcw className="h-3 w-3" />
         </button>
       )}
-      {canDelete && (
+      {(canDelete || (!readOnly && isComp)) && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}

@@ -11,8 +11,8 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { addDays, addMonths, format, isSameMonth, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight } from "lucide-react";
+import { addDays, addMonths, format, isSameMonth, isToday, parseISO, startOfWeek } from "date-fns";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight, Trophy } from "lucide-react";
 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { createCompetition, deleteCompetition } from "@/lib/competitions";
+import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 import {
   CalendarItem,
   cancelSession,

@@ -190,6 +190,39 @@ export type Database = {
         }
         Relationships: []
       }
+      competitions: {
+        Row: {
+          athlete_id: string
+          comp_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          comp_date: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          comp_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       endurance_pb_history: {
         Row: {
           athlete_id: string

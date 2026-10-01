@@ -152,6 +152,35 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
   const [previewTarget, setPreviewTarget] = useState<CalendarItem | null>(null);
   const [addForDate, setAddForDate] = useState<string | null>(null);
+  const [compDialogOpen, setCompDialogOpen] = useState(false);
+  const [compForm, setCompForm] = useState({ name: "", date: format(new Date(), "yyyy-MM-dd"), notes: "" });
+  const [compTarget, setCompTarget] = useState<CalendarItem | null>(null);
+  const [peakingFor, setPeakingFor] = useState<CalendarItem | null>(null);
+
+  const compMutation = useMutation({
+    mutationFn: createCompetition,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      setCompDialogOpen(false);
+      setCompForm({ name: "", date: format(new Date(), "yyyy-MM-dd"), notes: "" });
+      toast.success("Tävling tillagd");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Kunde inte lägga till tävlingen");
+    },
+  });
+
+  const compDeleteMutation = useMutation({
+    mutationFn: deleteCompetition,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+      setCompTarget(null);
+      toast.success("Tävling borttagen");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Kunde inte ta bort tävlingen");
+    },
+  });
   const [unavailDialogOpen, setUnavailDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Unavailability | null>(null);
   const [pushPeriod, setPushPeriod] = useState<Unavailability | null>(null);
@@ -280,6 +309,15 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 <Thermometer className="mr-1 h-3.5 w-3.5" /> Mark sick / hurt
               </Button>
             )}
+            {canManageUnavailability && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCompDialogOpen(true)}
+              >
+                <Trophy className="mr-1 h-3.5 w-3.5" /> Lägg till tävling
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
           </div>
         </div>
@@ -345,6 +383,10 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
                 onRequestDelete={(it) => setDeleteTarget(it)}
                 onPreview={(it) => {
+                  if (it.source === "competition") {
+                    setCompTarget(it);
+                    return;
+                  }
                   if (!readOnly && it.source === "adhoc_strength") {
                     setEditorTarget({ kind: "adhoc_strength", date: it.sourceId });
                     return;

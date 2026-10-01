@@ -553,6 +553,119 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
         }}
       />
+
+      <Dialog open={compDialogOpen} onOpenChange={setCompDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" /> Lägg till tävling
+            </DialogTitle>
+            <DialogDescription>
+              Tävlingsdagen syns i kalendern för både atlet och coach.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="comp-name">Namn</Label>
+              <Input
+                id="comp-name"
+                value={compForm.name}
+                onChange={(e) => setCompForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="T.ex. SM i styrkelyft"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="comp-date">Datum</Label>
+              <Input
+                id="comp-date"
+                type="date"
+                value={compForm.date}
+                onChange={(e) => setCompForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="comp-notes">Anteckningar (valfritt)</Label>
+              <Textarea
+                id="comp-notes"
+                value={compForm.notes}
+                onChange={(e) => setCompForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={2}
+                placeholder="Viktklass, mål, plats …"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCompDialogOpen(false)}>Avbryt</Button>
+            <Button
+              disabled={!compForm.name.trim() || !compForm.date || compMutation.isPending}
+              onClick={() =>
+                compMutation.mutate({
+                  athleteId: ownerId,
+                  name: compForm.name.trim(),
+                  date: compForm.date,
+                  notes: compForm.notes.trim() || null,
+                  createdBy: currentUserId,
+                })
+              }
+            >
+              Spara
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!compTarget} onOpenChange={(o) => !o && setCompTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-amber-500" /> {compTarget?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {compTarget && format(parseISO(compTarget.effectiveDate), "EEEE d MMMM yyyy")}
+            </DialogDescription>
+          </DialogHeader>
+          {compTarget?.cancelReason && (
+            <p className="text-sm text-muted-foreground">{compTarget.cancelReason}</p>
+          )}
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              disabled={compDeleteMutation.isPending}
+              onClick={() => compTarget && compDeleteMutation.mutate(compTarget.sourceId)}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> Ta bort
+            </Button>
+            {viewerRole === "coach" && compTarget && (
+              <Button
+                onClick={() => {
+                  setPeakingFor(compTarget);
+                  setCompTarget(null);
+                }}
+              >
+                Generera toppningsplan
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {peakingFor && viewerRole === "coach" && (
+        <GenerateStrengthTemplateDialog
+          athleteId={ownerId}
+          coachId={currentUserId}
+          athleteName="atleten"
+          hideTrigger
+          open
+          onOpenChange={(o) => !o && setPeakingFor(null)}
+          defaultTemplateId="peak-3w"
+          defaultStartDate={format(
+            addDays(startOfWeek(parseISO(peakingFor.effectiveDate), { weekStartsOn: 1 }), -14),
+            "yyyy-MM-dd",
+          )}
+          onCreated={() => setPeakingFor(null)}
+        />
+      )}
     </DndContext>
   );
 }

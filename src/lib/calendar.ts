@@ -2,7 +2,7 @@ import { addDays, format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOf
 import { supabase } from "@/integrations/supabase/client";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 
-export type CalendarSource = "planned" | "endurance" | "rehab" | "adhoc_strength";
+export type CalendarSource = "planned" | "endurance" | "rehab" | "adhoc_strength" | "competition";
 
 export type CalendarItem = {
   key: string;                // unique per source+id
@@ -159,9 +159,37 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
     isCancelled: false,
   }));
 
-  const items = [...plannedItems, ...enduranceItems, ...rehabItems, ...adhocItems];
-  // Only items with uuid sourceIds can have schedule overrides (ad-hoc strength uses date as sourceId)
-  const sourceIds = items.filter((i) => i.source !== "adhoc_strength").map((i) => i.sourceId);
+  // 5. Competitions
+  const { data: comps } = await supabase
+    .from("competitions")
+    .select("id, name, comp_date, notes")
+    .eq("athlete_id", ownerId)
+    .gte("comp_date", rangeStart)
+    .lte("comp_date", rangeEnd);
+
+  const compItems: CalendarItem[] = (comps ?? []).map((c) => {
+    const date = fmt(c.comp_date as string);
+    return {
+      key: `competition:${c.id}`,
+      source: "competition" as const,
+      sourceId: c.id as string,
+      ownerId,
+      title: c.name || "Tävling",
+      subtitle: "Tävling",
+      suggestedDate: date,
+      effectiveDate: date,
+      isGhost: false,
+      isCancelled: false,
+      cancelReason: (c.notes as string | null) ?? null,
+    };
+  });
+
+  const items = [...plannedItems, ...enduranceItems, ...rehabItems, ...adhocItems, ...compItems];
+  // Only items with uuid sourceIds can have schedule overrides (ad-hoc strength uses
+  // date as sourceId; competitions are fixed dates and never rescheduled)
+  const sourceIds = items
+    .filter((i) => i.source !== "adhoc_strength" && i.source !== "competition")
+    .map((i) => i.sourceId);
   if (sourceIds.length > 0) {
     const { data: overrides } = await supabase
       .from("session_schedule_overrides")
@@ -349,6 +377,9 @@ export async function deleteSessionHard(args: {
       .eq("athlete_id", ownerId)
       .eq("date", sourceId)
       .is("planned_exercise_id", null);
+    if (error) throw error;
+  } else if (source === "competition") {
+    const { error } = await supabase.from("competitions").delete().eq("id", sourceId);
     if (error) throw error;
   }
 }

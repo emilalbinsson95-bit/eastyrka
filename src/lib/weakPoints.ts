@@ -223,6 +223,8 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
         targeted.add(slot);
         slot.exercise = wp.variation.exercise;
         slot.variation = undefined;
+        // Load was computed for the old lift; leave blank so it's set from RPE.
+        slot.target_weight_kg = undefined;
         slot.target_reps = wp.variation.reps;
         slot.notes = wp.variation.notes;
       } else if (!deload && !has(wp.variation.exercise)) {
@@ -277,7 +279,7 @@ export function applyDeadliftStyle(weeks: TemplateWeek[], style: DeadliftStyle |
       exercises: s.exercises.map((e) => {
         if (style === "sumo") {
           if (/^deadlift$/i.test(e.exercise) && isCompSlot(e)) {
-            return { ...e, exercise: "Sumo deadlift", variation: e.variation && /stance/i.test(e.variation) ? "Competition stance" : e.variation };
+            return { ...e, target_weight_kg: undefined, exercise: "Sumo deadlift", variation: e.variation && /stance/i.test(e.variation) ? "Competition stance" : e.variation };
           }
           return e;
         }
@@ -285,6 +287,7 @@ export function applyDeadliftStyle(weeks: TemplateWeek[], style: DeadliftStyle |
           const name = e.exercise.replace(/sumo\s*/i, "").trim();
           return {
             ...e,
+            target_weight_kg: undefined,
             exercise: /^deadlift$/i.test(name) || !name ? "Deadlift" : name.charAt(0).toUpperCase() + name.slice(1),
             variation: e.variation && /sumo/i.test(e.variation) ? "Conventional stance" : e.variation,
           };

@@ -1152,7 +1152,7 @@ function AnalyticsPage() {
                       <LineChart data={multiLiftSeries.data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 10)), (dataMax: number) => Math.ceil(dataMax + 5)]} />
                         <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                         <Legend />
                         {multiLiftSeries.lifts.map((lift, i) => (

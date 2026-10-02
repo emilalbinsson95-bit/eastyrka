@@ -868,7 +868,7 @@ function SessionCard({
     <div
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
-      {...attributes}
+      {...(isComp ? { role: "button", tabIndex: 0 } : attributes)}
       onClick={() => { if (!isDragging) onPreview(item); }}
       style={
         transform
@@ -877,12 +877,13 @@ function SessionCard({
       }
       className={cn(
         "group relative flex items-start gap-1 rounded-md border px-1.5 py-1 text-[11px] leading-tight",
-        isComp && "border-amber-500/60 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-300",
-        item.isCancelled
-          ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
-          : item.isGhost
-            ? "border-dashed border-primary/60 bg-primary/5 text-foreground/80"
-            : "border-border bg-secondary text-secondary-foreground",
+        isComp
+          ? "cursor-pointer border-amber-500/60 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-300"
+          : item.isCancelled
+            ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
+            : item.isGhost
+              ? "border-dashed border-primary/60 bg-primary/5 text-foreground/80"
+              : "border-border bg-secondary text-secondary-foreground",
         draggable && "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50",
       )}

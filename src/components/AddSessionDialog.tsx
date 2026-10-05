@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Dumbbell, Footprints, Bike, Waves, Activity, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,7 @@ export function AddSessionDialog({
   onOpenChange: (o: boolean) => void;
   onOpenEditor: (target: OpenEditor) => void;
 }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
   const createEndurance = useMutation({
@@ -110,13 +112,13 @@ export function AddSessionDialog({
                   }}
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
-                  {d.label} intervals
+                  {d.label} {t("addSession.intervals")}
                 </Button>
               ))}
             </div>
           </Section>
 
-          <Section title="Strength workout" subtitle="Exercises, sets, reps, weight, RPE.">
+          <Section title={t("addSession.strengthTitle")} subtitle={t("addSession.strengthSubtitle")}>
             <Button
               variant="secondary"
               size="sm"
@@ -125,7 +127,7 @@ export function AddSessionDialog({
                 onOpenChange(false);
               }}
             >
-              <Dumbbell className="mr-1 h-4 w-4" /> Add strength workout
+              <Dumbbell className="mr-1 h-4 w-4" /> {t("addSession.addStrength")}
             </Button>
           </Section>
         </div>

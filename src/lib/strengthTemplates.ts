@@ -115,7 +115,7 @@ const backAccessory = (w: number): TemplateExercise[] => [
     target_rpe: rpe(w, -0.5),
     intensity_metric: "rpe",
     lengthened_partials: true,
-    notes: "Wolf: last set lengthened partials to failure",
+    notes: "Last set: continue with partial reps in the stretched position, to failure",
   },
   {
     exercise: "Lat pulldown",
@@ -148,7 +148,7 @@ const armsAccessory = (w: number): TemplateExercise[] => [
 // Bonus hypertrophy/weak-point sessions used when frequency > base
 const armsShouldersPump = (w: number): Omit<TemplateSession, "day_of_week"> => ({
   title: "Arms + Shoulders (pump)",
-  notes: "Wolf-style pump session — high reps, controlled tempo, lengthened partials.",
+  notes: "Pump session — high reps, controlled tempo, and partial reps in the stretched position.",
   exercises: [
     { exercise: "Overhead press", variation: "Dumbbell seated", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe" },
     { exercise: "Lateral raise", target_sets: 4, target_reps: 15, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true },
@@ -446,7 +446,7 @@ function standardPowerlifting(daysPerWeek: number): TemplateWeek[] {
     const base: Omit<TemplateSession, "day_of_week">[] = [
       {
         title: "Squat + Bench (heavy)",
-        notes: "Comp squat first — Eriksson-style technical priority.",
+        notes: "Competition squat first, while you're fresh — technique gets full priority.",
         exercises: [
           { exercise: "Back squat", variation: "Competition stance", target_sets: mainSets, target_reps: mainReps, target_rpe: rpe(w), intensity_metric: "rpe", notes: "Top set + back-off sets at same RPE" },
           { exercise: "Bench press", variation: "Competition grip & pause", target_sets: mainSets, target_reps: mainReps, target_rpe: rpe(w), intensity_metric: "rpe" },
@@ -483,7 +483,7 @@ function standardPowerlifting(daysPerWeek: number): TemplateWeek[] {
       week_index: w,
       label,
       notes: isDeload
-        ? "Tuscherer-style deload: cut volume ~50%, hold ~RPE 6. Recover CNS before next block."
+        ? "Deload: cut volume ~50% and hold ~RPE 6 — a lighter week so your body recovers before the next block."
         : `Week ${w}/3 accumulation. RPE ${RPE_RAMP[w - 1]}. Add ~2.5kg on top set if last set was ≤ target RPE.`,
       sessions: adaptSessions(base, [() => armsShouldersPump(w), () => legsHypertrophy(w)], daysPerWeek),
     };
@@ -566,7 +566,7 @@ function benchFocus(daysPerWeek: number): TemplateWeek[] {
       {
         title: "Volume bench + Upper accessories",
         exercises: [
-          { exercise: "Bench press", variation: "Touch-and-go", target_sets: isDeload ? 2 : 5, target_reps: 6, target_rpe: rpe(w, -1), intensity_metric: "rpe", notes: "Wolf-style: same movement, higher reps for hypertrophy." },
+          { exercise: "Bench press", variation: "Touch-and-go", target_sets: isDeload ? 2 : 5, target_reps: 6, target_rpe: rpe(w, -1), intensity_metric: "rpe", notes: "Same movement, higher reps — build muscle, not maximal strength." },
           { exercise: "Incline dumbbell press", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true },
           { exercise: "Chest-supported row", target_sets: 3, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe" },
         ],
@@ -663,7 +663,7 @@ function benchOnlyAccessories(daysPerWeek: number): TemplateWeek[] {
         exercises: [
           { exercise: "Spoto press", target_sets: isDeload ? 2 : 4, target_reps: 4, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", notes: "1cm off chest pause — bar path & tightness." },
           { exercise: "Incline dumbbell press", target_sets: isDeload ? 2 : 4, target_reps: 10, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true },
-          { exercise: "Cable chest fly", target_sets: 3, target_reps: 12, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true, notes: "Wolf: stretch at bottom, controlled tempo." },
+          { exercise: "Cable chest fly", target_sets: 3, target_reps: 12, target_rpe: rpe(w, -0.5), intensity_metric: "rpe", lengthened_partials: true, notes: "Full stretch at the bottom, controlled tempo." },
           { exercise: "Face pull", target_sets: 3, target_reps: 15, target_rpe: rpe(w, -1), intensity_metric: "rpe" },
         ],
       },
@@ -768,7 +768,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 4,
     minDays: 3,
     maxDays: 6,
-    inspiration: "Tuscherer RPE + Eriksson comp specificity",
+    inspiration: "Effort set by RPE (reps left in the tank) + priority on the competition lifts",
     buildWeeks: standardPowerlifting,
   },
   {
@@ -780,7 +780,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 4,
     minDays: 3,
     maxDays: 6,
-    inspiration: "Eriksson high-frequency squats + Tuscherer autoregulation",
+    inspiration: "Frequent squat practice for technique + effort set by RPE",
     buildWeeks: squatFocus,
   },
   {
@@ -792,7 +792,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 4,
     minDays: 3,
     maxDays: 6,
-    inspiration: "Wolf hypertrophy + Tuscherer RPE",
+    inspiration: "Muscle-building volume + effort set by RPE",
     buildWeeks: benchFocus,
   },
   {
@@ -804,7 +804,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 4,
     minDays: 3,
     maxDays: 6,
-    inspiration: "Eriksson pull technique + Tuscherer RPE",
+    inspiration: "Technique-focused pulling + effort set by RPE",
     buildWeeks: deadliftFocus,
   },
   {
@@ -816,7 +816,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 3,
     minDays: 3,
     maxDays: 6,
-    inspiration: "Wolf hypertrophy + Tuscherer autoregulation",
+    inspiration: "Bench-focused muscle building + effort set by RPE",
     buildWeeks: benchOnlyAccessories,
   },
   {
@@ -828,7 +828,7 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     daysPerWeek: 3,
     minDays: 2,
     maxDays: 4,
-    inspiration: "Olympic-lifting power work + Tuscherer RPE autoregulation",
+    inspiration: "Explosive, sport-specific power work + effort set by RPE",
     buildWeeks: athleticPower,
   },
   {

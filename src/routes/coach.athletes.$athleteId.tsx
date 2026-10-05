@@ -815,7 +815,7 @@ function EditSetDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             disabled={

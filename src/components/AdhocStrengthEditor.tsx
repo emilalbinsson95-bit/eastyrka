@@ -32,6 +32,7 @@ export function AdhocStrengthEditor({
   date: string;
   onClose?: () => void;
 }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const logsQuery = useQuery({

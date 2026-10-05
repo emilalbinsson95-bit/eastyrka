@@ -2,6 +2,7 @@ import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { format, parseISO } from "date-fns";
 import { ArrowLeft, Save, TrendingDown, TrendingUp, Plus, Settings, Calendar, BarChart3, History, Activity, Trash2, Pencil } from "lucide-react";
 import { z } from "zod";
@@ -717,6 +718,7 @@ function EditSetDialog({
   isPending: boolean;
   exerciseOptions: string[];
 }) {
+  const { t } = useTranslation();
   const [exercise, setExercise] = useState("");
   const [variation, setVariation] = useState("");
   const [reps, setReps] = useState(0);

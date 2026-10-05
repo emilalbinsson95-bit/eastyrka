@@ -535,7 +535,7 @@ function squatFocus(daysPerWeek: number): TemplateWeek[] {
       label: isDeload ? "Deload" : `Squat block W${w}`,
       notes: isDeload
         ? "Deload week — hold RPE 6, half the working sets."
-        : "3× squat / week (Eriksson high-frequency). Rotate stance/tempo to spread joint stress.",
+        : "Squat 3× per week — frequent practice builds technique. Rotate stance/tempo to spread joint stress.",
       sessions: adaptSessions(base, [() => upperHypertrophy(w), () => legsHypertrophy(w)], daysPerWeek),
     };
   });

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { format, addDays, startOfWeek } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
@@ -70,6 +71,7 @@ export function GenerateStrengthTemplateDialog({
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
 }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -675,13 +677,11 @@ export function GenerateStrengthTemplateDialog({
           {!isPeaking && (
             <div className="rounded-lg border bg-card">
               <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
-                Weak points (one per lift)
+                {t("generate.weakPointsTitle")}
               </div>
               <div className="space-y-3 p-3">
                 <p className="text-xs text-muted-foreground">
-                  Pick the one fault that limits each lift most — fix one thing per block. Swaps the lift's variation
-                  slot and adds one targeted accessory per week if the session has room; otherwise it replaces the
-                  least specific exercise (isolation/core first). Competition lifts are never removed. Not in deloads.
+                  {t("generate.weakPointsDesc")}
                 </p>
                 {(["squat", "bench", "deadlift"] as const).map((lift) => (
                   <div key={lift}>

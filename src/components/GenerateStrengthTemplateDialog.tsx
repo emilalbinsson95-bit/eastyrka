@@ -445,8 +445,9 @@ export function GenerateStrengthTemplateDialog({
             <Sparkles className="h-4 w-4" /> Strength templates
           </DialogTitle>
           <DialogDescription>
-            For {athleteName}. Pre-built mesocycles inspired by Milo Wolf, Mike Tuscherer & Josef
-            Eriksson. Everything is editable after generation.
+            For {athleteName}. Pre-built 4-week blocks: effort is set with RPE (how many reps you
+            had left in each set), with priority on your competition lifts. Everything is editable
+            after generation.
           </DialogDescription>
         </DialogHeader>
 

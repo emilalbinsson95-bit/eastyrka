@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, Dumbbell, Copy, GripVertical } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -398,12 +399,12 @@ export function AdhocStrengthEditor({
           <div className="flex gap-2">
             {onClose && (
               <Button variant="ghost" size="sm" onClick={onClose}>
-                Cancel
+                {t("actions.cancel")}
               </Button>
             )}
             <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
               <Save className="mr-1 h-4 w-4" />
-              {save.isPending ? "Saving…" : "Save workout"}
+              {save.isPending ? t("actions.saving") : t("strength.saveWorkout")}
             </Button>
           </div>
         </div>

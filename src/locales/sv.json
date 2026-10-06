@@ -41,7 +41,8 @@
     "submit": "Skicka in",
     "viewDetails": "Visa detaljer",
     "confirm": "Bekräfta",
-    "back": "Tillbaka"
+    "back": "Tillbaka",
+    "saving": "Sparar…"
   },
   "common": {
     "email": "E-post",
@@ -249,5 +250,18 @@
   "language": {
     "english": "English",
     "swedish": "Svenska"
+  },
+  "addSession": {
+    "intervals": "Intervaller",
+    "strengthTitle": "Styrkepass",
+    "strengthSubtitle": "Logga ett eget styrkepass",
+    "addStrength": "Lägg till styrkepass"
+  },
+  "strength": {
+    "saveWorkout": "Spara pass"
+  },
+  "generate": {
+    "weakPointsTitle": "Svagheter (en per lyft)",
+    "weakPointsDesc": "Välj högst en svaghet per lyft. Programmet anpassar övningsvalet efter den."
   }
 }

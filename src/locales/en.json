@@ -41,7 +41,8 @@
     "submit": "Submit",
     "viewDetails": "View details",
     "confirm": "Confirm",
-    "back": "Back"
+    "back": "Back",
+    "saving": "Saving…"
   },
   "common": {
     "email": "Email",
@@ -249,5 +250,18 @@
   "language": {
     "english": "English",
     "swedish": "Svenska"
+  },
+  "addSession": {
+    "intervals": "Intervals",
+    "strengthTitle": "Strength workout",
+    "strengthSubtitle": "Log your own strength session",
+    "addStrength": "Add strength workout"
+  },
+  "strength": {
+    "saveWorkout": "Save workout"
+  },
+  "generate": {
+    "weakPointsTitle": "Weak points (one per lift)",
+    "weakPointsDesc": "Pick at most one weak point per lift. Exercise selection adapts to it."
   }
 }

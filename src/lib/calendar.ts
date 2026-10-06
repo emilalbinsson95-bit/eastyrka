@@ -282,6 +282,27 @@ export async function setOverride(args: {
       { onConflict: "source_type,source_id" },
     );
   if (error) throw error;
+
+  if (source === "planned") await moveSessionLogs(ownerId, sourceId, date);
+}
+
+/** Move already-logged sets of a planned session to the new date, so a session
+ *  opened/started on the wrong day follows the session when it's moved. */
+export async function moveSessionLogs(ownerId: string, plannedSessionId: string, date: string) {
+  const { data: exs, error: exErr } = await supabase
+    .from("planned_exercises")
+    .select("id")
+    .eq("planned_session_id", plannedSessionId);
+  if (exErr) throw exErr;
+  const ids = (exs ?? []).map((e) => e.id as string);
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from("training_logs")
+    .update({ date })
+    .eq("athlete_id", ownerId)
+    .in("planned_exercise_id", ids)
+    .neq("date", date);
+  if (error) throw error;
 }
 
 /** Mark a session as cancelled by the owner (athlete/patient), with a reason. */

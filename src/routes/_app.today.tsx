@@ -1217,6 +1217,7 @@ function StartTodayRow({
           });
         if (error) throw error;
       }
+      await moveSessionLogs(athleteId, session.id, todayStr);
     },
     onSuccess: () => {
       toast.success("Session moved to today — start logging!");

@@ -780,9 +780,10 @@ export function enforceTemplateFloors(weeks: TemplateWeek[]): TemplateWeek[] {
     for (const [cat, group] of byCat) {
       const [mev, mrv] = VOLUME_LANDMARKS[cat] ?? [0, 99];
       if (mev <= 0) continue;
-      // A category trained by a single exercise may carry a few more sets so it
-      // can still reach MEV instead of sitting at token volume.
-      if (isAccessoryCategory(cat) && group.length === 1) group[0].cap = 6;
+      // Accessories stay at ≤ 4 sets per exercise even when that leaves the
+      // category under MEV: in a strength block they support the main lifts
+      // (which already give indirect volume, e.g. deadlifts → upper back), and
+      // piling 6 sets into one accessory adds fatigue without helping the lifts.
       topUp(group, Math.min(mev, mrv));
     }
 

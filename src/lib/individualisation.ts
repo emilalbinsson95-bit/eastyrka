@@ -520,6 +520,9 @@ export const VOLUME_FLOORS = {
   minSetsMainLift: 3,
 } as const;
 
+/** Max sets per accessory exercise after individual scaling (unless the template set more). */
+export const ACCESSORY_SET_CAP = 5;
+
 /**
  * Round a group of scaled set counts so the group total matches the exact
  * scaled total (largest-remainder). Without this, a −8% multiplier on 3-set
@@ -535,10 +538,14 @@ function distributeSets(slots: SetSlot[], minPerSlot: number): Map<string, numbe
   }
   for (const [, group] of byCat) {
     const floorFor = (g: SetSlot) => Math.min(g.base, minPerSlot);
-    const exact = group.map((g) => Math.max(g.base * g.mult, floorFor(g)));
+    // Accessories never grow past 5 sets (or the template's own count if higher):
+    // extra volume belongs on the main lifts, not stacked on one support exercise.
+    const capFor = (g: SetSlot) =>
+      isAccessoryCategory(g.cat) ? Math.max(g.base, ACCESSORY_SET_CAP) : 10;
+    const exact = group.map((g) => Math.min(Math.max(g.base * g.mult, floorFor(g)), capFor(g)));
     const minTotal = group.reduce((a, g) => a + floorFor(g), 0);
     const target = clamp(Math.round(exact.reduce((a, b) => a + b, 0)), minTotal, 999);
-    const floors = exact.map((v, i) => clamp(Math.floor(v), floorFor(group[i]), 10));
+    const floors = exact.map((v, i) => clamp(Math.floor(v), floorFor(group[i]), capFor(group[i])));
     let remaining = target - floors.reduce((a, b) => a + b, 0);
     const order = exact
       .map((v, i) => ({ i, frac: v - Math.floor(v) }))
@@ -546,7 +553,7 @@ function distributeSets(slots: SetSlot[], minPerSlot: number): Map<string, numbe
     let idx = 0;
     while (remaining > 0 && idx < order.length * 4) {
       const i = order[idx % order.length].i;
-      if (floors[i] < 10) {
+      if (floors[i] < capFor(group[i])) {
         floors[i] += 1;
         remaining -= 1;
       }

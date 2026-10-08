@@ -6,4 +6,12 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig();
+export default defineConfig({
+  vite: {
+    optimizeDeps: {
+      // Reject stale optimizer URLs so Vite reloads the whole module graph.
+      // Serving them can mix React dispatchers after dependency updates.
+      ignoreOutdatedRequests: false,
+    },
+  },
+});

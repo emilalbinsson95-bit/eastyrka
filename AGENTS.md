@@ -1,5 +1,7 @@
 # Architecture decisions
 
+- Reject outdated Vite dependency requests instead of serving stale optimized modules, so dependency updates reload the browser without mixing React dispatchers.
+
 - Keep public coaching availability in a singleton table with public read access and admin-only writes enforced by RLS; reuse one information component so login and athlete information show the same saved counts.
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.

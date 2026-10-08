@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CoachingAvailabilityEditor } from "@/components/CoachingAvailabilityEditor";
 
 export const Route = createFileRoute("/coach/admin")({
   head: () => ({ meta: [
@@ -58,7 +59,8 @@ function AdminPage() {
     queryKey: ["admin-athlete-inspection", selectedAthlete?.id],
     enabled: isAdmin && !!selectedAthlete,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_inspect_athlete", { _athlete_id: selectedAthlete!.id });
+      if (!selectedAthlete) throw new Error("Select an athlete first");
+      const { data, error } = await supabase.rpc("admin_inspect_athlete", { _athlete_id: selectedAthlete.id });
       if (error) throw error;
       return data as unknown as AthleteInspection;
     },
@@ -120,6 +122,7 @@ function AdminPage() {
 
   return (
     <div className="space-y-4">
+      <CoachingAvailabilityEditor />
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or email…" className="pl-9" />

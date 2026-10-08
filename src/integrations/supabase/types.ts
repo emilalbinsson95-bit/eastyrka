@@ -190,6 +190,24 @@ export type Database = {
         }
         Relationships: []
       }
+      coaching_availability: {
+        Row: {
+          coaching_places: number
+          id: boolean
+          overview_places: number
+        }
+        Insert: {
+          coaching_places?: number
+          id?: boolean
+          overview_places?: number
+        }
+        Update: {
+          coaching_places?: number
+          id?: boolean
+          overview_places?: number
+        }
+        Relationships: []
+      }
       competitions: {
         Row: {
           athlete_id: string

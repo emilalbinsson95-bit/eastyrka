@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CoachingInformation } from "@/components/CoachingInformation";
 
 export const Route = createFileRoute("/_app/learn")({
   head: () => ({
@@ -40,6 +41,8 @@ function LearnPage() {
         <h1 className="text-2xl font-semibold">Lär dig begreppen</h1>
         <p className="text-sm text-muted-foreground">Det här betyder orden i ditt program.</p>
       </div>
+
+      <div className="border-b border-border pb-6"><CoachingInformation /></div>
 
       <Topic title="Uppvärmning för styrkelyft (10–15 min)">
         <p>Värm upp hela kroppen först, sedan lyftet. Håll det kort — målet är att bli varm och rörlig, inte trött.</p>

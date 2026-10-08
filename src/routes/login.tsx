@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { CoachingInformation } from "@/components/CoachingInformation";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -53,7 +54,7 @@ function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -101,6 +102,7 @@ function LoginPage() {
           </p>
         </CardContent>
       </Card>
+      <div className="w-full max-w-md"><CoachingInformation /></div>
     </main>
   );
 }

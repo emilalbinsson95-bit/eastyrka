@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Show free app, coaching prices and Swish in login and athlete information; let admins save available places and verify the full flow.
+- [x] Show free app, coaching prices and Swish in login and athlete information; let admins save available places and verify the full flow.
 
 - [x] Simplify public front page and sign-in presentation.
 - [x] Give admins a cross-app athlete troubleshooting overview with read-only activity inspection.

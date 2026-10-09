@@ -1,8 +1,10 @@
 import { addDays, format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
+import { fetchPaymentSchedule } from "@/lib/paymentReminders";
+import { paymentReminderDates } from "@/lib/paymentReminderDates";
 
-export type CalendarSource = "planned" | "endurance" | "rehab" | "adhoc_strength" | "competition";
+export type CalendarSource = "planned" | "endurance" | "rehab" | "adhoc_strength" | "competition" | "payment";
 
 export type CalendarItem = {
   key: string;                // unique per source+id
@@ -30,6 +32,7 @@ export type CalendarItem = {
   cancelReason?: string | null;
   /** Link to detail page (optional). */
   href?: string;
+  paymentService?: "coaching" | "overview";
 };
 
 export function monthGridDays(monthDate: Date): Date[] {
@@ -184,11 +187,17 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
     };
   });
 
-  const items = [...plannedItems, ...enduranceItems, ...rehabItems, ...adhocItems, ...compItems];
+  const paymentSchedule = await fetchPaymentSchedule(ownerId);
+  const paymentItems: CalendarItem[] = paymentSchedule?.active ? paymentReminderDates(paymentSchedule.start_date, rangeStart, rangeEnd).map(date => ({
+    key: `payment:${paymentSchedule.id}:${date}`, source: "payment", sourceId: paymentSchedule.id, ownerId,
+    title: "", paymentService: paymentSchedule.service === "overview" ? "overview" : "coaching",
+    suggestedDate: date, effectiveDate: date, isGhost: false, isCancelled: false,
+  })) : [];
+  const items = [...plannedItems, ...enduranceItems, ...rehabItems, ...adhocItems, ...compItems, ...paymentItems];
   // Only items with uuid sourceIds can have schedule overrides (ad-hoc strength uses
   // date as sourceId; competitions are fixed dates and never rescheduled)
   const sourceIds = items
-    .filter((i) => i.source !== "adhoc_strength" && i.source !== "competition")
+    .filter((i) => i.source !== "adhoc_strength" && i.source !== "competition" && i.source !== "payment")
     .map((i) => i.sourceId);
   if (sourceIds.length > 0) {
     const { data: overrides } = await supabase
@@ -254,6 +263,7 @@ export async function setOverride(args: {
   date: string;
 }) {
   const { ownerId, source, sourceId, date } = args;
+  if (source === "payment" || source === "competition") return;
 
   if (source === "adhoc_strength") {
     if (sourceId === date) return;
@@ -314,6 +324,7 @@ export async function cancelSession(args: {
   reason: string;
 }) {
   const { ownerId, source, sourceId, suggestedDate, reason } = args;
+  if (source === "payment" || source === "competition") return;
   const { error } = await supabase
     .from("session_schedule_overrides")
     .upsert(
@@ -363,6 +374,7 @@ export async function deleteSessionHard(args: {
   sourceId: string;
 }) {
   const { ownerId, source, sourceId } = args;
+  if (source === "payment") return;
 
   // 1. Drop any schedule override (best-effort; no rows is OK)
   if (source !== "adhoc_strength") {

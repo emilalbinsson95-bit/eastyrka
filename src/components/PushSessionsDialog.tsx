@@ -39,7 +39,7 @@ export function PushSessionsDialog({ open, onOpenChange, ownerId, period, items,
   const affected = useMemo(() => {
     if (!period) return [];
     return items
-      .filter((i) => i.source !== "adhoc_strength")
+      .filter((i) => i.source !== "adhoc_strength" && i.source !== "competition" && i.source !== "payment")
       .filter((i) => i.effectiveDate >= period.startDate && i.effectiveDate <= period.endDate)
       .sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
   }, [items, period]);

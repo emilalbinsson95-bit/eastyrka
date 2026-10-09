@@ -11,8 +11,10 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { sv, enUS } from "date-fns/locale";
+import { PaymentReminderControl } from "@/components/PaymentReminderControl";
 import { addDays, addMonths, format, isSameMonth, isToday, parseISO, startOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dumbbell, Footprints, HeartPulse, X, RotateCcw, Plus, Trash2, Thermometer, ArrowRight, Trophy, Wallet } from "lucide-react";
 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -77,10 +79,11 @@ type Props = {
 const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [monthDate, setMonthDate] = useState<Date>(() => new Date());
   const qc = useQueryClient();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const dateLocale = i18n.language.startsWith("sv") ? sv : enUS;
   const currentUserId = user?.id ?? ownerId;
 
   const canDelete = viewerRole === "coach" || viewerRole === "physio";
@@ -154,6 +157,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [addForDate, setAddForDate] = useState<string | null>(null);
   const [compDialogOpen, setCompDialogOpen] = useState(false);
   const [compForm, setCompForm] = useState({ name: "", date: format(new Date(), "yyyy-MM-dd"), notes: "" });
+  const [paymentTarget, setPaymentTarget] = useState<CalendarItem | null>(null);
   const [compTarget, setCompTarget] = useState<CalendarItem | null>(null);
   const [peakingFor, setPeakingFor] = useState<CalendarItem | null>(null);
 
@@ -163,10 +167,10 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
       qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
       setCompDialogOpen(false);
       setCompForm({ name: "", date: format(new Date(), "yyyy-MM-dd"), notes: "" });
-      toast.success("Tävling tillagd");
+      toast.success(t("calendar.competitionAdded"));
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Kunde inte lägga till tävlingen");
+      toast.error(e instanceof Error ? e.message : t("calendar.competitionAddError"));
     },
   });
 
@@ -175,10 +179,10 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
       setCompTarget(null);
-      toast.success("Tävling borttagen");
+      toast.success(t("calendar.competitionRemoved"));
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Kunde inte ta bort tävlingen");
+      toast.error(e instanceof Error ? e.message : t("calendar.competitionRemoveError"));
     },
   });
   const [unavailDialogOpen, setUnavailDialogOpen] = useState(false);
@@ -257,7 +261,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => { setIsDragging(false); clearHoverTimers(); }}>
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <MonthNavButton
               id="__nav_prev__"
@@ -278,7 +282,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               <ChevronLeft className="h-4 w-4" />
             </MonthNavButton>
             <div className="min-w-[10rem] text-center text-lg font-semibold">
-              {format(monthDate, "MMMM yyyy")}
+              {format(monthDate, "MMMM yyyy", { locale: dateLocale })}
             </div>
             <MonthNavButton
               id="__nav_next__"
@@ -299,14 +303,15 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               <ChevronRight className="h-4 w-4" />
             </MonthNavButton>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {roles.includes("admin") && <PaymentReminderControl athleteId={ownerId} />}
             {canManageUnavailability && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => { setEditingPeriod(null); setUnavailDialogOpen(true); }}
               >
-                <Thermometer className="mr-1 h-3.5 w-3.5" /> Mark sick / hurt
+                <Thermometer className="mr-1 h-3.5 w-3.5" /> {t("calendar.markSickHurt")}
               </Button>
             )}
             {canManageUnavailability && (
@@ -315,7 +320,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 size="sm"
                 onClick={() => setCompDialogOpen(true)}
               >
-                <Trophy className="mr-1 h-3.5 w-3.5" /> Lägg till tävling
+                <Trophy className="mr-1 h-3.5 w-3.5" /> {t("calendar.addCompetition")}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => setMonthDate(new Date())}>{t("calendar.today")}</Button>
@@ -345,6 +350,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           </>
         )}
 
+        {itemsQuery.isError && <p role="alert" className="text-sm text-destructive">{t("calendar.loadError")}</p>}
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">
           {WEEKDAY_KEYS.map((d) => (
             <div key={d} className="bg-muted/60 px-2 py-1.5 text-center font-medium text-muted-foreground">
@@ -383,6 +389,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                 onUncancel={(it) => uncancelMutation.mutate({ source: it.source, sourceId: it.sourceId })}
                 onRequestDelete={(it) => setDeleteTarget(it)}
                 onPreview={(it) => {
+                  if (it.source === "payment") { setPaymentTarget(it); return; }
                   if (it.source === "competition") {
                     setCompTarget(it);
                     return;
@@ -418,7 +425,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editorTarget?.kind === "endurance" ? "Edit session" : "Strength workout"}
+              {editorTarget?.kind === "endurance" ? t("calendar.editSession") : t("calendar.strengthWorkout")}
             </DialogTitle>
           </DialogHeader>
           {editorTarget?.kind === "endurance" && (
@@ -554,28 +561,37 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         }}
       />
 
+      <Dialog open={!!paymentTarget} onOpenChange={o => !o && setPaymentTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("payment.title")}</DialogTitle><DialogDescription>{paymentTarget && format(parseISO(paymentTarget.effectiveDate), "d MMMM yyyy", { locale: dateLocale })}</DialogDescription></DialogHeader>
+          <p>{t(paymentTarget?.paymentService === "overview" ? "payment.overview" : "payment.coaching")} · <strong>{paymentTarget?.paymentService === "overview" ? 100 : 300} {t("payment.perMonth")}</strong></p>
+          <p>{t("payment.swish")} <strong className="whitespace-nowrap">072-2318321</strong></p>
+          <DialogFooter><Button onClick={() => setPaymentTarget(null)}>{t("payment.close")}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={compDialogOpen} onOpenChange={setCompDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" /> Lägg till tävling
+              <Trophy className="h-4 w-4" /> {t("calendar.addCompetition")}
             </DialogTitle>
             <DialogDescription>
-              Tävlingsdagen syns i kalendern för både atlet och coach.
+              {t("calendar.competitionDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="comp-name">Namn</Label>
+              <Label htmlFor="comp-name">{t("common.name")}</Label>
               <Input
                 id="comp-name"
                 value={compForm.name}
                 onChange={(e) => setCompForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="T.ex. SM i styrkelyft"
+                placeholder={t("calendar.competitionPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="comp-date">Datum</Label>
+              <Label htmlFor="comp-date">{t("calendar.date")}</Label>
               <Input
                 id="comp-date"
                 type="date"
@@ -584,18 +600,18 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="comp-notes">Anteckningar (valfritt)</Label>
+              <Label htmlFor="comp-notes">{t("calendar.notesOptional")}</Label>
               <Textarea
                 id="comp-notes"
                 value={compForm.notes}
                 onChange={(e) => setCompForm((f) => ({ ...f, notes: e.target.value }))}
                 rows={2}
-                placeholder="Viktklass, mål, plats …"
+                placeholder={t("calendar.notesPlaceholder")}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCompDialogOpen(false)}>Avbryt</Button>
+            <Button variant="ghost" onClick={() => setCompDialogOpen(false)}>{t("actions.cancel")}</Button>
             <Button
               disabled={!compForm.name.trim() || !compForm.date || compMutation.isPending}
               onClick={() =>
@@ -621,7 +637,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               <Trophy className="h-4 w-4 text-amber-500" /> {compTarget?.title}
             </DialogTitle>
             <DialogDescription>
-              {compTarget && format(parseISO(compTarget.effectiveDate), "EEEE d MMMM yyyy")}
+              {compTarget && format(parseISO(compTarget.effectiveDate), "EEEE d MMMM yyyy", { locale: dateLocale })}
             </DialogDescription>
           </DialogHeader>
           {compTarget?.cancelReason && (
@@ -634,7 +650,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               disabled={compDeleteMutation.isPending}
               onClick={() => compTarget && compDeleteMutation.mutate(compTarget.sourceId)}
             >
-              <Trash2 className="mr-1 h-3.5 w-3.5" /> Ta bort
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> {t("actions.delete")}
             </Button>
             {viewerRole === "coach" && compTarget && (
               <Button
@@ -643,7 +659,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
                   setCompTarget(null);
                 }}
               >
-                Generera toppningsplan
+                {t("calendar.generatePeak")}
               </Button>
             )}
           </DialogFooter>
@@ -671,17 +687,18 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
 }
 
 function CalendarLegend() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
-      <span className="font-mono uppercase tracking-[0.16em]">Legend</span>
-      <LegendSwatch className="bg-amber-500/25 ring-amber-500/50" label="Sick" />
-      <LegendSwatch className="bg-rose-500/25 ring-rose-500/50" label="Hurt" />
-      <LegendSwatch className="bg-slate-500/25 ring-slate-500/50" label="Away" />
+      <span className="font-mono uppercase tracking-[0.16em]">{t("calendar.legend")}</span>
+      <LegendSwatch className="bg-amber-500/25 ring-amber-500/50" label={t("calendar.preset.sick")} />
+      <LegendSwatch className="bg-rose-500/25 ring-rose-500/50" label={t("calendar.preset.injured")} />
+      <LegendSwatch className="bg-slate-500/25 ring-slate-500/50" label={t("calendar.away")} />
       <span className="flex items-center gap-1.5">
         <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/60">
           <span className="h-1 w-1 rounded-full bg-primary" />
         </span>
-        Return-to-load
+        {t("calendar.returnToLoad")}
       </span>
     </div>
   );
@@ -746,7 +763,7 @@ function DayCell({
         : "bg-slate-500/15 ring-slate-500/40";
   const BandIcon =
     unavailability?.reason === "injured" ? HeartPulse : unavailability?.reason === "sick" ? Thermometer : X;
-  const bandLabel = unavailability?.reason === "injured" ? "HURT" : unavailability?.reason === "sick" ? "SICK" : "OFF";
+  const bandLabel = unavailability?.reason === "injured" ? t("calendar.preset.injured") : unavailability?.reason === "sick" ? t("calendar.preset.sick") : t("calendar.away");
   const bandTitle = unavailability
     ? `${bandLabel} · ${format(parseISO(unavailability.startDate), "MMM d")} – ${format(parseISO(unavailability.endDate), "MMM d")}${unavailability.notes ? ` · ${unavailability.notes}` : ""}`
     : undefined;
@@ -770,16 +787,16 @@ function DayCell({
       )}
       {unavailability && unavailabilityIsEnd && !unavailabilityIsStart && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center py-0.5 font-mono text-[8px] uppercase tracking-[0.22em] text-foreground/50">
-          ends
+          {t("calendar.ends")}
         </div>
       )}
       {isReturnDay && !unavailability && (
         <div
           className="pointer-events-none absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.16em] text-primary"
-          title="First day back — return-to-load session suggested"
+          title={t("calendar.returnTitle")}
         >
           <HeartPulse className="h-2.5 w-2.5" />
-          back
+          {t("calendar.back")}
         </div>
       )}
       <div className={cn("flex items-center justify-between", unavailability && unavailabilityIsStart && "mt-2.5")}>
@@ -854,22 +871,25 @@ function SessionCard({
   onPreview: (it: CalendarItem) => void;
 }) {
   const { t } = useTranslation();
+  const isPayment = item.source === "payment";
   const isComp = item.source === "competition";
-  const draggable = !readOnly && !item.isCancelled && !isComp;
+  const isFixed = isComp || isPayment;
+  const draggable = !readOnly && !item.isCancelled && !isFixed;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${item.source}:${item.sourceId}`,
     disabled: !draggable,
   });
 
-  const Icon = isComp ? Trophy : item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
+  const Icon = isPayment ? Wallet : isComp ? Trophy : item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
   const moved = !!item.override && item.override.scheduledDate !== item.suggestedDate;
 
   return (
     <div
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
-      {...(isComp ? { role: "button", tabIndex: 0 } : attributes)}
+      {...(isFixed ? { role: "button", tabIndex: 0 } : attributes)}
       onClick={() => { if (!isDragging) onPreview(item); }}
+      onKeyDown={e => { if (isFixed && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onPreview(item); } }}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
@@ -877,7 +897,9 @@ function SessionCard({
       }
       className={cn(
         "group relative flex items-start gap-1 rounded-md border px-1.5 py-1 text-[11px] leading-tight",
-        isComp
+        isPayment
+          ? "cursor-pointer border-primary/60 bg-primary/10 text-foreground"
+          : isComp
           ? "cursor-pointer border-amber-500/60 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-300"
           : item.isCancelled
             ? "border-destructive/60 bg-destructive/10 text-destructive line-through decoration-destructive/70"
@@ -899,12 +921,12 @@ function SessionCard({
     >
       <Icon className="mt-0.5 h-3 w-3 flex-shrink-0" />
       <span className="flex-1 truncate">
-        {item.title}
+        {isPayment ? t("payment.reminder", { amount: item.paymentService === "overview" ? 100 : 300 }) : item.title}
         {item.isCancelled && item.cancelReason && (
           <span className="ml-1 font-medium no-underline">· {item.cancelReason}</span>
         )}
       </span>
-      {!readOnly && !isComp && item.isGhost && !item.isCancelled && (
+      {!readOnly && !isFixed && item.isGhost && !item.isCancelled && (
         <button
           type="button"
           onClick={(e) => {
@@ -917,7 +939,7 @@ function SessionCard({
           <Check className="h-3 w-3" />
         </button>
       )}
-      {!readOnly && !isComp && !item.isCancelled && (
+      {!readOnly && !isFixed && !item.isCancelled && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -944,7 +966,7 @@ function SessionCard({
           <RotateCcw className="h-3 w-3" />
         </button>
       )}
-      {(canDelete || (!readOnly && isComp)) && (
+      {!isPayment && (canDelete || (!readOnly && isComp)) && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -1016,16 +1038,17 @@ function UnavailabilityList({
   onPush: (p: Unavailability) => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function handleDelete(p: Unavailability) {
     setBusyId(p.id);
     try {
       await deleteUnavailability(p.id);
-      toast.success("Period removed");
+      toast.success(t("calendar.periodRemoved"));
       onChanged();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not remove");
+      toast.error(e instanceof Error ? e.message : t("calendar.removeError"));
     } finally {
       setBusyId(null);
     }
@@ -1034,7 +1057,7 @@ function UnavailabilityList({
   return (
     <div className="space-y-1.5">
       {periods.map((p) => {
-        const label = p.reason === "injured" ? "Hurt" : p.reason === "sick" ? "Sick" : "Off";
+        const label = p.reason === "injured" ? t("calendar.preset.injured") : p.reason === "sick" ? t("calendar.preset.sick") : t("calendar.away");
         const dot =
           p.reason === "injured" ? "bg-rose-500" : p.reason === "sick" ? "bg-amber-500" : "bg-slate-500";
         return (
@@ -1057,12 +1080,12 @@ function UnavailabilityList({
                   size="sm"
                   disabled={busyId === p.id}
                   onClick={() => onPush(p)}
-                  title="Preview and move sessions inside this range to after the end date"
+                  title={t("calendar.rescheduleTitle")}
                 >
-                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> Reschedule sessions
+                  <ArrowRight className="mr-1 h-3.5 w-3.5" /> {t("calendar.reschedule")}
                 </Button>
                 <Button variant="ghost" size="sm" disabled={busyId === p.id} onClick={() => onEdit(p)}>
-                  Edit
+                  {t("actions.edit")}
                 </Button>
                 <Button
                   variant="ghost"

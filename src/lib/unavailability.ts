@@ -111,7 +111,7 @@ export async function pushSessionsPastPeriod(args: {
   items: { source: CalendarSource; sourceId: string; effectiveDate: string }[];
 }) {
   const affected = args.items
-    .filter((i) => i.source !== "adhoc_strength" && i.source !== "competition")
+    .filter((i) => i.source !== "adhoc_strength" && i.source !== "competition" && i.source !== "payment")
     .filter((i) => i.effectiveDate >= args.period.startDate && i.effectiveDate <= args.period.endDate)
     .sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
 

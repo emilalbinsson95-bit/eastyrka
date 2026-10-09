@@ -42,6 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   dailyE1RM,
+  rollingE1RMBySession,
   eaKoefficient,
   readinessFromEAk,
   readinessLabel,
@@ -279,13 +280,20 @@ function EAkoefficientCard({
   const data = useMemo(() => {
     // Per-day EAk: average top-set eak across exercises that have a baseline.
     const byDate = new Map<string, Map<string, number>>(); // date -> exercise -> max eak
+    const rolling = rollingE1RMBySession(
+      logs.map((l) => ({
+        date: l.date,
+        exercise: l.exercise,
+        reps: l.reps,
+        weight_kg: Number(l.weight_kg),
+        rpe: Number(l.rpe),
+      })),
+    );
     for (const l of logs) {
       const base = baselines[l.exercise];
       if (!base || base <= 0) continue;
-      const eak = eaKoefficient(
-        { weight_kg: Number(l.weight_kg), reps: l.reps, rpe: Number(l.rpe) },
-        base,
-      );
+      const roll = rolling.get(`${l.date}::${l.exercise}`) ?? 0;
+      const eak = roll > 0 ? (roll / base) * 100 : 0;
       if (!isFinite(eak) || eak <= 0) continue;
       const inner = byDate.get(l.date) ?? new Map<string, number>();
       inner.set(l.exercise, Math.max(inner.get(l.exercise) ?? 0, eak));

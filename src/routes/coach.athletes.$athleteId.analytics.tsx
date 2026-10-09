@@ -56,10 +56,10 @@ export const Route = createFileRoute("/coach/athletes/$athleteId/analytics")({
   validateSearch: (search) => analyticsSearchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Athlete analytics — SETPOINT" },
+      { title: "Atletanalys — SETPOINT" },
       {
         name: "description",
-        content: "Volume, E1RM, adherence and readiness correlation over time.",
+        content: "Volym, E1RM, följsamhet och dagsformens samband över tid.",
       },
     ],
   }),

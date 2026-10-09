@@ -1255,3 +1255,54 @@ function StartTodayRow({
     </div>
   );
 }
+
+function PauseSessionRow({ sessionId, athleteId }: { sessionId: string; athleteId: string }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return format(d, "yyyy-MM-dd");
+  });
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("split_planned_session", {
+      _session_id: sessionId,
+      _target_date: date,
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Resten av passet är flyttat");
+    setOpen(false);
+    for (const k of ["today-overrides-planned", "today-overrides-any", "today-crossweek-sessions", "athlete-plan"]) {
+      queryClient.invalidateQueries({ queryKey: [k, athleteId] });
+    }
+    queryClient.invalidateQueries({ queryKey: ["calendar"] });
+  };
+  if (!open) {
+    return (
+      <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
+        Pausa passet och flytta resten
+      </Button>
+    );
+  }
+  return (
+    <div className="space-y-2 rounded-md border p-3">
+      <p className="text-sm text-muted-foreground">
+        Övningar du inte loggat något på flyttas till ett eget pass på valt datum.
+      </p>
+      <Label htmlFor="pause-date">Nytt datum</Label>
+      <Input id="pause-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <div className="flex gap-2">
+        <Button className="flex-1" onClick={run} disabled={busy || !date}>
+          {busy ? "Flyttar…" : "Flytta resten"}
+        </Button>
+        <Button variant="ghost" onClick={() => setOpen(false)}>Avbryt</Button>
+      </div>
+    </div>
+  );
+}

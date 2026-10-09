@@ -1802,6 +1802,10 @@ export type Database = {
           id: string
         }[]
       }
+      split_planned_session: {
+        Args: { _session_id: string; _target_date: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "coach" | "athlete" | "physio" | "patient" | "admin"

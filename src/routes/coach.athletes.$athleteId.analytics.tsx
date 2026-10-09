@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
+import { sv } from "date-fns/locale";
 import { ArrowLeft, TrendingUp, Activity, Dumbbell, Gauge, Target, CalendarCheck, Heart, Download, Footprints, Bike, Waves, ChevronLeft, ChevronRight, Wand2, Loader2 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -442,7 +443,7 @@ function AnalyticsPage() {
         cumQual += s.qualifying;
         return {
         date: s.date,
-        label: format(parseISO(s.date), "MMM d"),
+        label: format(parseISO(s.date), "MMM d", { locale: sv }),
         volume: Math.round(s.volume),
         maxWeight: Number(s.maxWeight.toFixed(1)),
         bestE1RM: Number(s.bestE1RM.toFixed(1)),
@@ -474,7 +475,7 @@ function AnalyticsPage() {
     () =>
       (baselineHistoryQuery.data ?? [])
         .filter((r) => exercise && r.exercise.trim().toLowerCase() === exercise.toLowerCase())
-        .map((r) => format(parseISO(r.recorded_at), "MMM d"))
+        .map((r) => format(parseISO(r.recorded_at), "MMM d", { locale: sv }))
         .filter((lbl) => dailyStats.some((d) => d.label === lbl)),
     [baselineHistoryQuery.data, exercise, dailyStats],
   );
@@ -495,7 +496,7 @@ function AnalyticsPage() {
     );
     return rows.map((r) => ({
       date: r.recorded_at,
-      label: format(parseISO(r.recorded_at), "MMM d, yyyy"),
+      label: format(parseISO(r.recorded_at), "MMM d, yyyy", { locale: sv }),
       one_rm_kg: r.one_rm_kg,
       note: r.note,
     }));
@@ -542,7 +543,7 @@ function AnalyticsPage() {
     () =>
       (surveysQuery.data ?? []).map((s) => ({
         date: s.date,
-        label: format(parseISO(s.date), "MMM d"),
+        label: format(parseISO(s.date), "MMM d", { locale: sv }),
         daily_form: s.daily_form,
         fatigue: s.fatigue,
         work_stress: s.work_stress,
@@ -573,7 +574,7 @@ function AnalyticsPage() {
     const data = Array.from(weeks.entries())
       .map(([wk, row]) => ({
         week: wk,
-        label: format(parseISO(wk), "MMM d"),
+        label: format(parseISO(wk), "MMM d", { locale: sv }),
         ...Object.fromEntries(
           Object.entries(row).map(([k, v]) => [k, v]),
         ),
@@ -606,7 +607,7 @@ function AnalyticsPage() {
       for (const [k, v] of Object.entries(row)) if (first[k] == null) first[k] = v;
     const data = sorted.map(([date, row]) => ({
       date,
-      label: format(parseISO(date), "MMM d"),
+      label: format(parseISO(date), "MMM d", { locale: sv }),
       ...Object.fromEntries(
         Object.entries(row).map(([k, v]) => [k, Number(((v / first[k]) * 100).toFixed(1))]),
       ),
@@ -647,7 +648,7 @@ function AnalyticsPage() {
       const a = actualAvgByDate.get(d);
       rpeSeries.push({
         date: d,
-        label: format(parseISO(d), "MMM d"),
+        label: format(parseISO(d), "MMM d", { locale: sv }),
         target: t ? Number((t.sum / t.count).toFixed(2)) : null,
         actual: a ? Number((a.sum / a.count).toFixed(2)) : null,
         diff: null,
@@ -796,7 +797,7 @@ function AnalyticsPage() {
       return {
         date: s.date,
         dateMs: parseISO(s.date).getTime(),
-        label: format(parseISO(s.date), "MMM d"),
+        label: format(parseISO(s.date), "MMM d", { locale: sv }),
         discipline: s.discipline,
         title: s.title,
         km: Number(km.toFixed(2)),
@@ -924,7 +925,7 @@ function AnalyticsPage() {
       const wk = format(startOfWeek(parseISO(st.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       const row = paceWeekMap.get(wk) ?? {
         week: wk,
-        label: format(parseISO(wk), "MMM d"),
+        label: format(parseISO(wk), "MMM d", { locale: sv }),
         agg: emptyRpeAgg(),
       };
       const id = keyOfRpe(st.rpe);
@@ -953,7 +954,7 @@ function AnalyticsPage() {
     for (const s of completed) {
       const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       disciplines.add(s.discipline);
-      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d"), distance: {}, minutes: {}, band: { easy: 0, mod: 0, hard: 0, max: 0 }, rpeSum: 0, rpeCount: 0, sessions: 0 };
+      const row = weekMap.get(wk) ?? { week: wk, label: format(parseISO(wk), "MMM d", { locale: sv }), distance: {}, minutes: {}, band: { easy: 0, mod: 0, hard: 0, max: 0 }, rpeSum: 0, rpeCount: 0, sessions: 0 };
       row.distance[s.discipline] = (row.distance[s.discipline] ?? 0) + s.distance_m / 1000;
       const min = s.duration_s / 60;
       row.minutes[s.discipline] = (row.minutes[s.discipline] ?? 0) + min;
@@ -1548,7 +1549,7 @@ function AnalyticsPage() {
                       <tbody>
                         {[...enduranceStats.series].reverse().slice(0, 15).map((s, idx) => (
                           <tr key={`${s.date}-${idx}`} className="border-t border-border">
-                            <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d")}</td>
+                            <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d", { locale: sv })}</td>
                             <td className="px-2 py-2 capitalize">{s.discipline}</td>
                             <td className="px-2 py-2 text-muted-foreground">{s.title ?? "—"}</td>
                             <td className="px-2 py-2 text-right">{s.km > 0 ? `${s.km.toFixed(2)} km` : "—"}</td>
@@ -1609,7 +1610,7 @@ function AnalyticsPage() {
                       <div className="flex flex-wrap gap-2">
                         {adherence.missedDates.map((d) => (
                           <Badge key={d} variant="destructive">
-                            {format(parseISO(d), "EEE MMM d")}
+                            {format(parseISO(d), "EEE MMM d", { locale: sv })}
                           </Badge>
                         ))}
                       </div>
@@ -1754,7 +1755,7 @@ function AnalyticsPage() {
                     <tbody>
                       {[...formSeries].reverse().map((s) => (
                         <tr key={s.date} className="border-t border-border">
-                          <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d")}</td>
+                          <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d", { locale: sv })}</td>
                           <ScoreCell value={s.daily_form} highIsGood />
                           <ScoreCell value={s.sleep_quality} highIsGood />
                           <td className="px-2 py-2 text-center text-muted-foreground">{s.sleep_hours ?? "—"}</td>
@@ -1903,7 +1904,7 @@ function SessionScatterWindow({
             allowDuplicatedCategory={false}
             ticks={windowDates}
             domain={windowDates}
-            tickFormatter={(v: string) => format(parseISO(v), "MMM d")}
+            tickFormatter={(v: string) => format(parseISO(v), "MMM d", { locale: sv })}
             stroke="var(--muted-foreground)"
             fontSize={11}
             interval="preserveStartEnd"
@@ -1918,7 +1919,7 @@ function SessionScatterWindow({
               const p = payload[0].payload as SessionPoint;
               return (
                 <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
-                  <div className="font-semibold">{format(parseISO(p.date), "EEE MMM d")}</div>
+                  <div className="font-semibold">{format(parseISO(p.date), "EEE MMM d", { locale: sv })}</div>
                   <div className="capitalize text-muted-foreground">{p.discipline}{p.title ? ` · ${p.title}` : ""}</div>
                   <div className="mt-1">{p.km.toFixed(2)} km · {Math.round(p.minutes)} min</div>
                   {p.pace_label && <div>Pace {p.pace_label}</div>}

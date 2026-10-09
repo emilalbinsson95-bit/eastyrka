@@ -829,6 +829,36 @@ export type Database = {
           },
         ]
       }
+      payment_reminder_schedules: {
+        Row: {
+          active: boolean
+          athlete_id: string
+          created_at: string
+          created_by: string
+          id: string
+          service: string
+          start_date: string
+        }
+        Insert: {
+          active?: boolean
+          athlete_id: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          service: string
+          start_date: string
+        }
+        Update: {
+          active?: boolean
+          athlete_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          service?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
       physio_patients: {
         Row: {
           created_at: string

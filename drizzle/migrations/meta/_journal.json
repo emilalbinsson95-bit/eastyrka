@@ -92,6 +92,13 @@
       "when": 1791440395113,
       "tag": "0012_create_coaching_availability",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791521692410,
+      "tag": "0013_create_payment_reminder_schedules",
+      "breakpoints": true
     }
   ]
 }

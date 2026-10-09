@@ -1,3 +1,4 @@
+import { isReadinessLift } from "@/lib/eakoefficient";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -291,7 +292,7 @@ function EAkoefficientCard({
     );
     for (const l of logs) {
       const base = baselines[l.exercise];
-      if (!base || base <= 0) continue;
+      if (!base || base <= 0 || !isReadinessLift(l.exercise)) continue;
       const roll = rolling.get(`${l.date}::${l.exercise}`) ?? 0;
       const eak = roll > 0 ? (roll / base) * 100 : 0;
       if (!isFinite(eak) || eak <= 0) continue;

@@ -1,3 +1,4 @@
+import { isReadinessLift } from "@/lib/eakoefficient";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";
@@ -148,7 +149,7 @@ function CoachRosterPage() {
         const current = latestByAthlete.get(log.athlete_id);
         if (current && current.date !== log.date) continue;
         const baseline = baselineFor(log.athlete_id, log.exercise as string);
-        if (baseline <= 0) {
+        if (baseline <= 0 || !isReadinessLift(log.exercise as string)) {
           if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, byEx: new Map() });
           continue;
         }

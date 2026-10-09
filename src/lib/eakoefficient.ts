@@ -221,6 +221,14 @@ export interface RawLog extends SetInput {
   set_number: number;
 }
 
+const READINESS_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b|clean|snatch|jerk|ryck|st[öo]t|v[äa]ndning/i;
+const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;
+/** EAk/readiness only uses the big 3 (squat, bench, deadlift), their barbell
+ *  variations and Olympic lifts — accessory margins distort readiness. */
+export function isReadinessLift(exercise: string): boolean {
+  return READINESS_LIFT.test(exercise) && !NOT_READINESS_LIFT.test(exercise);
+}
+
 export function processLogs<T extends RawLog>(
   logs: T[],
   baselines: Record<string, number>,
@@ -241,7 +249,7 @@ export function processLogs<T extends RawLog>(
     const e1rm = dailyE1RM(log);
     const roll = rolling.get(`${log.date}::${log.exercise}`) ?? 0;
     const eak =
-      baseline > 0 && roll > 0 && countsForEAk(log) ? (roll / baseline) * 100 : 0;
+      baseline > 0 && roll > 0 && countsForEAk(log) && isReadinessLift(log.exercise) ? (roll / baseline) * 100 : 0;
     const planned = plannedLightDates?.has(log.date) ?? false;
     // On a planned light / deload day the load is intentionally reduced, so a
     // low EAkoefficient is the plan working — never alarm "exhausted" for it.

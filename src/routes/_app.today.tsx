@@ -1,3 +1,4 @@
+import { isReadinessLift } from "@/lib/eakoefficient";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { moveSessionLogs } from "@/lib/calendar";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -905,7 +906,7 @@ function LogSetButton({
   const livePreview = useMemo(() => {
     const e1rm = dailyE1RM({ weight_kg: weight, reps, rpe: effectiveRpe });
     const eak =
-      baseline > 0
+      baseline > 0 && isReadinessLift(ex.exercise)
         ? eaKoefficient({ weight_kg: weight, reps, rpe: effectiveRpe }, baseline)
         : 0;
     const status = readinessFromEAk(eak);

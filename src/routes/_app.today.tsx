@@ -627,6 +627,7 @@ function PlannedSessionCard({
             );
           })}
         <AddExtraExerciseInline athleteId={athleteId} dateStr={dateStr} />
+        {inProgress && <PauseSessionRow sessionId={session.id} athleteId={athleteId} />}
       </CardContent>
     </Card>
   );

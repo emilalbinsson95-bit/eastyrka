@@ -1156,15 +1156,15 @@ function AnalyticsPage() {
             {exercise && (
               <>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <KpiCard icon={<Dumbbell className="h-4 w-4" />} label="Total volym" value={`${(totals.volume / 1000).toFixed(1)}t`} hint={`${totals.sessions} sessions`} />
+                  <KpiCard icon={<Dumbbell className="h-4 w-4" />} label="Total volym" value={`${(totals.volume / 1000).toFixed(1)}t`} hint={`${totals.sessions} pass`} />
                   <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Maxvikt" value={`${totals.maxWeight} kg`} />
                   <KpiCard icon={<Activity className="h-4 w-4" />} label="Högsta E1RM" value={`${totals.peakE1RM.toFixed(1)} kg`} />
-                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Högsta EAk" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Base: ${lookupBaseline(exercise)} kg` : "No baseline"} />
+                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Högsta EAk" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Baslinje: ${lookupBaseline(exercise)} kg` : "Ingen baslinje"} />
                 </div>
 
                 <ChartCard
                   title="E1RM & EAk över tid"
-                  description={lookupBaseline(exercise) ? "Bästa dags-E1RM, baslinjen som gällde (steglinje) och EAk % (snitt 3 pass). Streckade lodlinjer = baslinjebyte." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
+                  description={lookupBaseline(exercise) ? "Bästa dags-E1RM, baslinjen som gällde (steglinje) och EAk % (snitt 3 pass). Streckade lodlinjer = baslinjebyte." : "Bästa dags-E1RM. Sätt en baslinje för att se EAk %."}
                 >
                   {coverage && (
                     <p className="mb-2 text-xs text-muted-foreground">
@@ -1199,7 +1199,7 @@ function AnalyticsPage() {
                     baselineSeries.length === 0
                       ? "Inga baslinjebyten registrerade för lyftet än. Uppdatera baslinjen på atletsidan för att följa utvecklingen."
                       : baselineDelta
-                        ? `${baselineSeries.length} change${baselineSeries.length === 1 ? "" : "s"} · ${baselineDelta.abs >= 0 ? "+" : ""}${baselineDelta.abs.toFixed(1)} kg (${baselineDelta.pct >= 0 ? "+" : ""}${baselineDelta.pct.toFixed(1)}%) since first record.`
+                        ? `${baselineSeries.length} byte${baselineSeries.length === 1 ? "" : "n"} · ${baselineDelta.abs >= 0 ? "+" : ""}${baselineDelta.abs.toFixed(1)} kg (${baselineDelta.pct >= 0 ? "+" : ""}${baselineDelta.pct.toFixed(1)}%) sedan första registreringen.`
                         : "En baslinje registrerad."
                   }
                 >
@@ -1228,7 +1228,7 @@ function AnalyticsPage() {
                         <ul className="space-y-0.5">
                           {autoFloatResult.updated.map((u) => (
                             <li key={u.exercise} className="text-status-adapting-foreground">
-                              ✓ {u.exercise}: {u.oldBaseline} → <b>{u.newBaseline} kg</b> ({u.peakCount} peaks, median E1RM {u.medianPeakE1RM} kg)
+                              ✓ {u.exercise}: {u.oldBaseline} → <b>{u.newBaseline} kg</b> ({u.peakCount} toppar, median-E1RM {u.medianPeakE1RM} kg)
                             </li>
                           ))}
                         </ul>
@@ -1569,7 +1569,7 @@ function AnalyticsPage() {
           {/* === ADHERENCE TAB === */}
           <TabsContent value="adherence" className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KpiCard icon={<Target className="h-4 w-4" />} label="Följsamhet" value={adherence.adherencePct != null ? `${adherence.adherencePct}%` : "—"} hint={`${adherence.completed}/${adherence.planned} planned sessions`} />
+              <KpiCard icon={<Target className="h-4 w-4" />} label="Följsamhet" value={adherence.adherencePct != null ? `${adherence.adherencePct}%` : "—"} hint={`${adherence.completed}/${adherence.planned} planerade pass`} />
               <KpiCard icon={<CalendarCheck className="h-4 w-4" />} label="Genomförda" value={String(adherence.completed)} />
               <KpiCard icon={<Activity className="h-4 w-4" />} label="Missade" value={String(adherence.missed)} hint={adherence.missed > 0 ? "See list below" : "Clean record"} />
               <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Svit" value={`${adherence.streak} days`} hint="Genomförda planerade dagar i rad" />

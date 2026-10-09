@@ -735,18 +735,23 @@ function AnalyticsPage() {
     for (const s of surveysQuery.data ?? []) {
       formByDate.set(s.date, { form: s.daily_form, fatigue: s.fatigue });
     }
-    const eakByDate = new Map<string, { sum: number; count: number }>();
-    const rolling = rollingE1RMBySession(allLogs);
+    // Same-day EAk (not the rolling average — that would lag behind the
+    // check-in): best qualifying E1RM per lift that day ÷ baseline in force.
+    const bestByDayEx = new Map<string, number>();
     for (const l of allLogs) {
-      const baseline = lookupBaseline(l.exercise);
-      if (!baseline || baseline <= 0 || !countsForEAk(l)) continue;
-      const roll = rolling.get(`${l.date}::${l.exercise}`) ?? 0;
-      if (roll <= 0) continue;
-      const eak = (roll / baseline) * 100;
-      const cur = eakByDate.get(l.date) ?? { sum: 0, count: 0 };
-      cur.sum += eak;
+      if (!countsForEAk(l)) continue;
+      const k = `${l.date}::${l.exercise}`;
+      bestByDayEx.set(k, Math.max(bestByDayEx.get(k) ?? 0, dailyE1RM(l)));
+    }
+    const eakByDate = new Map<string, { sum: number; count: number }>();
+    for (const [k, e1] of bestByDayEx) {
+      const [date, ex] = k.split("::");
+      const baseline = baselineAt(ex, date);
+      if (!baseline || baseline <= 0) continue;
+      const cur = eakByDate.get(date) ?? { sum: 0, count: 0 };
+      cur.sum += (e1 / baseline) * 100;
       cur.count += 1;
-      eakByDate.set(l.date, cur);
+      eakByDate.set(date, cur);
     }
     const points: Array<{ form: number; eak: number; date: string; fatigue: number }> = [];
     for (const [date, eak] of eakByDate.entries()) {
@@ -762,7 +767,7 @@ function AnalyticsPage() {
 
     // Pearson correlation between form and EAk
     let correlation: number | null = null;
-    if (points.length >= 3) {
+    if (points.length >= 5) {
       const n = points.length;
       const mx = points.reduce((a, p) => a + p.form, 0) / n;
       const my = points.reduce((a, p) => a + p.eak, 0) / n;
@@ -775,7 +780,7 @@ function AnalyticsPage() {
       correlation = dx > 0 && dy > 0 ? Number((num / Math.sqrt(dx * dy)).toFixed(2)) : null;
     }
     return { points, correlation };
-  }, [surveysQuery.data, allLogs, baselines]);
+  }, [surveysQuery.data, allLogs, baselines, baselineHistoryQuery.data]);
 
   // ---- Endurance ----
   const enduranceData = enduranceQuery.data?.sessions ?? [];
@@ -1620,26 +1625,27 @@ function AnalyticsPage() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               <KpiCard
                 icon={<Heart className="h-4 w-4" />}
-                label="Form ↔ Performance correlation"
+                label="Förutsäger incheckningen dagens EAk?"
                 value={readinessScatter.correlation != null ? readinessScatter.correlation.toFixed(2) : "—"}
                 hint={
                   readinessScatter.correlation == null
-                    ? "Need ≥3 paired days"
-                    : readinessScatter.correlation > 0.3
-                      ? "Form predicts performance"
+                    ? "Kräver minst 5 dagar med både incheckning och pass"
+                    : `r = ${readinessScatter.correlation.toFixed(2)}, n = ${readinessScatter.points.length}${readinessScatter.points.length < 15 ? " — osäkert, lite data" : ""} · ` +
+                      (readinessScatter.correlation > 0.3
+                      ? "Dagsformen förutsäger prestationen"
                       : readinessScatter.correlation < -0.3
-                        ? "Inverse relationship"
-                        : "Weak / no relationship"
+                        ? "Omvänt samband"
+                        : "Svagt eller inget samband")
                 }
               />
               <KpiCard icon={<Activity className="h-4 w-4" />} label="Surveys logged" value={String(formSeries.length)} />
               <KpiCard icon={<Gauge className="h-4 w-4" />} label="Paired data points" value={String(readinessScatter.points.length)} hint="Days with both survey and lift" />
             </div>
 
-            {readinessScatter.points.length < 3 ? (
+            {readinessScatter.points.length < 30 ? (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  Need at least 3 days where the athlete logged both a readiness survey and training (with a baseline 1RM set) to compute correlation.
+                  Spridningsdiagrammet visas när det finns minst 30 dagar med både incheckning och pass ({readinessScatter.points.length} hittills). Tills dess räcker korrelationsvärdet ovan.
                 </CardContent>
               </Card>
             ) : (

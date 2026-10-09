@@ -14,4 +14,4 @@
 - [x] Add a 3-week peaking block generated from the athlete's own last 3 months of logged training.
 - [x] Publish Emil's own methodology texts: "Tränaren som projektledare" (Coachning tab) and "Varianter som fungerar på alla tre lyften" (Styrka tab), verified in the live preview.
 
-- [ ] Restore page width boundaries and verify navigation and vertical scrolling.
+- [x] Restore page width boundaries and verify navigation and vertical scrolling.

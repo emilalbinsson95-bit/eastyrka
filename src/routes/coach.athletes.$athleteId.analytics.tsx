@@ -1197,10 +1197,10 @@ function AnalyticsPage() {
                   title="Baslinje"
                   description={
                     baselineSeries.length === 0
-                      ? "No baseline changes recorded for this lift yet. Update the baseline on the athlete page to start tracking progression."
+                      ? "Inga baslinjebyten registrerade för lyftet än. Uppdatera baslinjen på atletsidan för att följa utvecklingen."
                       : baselineDelta
                         ? `${baselineSeries.length} change${baselineSeries.length === 1 ? "" : "s"} · ${baselineDelta.abs >= 0 ? "+" : ""}${baselineDelta.abs.toFixed(1)} kg (${baselineDelta.pct >= 0 ? "+" : ""}${baselineDelta.pct.toFixed(1)}%) since first record.`
-                        : "Single baseline on record."
+                        : "En baslinje registrerad."
                   }
                 >
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
@@ -1431,8 +1431,8 @@ function AnalyticsPage() {
                   title="Löptempo per intensitet"
                   description={
                     enduranceStats.paceSampledFromSteps
-                      ? "Sampled from workout intervals — a 6×1 km tempo block at RPE 8 counts toward Hard, not blended with warm-up. Pace and km per RPE band over the whole window."
-                      : "Average pace and total volume per RPE band over the whole window. (No interval samples found — uses whole-session averages.)"
+                      ? "Hämtat från passens intervaller — ett tempoblock 6×1 km på RPE 8 räknas som Hårt, inte blandat med uppvärmning. Tempo och km per RPE-zon över hela perioden."
+                      : "Snittempo och total volym per RPE-zon över hela perioden. (Inga intervalldata hittades — använder snitt för hela passet.)"
                   }
                 >
                   {enduranceStats.paceByBand.every((b) => b.sessions === 0) ? (
@@ -1651,7 +1651,7 @@ function AnalyticsPage() {
             ) : (
               <ChartCard
                 title="Dagsform mot dagens EAk"
-                description="Each dot is one day. X = self-reported form (1–10), Y = average EAk% across logged exercises that day."
+                description="Varje punkt är en dag. X = självskattad dagsform (1–10), Y = snitt-EAk % samma dag (dagens egna set, inte treppassnittet)."
               >
                 <ResponsiveContainer width="100%" height={320}>
                   <ScatterChart margin={{ top: 12, right: 24, bottom: 28, left: 16 }}>

@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Add coach-started monthly payment reminders to the athlete calendar and verify recurrence and permissions.
+- [ ] Translate more athlete-facing calendar and coaching information text into Swedish and English; verify visible text.
+
 - [x] Show free app, coaching prices and Swish in login and athlete information; let admins save available places and verify the full flow.
 
 - [x] Simplify public front page and sign-in presentation.

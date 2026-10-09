@@ -46,15 +46,15 @@ function CoachLayout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/coach" className="flex items-center gap-2 font-semibold">
+        <div className="mx-auto flex max-w-7xl items-center flex-wrap justify-between gap-3 px-4 py-3">
+          <Link to="/coach" className="flex shrink-0 items-center gap-2 font-semibold">
             <BrandMark />
             {t("app.name")}
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               {t("role.coach")}
             </span>
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="order-3 hidden w-full flex-wrap items-center gap-1 lg:flex">
             <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label={t("nav.athletes")} exact />
             <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
             <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
@@ -65,7 +65,7 @@ function CoachLayout() {
               <CoachNavLink to="/coach/admin" icon={<ShieldCheck className="h-4 w-4" />} label="Admin" />
             )}
           </nav>
-          <div className="flex items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />
@@ -81,7 +81,7 @@ function CoachLayout() {
           </div>
         </div>
         {/* Mobile nav */}
-        <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
+        <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 lg:hidden">
           <CoachNavLink to="/coach" icon={<Users className="h-4 w-4" />} label={t("nav.athletes")} exact />
           <CoachNavLink to="/coach/exercises" icon={<BookOpen className="h-4 w-4" />} label={t("nav.exercises")} />
           <CoachNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />

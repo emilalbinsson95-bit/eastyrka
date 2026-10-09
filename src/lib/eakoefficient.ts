@@ -43,18 +43,57 @@ export interface SetInput {
 }
 
 /**
- * Daily Estimated 1RM using the prototype's RPE-adjusted Epley:
- *   cappedReps = min(reps, 8)
- *   E1RM = weight × (1 + (cappedReps + (10 − rpe)) / 30)
+ * Daily Estimated 1RM (reps-to-failure Epley):
  */
-export function dailyE1RM(set: SetInput): number {
-  const cappedReps = Math.min(set.reps, 8);
-  return set.weight_kg * (1 + (cappedReps + (10 - set.rpe)) / 30);
+/** Sets below this RPE are too far from failure to estimate strength. */
+export const EAK_MIN_RPE = 7;
+
+export function countsForEAk(set: SetInput): boolean {
+  return set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
 }
 
+/**
+ *   RIR  = min(10 − RPE, 3)
+ *   RTF  = min(reps + RIR, 10)
+ *   E1RM = weight × (1 + (RTF − 1) / 30)
+ */
+export function dailyE1RM(set: SetInput): number {
+  const rir = Math.min(Math.max(10 - set.rpe, 0), 3);
+  const rtf = Math.min(set.reps + rir, 10);
+  return set.weight_kg * (1 + (rtf - 1) / 30);
+}
+
+/** Single-set EAk (used for live previews). Sets under RPE 7 → 0. */
 export function eaKoefficient(set: SetInput, baseline1RM: number): number {
-  if (!baseline1RM || baseline1RM <= 0) return 0;
+  if (!baseline1RM || baseline1RM <= 0 || !countsForEAk(set)) return 0;
   return (dailyE1RM(set) / baseline1RM) * 100;
+}
+
+/**
+ * Rolling EAk per (exercise, date): mean of the best qualifying E1RM from
+ * this session and the two previous sessions of the same exercise.
+ * Returns Map<"date::exercise", rollingE1RM>.
+ */
+export function rollingE1RMBySession(
+  logs: Array<SetInput & { date: string; exercise: string }>,
+  window = 3,
+): Map<string, number> {
+  const best = new Map<string, Map<string, number>>();
+  for (const l of logs) {
+    if (!countsForEAk(l)) continue;
+    const m = best.get(l.exercise) ?? new Map<string, number>();
+    m.set(l.date, Math.max(m.get(l.date) ?? 0, dailyE1RM(l)));
+    best.set(l.exercise, m);
+  }
+  const out = new Map<string, number>();
+  for (const [ex, m] of best) {
+    const dates = [...m.keys()].sort();
+    dates.forEach((d, i) => {
+      const slice = dates.slice(Math.max(0, i - window + 1), i + 1).map((x) => m.get(x)!);
+      out.set(`${d}::${ex}`, slice.reduce((a, b) => a + b, 0) / slice.length);
+    });
+  }
+  return out;
 }
 
 export function readinessFromEAk(eak: number): ReadinessStatus {
@@ -196,10 +235,13 @@ export function processLogs<T extends RawLog>(
     }
   }
 
+  const rolling = rollingE1RMBySession(logs);
   return logs.map((log) => {
     const baseline = baselines[log.exercise] ?? 0;
     const e1rm = dailyE1RM(log);
-    const eak = eaKoefficient(log, baseline);
+    const roll = rolling.get(`${log.date}::${log.exercise}`) ?? 0;
+    const eak =
+      baseline > 0 && roll > 0 && countsForEAk(log) ? (roll / baseline) * 100 : 0;
     const planned = plannedLightDates?.has(log.date) ?? false;
     // On a planned light / deload day the load is intentionally reduced, so a
     // low EAkoefficient is the plan working — never alarm "exhausted" for it.

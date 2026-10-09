@@ -10,14 +10,25 @@ import {
 
 describe("eakoefficient", () => {
   describe("dailyE1RM", () => {
-    it("computes Epley with RPE adjustment", () => {
-      // 100kg × 5 @ RPE 10 → 100 × (1 + (5+0)/30) = 116.67
-      expect(dailyE1RM({ weight_kg: 100, reps: 5, rpe: 10 })).toBeCloseTo(116.67, 1);
+    it("computes RTF Epley", () => {
+      // 100kg × 5 @ RPE 10 → RTF 5 → 100 × (1 + 4/30) = 113.33
+      expect(dailyE1RM({ weight_kg: 100, reps: 5, rpe: 10 })).toBeCloseTo(113.33, 1);
+      // 125 × 3 @ 10 → 125 × (1 + 2/30) = 133.33
+      expect(dailyE1RM({ weight_kg: 125, reps: 3, rpe: 10 })).toBeCloseTo(133.33, 1);
     });
-    it("caps reps at 8", () => {
-      // 12 reps should be treated as 8
+    it("caps RTF at 10 and RIR at 3", () => {
       const a = dailyE1RM({ weight_kg: 100, reps: 12, rpe: 8 });
       const b = dailyE1RM({ weight_kg: 100, reps: 8, rpe: 8 });
+      expect(a).toBeCloseTo(b, 5);
+      expect(dailyE1RM({ weight_kg: 100, reps: 3, rpe: 5 })).toBeCloseTo(
+        dailyE1RM({ weight_kg: 100, reps: 3, rpe: 7 }), 5);
+    });
+    it("RPE < 7 does not count for EAk", () => {
+      expect(eaKoefficient({ weight_kg: 100, reps: 5, rpe: 6 }, 100)).toBe(0);
+    });
+    it("same-ish", () => {
+      const a = dailyE1RM({ weight_kg: 100, reps: 10, rpe: 8 });
+      const b = dailyE1RM({ weight_kg: 100, reps: 9, rpe: 8 });
       expect(a).toBeCloseTo(b, 5);
     });
     it("lower RPE (more reserve) → higher predicted E1RM", () => {

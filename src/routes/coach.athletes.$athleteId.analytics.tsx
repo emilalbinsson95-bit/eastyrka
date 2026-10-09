@@ -41,7 +41,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
-import { dailyE1RM } from "@/lib/eakoefficient";
+import { dailyE1RM, rollingE1RMBySession, countsForEAk } from "@/lib/eakoefficient";
 import { autoFloatBaselines, type BaselineAutoResult } from "@/lib/baselineAutofloat.functions";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -639,10 +639,13 @@ function AnalyticsPage() {
       formByDate.set(s.date, { form: s.daily_form, fatigue: s.fatigue });
     }
     const eakByDate = new Map<string, { sum: number; count: number }>();
+    const rolling = rollingE1RMBySession(allLogs);
     for (const l of allLogs) {
       const baseline = lookupBaseline(l.exercise);
-      if (!baseline || baseline <= 0) continue;
-      const eak = (dailyE1RM(l) / baseline) * 100;
+      if (!baseline || baseline <= 0 || !countsForEAk(l)) continue;
+      const roll = rolling.get(`${l.date}::${l.exercise}`) ?? 0;
+      if (roll <= 0) continue;
+      const eak = (roll / baseline) * 100;
       const cur = eakByDate.get(l.date) ?? { sum: 0, count: 0 };
       cur.sum += eak;
       cur.count += 1;

@@ -19,6 +19,7 @@ import {
   readinessLabel,
   eaKoefficient,
   dailyE1RM,
+  rollingE1RMBySession,
   readinessFromEAk,
 } from "@/lib/eakoefficient";
 
@@ -131,6 +132,16 @@ function CoachRosterPage() {
         derived.get(`${athleteId}::${exercise}`) ??
         0;
 
+      // Rolling 3-session E1RM per athlete+exercise
+      const rollingMap = rollingE1RMBySession(
+        (recentLogs ?? []).map((l) => ({
+          date: l.date as string,
+          exercise: `${l.athlete_id}::${l.exercise}`,
+          reps: Number(l.reps),
+          weight_kg: Number(l.weight_kg),
+          rpe: Number(l.rpe),
+        })),
+      );
       // Latest session per athlete: average EAk across that day's sets
       const latestByAthlete = new Map<string, { date: string; byEx: Map<string, number> }>();
       for (const log of recentLogs ?? []) {
@@ -141,14 +152,8 @@ function CoachRosterPage() {
           if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, byEx: new Map() });
           continue;
         }
-        const eak = eaKoefficient(
-          {
-            weight_kg: Number(log.weight_kg),
-            reps: Number(log.reps),
-            rpe: Number(log.rpe),
-          },
-          baseline,
-        );
+        const roll = rollingMap.get(`${log.date}::${log.athlete_id}::${log.exercise}`) ?? 0;
+        const eak = roll > 0 ? (roll / baseline) * 100 : 0;
         const entry = current ?? { date: log.date, byEx: new Map<string, number>() };
         const exKey = log.exercise as string;
         entry.byEx.set(exKey, Math.max(entry.byEx.get(exKey) ?? 0, eak));

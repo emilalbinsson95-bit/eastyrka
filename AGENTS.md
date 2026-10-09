@@ -1,5 +1,7 @@
 # Architecture decisions
 
+- Store one admin-managed monthly payment schedule per athlete and derive fixed calendar occurrences from its original start day; athlete reads are RLS-protected, and reminders never become movable training sessions.
+
 - Reject outdated Vite dependency requests instead of serving stale optimized modules, so dependency updates reload the browser without mixing React dispatchers.
 
 - Keep public coaching availability in a singleton table with public read access and admin-only writes enforced by RLS; reuse one information component so login and athlete information show the same saved counts.

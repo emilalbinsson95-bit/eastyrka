@@ -921,7 +921,7 @@ function SessionCard({
     >
       <Icon className="mt-0.5 h-3 w-3 flex-shrink-0" />
       <span className="flex-1 truncate">
-        {item.title}
+        {isPayment ? t("payment.reminder", { amount: item.paymentService === "overview" ? 100 : 300 }) : item.title}
         {item.isCancelled && item.cancelReason && (
           <span className="ml-1 font-medium no-underline">· {item.cancelReason}</span>
         )}

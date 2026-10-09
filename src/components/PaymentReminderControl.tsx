@@ -19,7 +19,7 @@ export function PaymentReminderControl({ athleteId }: { athleteId: string }) {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const schedule = useQuery({ queryKey: ["payment-schedule", athleteId], queryFn: () => fetchPaymentSchedule(athleteId) });
   const mutation = useMutation({
-    mutationFn: (stop: boolean) => stop ? stopPaymentSchedule(athleteId) : savePaymentSchedule(athleteId, service, date),
+    mutationFn: async (stop: boolean) => { if (stop) await stopPaymentSchedule(athleteId); else await savePaymentSchedule(athleteId, service, date); },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payment-schedule", athleteId] });
       qc.invalidateQueries({ queryKey: ["calendar-items", athleteId] });

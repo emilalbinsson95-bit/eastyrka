@@ -75,12 +75,12 @@ function AthleteLayout() {
     <div className="min-h-screen bg-background pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <Link to="/today" className="flex items-center gap-2 font-semibold">
             <BrandMark />
             {t("app.name")}
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />

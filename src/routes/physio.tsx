@@ -45,15 +45,15 @@ function PhysioLayout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/physio" className="flex items-center gap-2 font-semibold">
+        <div className="mx-auto flex max-w-7xl items-center flex-wrap justify-between gap-3 px-4 py-3">
+          <Link to="/physio" className="flex shrink-0 items-center gap-2 font-semibold">
             <BrandMark />
             {t("app.name")}
             <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               {t("role.physio")}
             </span>
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="order-3 hidden w-full flex-wrap items-center gap-1 lg:flex">
             <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label={t("nav.patients")} exact />
             <PhysioNavLink to="/physio/templates" icon={<ClipboardList className="h-4 w-4" />} label="Templates" />
             <PhysioNavLink to="/physio/bands" icon={<Layers className="h-4 w-4" />} label="Bands" />
@@ -61,7 +61,7 @@ function PhysioLayout() {
             <PhysioNavLink to="/messages" icon={<MessageCircle className="h-4 w-4" />} label={t("nav.messages")} />
             <PhysioNavLink to="/physio/me" icon={<User className="h-4 w-4" />} label={t("nav.me")} />
           </nav>
-          <div className="flex items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <NotificationsBell />
             <LanguageToggle />
             <ThemeToggle />
@@ -76,7 +76,7 @@ function PhysioLayout() {
             </Button>
           </div>
         </div>
-        <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 md:hidden">
+        <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-2 lg:hidden">
           <PhysioNavLink to="/physio" icon={<Users className="h-4 w-4" />} label={t("nav.patients")} exact />
           <PhysioNavLink to="/physio/templates" icon={<ClipboardList className="h-4 w-4" />} label="Templates" />
           <PhysioNavLink to="/physio/bands" icon={<Layers className="h-4 w-4" />} label="Bands" />

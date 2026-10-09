@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Correct analytics tab height and wrapping; verify all five tabs remain reachable without overlapping content.
+
 - [ ] Add coach-started monthly payment reminders to the athlete calendar and verify recurrence and permissions.
 - [ ] Translate more athlete-facing calendar and coaching information text into Swedish and English; verify visible text.
 

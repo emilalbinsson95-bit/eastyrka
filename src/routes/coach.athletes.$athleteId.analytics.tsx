@@ -62,6 +62,10 @@ export const Route = createFileRoute("/coach/athletes/$athleteId/analytics")({
         name: "description",
         content: "Volym, E1RM, följsamhet och dagsformens samband över tid.",
       },
+      { property: "og:title", content: "Atletanalys — SETPOINT" },
+      { property: "og:description", content: "Volym, E1RM, följsamhet och dagsformens samband över tid." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AnalyticsPage,
@@ -1111,12 +1115,13 @@ function AnalyticsPage() {
 
       {!isLoading && (
         <Tabs
+          className="min-w-0"
           value={tab}
           onValueChange={(v) =>
             navigate({ search: (prev) => ({ ...prev, tab: v as typeof tab }) })
           }
         >
-          <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-5">
+          <TabsList aria-label="Analysområden" className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5 [&>button]:min-h-9 [&>button]:min-w-0 [&>button]:px-2">
             <TabsTrigger value="exercise"><Dumbbell className="mr-1 h-3.5 w-3.5" />Övning</TabsTrigger>
             <TabsTrigger value="volume"><TrendingUp className="mr-1 h-3.5 w-3.5" />Volym</TabsTrigger>
             <TabsTrigger value="endurance"><Footprints className="mr-1 h-3.5 w-3.5" />Kondition</TabsTrigger>

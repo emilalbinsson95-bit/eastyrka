@@ -525,7 +525,7 @@ function AnalyticsPage() {
         queryClient.invalidateQueries({ queryKey: ["analytics-baseline-history", athleteId] }),
       ]);
       if (res.updated.length === 0) {
-        toast.info("Inga baselines behövde flyttas än.");
+        toast.info("Inga baslinjer behövde flyttas än.");
       } else {
         toast.success(
           `Flyttade ${res.updated.length} baseline${res.updated.length === 1 ? "" : "s"} (${res.updated.map((u) => `${u.exercise} ${u.oldBaseline}→${u.newBaseline} kg`).join(", ")})`,
@@ -894,7 +894,7 @@ function AnalyticsPage() {
       const paceSec = km > 0 ? b.sec / km : null;
       return {
         id,
-        label: id === "easy" ? "Easy (1–4)" : id === "mod" ? "Moderate (5–6)" : id === "hard" ? "Hard (7–8)" : "Max (9–10)",
+        label: id === "easy" ? "Lätt (1–4)" : id === "mod" ? "Måttligt (5–6)" : id === "hard" ? "Hårt (7–8)" : "Max (9–10)",
         fill: BAND_COLORS[id],
         sessions: b.samples,
         km,
@@ -1047,11 +1047,11 @@ function AnalyticsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="60">Last 60 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-              <SelectItem value="180">Last 180 days</SelectItem>
-              <SelectItem value="365">Last 365 days</SelectItem>
+              <SelectItem value="30">Senaste 30 dagarna</SelectItem>
+              <SelectItem value="60">Senaste 60 dagarna</SelectItem>
+              <SelectItem value="90">Senaste 90 dagarna</SelectItem>
+              <SelectItem value="180">Senaste 180 dagarna</SelectItem>
+              <SelectItem value="365">Senaste 365 dagarna</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -1067,7 +1067,7 @@ function AnalyticsPage() {
             disabled={allLogs.length === 0 && (surveysQuery.data ?? []).length === 0}
           >
             <Download className="mr-1 h-4 w-4" />
-            Export CSV
+            Exportera CSV
           </Button>
         </div>
       </div>
@@ -1075,7 +1075,7 @@ function AnalyticsPage() {
       {isLoading && (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Loading…
+            Laddar…
           </CardContent>
         </Card>
       )}
@@ -1116,11 +1116,11 @@ function AnalyticsPage() {
           }
         >
           <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-5">
-            <TabsTrigger value="exercise"><Dumbbell className="mr-1 h-3.5 w-3.5" />Exercise</TabsTrigger>
-            <TabsTrigger value="volume"><TrendingUp className="mr-1 h-3.5 w-3.5" />Volume</TabsTrigger>
-            <TabsTrigger value="endurance"><Footprints className="mr-1 h-3.5 w-3.5" />Endurance</TabsTrigger>
-            <TabsTrigger value="adherence"><CalendarCheck className="mr-1 h-3.5 w-3.5" />Adherence</TabsTrigger>
-            <TabsTrigger value="readiness"><Heart className="mr-1 h-3.5 w-3.5" />Readiness</TabsTrigger>
+            <TabsTrigger value="exercise"><Dumbbell className="mr-1 h-3.5 w-3.5" />Övning</TabsTrigger>
+            <TabsTrigger value="volume"><TrendingUp className="mr-1 h-3.5 w-3.5" />Volym</TabsTrigger>
+            <TabsTrigger value="endurance"><Footprints className="mr-1 h-3.5 w-3.5" />Kondition</TabsTrigger>
+            <TabsTrigger value="adherence"><CalendarCheck className="mr-1 h-3.5 w-3.5" />Följsamhet</TabsTrigger>
+            <TabsTrigger value="readiness"><Heart className="mr-1 h-3.5 w-3.5" />Dagsform</TabsTrigger>
           </TabsList>
 
           {/* === EXERCISE TAB === */}
@@ -1133,7 +1133,7 @@ function AnalyticsPage() {
                 }
               >
                 <SelectTrigger className="w-[240px]">
-                  <SelectValue placeholder="Select exercise" />
+                  <SelectValue placeholder="Välj övning" />
                 </SelectTrigger>
                 <SelectContent>
                   {exercises.map((e) => (
@@ -1148,7 +1148,7 @@ function AnalyticsPage() {
             {exercises.length === 0 && (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  No training logs in the selected window.
+                  Inga träningsloggar i vald period.
                 </CardContent>
               </Card>
             )}
@@ -1156,14 +1156,14 @@ function AnalyticsPage() {
             {exercise && (
               <>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <KpiCard icon={<Dumbbell className="h-4 w-4" />} label="Total volume" value={`${(totals.volume / 1000).toFixed(1)}t`} hint={`${totals.sessions} sessions`} />
-                  <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Max weight" value={`${totals.maxWeight} kg`} />
-                  <KpiCard icon={<Activity className="h-4 w-4" />} label="Peak E1RM" value={`${totals.peakE1RM.toFixed(1)} kg`} />
-                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Peak EAkoeff" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Base: ${lookupBaseline(exercise)} kg` : "No baseline"} />
+                  <KpiCard icon={<Dumbbell className="h-4 w-4" />} label="Total volym" value={`${(totals.volume / 1000).toFixed(1)}t`} hint={`${totals.sessions} sessions`} />
+                  <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Maxvikt" value={`${totals.maxWeight} kg`} />
+                  <KpiCard icon={<Activity className="h-4 w-4" />} label="Högsta E1RM" value={`${totals.peakE1RM.toFixed(1)} kg`} />
+                  <KpiCard icon={<Gauge className="h-4 w-4" />} label="Högsta EAk" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Base: ${lookupBaseline(exercise)} kg` : "No baseline"} />
                 </div>
 
                 <ChartCard
-                  title="E1RM & EAkoefficient over time"
+                  title="E1RM & EAk över tid"
                   description={lookupBaseline(exercise) ? "Bästa dags-E1RM, baslinjen som gällde (steglinje) och EAk % (snitt 3 pass). Streckade lodlinjer = baslinjebyte." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
                 >
                   {coverage && (
@@ -1181,7 +1181,7 @@ function AnalyticsPage() {
                       <YAxis yAxisId="right" orientation="right" domain={["auto", "auto"]} stroke="var(--muted-foreground)" fontSize={11} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Bästa E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
                       <Line yAxisId="left" type="stepAfter" dataKey="baseline" name="Baslinje (kg)" stroke="var(--chart-3)" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />
                       {baselineChangeDates.map((lbl) => (
                         <ReferenceLine key={lbl} yAxisId="left" x={lbl} stroke="var(--chart-3)" strokeDasharray="2 4" label={{ value: "Ny baslinje", fontSize: 10, fill: "var(--muted-foreground)", position: "insideTop" }} />
@@ -1205,7 +1205,7 @@ function AnalyticsPage() {
                 >
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">Auto-flytande baseline</p>
+                      <p className="font-medium text-foreground">Automatisk baslinje</p>
                       <p>Höjer baseline när atleten har ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste ändringen. Trögt — påverkas inte av enstaka topp-pass.</p>
                     </div>
                     <Button
@@ -1249,14 +1249,14 @@ function AnalyticsPage() {
                   )}
                 </ChartCard>
 
-                <ChartCard title="Volume per session" description="Total tonnage (reps × weight) for each training day.">
+                <ChartCard title="Volym per pass" description="Total tonnage (reps × vikt) per träningsdag.">
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={dailyStats}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
                       <YAxis stroke="var(--muted-foreground)" fontSize={11} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
-                      <Bar dataKey="volume" name="Volume (kg)" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="volume" name="Volym (kg)" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -1301,7 +1301,7 @@ function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 {volumeByCategory.data.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">No data in window.</div>
+                  <div className="py-8 text-center text-sm text-muted-foreground">Ingen data i perioden.</div>
                 ) : (
                   <WeekWindow data={volumeByCategory.data}>
                     {(slice) => (
@@ -1361,12 +1361,12 @@ function AnalyticsPage() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <KpiCard icon={<Footprints className="h-4 w-4" />} label="Sessions" value={String(enduranceStats.totals.sessions)} hint={enduranceStats.disciplines.join(", ")} />
-                  <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Total distance" value={`${enduranceStats.totals.totalKm.toFixed(1)} km`} />
-                  <KpiCard icon={<Activity className="h-4 w-4" />} label="Total time" value={`${Math.floor(enduranceStats.totals.totalMin / 60)}h ${Math.round(enduranceStats.totals.totalMin % 60)}m`} />
+                  <KpiCard icon={<Footprints className="h-4 w-4" />} label="Pass" value={String(enduranceStats.totals.sessions)} hint={enduranceStats.disciplines.join(", ")} />
+                  <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Total distans" value={`${enduranceStats.totals.totalKm.toFixed(1)} km`} />
+                  <KpiCard icon={<Activity className="h-4 w-4" />} label="Total tid" value={`${Math.floor(enduranceStats.totals.totalMin / 60)}h ${Math.round(enduranceStats.totals.totalMin % 60)}m`} />
                   <KpiCard
                     icon={<Gauge className="h-4 w-4" />}
-                    label="Avg run pace"
+                    label="Snittempo löpning"
                     value={
                       enduranceStats.totals.avgRunPace
                         ? `${Math.floor(enduranceStats.totals.avgRunPace / 60)}:${String(Math.round(enduranceStats.totals.avgRunPace % 60)).padStart(2, "0")}/km`
@@ -1376,7 +1376,7 @@ function AnalyticsPage() {
                   />
                 </div>
 
-                <ChartCard title="Weekly distance by discipline" description="Total km per ISO week, split by run / bike / swim.">
+                <ChartCard title="Veckodistans per gren" description="Totalt antal km per vecka, uppdelat på löpning / cykel / simning.">
                   <WeekWindow data={enduranceStats.weekly}>
                     {(slice) => (
                       <ResponsiveContainer width="100%" height={280}>
@@ -1396,8 +1396,8 @@ function AnalyticsPage() {
                 </ChartCard>
 
                 <ChartCard
-                  title="Weekly minutes by intensity"
-                  description="Stacked bars show how much time was spent in each RPE band per week. Line tracks the week's average session RPE."
+                  title="Veckominuter per intensitet"
+                  description="Staplarna visar tid i varje RPE-zon per vecka. Linjen visar veckans snitt-RPE per pass."
                 >
                   <WeekWindow data={enduranceStats.weekly}>
                     {(slice) => (
@@ -1410,16 +1410,16 @@ function AnalyticsPage() {
                           <Tooltip
                             contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
                             formatter={(value: number, name: string) => {
-                              if (name === "Avg RPE") return [Number(value).toFixed(1), name];
+                              if (name === "Snitt-RPE") return [Number(value).toFixed(1), name];
                               return [`${Math.round(Number(value))} min`, name];
                             }}
                           />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Easy (1–4)" fill={BAND_COLORS.easy} />
-                          <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Moderate (5–6)" fill={BAND_COLORS.mod} />
-                          <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hard (7–8)" fill={BAND_COLORS.hard} />
+                          <Bar yAxisId="left" dataKey="min_easy" stackId="d" name="Lätt (1–4)" fill={BAND_COLORS.easy} />
+                          <Bar yAxisId="left" dataKey="min_mod" stackId="d" name="Måttligt (5–6)" fill={BAND_COLORS.mod} />
+                          <Bar yAxisId="left" dataKey="min_hard" stackId="d" name="Hårt (7–8)" fill={BAND_COLORS.hard} />
                           <Bar yAxisId="left" dataKey="min_max" stackId="d" name="Max (9–10)" fill={BAND_COLORS.max} radius={[6, 6, 0, 0]} />
-                          <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Avg RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "var(--card)", strokeWidth: 1.5 }} connectNulls />
+                          <Line yAxisId="right" type="monotone" dataKey="avgRPE" name="Snitt-RPE" stroke={BAND_ACCENT} strokeWidth={2.5} dot={{ r: 4, fill: BAND_ACCENT, stroke: "var(--card)", strokeWidth: 1.5 }} connectNulls />
                         </ComposedChart>
                       </ResponsiveContainer>
                     )}
@@ -1428,7 +1428,7 @@ function AnalyticsPage() {
 
 
                 <ChartCard
-                  title="Run pace by intensity"
+                  title="Löptempo per intensitet"
                   description={
                     enduranceStats.paceSampledFromSteps
                       ? "Sampled from workout intervals — a 6×1 km tempo block at RPE 8 counts toward Hard, not blended with warm-up. Pace and km per RPE band over the whole window."
@@ -1436,7 +1436,7 @@ function AnalyticsPage() {
                   }
                 >
                   {enduranceStats.paceByBand.every((b) => b.sessions === 0) ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">No runs with RPE recorded in this window.</p>
+                    <p className="py-6 text-center text-sm text-muted-foreground">Inga löppass med RPE i perioden.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                       {enduranceStats.paceByBand.map((b) => (
@@ -1456,11 +1456,11 @@ function AnalyticsPage() {
                 </ChartCard>
 
                 <ChartCard
-                  title="Run pace by intensity — weekly trend"
-                  description="Average pace per RPE (1–10, plus runs with no RPE) each week. Track whether your easy, tempo and threshold paces are improving over time."
+                  title="Löptempo per intensitet — veckotrend"
+                  description="Snittempo per RPE (1–10, plus pass utan RPE) per vecka. Se om lugnt tempo, tempo och tröskel förbättras över tid."
                 >
                   {enduranceStats.paceByRpeWeekly.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">No runs recorded in this window.</p>
+                    <p className="py-6 text-center text-sm text-muted-foreground">Inga löppass i perioden.</p>
                   ) : (
                     <WeekWindow data={enduranceStats.paceByRpeWeekly}>
                       {(slice) => (
@@ -1497,7 +1497,7 @@ function AnalyticsPage() {
                               { key: "r8", label: "RPE 8", color: "oklch(0.64 0.21 30)" },
                               { key: "r9", label: "RPE 9", color: "oklch(0.58 0.23 18)" },
                               { key: "r10", label: "RPE 10", color: "oklch(0.50 0.25 8)" },
-                              { key: "none", label: "No RPE", color: "oklch(0.65 0.02 270)" },
+                              { key: "none", label: "Ingen RPE", color: "oklch(0.65 0.02 270)" },
                             ] as const).map((s) => (
                               <Line
                                 key={s.key}
@@ -1519,8 +1519,8 @@ function AnalyticsPage() {
 
 
                 <ChartCard
-                  title="Per-session intensity vs distance"
-                  description="Each dot is one session — only days with logged sessions are shown. Use the arrows to page through 30 days at a time."
+                  title="Intensitet mot distans per pass"
+                  description="Varje punkt är ett pass — bara dagar med loggade pass visas. Bläddra 30 dagar i taget med pilarna."
                 >
                   <SessionScatterWindow series={enduranceStats.series} scatterByBand={enduranceStats.scatterByBand} />
                 </ChartCard>
@@ -1528,21 +1528,21 @@ function AnalyticsPage() {
 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Recent sessions</CardTitle>
-                    <CardDescription>Latest 15 completed endurance sessions with pace and HR.</CardDescription>
+                    <CardTitle className="text-base">Senaste passen</CardTitle>
+                    <CardDescription>De 15 senaste genomförda konditionspassen med tempo och puls.</CardDescription>
                   </CardHeader>
                   <CardContent className="overflow-x-auto p-0">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                         <tr>
-                          <th className="px-3 py-2 text-left">Date</th>
-                          <th className="px-2 py-2 text-left">Type</th>
-                          <th className="px-2 py-2 text-left">Title</th>
-                          <th className="px-2 py-2 text-right">Distance</th>
-                          <th className="px-2 py-2 text-right">Time</th>
-                          <th className="px-2 py-2 text-right">Pace</th>
+                          <th className="px-3 py-2 text-left">Datum</th>
+                          <th className="px-2 py-2 text-left">Typ</th>
+                          <th className="px-2 py-2 text-left">Titel</th>
+                          <th className="px-2 py-2 text-right">Distans</th>
+                          <th className="px-2 py-2 text-right">Tid</th>
+                          <th className="px-2 py-2 text-right">Tempo</th>
                           <th className="px-2 py-2 text-right">RPE</th>
-                          <th className="px-2 py-2 text-right">Avg HR</th>
+                          <th className="px-2 py-2 text-right">Snittpuls</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1569,10 +1569,10 @@ function AnalyticsPage() {
           {/* === ADHERENCE TAB === */}
           <TabsContent value="adherence" className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KpiCard icon={<Target className="h-4 w-4" />} label="Adherence" value={adherence.adherencePct != null ? `${adherence.adherencePct}%` : "—"} hint={`${adherence.completed}/${adherence.planned} planned sessions`} />
-              <KpiCard icon={<CalendarCheck className="h-4 w-4" />} label="Completed" value={String(adherence.completed)} />
-              <KpiCard icon={<Activity className="h-4 w-4" />} label="Missed" value={String(adherence.missed)} hint={adherence.missed > 0 ? "See list below" : "Clean record"} />
-              <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Streak" value={`${adherence.streak} days`} hint="Consecutive completed planned days" />
+              <KpiCard icon={<Target className="h-4 w-4" />} label="Följsamhet" value={adherence.adherencePct != null ? `${adherence.adherencePct}%` : "—"} hint={`${adherence.completed}/${adherence.planned} planned sessions`} />
+              <KpiCard icon={<CalendarCheck className="h-4 w-4" />} label="Genomförda" value={String(adherence.completed)} />
+              <KpiCard icon={<Activity className="h-4 w-4" />} label="Missade" value={String(adherence.missed)} hint={adherence.missed > 0 ? "See list below" : "Clean record"} />
+              <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Svit" value={`${adherence.streak} days`} hint="Genomförda planerade dagar i rad" />
             </div>
 
             {adherence.planned === 0 ? (
@@ -1602,8 +1602,8 @@ function AnalyticsPage() {
                 {adherence.missedDates.length > 0 && (
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Recently missed sessions</CardTitle>
-                      <CardDescription>Planned days with no logged training.</CardDescription>
+                      <CardTitle className="text-base">Nyligen missade pass</CardTitle>
+                      <CardDescription>Planerade dagar utan loggad träning.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
@@ -1638,8 +1638,8 @@ function AnalyticsPage() {
                         : "Svagt eller inget samband")
                 }
               />
-              <KpiCard icon={<Activity className="h-4 w-4" />} label="Surveys logged" value={String(formSeries.length)} />
-              <KpiCard icon={<Gauge className="h-4 w-4" />} label="Paired data points" value={String(readinessScatter.points.length)} hint="Days with both survey and lift" />
+              <KpiCard icon={<Activity className="h-4 w-4" />} label="Incheckningar" value={String(formSeries.length)} />
+              <KpiCard icon={<Gauge className="h-4 w-4" />} label="Parade datapunkter" value={String(readinessScatter.points.length)} hint="Dagar med både incheckning och lyft" />
             </div>
 
             {readinessScatter.points.length < 30 ? (
@@ -1650,7 +1650,7 @@ function AnalyticsPage() {
               </Card>
             ) : (
               <ChartCard
-                title="Daily form vs session EAkoefficient"
+                title="Dagsform mot dagens EAk"
                 description="Each dot is one day. X = self-reported form (1–10), Y = average EAk% across logged exercises that day."
               >
                 <ResponsiveContainer width="100%" height={320}>
@@ -1659,7 +1659,7 @@ function AnalyticsPage() {
                     <XAxis
                       type="number"
                       dataKey="form"
-                      name="Daily form"
+                      name="Dagsform"
                       domain={[1, 10]}
                       ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
                       stroke="var(--foreground)"
@@ -1708,7 +1708,7 @@ function AnalyticsPage() {
             )}
 
             {formSeries.length > 0 && (
-              <ChartCard title="Daily check-in trends" description="All self-reported metrics from the athlete's pre-training survey (1–10).">
+              <ChartCard title="Trender i incheckningen" description="Alla självskattade värden från atletens incheckning före passet (1–10).">
                 <ResponsiveContainer width="100%" height={320}>
                   <LineChart data={formSeries} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -1716,13 +1716,13 @@ function AnalyticsPage() {
                     <YAxis domain={[1, 10]} stroke="var(--muted-foreground)" fontSize={11} />
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--card-foreground)" }} />
                     <Legend wrapperStyle={{ paddingTop: 8 }} iconType="line" />
-                    <Line type="monotone" dataKey="daily_form" name="Daily form" stroke="var(--chart-1)" strokeWidth={3} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="fatigue" name="Fatigue" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="sleep_quality" name="Sleep quality" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="nutrition" name="Nutrition" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="stiffness" name="Stiffness" stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="work_stress" name="Work stress" stroke="var(--chart-5)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-                    <Line type="monotone" dataKey="life_stress" name="Life stress" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                    <Line type="monotone" dataKey="daily_form" name="Dagsform" stroke="var(--chart-1)" strokeWidth={3} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="fatigue" name="Trötthet" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="sleep_quality" name="Sömnkvalitet" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="nutrition" name="Kost" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="stiffness" name="Stelhet" stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="work_stress" name="Jobbstress" stroke="var(--chart-5)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                    <Line type="monotone" dataKey="life_stress" name="Livsstress" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>
@@ -1731,24 +1731,24 @@ function AnalyticsPage() {
             {formSeries.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Day-by-day check-in</CardTitle>
-                  <CardDescription>Color cells flag low metrics — quick scan for trends across days.</CardDescription>
+                  <CardTitle className="text-base">Incheckning dag för dag</CardTitle>
+                  <CardDescription>Färgade celler markerar låga värden — snabb överblick över dagarna.</CardDescription>
                 </CardHeader>
                 <CardContent className="overflow-x-auto p-0">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-2 text-left">Date</th>
-                        <th className="px-2 py-2 text-center">Form</th>
-                        <th className="px-2 py-2 text-center">Sleep q.</th>
-                        <th className="px-2 py-2 text-center">Sleep h</th>
-                        <th className="px-2 py-2 text-center">Nutrition</th>
-                        <th className="px-2 py-2 text-center">Stiffness</th>
-                        <th className="px-2 py-2 text-center">Fatigue</th>
-                        <th className="px-2 py-2 text-center">Work</th>
-                        <th className="px-2 py-2 text-center">Life</th>
-                        <th className="px-2 py-2 text-center">BW kg</th>
-                        <th className="px-3 py-2 text-left">Notes</th>
+                        <th className="px-3 py-2 text-left">Datum</th>
+                        <th className="px-2 py-2 text-center">Dagsform</th>
+                        <th className="px-2 py-2 text-center">Sömnkval.</th>
+                        <th className="px-2 py-2 text-center">Sömn h</th>
+                        <th className="px-2 py-2 text-center">Kost</th>
+                        <th className="px-2 py-2 text-center">Stelhet</th>
+                        <th className="px-2 py-2 text-center">Trötthet</th>
+                        <th className="px-2 py-2 text-center">Jobb</th>
+                        <th className="px-2 py-2 text-center">Livet</th>
+                        <th className="px-2 py-2 text-center">Kroppsvikt kg</th>
+                        <th className="px-3 py-2 text-left">Anteckningar</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1876,7 +1876,7 @@ function SessionScatterWindow({
   const showPager = total > SIZE;
 
   if (total === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">No sessions in this window.</p>;
+    return <p className="py-6 text-center text-sm text-muted-foreground">Inga pass i perioden.</p>;
   }
 
   return (
@@ -1886,10 +1886,10 @@ function SessionScatterWindow({
           <span>
             Days {start + 1}–{end} of {total}
           </span>
-          <Button variant="outline" size="icon" className="h-7 w-7" disabled={!canOlder} onClick={() => setOffset((o) => Math.min(maxOffset, o + SIZE))} aria-label="Older days">
+          <Button variant="outline" size="icon" className="h-7 w-7" disabled={!canOlder} onClick={() => setOffset((o) => Math.min(maxOffset, o + SIZE))} aria-label="Äldre dagar">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" className="h-7 w-7" disabled={!canNewer} onClick={() => setOffset((o) => Math.max(0, o - SIZE))} aria-label="Newer days">
+          <Button variant="outline" size="icon" className="h-7 w-7" disabled={!canNewer} onClick={() => setOffset((o) => Math.max(0, o - SIZE))} aria-label="Nyare dagar">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -1909,7 +1909,7 @@ function SessionScatterWindow({
             interval="preserveStartEnd"
           />
           <YAxis dataKey="km" type="number" stroke="var(--muted-foreground)" fontSize={11} unit=" km" />
-          <ZAxis dataKey="minutes" type="number" range={[60, 400]} name="Minutes" />
+          <ZAxis dataKey="minutes" type="number" range={[60, 400]} name="Minuter" />
           <Tooltip
             cursor={{ strokeDasharray: "3 3" }}
             contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
@@ -1928,11 +1928,11 @@ function SessionScatterWindow({
             }}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Scatter name="Easy (1–4)" data={filtered.easy} fill={BAND_COLORS.easy} />
-          <Scatter name="Moderate (5–6)" data={filtered.mod} fill={BAND_COLORS.mod} />
-          <Scatter name="Hard (7–8)" data={filtered.hard} fill={BAND_COLORS.hard} />
+          <Scatter name="Lätt (1–4)" data={filtered.easy} fill={BAND_COLORS.easy} />
+          <Scatter name="Måttligt (5–6)" data={filtered.mod} fill={BAND_COLORS.mod} />
+          <Scatter name="Hårt (7–8)" data={filtered.hard} fill={BAND_COLORS.hard} />
           <Scatter name="Max (9–10)" data={filtered.max} fill={BAND_COLORS.max} />
-          <Scatter name="No RPE" data={filtered.none} fill="var(--muted-foreground)" />
+          <Scatter name="Ingen RPE" data={filtered.none} fill="var(--muted-foreground)" />
         </ScatterChart>
       </ResponsiveContainer>
     </div>
@@ -1979,7 +1979,7 @@ function WeekWindow<T>({
             className="h-7 w-7"
             disabled={!canOlder}
             onClick={() => setOffset((o) => Math.min(maxOffset, o + size))}
-            aria-label="Older weeks"
+            aria-label="Äldre veckor"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -1989,7 +1989,7 @@ function WeekWindow<T>({
             className="h-7 w-7"
             disabled={!canNewer}
             onClick={() => setOffset((o) => Math.max(0, o - size))}
-            aria-label="Newer weeks"
+            aria-label="Nyare veckor"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

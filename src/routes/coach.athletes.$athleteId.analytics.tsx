@@ -371,6 +371,18 @@ function AnalyticsPage() {
     return baselines[key] ?? baselines[key.toLowerCase()] ?? 0;
   };
 
+  // Baseline that was in force on a given date (from baseline_history),
+  // so a baseline raise shows as a step instead of an unexplained EAk dip.
+  const baselineAt = (name: string, date: string): number => {
+    const rows = (baselineHistoryQuery.data ?? []).filter(
+      (r) => r.exercise.trim().toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (rows.length === 0) return lookupBaseline(name);
+    let val = rows[0].one_rm_kg;
+    for (const r of rows) if (r.recorded_at.slice(0, 10) <= date) val = r.one_rm_kg;
+    return val;
+  };
+
   const exercises = useMemo(() => {
     const set = new Set<string>();
     allLogs.forEach((l) => set.add(l.exercise));
@@ -395,6 +407,7 @@ function AnalyticsPage() {
         bestE1RM: number;
         sets: number;
         rpeSum: number;
+        qualifying: number;
       }
     >();
     for (const l of filtered) {
@@ -406,7 +419,9 @@ function AnalyticsPage() {
           bestE1RM: 0,
           sets: 0,
           rpeSum: 0,
+          qualifying: 0,
         };
+      if (countsForEAk(l)) cur.qualifying += 1;
       cur.volume += l.reps * l.weight_kg;
       cur.maxWeight = Math.max(cur.maxWeight, l.weight_kg);
       cur.bestE1RM = Math.max(
@@ -417,30 +432,58 @@ function AnalyticsPage() {
       cur.rpeSum += l.rpe;
       byDate.set(l.date, cur);
     }
-    const baseline = lookupBaseline(exercise);
+    const rolling = rollingE1RMBySession(filtered);
+    let cumQual = 0;
     return Array.from(byDate.values())
-      .map((s) => ({
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((s) => {
+        const baseline = baselineAt(exercise!, s.date);
+        const roll = rolling.get(`${s.date}::${exercise}`) ?? 0;
+        cumQual += s.qualifying;
+        return {
         date: s.date,
         label: format(parseISO(s.date), "MMM d"),
         volume: Math.round(s.volume),
         maxWeight: Number(s.maxWeight.toFixed(1)),
         bestE1RM: Number(s.bestE1RM.toFixed(1)),
+        baseline: baseline > 0 ? baseline : null,
+        qualifying: s.qualifying,
         eaKoefficient:
-          baseline > 0 ? Number(((s.bestE1RM / baseline) * 100).toFixed(1)) : 0,
+          baseline > 0 && roll > 0 ? Number(((roll / baseline) * 100).toFixed(1)) : null,
         avgRPE: Number((s.rpeSum / s.sets).toFixed(2)),
         intensity:
           baseline > 0
             ? Number(((s.maxWeight / baseline) * 100).toFixed(1))
             : 0,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [filtered, baselines, exercise]);
+        };
+      });
+  }, [filtered, baselines, exercise, baselineHistoryQuery.data]);
+
+  // Data coverage: qualifying sets (RPE ≥ 7) behind the latest 3-session average
+  const coverage = useMemo(() => {
+    const q = dailyStats.filter((d) => d.qualifying > 0).slice(-3);
+    if (q.length === 0) return null;
+    const sets = q.reduce((a, d) => a + d.qualifying, 0);
+    const spanDays = Math.round(
+      (parseISO(q[q.length - 1].date).getTime() - parseISO(q[0].date).getTime()) / 86400000,
+    );
+    return { sets, sessions: q.length, spanDays };
+  }, [dailyStats]);
+
+  const baselineChangeDates = useMemo(
+    () =>
+      (baselineHistoryQuery.data ?? [])
+        .filter((r) => exercise && r.exercise.trim().toLowerCase() === exercise.toLowerCase())
+        .map((r) => format(parseISO(r.recorded_at), "MMM d"))
+        .filter((lbl) => dailyStats.some((d) => d.label === lbl)),
+    [baselineHistoryQuery.data, exercise, dailyStats],
+  );
 
   const totals = useMemo(() => {
     const volume = dailyStats.reduce((acc, d) => acc + d.volume, 0);
     const maxWeight = dailyStats.reduce((acc, d) => Math.max(acc, d.maxWeight), 0);
     const peakE1RM = dailyStats.reduce((acc, d) => Math.max(acc, d.bestE1RM), 0);
-    const peakEAk = dailyStats.reduce((acc, d) => Math.max(acc, d.eaKoefficient), 0);
+    const peakEAk = dailyStats.reduce((acc, d) => Math.max(acc, d.eaKoefficient ?? 0), 0);
     return { volume, maxWeight, peakE1RM, peakEAk, sessions: dailyStats.length };
   }, [dailyStats]);
 
@@ -524,7 +567,7 @@ function AnalyticsPage() {
       categories.add(cat);
       const wk = format(startOfWeek(parseISO(l.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
       const row = weeks.get(wk) ?? {};
-      row[cat] = (row[cat] ?? 0) + l.reps * l.weight_kg;
+      if (countsForEAk(l)) row[cat] = (row[cat] ?? 0) + 1;
       weeks.set(wk, row);
     }
     const data = Array.from(weeks.entries())
@@ -532,7 +575,7 @@ function AnalyticsPage() {
         week: wk,
         label: format(parseISO(wk), "MMM d"),
         ...Object.fromEntries(
-          Object.entries(row).map(([k, v]) => [k, Math.round(v)]),
+          Object.entries(row).map(([k, v]) => [k, v]),
         ),
       }))
       .sort((a, b) => a.week.localeCompare(b.week));
@@ -557,15 +600,17 @@ function AnalyticsPage() {
       row[l.exercise] = Math.max(row[l.exercise] ?? 0, e1);
       byDate.set(l.date, row);
     }
-    const data = Array.from(byDate.entries())
-      .map(([date, row]) => ({
-        date,
-        label: format(parseISO(date), "MMM d"),
-        ...Object.fromEntries(
-          Object.entries(row).map(([k, v]) => [k, Number(v.toFixed(1))]),
-        ),
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const first: Record<string, number> = {};
+    for (const [, row] of sorted)
+      for (const [k, v] of Object.entries(row)) if (first[k] == null) first[k] = v;
+    const data = sorted.map(([date, row]) => ({
+      date,
+      label: format(parseISO(date), "MMM d"),
+      ...Object.fromEntries(
+        Object.entries(row).map(([k, v]) => [k, Number(((v / first[k]) * 100).toFixed(1))]),
+      ),
+    }));
     return { data, lifts: top };
   }, [allLogs]);
 
@@ -594,7 +639,8 @@ function AnalyticsPage() {
       cur.count += 1;
       actualAvgByDate.set(l.date, cur);
     }
-    const rpeSeries: Array<{ date: string; label: string; target: number | null; actual: number | null }> = [];
+    const rpeSeries: Array<{ date: string; label: string; target: number | null; actual: number | null; diff: number | null; diffAvg: number | null }> = [];
+    const diffs: number[] = [];
     const allDates = Array.from(new Set([...targetAvgByDate.keys(), ...actualAvgByDate.keys()])).sort();
     for (const d of allDates) {
       const t = targetAvgByDate.get(d);
@@ -604,7 +650,16 @@ function AnalyticsPage() {
         label: format(parseISO(d), "MMM d"),
         target: t ? Number((t.sum / t.count).toFixed(2)) : null,
         actual: a ? Number((a.sum / a.count).toFixed(2)) : null,
+        diff: null,
+        diffAvg: null,
       });
+      const row = rpeSeries[rpeSeries.length - 1];
+      if (row.target != null && row.actual != null) {
+        row.diff = Number((row.actual - row.target).toFixed(2));
+        diffs.push(row.diff);
+        const w = diffs.slice(-3);
+        row.diffAvg = Number((w.reduce((x, y) => x + y, 0) / w.length).toFixed(2));
+      }
     }
 
     const adherencePct = planned.length > 0
@@ -630,6 +685,48 @@ function AnalyticsPage() {
       missedDates: missed.slice(-10).reverse(),
     };
   }, [plannedQuery.data, allLogs]);
+
+  // ---- Rule-based deload flag ----
+  const deloadFlag = useMemo(() => {
+    // 1) EAk < 95 % two sessions in a row on any lift with a baseline
+    const byEx = new Map<string, typeof allLogs>();
+    for (const l of allLogs) {
+      if (!lookupBaseline(l.exercise)) continue;
+      const arr = byEx.get(l.exercise) ?? [];
+      arr.push(l);
+      byEx.set(l.exercise, arr);
+    }
+    const lowLifts: string[] = [];
+    for (const [ex, logs] of byEx) {
+      const rolling = rollingE1RMBySession(logs);
+      const dates = [...new Set(logs.filter(countsForEAk).map((l) => l.date))].sort().slice(-2);
+      if (dates.length < 2) continue;
+      const low = dates.every((d) => {
+        const b = baselineAt(ex, d);
+        const r = rolling.get(`${d}::${ex}`) ?? 0;
+        return b > 0 && (r / b) * 100 < 95;
+      });
+      if (low) lowLifts.push(ex);
+    }
+    // 2) RPE drift > +0.5 (avg of last 3 sessions)
+    const lastDiff = [...adherence.rpeSeries].reverse().find((r) => r.diffAvg != null)?.diffAvg ?? null;
+    const rpeHigh = lastDiff != null && lastDiff > 0.5;
+    // 3) Latest fatigue above athlete's own average
+    const surveys = (surveysQuery.data ?? []).filter((s) => s.fatigue != null);
+    const avgFat = surveys.length ? surveys.reduce((a, s) => a + Number(s.fatigue), 0) / surveys.length : null;
+    const latestFat = surveys.length ? Number(surveys[surveys.length - 1].fatigue) : null;
+    const fatigueHigh = avgFat != null && latestFat != null && surveys.length >= 3 && latestFat > avgFat;
+    return {
+      lowLifts,
+      eakLow: lowLifts.length > 0,
+      rpeHigh,
+      lastDiff,
+      fatigueHigh,
+      latestFat,
+      avgFat,
+      flag: lowLifts.length > 0 && rpeHigh && fatigueHigh,
+    };
+  }, [allLogs, adherence.rpeSeries, surveysQuery.data, baselines, baselineHistoryQuery.data]);
 
   // ---- Readiness vs performance ----
   const readinessScatter = useMemo(() => {
@@ -979,6 +1076,34 @@ function AnalyticsPage() {
       )}
 
       {!isLoading && (
+        <Card className={cn(deloadFlag.flag && "border-destructive")}>
+          <CardContent className="space-y-2 p-4">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              <span className="font-semibold">
+                {deloadFlag.flag ? "Överväg deload" : "Inga varningsflaggor"}
+              </span>
+              {deloadFlag.flag && <Badge variant="destructive">Flagga</Badge>}
+            </div>
+            <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
+              <li className={cn(deloadFlag.eakLow && "font-medium text-destructive")}>
+                {deloadFlag.eakLow ? "✗" : "✓"} EAk &lt; 95 % två pass i rad
+                {deloadFlag.eakLow ? ` (${deloadFlag.lowLifts.join(", ")})` : ""}
+              </li>
+              <li className={cn(deloadFlag.rpeHigh && "font-medium text-destructive")}>
+                {deloadFlag.rpeHigh ? "✗" : "✓"} RPE-avvikelse &gt; +0,5
+                {deloadFlag.lastDiff != null ? ` (${deloadFlag.lastDiff >= 0 ? "+" : ""}${deloadFlag.lastDiff.toFixed(1)})` : " (ingen plan)"}
+              </li>
+              <li className={cn(deloadFlag.fatigueHigh && "font-medium text-destructive")}>
+                {deloadFlag.fatigueHigh ? "✗" : "✓"} Trötthet över eget snitt
+                {deloadFlag.latestFat != null && deloadFlag.avgFat != null ? ` (${deloadFlag.latestFat} mot ${deloadFlag.avgFat.toFixed(1)})` : ""}
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isLoading && (
         <Tabs
           value={tab}
           onValueChange={(v) =>
@@ -1034,8 +1159,15 @@ function AnalyticsPage() {
 
                 <ChartCard
                   title="E1RM & EAkoefficient over time"
-                  description={lookupBaseline(exercise) ? "Best daily E1RM and EAkoefficient % vs. baseline." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
+                  description={lookupBaseline(exercise) ? "Bästa dags-E1RM, baslinjen som gällde (steglinje) och EAk % (snitt 3 pass). Streckade lodlinjer = baslinjebyte." : "Best daily E1RM. Set a baseline to see EAkoefficient %."}
                 >
+                  {coverage && (
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Datatäckning: {coverage.sets} kvalificerande set (RPE ≥ 7) över {coverage.sessions} pass
+                      {coverage.spanDays > 0 ? ` · ${coverage.spanDays} dagar` : ""}
+                      {coverage.spanDays > 14 ? " — snittet släpar efter" : ""}
+                    </p>
+                  )}
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={dailyStats}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -1045,15 +1177,19 @@ function AnalyticsPage() {
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
                       <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Best E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line yAxisId="left" type="stepAfter" dataKey="baseline" name="Baslinje (kg)" stroke="var(--chart-3)" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />
+                      {baselineChangeDates.map((lbl) => (
+                        <ReferenceLine key={lbl} yAxisId="left" x={lbl} stroke="var(--chart-3)" strokeDasharray="2 4" label={{ value: "Ny baslinje", fontSize: 10, fill: "var(--muted-foreground)", position: "insideTop" }} />
+                      ))}
                       {lookupBaseline(exercise) > 0 && (
-                        <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff %" stroke="var(--accent-foreground)" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff % (3 pass)" stroke="var(--accent-foreground)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
                 <ChartCard
-                  title="Baseline 1RM history"
+                  title="Baslinje"
                   description={
                     baselineSeries.length === 0
                       ? "No baseline changes recorded for this lift yet. Update the baseline on the athlete page to start tracking progression."
@@ -1106,35 +1242,6 @@ function AnalyticsPage() {
                       )}
                     </div>
                   )}
-                  {baselineSeries.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-muted-foreground">
-                      Every baseline edit is logged automatically — the chart fills in as you update it.
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <LineChart data={baselineSeries}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={["auto", "auto"]} unit=" kg" />
-                        <Tooltip
-                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
-                          formatter={(v: number) => [`${v} kg`, "Baseline 1RM"]}
-                          labelFormatter={(label, payload) => {
-                            const note = payload?.[0]?.payload?.note;
-                            return note ? `${label} — ${note}` : label;
-                          }}
-                        />
-                        <Line
-                          type="stepAfter"
-                          dataKey="one_rm_kg"
-                          name="Baseline 1RM (kg)"
-                          stroke="var(--chart-3)"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
                 </ChartCard>
 
                 <ChartCard title="Volume per session" description="Total tonnage (reps × weight) for each training day.">
@@ -1150,14 +1257,15 @@ function AnalyticsPage() {
                 </ChartCard>
 
                 {multiLiftSeries.lifts.length > 1 && (
-                  <ChartCard title="Top lifts — E1RM overlay" description="Best daily E1RM for the most-trained lifts in this window.">
+                  <ChartCard title="Topplyften — utveckling i takt" description="Bästa dags-E1RM som index (första passet i perioden = 100), så lyften kan jämföras oavsett vikt.">
                     <ResponsiveContainer width="100%" height={260}>
                       <LineChart data={multiLiftSeries.data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 10)), (dataMax: number) => Math.ceil(dataMax + 5)]} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={[(dataMin: number) => Math.floor(dataMin - 3), (dataMax: number) => Math.ceil(dataMax + 3)]} />
                         <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                         <Legend />
+                        <ReferenceLine y={100} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
                         {multiLiftSeries.lifts.map((lift, i) => (
                           <Line
                             key={lift}
@@ -1181,9 +1289,9 @@ function AnalyticsPage() {
           <TabsContent value="volume" className="mt-4 space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Weekly tonnage by category</CardTitle>
+                <CardTitle className="text-base">Hårda set per vecka och kategori</CardTitle>
                 <CardDescription>
-                  Sum of reps × weight per week, grouped by exercise category. Categorize exercises in the library to see meaningful splits.
+                  Antal set med RPE ≥ 7 per vecka, grupperat per övningskategori. Samma tröskel som EAk — rättvist mellan tunga och lätta lyft.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1229,7 +1337,7 @@ function AnalyticsPage() {
                         <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }} />
                         <span className="text-muted-foreground">{cat}</span>
                       </div>
-                      <div className="mt-1 text-2xl font-bold">{(total / 1000).toFixed(1)}t</div>
+                      <div className="mt-1 text-2xl font-bold">{total} set</div>
                     </CardContent>
                   </Card>
                 );
@@ -1470,17 +1578,19 @@ function AnalyticsPage() {
               </Card>
             ) : (
               <>
-                <ChartCard title="Target vs actual RPE" description="Average prescribed RPE per day vs the athlete's logged RPE.">
+                <ChartCard title="RPE-avvikelse (faktisk − mål)" description="Per pass, med rullande snitt över 3 pass. Över +1 = passen blir tyngre än planerat.">
                   <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={adherence.rpeSeries}>
+                    <ComposedChart data={adherence.rpeSeries.filter((r) => r.diff != null)}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis domain={[1, 10]} stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis domain={[(m: number) => Math.min(-1, Math.floor(m)), (m: number) => Math.max(2, Math.ceil(m))]} stroke="var(--muted-foreground)" fontSize={11} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                       <Legend />
-                      <Line type="monotone" dataKey="target" name="Target RPE" stroke="var(--accent-foreground)" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} connectNulls />
-                      <Line type="monotone" dataKey="actual" name="Actual RPE" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                    </LineChart>
+                      <ReferenceLine y={0} stroke="var(--muted-foreground)" />
+                      <ReferenceLine y={1} stroke="var(--destructive)" strokeDasharray="4 4" label={{ value: "+1", fontSize: 10, fill: "var(--muted-foreground)", position: "right" }} />
+                      <Bar dataKey="diff" name="Avvikelse" fill="var(--primary)" radius={[3, 3, 0, 0]} />
+                      <Line type="monotone" dataKey="diffAvg" name="Snitt 3 pass" stroke="var(--accent-foreground)" strokeWidth={2} dot={false} connectNulls />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
 

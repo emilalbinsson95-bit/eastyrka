@@ -45,6 +45,8 @@ import {
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
+import { SetProtocolPicker } from "@/components/SetProtocolPicker";
+import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
 
 
 export function GenerateStrengthTemplateDialog({
@@ -270,9 +272,13 @@ export function GenerateStrengthTemplateDialog({
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
+  const [setProtocols, setSetProtocols] = useState<SetProtocolOptions>(DEFAULT_SET_PROTOCOLS);
   const plannedWeeks = useMemo(
-    () => applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data),
-    [finalWeeks, overload, isPeaking, weakIds, styleQuery.data],
+    () => {
+      const weeks = applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
+      return isPeaking ? weeks : applySetProtocols(weeks, setProtocols);
+    },
+    [finalWeeks, overload, isPeaking, weakIds, styleQuery.data, setProtocols],
   );
 
   const weeklySets = useMemo(() => {
@@ -531,6 +537,7 @@ export function GenerateStrengthTemplateDialog({
           </div>
 
           {/* ---- peaking options ---- */}
+          {!isPeaking && <SetProtocolPicker value={setProtocols} onChange={setSetProtocols} />}
           {isPeaking && (
             <div className="rounded-lg border bg-card">
               <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">

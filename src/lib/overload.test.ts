@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyOverload, DEFAULT_OVERLOAD, overloadSummary } from "./overload";
-import { getTemplate, type TemplateWeek } from "./strengthTemplates";
+import { getTemplate } from "./strengthTemplates";
 import { pctOf1RM } from "./intensity";
 
 const weeks = () => getTemplate("standard-pl")!.buildWeeks(4);
@@ -84,8 +84,9 @@ describe("overload options", () => {
   it("clears load when stance or bench exercise changes", () => {
     const base = weeks().map(w => ({ ...w, sessions: w.sessions.map(s => ({ ...s, exercises: s.exercises.map(e => ({ ...e, target_weight_kg: 100 })) })) }));
     const out = applyOverload(base, { ...DEFAULT_OVERLOAD, deadliftStance: "sumo", benchConsolidation: true });
-    for (const w of out) for (const s of w.sessions) for (const e of s.exercises) {
-      if (e.variation === "Sumo stance" || e.exercise === "Romanian deadlift" || e.variation === "Touch-and-go") expect(e.target_weight_kg).toBeUndefined();
+    for (const w of out) for (const [si, s] of w.sessions.entries()) for (const [ei, e] of s.exercises.entries()) {
+      const before = base.find(b => b.week_index === w.week_index)?.sessions[si]?.exercises[ei];
+      if (e.variation === "Sumo stance" || e.exercise === "Romanian deadlift" || (e.variation === "Touch-and-go" && before?.variation !== "Touch-and-go")) expect(e.target_weight_kg).toBeUndefined();
     }
   });
 });

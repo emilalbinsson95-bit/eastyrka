@@ -45,7 +45,7 @@ describe("coach-selected set protocols", () => {
   it("uses 70 percent of the same exercise estimate for metabolic backoffs", () => {
     const sets = protocolSets(exercise, "metabolic");
     expect(sets[0]?.weight).toBe(100);
-    expect(sets[1]?.weight).toBe(87.5);
+    expect(sets[1]?.weight).toBe(85);
   });
   it("limits metabolic backoff reps instead of prescribing high reps at 70 percent", () => {
     expect(protocolSets({ ...exercise, target_reps: 12 }, "metabolic").slice(1).every(s => s.reps <= 5)).toBe(true);

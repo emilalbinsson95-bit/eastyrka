@@ -47,4 +47,13 @@ describe("coach-selected set protocols", () => {
     expect(sets[0]?.weight).toBe(100);
     expect(sets[1]?.weight).toBe(87.5);
   });
+  it("limits metabolic backoff reps instead of prescribing high reps at 70 percent", () => {
+    expect(protocolSets({ ...exercise, target_reps: 12 }, "metabolic").slice(1).every(s => s.reps <= 5)).toBe(true);
+  });
+  it("does not pre-schedule unearned double-progression increases", () => {
+    const later: TemplateWeek = { ...week, week_index: 2, sessions: [{ ...week.sessions[0], day_of_week: 1, title: "Squat", exercises: [{ ...exercise, target_reps: 8, target_weight_kg: 120 }] }] };
+    const result = applySetProtocols([week, later], { ...DEFAULT_SET_PROTOCOLS, squat: "double" });
+    expect(result[1]?.sessions[0]?.exercises[0]?.target_weight_kg).toBe(100);
+    expect(result[1]?.sessions[0]?.exercises[0]?.target_reps).toBe(5);
+  });
 });

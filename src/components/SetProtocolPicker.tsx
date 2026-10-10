@@ -16,6 +16,7 @@ export function SetProtocolPicker({ value, onChange }: { value: SetProtocolOptio
           <SelectContent>{SET_PROTOCOLS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">{PROTOCOL_DESCRIPTION[value[group.id]]}</p>
+        {group.id !== "accessories" && (value[group.id] === "metabolic" || value[group.id] === "double") && <p role="status" className="text-xs text-muted-foreground">Främst volym-/muskelbyggande arbete. Behåll även tävlingsnära arbete i andra pass; detta upplägg är inte i sig en styrketoppning.</p>}
       </div>)}
     </div>
     <p className="text-xs text-muted-foreground">Individens antal arbetsset behålls. Deload, toppning, singlar, tyngdlyftning och 1,5-reps behåller sina särskilda upplägg. Vid repsminskning behålls arbete över cirka 85 % oförändrat.</p>

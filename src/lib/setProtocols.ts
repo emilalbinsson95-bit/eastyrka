@@ -31,7 +31,7 @@ export const PROTOCOL_DESCRIPTION: Record<SetProtocol, string> = {
   "rep-drops": "Samma vikt som första setet. Anpassa därefter antalet reps till en lägre RPE, utan att gå till failure. Inte för arbete över cirka 85 % av 1RM.",
   ramping: "Samma reps, successivt högre RPE och vikt inom passet. Uppvärmningen är separat.",
   descending: "Färre reps för varje set, med högre vikt men bibehållen RPE. Aldrig färre än två reps.",
-  metabolic: "Ett topp-set följt av lättare set på 70 % av samma övnings uppskattade 1RM, med två minuters vila. Inga extra set läggs till.",
+  metabolic: "Ett topp-set följt av högst fem reps per backoff-set, på högst 70 % av övningens uppskattade 1RM och högst 90 % av toppvikten. Två minuters vila för assistans; 3–5 minuter för huvudlyft. Inga extra set.",
   double: "Öka reps inom ett intervall. När alla set når övre gränsen inom mål-RPE, höj vikten nästa gång och börja på nedre gränsen.",
 };
 
@@ -81,7 +81,7 @@ export function protocolSets(e: TemplateExercise, protocol: SetProtocol): Protoc
     if (protocol === "metabolic" && i > 0) {
       const oldRpe = e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : (e.target_rpe ?? 7);
       const originalPct = pctOf1RM(oldRpe, reps);
-      weight = e.target_weight_kg && originalPct && reps <= 12 ? roundWeight(e.target_weight_kg * 70 / originalPct) : undefined;
+      weight = e.target_weight_kg && originalPct && reps <= 12 ? Math.floor(Math.min(e.target_weight_kg * 70 / originalPct, e.target_weight_kg * 0.9) / 2.5) * 2.5 : undefined;
     }
     return { reps: setReps, rpe: setRpe, weight };
   });
@@ -91,6 +91,8 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
   if (protocol === "keep" || e.target_sets < 2) return e;
   // Rep drops are not used with near-maximal work; leave that prescription intact.
   const originalRpe = e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : (e.target_rpe ?? 7);
+  // A genuinely easy prescription must stay easy, not become a fake ramp.
+  if (protocol === "ramping" && originalRpe <= 6) return e;
   if (protocol === "rep-drops" && (pctOf1RM(originalRpe, e.target_reps) ?? 100) > 85) return e;
   const sets = protocolSets(e, protocol);
   const first = sets[0];
@@ -101,13 +103,15 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
     for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: samma vikt som set 1, gör så många rena reps som ryms vid RPE ${numberText(sets[i]?.rpe ?? 6)} (inte till failure).`;
   }
   if (protocol === "metabolic") {
-    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " på 70 % av uppskattat 1RM för just denna övning" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · högst RPE 7 · vila 2 minuter. Sänk vikten om RPE-gränsen överskrids.`;
+    const rest = protocolGroup(e) === "accessories" ? "2 minuter" : "3–5 minuter, längre vid behov";
+    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " på högst 70 % av uppskattat 1RM för just denna övning och högst 90 % av toppvikten" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · högst RPE 7 · vila ${rest}. Sänk vikten om RPE-gränsen överskrids.`;
   }
   if (protocol === "double") {
     const hi = e.target_reps + 4;
     lines.splice(0, lines.length, `${e.target_sets} set × ${e.target_reps}–${hi} reps @ högst RPE ${numberText(first.rpe)}. Samma vikt i alla set.`, `När alla ${e.target_sets} set når ${hi} reps inom mål-RPE: höj med minsta tillgängliga viktsteg nästa gång och börja på ${e.target_reps} reps igen. Annars behåll vikten. Logga faktiskt utförda reps.`);
   }
   if (protocol === "straight") lines.push(`Behåll vikten. Om ett set når RPE ${numberText(Math.min(8.5, first.rpe + 1.5))}: sänk vikten 5 % i resterande set.`);
+  if (protocol !== "metabolic") lines.push(protocolGroup(e) === "accessories" ? "Vila 2–3 minuter, längre om det behövs för mål-RPE." : "Vila 3–5 minuter mellan arbetsset, längre vid behov för bibehållen teknik och mål-RPE.");
   lines.push("Avbryt setet om position eller teknik inte kan hållas. Uppvärmningsset räknas inte in.");
   // Keep neutral technique cues, not conflicting legacy set/failure prescriptions.
   const cues = (e.notes ?? "").split(/(?<=[.!?])\s+|\n/).filter((line) =>

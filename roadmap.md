@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Audit strength generation for realistic progression, volume, protocol compatibility and recovery; fix demonstrated contradictions and test the resulting plans.
+
 - [x] Add six coach-selected set protocols to strength generation and verify preservation of volume, deloads, and saved athlete instructions.
 
 - [x] Correct analytics tab height and wrapping; verify all five tabs remain reachable without overlapping content.

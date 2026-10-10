@@ -79,6 +79,19 @@ describe("buildPeakingWeeks", () => {
     expect(weeks).toHaveLength(3);
     expect(weeks.map((w) => w.week_index)).toEqual([1, 2, 3]);
   });
+  it("allocates accessory sets once per week rather than once per session", () => {
+    for (const days of [3, 4]) {
+      const plan = buildPeakingWeeks(days, sum);
+      for (const [wi, w] of plan.entries()) {
+        for (const a of sum.accessories) {
+          const rows = w.sessions.flatMap(s => s.exercises).filter(e => e.exercise === a.exercise);
+          expect(rows.length).toBeLessThanOrEqual(1);
+          const factor = wi === 0 ? 0.8 : wi === 1 ? 0.5 : 0;
+          expect(rows.reduce((n, e) => n + e.target_sets, 0)).toBeLessThanOrEqual(Math.floor(a.weeklySets * factor));
+        }
+      }
+    }
+  });
 
   it("drops volume every week (taper) while holding intensity in weeks 1-2", () => {
     expect(mainSets(0)).toBeGreaterThan(mainSets(1));

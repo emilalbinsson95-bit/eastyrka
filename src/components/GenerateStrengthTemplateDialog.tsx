@@ -620,7 +620,7 @@ export function GenerateStrengthTemplateDialog({
                   {
                     key: "waveLoading" as const,
                     title: "Structured wave loading",
-                    desc: "Replaces flat weekly work with 5s @70–75% → 4s @77–82% → 3s/2s @85%+ → deload.",
+                    desc: "Tre veckor: 5/4 reps @ RPE 7 → 4/3 reps @ RPE 8 → 3/2 reps @ RPE 8,5 → deload. Vikten följer reps och RPE; procent är uppskattningar.",
                   },
                   {
                     key: "benchConsolidation" as const,

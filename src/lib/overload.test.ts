@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyOverload, DEFAULT_OVERLOAD, overloadSummary } from "./overload";
 import { getTemplate } from "./strengthTemplates";
+import { pctOf1RM } from "./intensity";
 
 const weeks = () => getTemplate("standard-pl")!.buildWeeks(4);
 
@@ -68,5 +69,24 @@ describe("overload options", () => {
 
   it("summarises selected options", () => {
     expect(overloadSummary({ ...DEFAULT_OVERLOAD, waveLoading: true })).toHaveLength(1);
+  });
+  it("recalculates same-lift kilos when wave reps and effort change", () => {
+    const base = weeks().map(w => ({ ...w, sessions: w.sessions.map(s => ({ ...s, exercises: s.exercises.map(e => ({ ...e, target_weight_kg: 100 })) })) }));
+    const out = applyOverload(base, { ...DEFAULT_OVERLOAD, waveLoading: true });
+    const before = base[1]?.sessions[0]?.exercises[0];
+    const after = out[1]?.sessions[0]?.exercises[0];
+    if (!before || !after) throw new Error("Missing squat");
+    const from = pctOf1RM(before.target_rpe ?? 7, before.target_reps) ?? 1;
+    const to = pctOf1RM(after.target_rpe ?? 7, after.target_reps) ?? 1;
+    expect(after.target_weight_kg).toBe(Math.round(100 * to / from / 2.5) * 2.5);
+    expect(after.target_weight_kg).not.toBe(100);
+  });
+  it("clears load when stance or bench exercise changes", () => {
+    const base = weeks().map(w => ({ ...w, sessions: w.sessions.map(s => ({ ...s, exercises: s.exercises.map(e => ({ ...e, target_weight_kg: 100 })) })) }));
+    const out = applyOverload(base, { ...DEFAULT_OVERLOAD, deadliftStance: "sumo", benchConsolidation: true });
+    for (const w of out) for (const [si, s] of w.sessions.entries()) for (const [ei, e] of s.exercises.entries()) {
+      const before = base.find(b => b.week_index === w.week_index)?.sessions[si]?.exercises[ei];
+      if (e.variation === "Sumo stance" || e.exercise === "Romanian deadlift" || (e.variation === "Touch-and-go" && before?.variation !== "Touch-and-go")) expect(e.target_weight_kg).toBeUndefined();
+    }
   });
 });

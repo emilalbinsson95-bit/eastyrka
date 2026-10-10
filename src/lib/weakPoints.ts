@@ -254,9 +254,12 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
     // 1.5-reps: 3–5 sets × 3–5 reps at RPE 6–8 — longer sets break the brace.
     for (const s of sessions) for (const e of s.exercises) {
       if (!isOneAndHalfRep(e.exercise, e.variation)) continue;
+      const previousReps = e.target_reps;
+      const previousRpe = e.target_rpe;
       e.target_sets = Math.min(5, Math.max(deload ? 2 : 3, e.target_sets));
       e.target_reps = Math.min(5, Math.max(3, e.target_reps));
       if (e.target_rpe != null) e.target_rpe = Math.min(8, Math.max(6, e.target_rpe));
+      if (e.target_reps !== previousReps || e.target_rpe !== previousRpe) e.target_weight_kg = undefined;
     }
     return { ...week, sessions };
   });

@@ -7,6 +7,7 @@ import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
 import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
+import { applyVolumeGuards } from "@/lib/volumeGuards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

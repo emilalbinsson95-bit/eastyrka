@@ -276,7 +276,7 @@ export function GenerateStrengthTemplateDialog({
   const plannedWeeks = useMemo(
     () => {
       const weeks = applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
-      return isPeaking ? weeks : applySetProtocols(weeks, setProtocols);
+      return isPeaking ? weeks : applySetProtocols(applyVolumeGuards(weeks), setProtocols);
     },
     [finalWeeks, overload, isPeaking, weakIds, styleQuery.data, setProtocols],
   );

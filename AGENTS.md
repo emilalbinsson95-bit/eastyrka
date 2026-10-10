@@ -21,3 +21,4 @@
 - Accessory exercises are capped at 4 sets when topping templates up to MEV and 5 sets after individual scaling (unless the template itself prescribes more), because extra volume belongs on the main lifts and main lifts already give indirect accessory volume.
 
 - Constrain document-level horizontal overflow with clipping, not a nested scroll container, and wrap role-layout headers so all controls remain reachable; wide tables and calendar views retain their local scrolling.
+- Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.

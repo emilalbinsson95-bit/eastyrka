@@ -27,7 +27,7 @@ export const PROTOCOL_GROUPS = [
 ] as const;
 export const PROTOCOL_DESCRIPTION: Record<SetProtocol, string> = {
   keep: "Mallens ordinarie set, reps och ansträngning.",
-  straight: "Samma reps och vikt. Första setet styr viktvalet; sänk vikten 5 % om RPE når 8,5 eller teknikgränsen.",
+  straight: "Samma reps och vikt. Första setet styr viktvalet; sänk vikten 5 % vid mål-RPE + 1,5 (högst 8,5).",
   "rep-drops": "Samma vikt som första setet. Anpassa därefter antalet reps till en lägre RPE, utan att gå till failure. Inte för arbete över cirka 85 % av 1RM.",
   ramping: "Samma reps, successivt högre RPE och vikt inom passet. Uppvärmningen är separat.",
   descending: "Färre reps för varje set, med högre vikt men bibehållen RPE. Aldrig färre än två reps.",
@@ -45,7 +45,7 @@ export function protocolGroup(e: TemplateExercise): ProtocolGroup | null {
     if (category === "horizontal-press") return "bench";
     if (category === "hinge") return "deadlift";
   }
-  if (category === "core" || category === "other") return null;
+  if (category === "core") return null;
   return "accessories";
 }
 
@@ -111,7 +111,7 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
   lines.push("Avbryt setet om position eller teknik inte kan hållas. Uppvärmningsset räknas inte in.");
   // Keep neutral technique cues, not conflicting legacy set/failure prescriptions.
   const cues = (e.notes ?? "").split(/(?<=[.!?])\s+|\n/).filter((line) =>
-    !/\b(set|sets|reps?|rpe|rir|failure|back.?off|top.?set|wave|amrap)\b|%|×/i.test(line)).join(" ").trim();
+    !/\b(sets?|rpe|rir|failure|back.?off|top.?set|wave|amrap)\b|\d+\s*reps?\b|%|×/i.test(line)).join(" ").trim();
   return { ...e, target_reps: first.reps, target_rpe: first.rpe, target_rir: undefined,
     target_weight_kg: first.weight, intensity_metric: "rpe", lengthened_partials: false,
     last_set_to_failure: false, notes: [cues, `Setupplägg: ${name}.`, ...lines].filter(Boolean).join("\n") };

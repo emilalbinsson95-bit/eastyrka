@@ -274,6 +274,89 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
           eller test, men logga och se om det håller två pass i rad innan baseline justeras.</p>
       </Section>
 
+      <Section title="Setupplägg — hur seten läggs upp">
+        <p>Setupplägget styr hur seten inom en övning fördelas. Det väljs manuellt av
+          coachen i programgeneratorn, separat för knäböj, bänk, mark och assistansövningar.
+          Det är en volymneutral transformation: inga nya övningar, inga nya dagar och
+          inga extra arbetsset tillkommer — bara setens upplägg ändras. Deload-, taper-,
+          toppnings- och återhämtningsveckor lämnas alltid orörda, och alla RPE klampas
+          till 6–8,5. Upplägget skrivs som tydliga instruktioner i övningens anteckningar,
+          så atleten vet exakt hur varje set ska köras.</p>
+
+        <p className="mt-3"><b>Behåll mallens upplägg</b></p>
+        <p>Standardvalen. Mallens set, reps och ansträngning ligger kvar som de är. Det är
+          rätt val när mallen redan är byggd för atletens fas och syfte.</p>
+
+        <p className="mt-3"><b>Samma vikt och reps (straight sets)</b></p>
+        <p>Alla set körs på samma vikt och samma reps. Första setet sätter vikten. Om ett
+          set hamnar på mål-RPE + 1,5 (högst 8,5) sänks vikten 5 % i resterande set — det
+          är säkerhetsventilen som gör att straight sets inte tvingar fram failure bara
+          för att dagsformen var bättre än väntat. Det är det enklaste upplägget att
+          logga och utvärdera, och därför ofta bäst för tävlingslyften i styrkeblock.</p>
+
+        <p className="mt-3"><b>Samma vikt, färre reps vid trötthet (rep drops)</b></p>
+        <p>Vikten är låst till första setets vikt. Därefter anpassar atleten antalet reps
+          till en lägre RPE — aldrig till failure. Upplägget används inte på arbete över
+          cirka 85 % av 1RM; där lämnas förskrivningen orörd, för närmast-maximala set ska
+          inte improviseras fram. Detta är autoreglering i sin enklaste form: samma belastning
+          varje set, och tröttheten styr bara hur många rena reps som ryms.</p>
+
+        <p className="mt-3"><b>Stegrande vikt (ramping)</b></p>
+        <p>Samma reps i alla set, men RPE och vikt stiger successivt inom passet — till
+          exempel 3 set @ RPE 6, 6,5 och 7. Uppvärmningen är separat och räknas inte in.
+          Ett förskrivet lätt set (RPE ≤ 6) lämnas orört; det ska inte göras till en låtsas-ramp.
+          Rampning bygger upp till tyngre arbete utan ett enskilt alltför tungt set och
+          passar bra i våg- och volymveckor.</p>
+
+        <p className="mt-3"><b>Fallande reps, stegrande vikt (descending)</b></p>
+        <p>Färre reps för varje set, med högre vikt men bibehållen RPE — ett pyramidupplägg.
+          Reps går aldrig under två. Exempel: 5, 4, 3 reps med stigande vikt på samma
+          ansträngning. Det ger tungt arbete på högre procent utan att något set blir
+          maximalt, och passar när atleten behöver vänja sig vid tyngre vikter i
+          ackumulationsfasen.</p>
+
+        <p className="mt-3"><b>Topp-set + tidsstyrda backoff-set (metabolic)</b></p>
+        <p>Ett topp-set i huvudförskrivningen, följt av backoff-set på högst 5 reps, högst
+          70 % av övningens uppskattade 1RM och högst 90 % av toppvikten, med RPE-tak.
+          Vila: 2 minuter för assistans, 3–5 minuter för huvudlyft. Inga extra set läggs
+          till. Backoff-seten håller kvaliteten hög genom hela passet i stället för att
+          jaga trötthet, vilket är hela poängen med att tids- och procentsätta dem.</p>
+
+        <p className="mt-3"><b>Dubbel progression</b></p>
+        <p>Reps rör sig inom ett intervall, till exempel 3–7 reps, på samma vikt i alla set.
+          När alla set når övre gränsen inom mål-RPE höjs vikten med minsta tillgängliga
+          viktsteg nästa gång, och atleten börjar om på nedre gränsen. Annars behålls
+          vikten. Startlasten hålls fast för övningens plats i hela blocket — progressionen
+          intjänas av atleten, inte förskrivas av schemat. Det gör att varje atlet med
+          samma mall ändå progressar i sin egen takt. Atleten loggar faktiskt utförda
+          reps, så coachen ser exakt när nästa viktsteg är motiverat.</p>
+
+        <p className="mt-3"><b>Gemensamma regler för alla upplägg</b></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Uppvärmningsset räknas aldrig in i arbetsseten.</li>
+          <li>Avbryt setet om position eller teknik inte kan hållas — det gäller oavsett
+            upplägg.</li>
+          <li>Vila 3–5 minuter mellan arbetsset på huvudlyften, 2–3 minuter för assistans,
+            längre vid behov för att hålla teknik och mål-RPE.</li>
+          <li>Viktberäkningar bygger bara på övningens egen förskrivna vikt — aldrig på en
+            annan övnings baseline. Ett byte mellan sumo och konventionellt, eller en
+            svaghetsvariation, börjar alltså om med rätt last.</li>
+        </ul>
+
+        <p className="mt-3"><b>Hur jag väljer</b></p>
+        <p>Tävlingslyften i styrkeblock får oftast straight sets eller stegrande vikt, för
+          tydlighet och tungt arbete på kontrollerad ansträngning. Volym- och
+          specialiseringsblock passar bra med fallande reps eller topp-set med backoff.
+          Dubbel progression kör jag hellst på assistans och varianter, där progressionen
+          ska växa fram över flera veckor. Rep drops är mitt val när atletens dagsform
+          svänger mycket mellan pass — vikten står still och kroppen får bestämma repsen.</p>
+        <p className="text-xs">Källor: Zourdos MC et al. (2016) JSCR 30(1), RPE-skalan som
+          alla trösklar bygger på; Helms ER et al. (2018) Strength Cond J 38, RIR-baserad
+          autoreglering; Greig L et al. (2020) Sports Med 50, autoreglering kräver
+          konsekvent styrning för att vara tolkbar; Helms ER et al. (2019) Muscle and
+          Strength Pyramid, dubbel progression som standardmodell för assistans.</p>
+      </Section>
+
       <Section title="Forskningsgrund — styrka">
         <p className="font-semibold text-foreground mt-3">Epley 1RM-formel (EAkoefficient)</p>
         <ul className="list-disc pl-5 space-y-1">

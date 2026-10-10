@@ -379,12 +379,12 @@ function accessoryExercises(sum: PeakSummary, cfg: WeekCfg, slots: number): Temp
   );
   return ranked.slice(0, slots).map((a) => ({
     exercise: a.exercise,
-    target_sets: clamp(Math.round((a.weeklySets || 3) * cfg.accFactor), 1, 4),
+    target_sets: Math.min(4, Math.floor(a.weeklySets * cfg.accFactor)),
     target_reps: a.reps,
     target_rpe: 6.5,
     intensity_metric: "rpe" as const,
     notes: "Kept from the athlete's own recent work — maintenance dose, never to failure.",
-  }));
+  })).filter((e) => e.target_sets > 0);
 }
 
 const DAYS_3 = [1, 3, 5];
@@ -430,6 +430,12 @@ export function buildPeakingWeeks(
     const weekIndex = i + 1;
     const meetWeek = weekIndex === 3;
     const sessions: Omit<TemplateSession, "day_of_week">[] = [];
+    // Each exercise gets one weekly maintenance budget, not one per session.
+    const accessoryBudget = accessoryExercises(summary, cfg, days >= 4 ? 4 : 3);
+    const nextAccessory = () => {
+      const exercise = accessoryBudget.shift();
+      return exercise ? [exercise] : [];
+    };
 
     if (meetWeek) {
       // Two short sessions at reduced volume, normal moderate weights, then rest.
@@ -460,7 +466,7 @@ export function buildPeakingWeeks(
           exercises: [
             ...(has("squat") ? mainExercises(L("squat"), cfg, 2, { opener: opts.openers }) : []),
             ...(has("bench") ? mainExercises(L("bench"), cfg, 2, { opener: opts.openers }) : []),
-            ...accessoryExercises(summary, cfg, 1),
+            ...nextAccessory(),
           ],
         });
       }
@@ -471,7 +477,7 @@ export function buildPeakingWeeks(
           notes: "Single pull stance for the whole block — no switching sumo/conventional now.",
           exercises: [
             ...mainExercises(L("deadlift"), cfg, 1, { opener: opts.openers }),
-            ...accessoryExercises(summary, cfg, 1).slice(0, 1),
+            ...nextAccessory(),
           ],
         });
       }
@@ -482,11 +488,11 @@ export function buildPeakingWeeks(
         exercises: [
           ...(has("bench") ? mainExercises(L("bench"), cfg, 2) : []),
           ...(has("squat") ? mainExercises(L("squat"), cfg, 2, { technique: true }) : []),
-          ...accessoryExercises(summary, cfg, 1),
+          ...nextAccessory(),
         ],
       });
       if (days >= 4) {
-        const acc = accessoryExercises(summary, cfg, 4);
+        const acc = accessoryBudget;
         if (acc.length > 0) {
           sessions.push({
             title: "Maintenance accessories",

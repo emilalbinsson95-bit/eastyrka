@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Add six coach-selected set protocols to strength generation and verify preservation of volume, deloads, and saved athlete instructions.
+
 - [x] Correct analytics tab height and wrapping; verify all five tabs remain reachable without overlapping content.
 
 - [ ] Add coach-started monthly payment reminders to the athlete calendar and verify recurrence and permissions.

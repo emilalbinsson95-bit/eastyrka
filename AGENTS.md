@@ -1,5 +1,7 @@
 # Architecture decisions
 
+- Apply coach-selected set protocols as a final volume-neutral transformation after exercise and stance selection; persist per-set prescriptions in the existing athlete-visible exercise notes and retain the first-set target fields, because logging supports one default prescription per exercise and renamed variations must never inherit another lift's load.
+
 - Store one admin-managed monthly payment schedule per athlete and derive fixed calendar occurrences from its original start day; athlete reads are RLS-protected, and reminders never become movable training sessions.
 
 - Reject outdated Vite dependency requests instead of serving stale optimized modules, so dependency updates reload the browser without mixing React dispatchers.

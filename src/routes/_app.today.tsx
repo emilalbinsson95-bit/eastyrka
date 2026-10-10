@@ -55,6 +55,10 @@ export const Route = createFileRoute("/_app/today")({
     meta: [
       { title: "Today's Session — SETPOINT" },
       { name: "description", content: "Log today's lifts and see your readiness in real time." },
+      { property: "og:title", content: "Today's Session — SETPOINT" },
+      { property: "og:description", content: "Log today's lifts and see your readiness in real time." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TodayPage,
@@ -758,7 +762,7 @@ function PlannedExerciseRow({
             {isDone && <CheckCircle2 className="h-4 w-4 text-primary" />}
           </div>
           <p className="text-xs text-muted-foreground">
-            Target: {ex.target_sets}×{ex.target_reps}
+            {ex.notes?.includes("Setupplägg:") ? `${ex.target_sets} arbetsset · första setet: ${ex.target_reps} reps` : `Target: ${ex.target_sets}×${ex.target_reps}`}
             {intensityLabel && ` @ ${intensityLabel}`}
             {ex.target_weight_kg && ` · ${ex.target_weight_kg}kg`}
           </p>
@@ -777,7 +781,7 @@ function PlannedExerciseRow({
             </div>
           )}
           {ex.notes && (
-            <p className="mt-1 text-xs italic text-muted-foreground">
+            <p className="mt-1 whitespace-pre-line text-xs italic text-muted-foreground">
               {ex.notes}
             </p>
           )}

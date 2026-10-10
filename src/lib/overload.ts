@@ -12,6 +12,8 @@
 //     three clearly differentiated days instead of four semi-heavy ones.
 
 import type { TemplateExercise, TemplateSession, TemplateWeek } from "./strengthTemplates";
+import { resolveVariantExercise } from "./exerciseVariants";
+import { pctOf1RM } from "./intensity";
 
 export type DeadliftStance = "keep" | "conventional" | "sumo";
 
@@ -80,6 +82,26 @@ function appendNote(existing: string | undefined, add: string): string {
   return existing ? `${existing} ${add}` : add;
 }
 
+/** Preserve an exercise's own load estimate when effort/reps change; never
+ * transfer kilos to a different exercise or stance. */
+function reconcileLoad(before: TemplateExercise, after: TemplateExercise): TemplateExercise {
+  const original = resolveVariantExercise(before.exercise, before.variation);
+  const next = resolveVariantExercise(after.exercise, after.variation);
+  if (original.exercise !== next.exercise || original.variation !== next.variation) {
+    return { ...after, target_weight_kg: undefined };
+  }
+  const effort = (e: TemplateExercise) => e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : e.target_rpe;
+  const oldRpe = effort(before);
+  const newRpe = effort(after);
+  if (before.target_reps === after.target_reps && oldRpe === newRpe) return after;
+  if (!before.target_weight_kg || oldRpe == null || newRpe == null || before.target_reps > 12 || after.target_reps > 12) {
+    return { ...after, target_weight_kg: undefined };
+  }
+  const from = pctOf1RM(oldRpe, before.target_reps);
+  const to = pctOf1RM(newRpe, after.target_reps);
+  return { ...after, target_weight_kg: from && to ? Math.round(before.target_weight_kg * to / from / 2.5) * 2.5 : undefined };
+}
+
 // ---------- 1. over-warm singles ----------
 
 function withOverWarmSingles(week: TemplateWeek): TemplateWeek {
@@ -125,10 +147,10 @@ function withStanceCommitment(week: TemplateWeek, stance: Exclude<DeadliftStance
       if (mainLift(e) === "deadlift") {
         mainPullSeen += 1;
         if (mainPullSeen === 1) {
-          return { ...e, variation: label };
+          return reconcileLoad(e, { ...e, variation: label });
         }
         // Secondary pull becomes a builder instead of a second main-stance session.
-        return {
+        return reconcileLoad(e, {
           ...e,
           exercise: "Romanian deadlift",
           variation: label,
@@ -137,10 +159,10 @@ function withStanceCommitment(week: TemplateWeek, stance: Exclude<DeadliftStance
           lengthened_partials: true,
           notes:
             "Secondary builder — stance committed, so this trains the pull without a second heavy main-stance session.",
-        };
+        });
       }
       if (isDeadliftPattern(e) && /deficit|block pull|rack pull/i.test(text(e))) {
-        return { ...e, variation: e.variation ? `${e.variation} · ${label}` : label };
+        return reconcileLoad(e, { ...e, variation: e.variation ? `${e.variation} · ${label}` : label });
       }
       return e;
     });
@@ -166,9 +188,9 @@ interface WaveStep {
 }
 
 const WAVE: WaveStep[] = [
-  { reps: 5, deadliftReps: 4, rpe: 7, pct: "70–75%" },
-  { reps: 4, deadliftReps: 3, rpe: 8, pct: "77–82%" },
-  { reps: 3, deadliftReps: 2, rpe: 8.5, pct: "85%+" },
+  { reps: 5, deadliftReps: 4, rpe: 7, pct: "79–81%" },
+  { reps: 4, deadliftReps: 3, rpe: 8, pct: "84–86%" },
+  { reps: 3, deadliftReps: 2, rpe: 8.5, pct: "88–91%" },
 ];
 
 function withWaveLoading(week: TemplateWeek, workingIndex: number): TemplateWeek {
@@ -182,14 +204,14 @@ function withWaveLoading(week: TemplateWeek, workingIndex: number): TemplateWeek
       // Leave dedicated hypertrophy prescriptions (8+ reps) alone.
       if (e.target_reps > 6) return e;
       const reps = lift === "deadlift" ? step.deadliftReps : step.reps;
-      return {
+      return reconcileLoad(e, {
         ...e,
         target_reps: reps,
         target_rpe: step.rpe,
         target_rir: undefined,
         intensity_metric: "rpe" as const,
         notes: appendNote(e.notes, `Wave week ${workingIndex + 1}: ${reps}s @ ~${step.pct}.`),
-      };
+      });
     }),
   }));
   return {
@@ -216,33 +238,35 @@ function benchRoleTitle(role: BenchRole): string {
 
 function shapeBench(e: TemplateExercise, role: BenchRole): TemplateExercise {
   if (role === "heavy") {
-    return {
+    return reconcileLoad(e, {
       ...e,
       exercise: "Bench press",
       variation: "Competition grip & pause",
-      notes: appendNote(e.notes, "Heavy comp-pause day — the only maximal bench of the week."),
-    };
+      notes: appendNote(e.notes, "Tävlingspaus och kontrollerad teknik. Håll föreskriven RPE — inget maxförsök."),
+    });
   }
   if (role === "volume") {
-    return {
+    return reconcileLoad(e, {
       ...e,
       exercise: "Bench press",
       variation: "Touch-and-go",
       target_reps: Math.max(8, e.target_reps),
       target_rpe: e.target_rpe != null ? Math.max(6, Math.min(e.target_rpe, 8) - 1) : 7,
       intensity_metric: "rpe",
+      target_rir: undefined,
       notes: appendNote(e.notes, "Hypertrophy day — reps and control, not load."),
-    };
+    });
   }
-  return {
+  return reconcileLoad(e, {
     ...e,
     exercise: "Close-grip bench",
     variation: undefined,
     target_reps: Math.max(6, e.target_reps),
     target_rpe: e.target_rpe != null ? Math.max(6, Math.min(e.target_rpe, 8.5) - 0.5) : 7.5,
     intensity_metric: "rpe",
+    target_rir: undefined,
     notes: appendNote(e.notes, "Triceps / lockout secondary — differentiated from the heavy day."),
-  };
+  });
 }
 
 function withBenchConsolidation(week: TemplateWeek): TemplateWeek {
@@ -335,7 +359,7 @@ export function overloadSummary(o: OverloadOptions): string[] {
     out.push(
       `Deadlift stance committed to ${o.deadliftStance} — second pull becomes RDL / deficit`,
     );
-  if (o.waveLoading) out.push("3-week wave: 5s @70–75% → 4s @77–82% → 3s/2s @85%+ → deload");
+  if (o.waveLoading) out.push("3-week wave: 5s/4s @ RPE 7 → 4s/3s @ RPE 8 → 3s/2s @ RPE 8.5 → deload");
   if (o.benchConsolidation)
     out.push("Bench consolidated into heavy pause / hypertrophy / close-grip days");
   return out;

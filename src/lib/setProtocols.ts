@@ -75,7 +75,7 @@ export function protocolSets(e: TemplateExercise, protocol: SetProtocol): Protoc
     if (protocol === "ramping") setRpe = Math.max(6, rpe - Math.min(2, (count - 1 - i) * 0.5));
     if (protocol === "descending") setReps = Math.max(2, reps - i);
     if (protocol === "rep-drops" && i > 0) { setReps = Math.max(1, reps - 1); setRpe = Math.max(6, rpe - 1); }
-    if (protocol === "metabolic" && i > 0) { setRpe = 6; }
+    if (protocol === "metabolic" && i > 0) { setRpe = 6; setReps = Math.min(5, reps); }
     let weight = adjustedWeight(e, setReps, setRpe);
     if (protocol === "rep-drops") weight = adjustedWeight(e, reps, rpe);
     if (protocol === "metabolic" && i > 0) {
@@ -101,7 +101,7 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
     for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: samma vikt som set 1, gör så många rena reps som ryms vid RPE ${numberText(sets[i]?.rpe ?? 6)} (inte till failure).`;
   }
   if (protocol === "metabolic") {
-    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${e.target_reps} reps${sets[i]?.weight == null ? " på 70 % av uppskattat 1RM för just denna övning" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · högst RPE 7 · vila 2 minuter.`;
+    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " på 70 % av uppskattat 1RM för just denna övning" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · högst RPE 7 · vila 2 minuter. Sänk vikten om RPE-gränsen överskrids.`;
   }
   if (protocol === "double") {
     const hi = e.target_reps + 4;
@@ -119,12 +119,25 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
 
 /** Final, volume-neutral transformation: no new exercises, days, or working sets. */
 export function applySetProtocols(weeks: TemplateWeek[], options: SetProtocolOptions): TemplateWeek[] {
+  const doubleReferences = new Map<string, TemplateExercise>();
   return weeks.map((week) => {
     if (/deload|taper|peak|återhämt|toppning/i.test(`${week.label} ${week.notes ?? ""}`)) return week;
-    return { ...week, sessions: week.sessions.map((session) => ({ ...session,
+    return { ...week, sessions: week.sessions.map((session, sessionIndex) => ({ ...session,
       exercises: session.exercises.map((e) => {
         const group = protocolGroup(e);
-        return group ? applyProtocol(e, options[group]) : e;
+        if (!group) return e;
+        const protocol = options[group];
+        if (protocol !== "double") return applyProtocol(e, protocol);
+        // Future performance is unknown: do not pre-schedule a load increase.
+        // Keep each slot's starting range/load until the athlete earns progression.
+        const key = `${sessionIndex}:${e.exercise}:${e.variation ?? ""}`;
+        const reference = doubleReferences.get(key) ?? e;
+        doubleReferences.set(key, reference);
+        return applyProtocol({ ...e, target_reps: reference.target_reps,
+          target_weight_kg: reference.target_weight_kg,
+          target_rpe: Math.min(e.target_rpe ?? 8, reference.target_rpe ?? 8),
+          target_rir: e.intensity_metric === "rir" ? Math.max(e.target_rir ?? 2, reference.target_rir ?? 2) : undefined,
+        }, protocol);
       }),
     })) };
   });

@@ -55,6 +55,10 @@ export const Route = createFileRoute("/_app/today")({
     meta: [
       { title: "Today's Session — SETPOINT" },
       { name: "description", content: "Log today's lifts and see your readiness in real time." },
+      { property: "og:title", content: "Today's Session — SETPOINT" },
+      { property: "og:description", content: "Log today's lifts and see your readiness in real time." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TodayPage,

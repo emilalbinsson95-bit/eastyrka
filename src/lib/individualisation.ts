@@ -418,6 +418,9 @@ export const DEFAULT_TUNING: CoachTuning = {
 
 const MAIN_CATS: VolumeCategory[] = ["squat", "hinge", "horizontal-press"];
 const ACCESSORY_CATS: VolumeCategory[] = [
+  "horizontal-pull",
+  "vertical-pull",
+  "vertical-press",
   "quads",
   "hamstrings",
   "delts",

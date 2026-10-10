@@ -56,4 +56,19 @@ describe("coach-selected set protocols", () => {
     expect(result[1]?.sessions[0]?.exercises[0]?.target_weight_kg).toBe(100);
     expect(result[1]?.sessions[0]?.exercises[0]?.target_reps).toBe(5);
   });
+  it("keeps metabolic backoffs lighter even for high-rep top sets", () => {
+    for (const reps of [3, 5, 8, 10, 12, 15]) {
+      const sets = protocolSets({ ...exercise, target_reps: reps }, "metabolic");
+      expect(sets.slice(1).every(s => s.weight == null || s.weight <= 90)).toBe(true);
+    }
+  });
+  it("gives main lifts enough rest rather than an accessory rest target", () => {
+    const out = applySetProtocols([week], { ...DEFAULT_SET_PROTOCOLS, squat: "metabolic" });
+    expect(out[0]?.sessions[0]?.exercises[0]?.notes).toContain("3–5 minuter");
+  });
+  it("preserves genuinely easy work rather than creating a flat ramp", () => {
+    const easy = { ...exercise, target_rpe: 6 };
+    const out = applySetProtocols([{ ...week, sessions: [{ day_of_week: 1, title: "Easy", exercises: [easy] }] }], { ...DEFAULT_SET_PROTOCOLS, squat: "ramping" });
+    expect(out[0]?.sessions[0]?.exercises[0]).toEqual(easy);
+  });
 });

@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Rewrite Coachning in practical, direct Swedish without psychological jargon; verify the tab.
+- [x] Rewrite Coachning in practical, direct Swedish without psychological jargon; verify the tab.
 
 - [x] Review app copy and remove AI-like phrasing and formulaic text without changing training advice or Emil's own material.
 

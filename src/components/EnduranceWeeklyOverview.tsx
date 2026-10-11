@@ -266,7 +266,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function AcwrPanel({ info }: { info: ReturnType<typeof acwr> }) {
   const zoneCopy: Record<string, { label: string; tone: string; Icon: typeof ShieldCheck }> = {
     insufficient: { label: "För lite data", tone: "bg-muted text-muted-foreground", Icon: Activity },
-    low: { label: "Lågt (avtränings­risk)", tone: "bg-status-peaking/20 text-status-peaking-foreground", Icon: TrendingUp },
+    low: { label: "Lågt (risk för avträning)", tone: "bg-status-peaking/20 text-status-peaking-foreground", Icon: TrendingUp },
     optimal: { label: "Optimalt", tone: "bg-status-adapting/20 text-status-adapting-foreground", Icon: ShieldCheck },
     high: { label: "Högt (varning)", tone: "bg-primary/20 text-primary", Icon: TrendingUp },
     danger: { label: "Skaderiskzon", tone: "bg-status-exhausted/30 text-status-exhausted-foreground", Icon: ShieldAlert },
@@ -277,7 +277,7 @@ function AcwrPanel({ info }: { info: ReturnType<typeof acwr> }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <z.Icon className="h-4 w-4" />
-          <div className="text-sm font-medium">ACWR (akut ÷ kronisk last)</div>
+          <div className="text-sm font-medium">ACWR (akut ÷ kronisk belastning)</div>
         </div>
         <Badge className={z.tone}>
           {info.ratio != null ? info.ratio.toFixed(2) : "—"} · {z.label}
@@ -285,7 +285,7 @@ function AcwrPanel({ info }: { info: ReturnType<typeof acwr> }) {
       </div>
       <div className="mt-2 text-[11px] text-muted-foreground">
         7d: <span className="font-semibold text-foreground">{info.acute}</span> · 28d-snitt × 7: <span className="font-semibold text-foreground">{info.chronic}</span>
-        {" · "}sweet spot 0.8–1.3, &gt;1.5 = skadezon.
+        {" · "}referensintervall 0,8–1,3; över 1,5 markeras som varning.
       </div>
     </div>
   );
@@ -305,7 +305,7 @@ function PolarizedPanel({ split }: { split: ReturnType<typeof polarizedDistribut
   return (
     <div className="rounded-md border border-border bg-muted/20 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="text-sm font-medium">Intensitetsfördelning (senaste 28d)</div>
+        <div className="text-sm font-medium">Intensitetsfördelning (senaste 28 dagarna)</div>
         <div className="text-[11px] text-muted-foreground text-right">
           Mål: ~{target.label} (lätt / hård) · {Math.round(weeklyMin)} min/v
         </div>

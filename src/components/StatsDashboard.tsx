@@ -519,13 +519,13 @@ const STATUS_META: Record<
   fatigued: {
     label: "Fatigued",
     color: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
-    help: "Deep fatigue — back off and recover before pushing again.",
+    help: "High fatigue. Reduce training load to allow recovery.",
   },
   overreaching: {
     label: "Overreaching",
     color:
       "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
-    help: "Heavy short-term load. Productive if planned, risky if not.",
+    help: "High short-term load. Check whether it matches the training plan.",
   },
   building: {
     label: "Building",
@@ -537,13 +537,13 @@ const STATUS_META: Record<
     label: "Adapting",
     color:
       "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    help: "Productive sweet spot — sustained load with good recovery.",
+    help: "Stable training load with signs of recovery.",
   },
   peaking: {
     label: "Peaking",
     color:
       "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
-    help: "Fresh and fit — competition-ready window.",
+    help: "Lower fatigue relative to recent training load.",
   },
   detraining: {
     label: "Detraining",

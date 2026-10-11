@@ -555,117 +555,61 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
       </Section>
         </TabsContent>
         <TabsContent value="coaching" className="space-y-6">
-      <Section title="Målet: en atlet som klarar sig själv">
-        <p>Den bästa coachen är den som till slut inte behövs. Jag har sammanfattat
-          mitt sätt att coacha i sex principer. De bygger på källorna under varje
-          rubrik.</p>
+      <Section title="Atleten ska förstå sin träning">
+        <p>Jag vill att atleten ska förstå varför vi tränar som vi gör och kunna ta
+          egna beslut under ett pass. Vad gör man när uppvärmningen känns tung?
+          När ska vikten sänkas? Vilka övningar kan prioriteras bort om tiden inte räcker?
+          Det är sådant vi behöver gå igenom, inte bara vilket program som ska följas.</p>
 
-        <p className="mt-3"><b>1. Anpassa ledarskapet efter atleten (Söderfjäll)</b></p>
-        <p>En ny atlet behöver tydlig styrning. En erfaren atlet behöver mandat.
-          Poängen med behovsanpassat ledarskap är att samma person kan behöva olika
-          typer av ledning i olika frågor. Någon som har tränat i tio år kan vara
-          helt självgående i sin knäböj men fortfarande behöva hjälp med att
-          planera en tävlingstopp. Därför bedömer jag mognaden område för område
-          och inte atleten som helhet.</p>
-        <p>Mognad handlar om två saker: kompetens (vet atleten vad som ska göras
-          och varför?) och engagemang (vill och orkar atleten ta ansvar för det?).
-          Den som är ny men väldigt motiverad behöver främst instruktioner. Den som
-          kan mycket men har tappat gnistan behöver snarare stöd och delaktighet än
-          fler instruktioner. Det viktigaste är att trappa ner styrningen medvetet
-          och säga det högt, till exempel "från nästa block planerar du dina
-          accessoarer själv". Annars fortsätter coachen styra av gammal vana.</p>
+        <p className="mt-3"><b>Olika mycket hjälp med olika saker</b></p>
+        <p>En erfaren lyftare kan sköta vikterna i böjen själv men behöva hjälp med
+          toppningen inför tävling. Jag utgår från vad atleten kan i den aktuella frågan,
+          inte bara hur många år den har tränat. Jag förklarar det som behövs och låter
+          atleten sköta det som redan fungerar.</p>
 
-        <p className="mt-3"><b>2. Bygg psykologisk trygghet först (Edmondson; Googles
-          Project Aristotle)</b></p>
-        <p>Atleten måste kunna berätta om smärta, missade pass och tvivel utan att
-          det får negativa följder. Edmondson definierar psykologisk trygghet som
-          en delad uppfattning om att det är säkert att ta mellanmänskliga risker,
-          alltså att erkänna misstag, fråga och säga emot. I Googles Project
-          Aristotle var det den faktor som betydde mest för om ett team fungerade,
-          före både struktur och tydlighet.</p>
-        <p>För oss är det framför allt en fråga om datakvalitet. Om atleten skriver
-          RPE 7 när det egentligen var 9, eller hoppar över att logga knät som gjorde
-          ont, får alla modeller (EAk, ACWR, drift) dåliga data och ger fel svar.
-          Hur jag reagerar första gången någon rapporterar något jobbigt avgör om
-          jag får veta det nästa gång. Tacka för informationen, var nyfiken och
-          justera utan dramatik. Ett missat pass är något att lära av, inte ett
-          misslyckande.</p>
+        <p className="mt-3"><b>Jag behöver veta hur passet faktiskt gick</b></p>
+        <p>Om ett set var RPE 9 ska det stå 9, även om planen sa 7. Om knät gjorde ont
+          eller ett pass inte hanns med behöver jag också veta det. Annars riskerar jag
+          att lägga nästa veckas träning på fel nivå. Vi går igenom vad som hände och
+          om något behöver ändras.</p>
 
-        <p className="mt-3"><b>3. Lämna över rollen stegvis (Sundlin &amp; Sundlin)</b></p>
-        <p>Atleten ska successivt ta över sina egna beslut i tre steg:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Logga ärligt. Atleten lär sig beskriva vad som faktiskt hände, alltså
-            vikter, RPE, sömn och känsla, utan att försköna.</li>
-          <li>Tolka sin egen dagsform. Atleten börjar se mönster, till exempel att
-            tunga ben efter dålig sömn betyder att toppsetet kan sänkas en nivå.</li>
-          <li>Föreslå egna justeringar. Atleten lägger fram förslag och jag granskar
-            dem. Jag frågar hellre "varför?" än säger "nej".</li>
-        </ul>
-        <p>Hoppa inte över något steg. En atlet som inte loggar ärligt kan inte
-          tolka sin form, och den som inte kan tolka sin form kan inte föreslå
-          rimliga ändringar.</p>
+        <p className="mt-3"><b>Låt atleten vara med och bedöma</b></p>
+        <p>Jag frågar hur vikten kändes och jämför det med loggen och filmen. Efter hand
+          kan atleten föreslå en justering själv: samma vikt igen, lite lättare nästa
+          set eller ett set mindre. Vi går igenom varför. Då får atleten öva på de
+          beslut som behövs även när jag inte är med.</p>
+        <p>En dålig natt eller en tung uppvärmning behöver inte betyda att hela passet
+          ska ändras. Vi väger ihop känslan med hur lyften faktiskt går.</p>
 
-        <p className="mt-3"><b>4. Kommunicera tydligt (SAVI, Benjamin &amp; Yeager)</b></p>
-        <p>SAVI delar in det vi säger i sådant som ökar chansen att bli förstådd,
-          som fakta, raka frågor, svar på frågan, att återge vad den andra sa och
-          att berätta om egna upplevelser. Sedan finns det som minskar chansen, som
-          anklagelser, sarkasm, retoriska frågor och "ja, men". I coachingen blir
-          det en enkel ordning:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Säg vad du ser: "Stången åkte framåt på de två sista repsen."</li>
-          <li>Säg vad du tror att det betyder: "Jag tror att bröstryggen tröttnar."</li>
-          <li>Fråga hur atleten upplevde det: "Hur kändes det från ditt håll?"</li>
-        </ul>
-        <p>Först efter det kommer råden. Feedback som utgår från atletens egen
-          bild fastnar bättre, och ibland visar det sig att atleten har en bättre
-          förklaring än jag.</p>
+        <p className="mt-3"><b>Återkoppla på det som går att se</b></p>
+        <p>Jag försöker vara konkret: ”Höften kom upp före stången på de sista två
+          repsen.” Sedan frågar jag hur det kändes. Filmen visar inte allt, och jag
+          vill inte bestämma orsaken innan jag hört atletens bedömning.</p>
+        <p>För en ny lyftare använder jag cues för att rätta till större teknikbrister.
+          När grunderna sitter jobbar jag främst med övningsval för det som behöver
+          förbättras, i stället för att lägga på fler instruktioner i varje lyft.</p>
 
-        <p className="mt-3"><b>5. Balansera det inspirerande och det konkreta (Bass &amp;
-          Avolio; Lowe m.fl. 1996; Ng 2017)</b></p>
-        <p>Bass och Avolio skiljer mellan transformativt ledarskap, som bygger på
-          mening, visioner och personlig utveckling, och transaktionellt
-          ledarskap, som handlar om tydliga mål, uppföljning och belöning när man
-          levererar. En atlet behöver båda. Meningen gör att man orkar ett helt år.
-          Målen och uppföljningen gör att man vet vad som ska göras på tisdag.</p>
-        <p>Forskningen stöder att de kompletterar varandra, men man ska inte påstå
-          att det transaktionella är det som egentligen driver prestation. Lowe
-          m.fl. (1996) fann tvärtom att transformativt ledarskap hade starkare
-          samband med effektivitet. Inom det transaktionella är det också främst
-          "belöning mot prestation" som fungerar, alltså tydliga överenskommelser
-          och uppföljning. Att bara ingripa när något går fel ger betydligt sämre
-          resultat. Så jag menar tydliga mål och ärlig uppföljning, inte straff.</p>
+        <p className="mt-3"><b>Följ upp det vi tränar för</b></p>
+        <p>Inför ett block går vi igenom vad vi vill förbättra och hur vi ska följa upp
+          det. Det kan vara att hålla positionen ur botten i böjen, få in veckans pass
+          eller lyfta mer vid samma RPE. Efter blocket tittar vi på vad som fungerade
+          och vad som behöver ändras. Ett enstaka dåligt pass räcker inte för att döma
+          ut upplägget.</p>
 
-        <p className="mt-3"><b>6. Se coach och atlet som ett lag på två (Wheelan; Hoffer
-          Gittell; Tomasello)</b></p>
-        <p>Wheelan: Grupper går igenom faser, från osäkerhet och beroende via
-          konflikt och förhandling till tillit och till slut produktivt arbete. Det
-          gäller även en grupp på två. Den första friktionen, som när atleten
-          ifrågasätter programmet, är ofta ett tecken på att relationen mognar och
-          inte att något är fel.</p>
-        <p>Hoffer Gittell: Relationell koordination bygger på delade mål, delad
-          kunskap och ömsesidig respekt, och den bärs upp av kommunikation som är
-          ofta, i tid, korrekt och inriktad på att lösa problem. Det fungerar
-          bättre än instruktioner uppifrån.</p>
-        <p>Tomasello: Människan är byggd för att samarbeta mot gemensamma mål. Den
-          förmågan ska jag använda i stället för att coacha ovanifrån.</p>
-
-        <p className="mt-3"><b>Så ser det ut i SETPOINT</b></p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Fas 1: Jag loggar åt atleten och visar hur det görs.</li>
-          <li>Fas 2: Atleten loggar själv och jag kommenterar.</li>
-          <li>Fas 3: Atleten föreslår ändringar, till exempel via Review &amp;
-            adjust, och jag godkänner dem.</li>
-        </ul>
-        <p>Målet är nått när atletens egna förslag stämmer med mina gång på gång.</p>
+        <p className="mt-3"><b>Programmet ska gå att diskutera</b></p>
+        <p>Atleten får säga om något inte fungerar: för långa pass, en övning som gör
+          ont eller en belastning som är svår att återhämta sig från. Jag ansvarar för
+          planeringen, men behöver den informationen för att göra ett bättre jobb.</p>
+        <p>Att klara sig själv betyder inte att atleten ska tycka som jag i allt.
+          Det betyder att den förstår träningen, kan motivera sina val och vet när
+          den behöver hjälp.</p>
       </Section>
 
       <Section title="Tränaren som projektledare">
-        <p>Som tränare ansvarar man för mer än programmet. Skador, energi och kost, sömn, stress och
-          livet runt träningen påverkar resultatet minst lika mycket som valet av övningar. Jag ser
-          därför tränarrollen som en projektledarroll. Jag håller ihop helheten, ser till att rätt
-          person gör rätt sak och följer upp att det blir gjort. Men en projektledare gör inte allt
-          själv. En stor del av jobbet är att veta var min kompetens tar slut och när jag ska lämna
-          över till någon annan.</p>
+        <p>Jag planerar träningen och följer upp hur den fungerar. Sömn, mat, skador och
+          tiden atleten har till träning påverkar vad som är rimligt att lägga in. Jag behöver
+          ta hänsyn till det, men ska inte försöka lösa allt själv. När något ligger utanför
+          min kompetens hjälper jag atleten att hitta rätt hjälp.</p>
 
         <p className="mt-3"><b>Grundregeln: coacha inom din kompetens</b></p>
         <p>Min tumregel är att jag får anpassa träningen efter nästan allt, men att jag inte
@@ -678,10 +622,9 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
           "mental coach" är det inte, och där varierar kompetensen mycket.</p>
 
         <p className="mt-3"><b>Skador</b></p>
-        <p>Det här gör jag själv: Jag ser skaderapporter som information och inte som något
-          misslyckande. Här blir den psykologiska tryggheten från förra avsnittet konkret. Jag
-          anpassar övningar, belastning och rörelseomfång så att atleten kan fortsätta träna runt
-          skadan, och jag följer smärtan över tid i loggen. Lätt och övergående träningsvärk eller
+        <p>Jag behöver få veta var det gör ont och vad som provocerar smärtan. Jag
+          anpassar övningar, belastning och rörelseomfång när det går att träna utan att
+          besvären förvärras, och följer upp hur det utvecklas. Lätt och övergående träningsvärk eller
           stelhet som inte blir värre av träningen kan man oftast hantera med ändrad belastning.</p>
         <p>Här skickar jag vidare till fysioterapeut eller läkare:</p>
         <ul className="list-disc pl-5 space-y-1">
@@ -699,9 +642,9 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
         <p className="mt-3"><b>Energi och kost</b></p>
         <p>Det här gör jag själv: Jag ger allmänna råd utifrån Livsmedelsverkets riktlinjer och
           grundläggande idrottsnutrition, som tillräckligt med energi, protein fördelat över dagen,
-          kolhydrater kring passen och vätska. Jag följer vikt och prestation i loggen och kopplar
-          ihop dem med EAk, alltså hur mycket energi som finns kvar till kroppen när träningen är
-          betald.</p>
+          kolhydrater kring passen och vätska. Jag följer vikt och prestation över tid. EAk i appen visar uppskattad
+          styrka i förhållande till baslinjen; det mäter inte energitillgänglighet och kan inte
+          avgöra om atleten får i sig tillräckligt med mat.</p>
         <p>Här skickar jag vidare till legitimerad dietist eller läkare:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Tecken på låg energitillgänglighet (RED-S): utebliven eller oregelbunden mens,
@@ -711,15 +654,14 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
             allergier eller graviditet.</li>
           <li>Tecken på ett stört förhållande till mat. Det kan vara stark oro kring mat, strikta
             regler, kompensationsträning, stora viktsvängningar eller att atleten döljer vad den
-            äter. Då slutar jag ge kostråd helt. Skicka vidare, och fortsätt vara ett stöd i
-            relationen.</li>
+            äter. Då ger jag inga fler kostråd utan hänvisar till vården.
+            Träningen får anpassas efter bedömningen där.</li>
         </ul>
 
-        <p className="mt-3"><b>Livsstil, stress och mående</b></p>
-        <p>Det här gör jag själv: Jag frågar om sömn, stress, jobb och relationer som en del av
-          uppföljningen. Jag anpassar träningen efter hur livet ser ut just nu, pratar om målbild
-          och motivation och hjälper till med vanor och struktur. Det mesta av det här är vanligt
-          tränarjobb, och SAVI-modellen gör de samtalen bättre.</p>
+        <p className="mt-3"><b>När vardagen påverkar träningen</b></p>
+        <p>Jag frågar om sömn, återhämtning och hur mycket tid som finns till passen.
+          Om jobb eller annat gör en träningsvecka svår att få ihop anpassar vi schemat.
+          Jag behöver veta hur det påverkar träningen, inte gå in i atletens privatliv.</p>
         <p>Här skickar jag vidare till psykolog, vårdcentral eller företagshälsovård:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Nedstämdhet, oro eller sömnproblem som varar mer än ett par veckor eller påverkar
@@ -735,14 +677,14 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
           till att den inte stannar hos dig.</p>
 
         <p className="mt-3"><b>Så lämnar du över på ett bra sätt</b></p>
-        <p>Att skicka vidare är inte att släppa taget, och det är där projektledarrollen syns som
-          tydligast.</p>
+        <p>Jag förklarar vad jag inte kan bedöma och vilken hjälp atleten behöver.
+          Sedan följer jag upp vad det innebär för träningen.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Ha kontaktnätet klart i förväg. Ha namnen på en fysioterapeut, en dietist och en
             psykolog du litar på innan du behöver dem. Det är mycket lättare att säga "ring Anna"
             än "sök hjälp någonstans".</li>
           <li>Säg varför, rakt och utan dramatik. "Det här ligger utanför vad jag kan bedöma, och
-            jag vill att någon som kan det här tittar på det. Vi fortsätter träna under tiden."</li>
+            jag vill att någon som kan det här tittar på det. Vi stämmer av vilken träning som är lämplig under tiden."</li>
           <li>Be om lov innan du delar information. Atleten bestämmer vad som får föras vidare
             mellan dig och vården.</li>
           <li>Följ en plan. Jag anpassar träningen efter vad den som behandlar säger, och inte
@@ -752,11 +694,9 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
         </ul>
 
         <p className="mt-3"><b>I SETPOINT</b></p>
-        <p>Allt som gäller en skada, en remiss eller en anpassning loggas på samma ställe som
-          träningen, så att helheten syns. Varningssignalerna ovan kan fungera som trafikljus i
-          uppföljningen. Grönt betyder att vi anpassar själva, gult att vi följer upp extra noga
-          och sätter en tidsgräns, och rött att vi skickar vidare nu. Det gör besluten mindre
-          beroende av magkänsla och gör det tydligt för atleten varför vi gör som vi gör.</p>
+        <p>Jag antecknar de anpassningar som behövs för träningen och följer upp om de
+          fungerar. Medicinska bedömningar hör till vården. Dela bara de uppgifter som
+          behövs för planeringen och som atleten har godkänt att du delar.</p>
       </Section>
 
       <Section title="Träningslast: Foster sRPE">

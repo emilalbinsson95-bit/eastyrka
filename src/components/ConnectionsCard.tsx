@@ -23,12 +23,12 @@ const PROVIDERS: Array<{ id: ExternalProvider; label: string; blurb: string }> =
   {
     id: "garmin",
     label: "Garmin Connect",
-    blurb: "Importera löpning, cykel & sim från Garmin-klockan automatiskt.",
+    blurb: "Importera löpning, cykling och simning från Garmin-klockan automatiskt.",
   },
   {
     id: "strava",
     label: "Strava",
-    blurb: "Importera aktiviteter och peka mot dina endurance-pass.",
+    blurb: "Importera aktiviteter och koppla dem till dina konditionspass.",
   },
 ];
 
@@ -83,8 +83,7 @@ export function ConnectionsCard() {
           Anslutna tjänster
         </CardTitle>
         <CardDescription>
-          Koppla Garmin eller Strava för att automatiskt få in dina löpningar
-          (kräver API-åtkomst — knapparna är redo att aktiveras).
+          Import från Garmin och Strava kräver att tjänstens API-åtkomst är aktiverad.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

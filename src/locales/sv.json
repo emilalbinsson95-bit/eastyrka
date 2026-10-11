@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "SETPOINT",
-    "tagline": "Träna utifrån din readiness.",
+    "tagline": "Träna efter din dagsform.",
     "loading": "Laddar…"
   },
   "role": {
@@ -85,7 +85,7 @@
       "injured": "Skadad",
       "noTime": "Hann inte",
       "travel": "Resa",
-      "lowReadiness": "Låg readiness"
+      "lowReadiness": "Låg dagsform"
     },
     "cancelled": "Avbokad",
     "suggested": "Föreslagen",
@@ -134,14 +134,14 @@
   },
   "endurance": {
     "title": "Konditionsträning",
-    "subtitle": "RPE-baserade löp, cykel och simpass. Ingen GPS eller tempo-mål — bara tid och ansträngning.",
+    "subtitle": "Löpning, cykling och simning med tid och RPE.",
     "quickLog": "Snabblogga",
     "buildStructured": "Bygg ett strukturerat pass",
     "recentSessions": "Senaste pass",
     "noSessionsYet": "Inga konditionspass än – logga ett ovan.",
     "loading": "Laddar…",
     "weeklyLoad": "Veckobelastning",
-    "weeklyLoadDesc": "Tid-under-last viktad med RPE — högre RPE räknas mer. Siffror är godtyckliga belastningsenheter (sRPE).",
+    "weeklyLoadDesc": "Belastningen beräknas från passens längd och RPE och anges i sRPE-enheter.",
     "thisWeek": "Denna vecka",
     "last7d": "Senaste 7 dagar",
     "trend8w": "Trend (8 v)",
@@ -160,7 +160,7 @@
     "conversations": "Konversationer",
     "startNew": "Starta ny",
     "selectConversation": "Välj en konversation",
-    "noMessages": "Inga meddelanden än. Säg hej.",
+    "noMessages": "Inga meddelanden än.",
     "typePlaceholder": "Skriv ett meddelande… (Enter för att skicka)",
     "noPartnersCoach": "Koppla atleter för att börja chatta.",
     "noPartnersAthlete": "Din tränare är inte tillagd än.",
@@ -197,10 +197,10 @@
   },
   "physio": {
     "overviewTitle": "Patientöversikt",
-    "overviewDescription": "Långsiktig uppföljning av progressiv överbelastning och följsamhet för dina patienter.",
+    "overviewDescription": "Patienternas belastning, utveckling och genomförda rehabpass.",
     "invitePatient": "Bjud in patient",
     "noPatientsTitle": "Inga patienter än",
-    "noPatientsDesc": "Bjud in en patient för att börja följa rehabprogress.",
+    "noPatientsDesc": "Bjud in en patient för att följa rehabiliteringen.",
     "summary": {
       "active": "Aktiva patienter",
       "sessions": "Totalt antal pass",
@@ -224,7 +224,7 @@
     "patient": {
       "back": "Patienter",
       "message": "Meddelande",
-      "subtitle": "Rehabprogress, pass och patientrapporterade utfall.",
+      "subtitle": "Rehabilitering, träningspass och patientens egna rapporter.",
       "newSession": "Nytt rehabpass",
       "newSessionDesc": "Skapa ett pass och lägg sedan till de förskrivna övningarna.",
       "date": "Datum",
@@ -237,8 +237,8 @@
       "objectivePlaceholder": "ROM, styrka, specifika tester, observationer…",
       "creating": "Skapar…",
       "createSession": "Skapa pass",
-      "progressionTitle": "Övningsprogress",
-      "progressionDesc": "Progressiv överbelastning per övning — last, volym och smärta över hela programmet.",
+      "progressionTitle": "Utveckling per övning",
+      "progressionDesc": "Belastning, volym och smärta per övning under programmet.",
       "noExercises": "Inga övningar loggade än. Lägg till förskrivna övningar i ett pass för att börja följa utvecklingen.",
       "loadChart": "Lastutveckling (kg)",
       "loadStartNow": "Last start→nu",
@@ -259,7 +259,7 @@
   },
   "patient": {
     "greeting": "Hej 👋",
-    "subtitle": "Små steg varje dag gör skillnad. Här är vad som väntar.",
+    "subtitle": "Dina planerade och genomförda rehabpass.",
     "stats": {
       "streak": "Dagar i rad",
       "done": "Pass genomförda",

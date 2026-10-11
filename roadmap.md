@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Review app copy and remove AI-like phrasing and formulaic text without changing training advice or Emil's own material.
+
 - [x] Audit strength generation for realistic progression, volume, protocol compatibility and recovery; fix demonstrated contradictions and test the resulting plans.
 
 - [x] Add six coach-selected set protocols to strength generation and verify preservation of volume, deloads, and saved athlete instructions.

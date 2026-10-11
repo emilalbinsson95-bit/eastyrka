@@ -45,7 +45,7 @@ function LearnPage() {
       <div className="border-b border-border pb-6"><CoachingInformation /></div>
 
       <Topic title="Uppvärmning för styrkelyft (10–15 min)">
-        <p>Värm upp hela kroppen först, sedan lyftet. Håll det kort — målet är att bli varm och rörlig, inte trött.</p>
+        <p>Börja med hela kroppen och värm sedan upp med stången. Håll uppvärmningen kort så att du har energi kvar till arbetsseten.</p>
         <p className="font-medium text-foreground">1. Puls (3–5 min)</p>
         <p>Cykel, roddmaskin eller rask promenad tills du blir lite varm.</p>
         <p className="font-medium text-foreground">2. Rörlighet och aktivering (5 min, 1 varv)</p>
@@ -81,7 +81,7 @@ function LearnPage() {
           </table>
         </div>
         <p>Står det "3×5 @ RPE 8" väljer du en vikt där du har ungefär två reps kvar efter femte repen. Känns
-          dagen tung tar du ner vikten, känns den lätt går du upp. Det är så programmet anpassar sig efter dig.</p>
+          dagen tung tar du ner vikten, känns den lätt går du upp.</p>
       </Topic>
 
       <Topic title="RIR — reps in reserve">
@@ -96,7 +96,7 @@ function LearnPage() {
 
       <Topic title="Deload — planerad lätt vecka">
         <p>En deload är en medvetet lättare vecka: färre set och/eller lägre vikter. Syftet är att kroppen
-          ska återhämta sig och ta upp träningen du gjort. Det är inte ett tecken på att något gått fel.</p>
+          ska återhämta sig efter de tyngre veckorna.</p>
         <p>I appen märks de som <strong>"Planned light"</strong> och du får inga trötthetsvarningar de veckorna.</p>
       </Topic>
 
@@ -104,7 +104,7 @@ function LearnPage() {
         <p>De sista ~3 veckorna före tävling minskar volymen stegvis medan vikterna hålls kvar: ungefär
           15 % mindre, sedan hälften, och tävlingsveckan bara två korta pass. Forskningen visar att det är
           volymsänkningen som gör dig pigg och stark på tävlingsdagen — tunga singlar behövs inte.</p>
-        <p>Känns det för lätt? Det ska det göra. Du bygger inte styrka nu, du låter den synas.</p>
+        <p>Passen ska kännas lättare under toppningen. Den minskade volymen ger tid för återhämtning före tävlingen.</p>
       </Topic>
 
       <Topic title="E1RM och EAk">

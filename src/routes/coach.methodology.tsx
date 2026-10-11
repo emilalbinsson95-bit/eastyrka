@@ -72,7 +72,7 @@ VDOT    = VO2 / %VO2max`}
       <Section title="10k-prediktion från träningspass (EWMA)">
         <p>Varje kvalitetsinsats (≥ 3 min, RPE ≥ 5) konverteras till VDOT via samma
           Daniels-formel. Bästa VDOT i passet → predikterad 10k-tid (bisektion).</p>
-        <p>För att inte ett enskilt grymt intervall ska spika estimatet använder vi EWMA
+        <p>För att ett enskilt snabbt intervall inte ska påverka uppskattningen för mycket använder vi EWMA
           mot de 4–5 senaste predikterade tiderna med α = 0.4:</p>
         <Formula>{`blended = α · current + (1 − α) · prevEMA`}</Formula>
       </Section>
@@ -251,7 +251,7 @@ EAk %      = (dagens E1RM ÷ baseline 1RM) × 100`}
           ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste baseline-ändringen höjs baseline
           till <code>median(peak-E1RM) × 0.98</code>, avrundat till 0.5 kg. Endast höjningar
           tillåts; coach hanterar nedjusteringar manuellt. Enstaka topp-pass flyttar
-          alltså aldrig baseline — det krävs sustained progression.</p>
+          inte baslinjen; höjningen kräver förbättring över flera pass.</p>
       </Section>
 
       <Section title="RPE → %1RM (RTS / Helms-tabell)">
@@ -277,36 +277,31 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
       <Section title="Setupplägg — hur seten läggs upp">
         <p>Setupplägget styr hur seten inom en övning fördelas. Det väljs manuellt av
           coachen i programgeneratorn, separat för knäböj, bänk, mark och assistansövningar.
-          Det är en volymneutral transformation: inga nya övningar, inga nya dagar och
-          inga extra arbetsset tillkommer — bara setens upplägg ändras. Deload-, taper-,
-          toppnings- och återhämtningsveckor lämnas alltid orörda, och alla RPE klampas
-          till 6–8,5. Upplägget skrivs som tydliga instruktioner i övningens anteckningar,
-          så atleten vet exakt hur varje set ska köras.</p>
+          Antalet övningar, dagar och arbetsset är oförändrat. Deload-, taper-,
+          toppnings- och återhämtningsveckor behåller sina upplägg. De ändrade seten får
+          RPE 6–8,5 och sparas i övningens anteckningar.</p>
 
         <p className="mt-3"><b>Behåll mallens upplägg</b></p>
-        <p>Standardvalen. Mallens set, reps och ansträngning ligger kvar som de är. Det är
-          rätt val när mallen redan är byggd för atletens fas och syfte.</p>
+        <p>Förvalt alternativ. Mallens set, reps och ansträngning behålls. Välj detta när
+          du vill använda mallen utan att ändra setens upplägg.</p>
 
         <p className="mt-3"><b>Samma vikt och reps (straight sets)</b></p>
         <p>Alla set körs på samma vikt och samma reps. Första setet sätter vikten. Om ett
-          set hamnar på mål-RPE + 1,5 (högst 8,5) sänks vikten 5 % i resterande set — det
-          är säkerhetsventilen som gör att straight sets inte tvingar fram failure bara
-          för att dagsformen var bättre än väntat. Det är det enklaste upplägget att
-          logga och utvärdera, och därför ofta bäst för tävlingslyften i styrkeblock.</p>
+          set når mål-RPE + 1,5 (högst 8,5) sänks vikten 5 % i resterande set för att
+          undvika att ansträngningen blir för hög. Upplägget är enkelt att följa upp
+          och passar ofta tävlingslyften i styrkeblock.</p>
 
         <p className="mt-3"><b>Samma vikt, färre reps vid trötthet (rep drops)</b></p>
         <p>Vikten är låst till första setets vikt. Därefter anpassar atleten antalet reps
           till en lägre RPE — aldrig till failure. Upplägget används inte på arbete över
-          cirka 85 % av 1RM; där lämnas förskrivningen orörd, för närmast-maximala set ska
-          inte improviseras fram. Detta är autoreglering i sin enklaste form: samma belastning
-          varje set, och tröttheten styr bara hur många rena reps som ryms.</p>
+          cirka 85 % av 1RM; där behålls det planerade upplägget. Vikten är densamma
+          mellan seten och antalet reps anpassas efter ansträngningen.</p>
 
         <p className="mt-3"><b>Stegrande vikt (ramping)</b></p>
         <p>Samma reps i alla set, men RPE och vikt stiger successivt inom passet — till
           exempel 3 set @ RPE 6, 6,5 och 7. Uppvärmningen är separat och räknas inte in.
-          Ett förskrivet lätt set (RPE ≤ 6) lämnas orört; det ska inte göras till en låtsas-ramp.
-          Rampning bygger upp till tyngre arbete utan ett enskilt alltför tungt set och
-          passar bra i våg- och volymveckor.</p>
+          Planerade lätta set (RPE ≤ 6) ändras inte. Stegringen passar i våg- och
+          volymveckor när arbetet ska bli tyngre under passet.</p>
 
         <p className="mt-3"><b>Fallande reps, stegrande vikt (descending)</b></p>
         <p>Färre reps för varje set, med högre vikt men bibehållen RPE — ett pyramidupplägg.
@@ -319,17 +314,15 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
         <p>Ett topp-set i huvudförskrivningen, följt av backoff-set på högst 5 reps, högst
           70 % av övningens uppskattade 1RM och högst 90 % av toppvikten, med RPE-tak.
           Vila: 2 minuter för assistans, 3–5 minuter för huvudlyft. Inga extra set läggs
-          till. Backoff-seten håller kvaliteten hög genom hela passet i stället för att
-          jaga trötthet, vilket är hela poängen med att tids- och procentsätta dem.</p>
+          till. Vikt- och RPE-gränserna begränsar ansträngningen i backoff-seten.</p>
 
         <p className="mt-3"><b>Dubbel progression</b></p>
         <p>Reps rör sig inom ett intervall, till exempel 3–7 reps, på samma vikt i alla set.
           När alla set når övre gränsen inom mål-RPE höjs vikten med minsta tillgängliga
           viktsteg nästa gång, och atleten börjar om på nedre gränsen. Annars behålls
-          vikten. Startlasten hålls fast för övningens plats i hela blocket — progressionen
-          intjänas av atleten, inte förskrivas av schemat. Det gör att varje atlet med
-          samma mall ändå progressar i sin egen takt. Atleten loggar faktiskt utförda
-          reps, så coachen ser exakt när nästa viktsteg är motiverat.</p>
+          vikten. Schemat behåller startvikten tills atleten uppfyller kravet för en
+          höjning. Atleten loggar utförda reps så att coachen kan följa när vikten
+          behöver ändras.</p>
 
         <p className="mt-3"><b>Gemensamma regler för alla upplägg</b></p>
         <ul className="list-disc pl-5 space-y-1">
@@ -347,9 +340,9 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
         <p>Tävlingslyften i styrkeblock får oftast straight sets eller stegrande vikt, för
           tydlighet och tungt arbete på kontrollerad ansträngning. Volym- och
           specialiseringsblock passar bra med fallande reps eller topp-set med backoff.
-          Dubbel progression kör jag hellst på assistans och varianter, där progressionen
+          Dubbel progression kör jag helst på assistans och varianter, där progressionen
           ska växa fram över flera veckor. Rep drops är mitt val när atletens dagsform
-          svänger mycket mellan pass — vikten står still och kroppen får bestämma repsen.</p>
+          svänger mycket mellan pass. Vikten behålls och antalet reps anpassas efter RPE.</p>
         <p className="text-xs">Källor: Zourdos MC et al. (2016) JSCR 30(1), RPE-skalan som
           alla trösklar bygger på; Helms ER et al. (2018) Strength Cond J 38, RIR-baserad
           autoreglering; Greig L et al. (2020) Sports Med 50, autoreglering kräver

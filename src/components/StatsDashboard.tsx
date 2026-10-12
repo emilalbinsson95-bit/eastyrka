@@ -1241,8 +1241,11 @@ function BodyweightCard({
       weekBW.set(wk, arr);
     }
 
+    // Strength index uses only the big 3 (squat, bench, deadlift) and their
+    // barbell variations — accessory exercises don't belong in the index.
+    const big3 = logs.filter((l) => isBig3Lift(l.exercise));
     const counts = new Map<string, number>();
-    for (const l of logs) {
+    for (const l of big3) {
       counts.set(l.exercise, (counts.get(l.exercise) ?? 0) + 1);
     }
     const topEx = Array.from(counts.entries())
@@ -1250,7 +1253,7 @@ function BodyweightCard({
       .slice(0, 4)
       .map(([ex]) => ex);
     const topSet = new Map<string, Map<string, number>>();
-    for (const l of logs) {
+    for (const l of big3) {
       if (!topEx.includes(l.exercise)) continue;
       const d = parseISO(l.date);
       const wk = format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");

@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Verify the uploaded coaching references and add practical guidance and corrected evidence limits to methodology; verify the page.
+- [x] Verify the uploaded coaching references and add practical guidance and corrected evidence limits to methodology and athlete learning; verified signed-in pages and 34 calculation/protocol tests.
 
 - [x] Rewrite Coachning in practical, direct Swedish without psychological jargon; verify the tab.
 
@@ -12,8 +12,8 @@
 
 - [x] Correct analytics tab height and wrapping; verify all five tabs remain reachable without overlapping content.
 
-- [ ] Add coach-started monthly payment reminders to the athlete calendar and verify recurrence and permissions.
-- [ ] Translate more athlete-facing calendar and coaching information text into Swedish and English; verify visible text.
+- [x] Add coach-started monthly payment reminders to the athlete calendar and verify recurrence and permissions (completed in the prior payment-reminder work).
+- [x] Translate athlete-facing calendar and coaching information into Swedish and English (completed in the prior translation work).
 
 - [x] Show free app, coaching prices and Swish in login and athlete information; let admins save available places and verify the full flow.
 

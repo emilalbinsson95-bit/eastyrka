@@ -69,14 +69,16 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
     queryKey: ["strength-volume-profile", athleteId],
     queryFn: async () => {
       const { data, error } = await supabase.from("athlete_strength_volume_profiles")
-        .select("squat_factor, bench_factor, deadlift_factor, deadlift_style")
+        .select("squat_factor, bench_factor, deadlift_factor, deadlift_style, volume_tolerance, weekly_set_cap")
         .eq("athlete_id", athleteId).maybeSingle();
       if (error) throw error;
-      return { ...volumeProfileFromRow(data), style: (data?.deadlift_style ?? null) as "conventional" | "sumo" | null };
+      return { ...volumeProfileFromRow(data), style: (data?.deadlift_style ?? null) as "conventional" | "sumo" | null, tolerance: (data?.volume_tolerance ?? "normal") as "low" | "normal" | "high", cap: data?.weekly_set_cap ?? null };
     },
   });
   const [style, setStyle] = useState<"conventional" | "sumo" | null>(null);
-  useEffect(() => { if (query.data) setStyle(query.data.style); }, [query.data]);
+  const [tolerance, setTolerance] = useState<"low" | "normal" | "high">("normal");
+  const [cap, setCap] = useState<string>("");
+  useEffect(() => { if (query.data) { setStyle(query.data.style); setTolerance(query.data.tolerance); setCap(query.data.cap ? String(query.data.cap) : ""); } }, [query.data]);
   const [draft, setDraft] = useState<StrengthVolumeProfile>(DEFAULT_STRENGTH_VOLUME);
   useEffect(() => { if (query.data) setDraft({ squat: query.data.squat, bench: query.data.bench, deadlift: query.data.deadlift }); }, [query.data]);
 
@@ -104,6 +106,8 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
         bench_factor: draft.bench,
         deadlift_factor: draft.deadlift,
         deadlift_style: style,
+        volume_tolerance: tolerance,
+        weekly_set_cap: cap ? Math.max(6, Math.min(40, Math.round(Number(cap)))) : null,
         updated_at: new Date().toISOString(),
       }, { onConflict: "athlete_id" });
       if (error) throw error;
@@ -113,7 +117,7 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
   });
 
   const changed = (Object.keys(draft) as Array<keyof StrengthVolumeProfile>)
-    .some((key) => draft[key] !== (query.data ?? DEFAULT_STRENGTH_VOLUME)[key]) || style !== (query.data?.style ?? null);
+    .some((key) => draft[key] !== (query.data ?? DEFAULT_STRENGTH_VOLUME)[key]) || style !== (query.data?.style ?? null) || tolerance !== (query.data?.tolerance ?? "normal") || cap !== (query.data?.cap ? String(query.data.cap) : "");
 
   return <Card>
     <CardHeader>
@@ -160,8 +164,19 @@ export function StrengthVolumeProfileCard({ athleteId }: { athleteId: string }) 
         </div>
         <p className="text-xs text-muted-foreground">Used by generated programs. Sumo: comp pull is sumo, conventional pulls can appear as accessories. Conventional: no sumo work is programmed.</p>
       </div>
+      <div className="space-y-2">
+        <Label>Volymtolerans (startvärde)</Label>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Volymtolerans">
+          {([["low", "Låg (−1 set)"], ["normal", "Normal"], ["high", "Hög (+1 set)"]] as const).map(([value, text]) => (
+            <Button key={value} type="button" size="sm" role="radio" aria-checked={tolerance === value} variant={tolerance === value ? "default" : "outline"} disabled={query.isLoading || save.isPending} onClick={() => setTolerance(value)}>{text}</Button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Ger −1/0/+1 set per lyft och vecka tills generatorn har data från ett helt block. Därefter styr blockutvärderingen.</p>
+        <Label htmlFor={`weekly-cap-${athleteId}`}>Veckotak per lyft (set)</Label>
+        <input id={`weekly-cap-${athleteId}`} type="number" min={6} max={40} inputMode="numeric" placeholder="Inget tak" value={cap} onChange={(e) => setCap(e.target.value)} className="h-9 w-32 rounded-md border border-input bg-background px-3 text-sm" />
+      </div>
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" disabled={!changed || save.isPending} onClick={() => { setDraft(query.data ? { squat: query.data.squat, bench: query.data.bench, deadlift: query.data.deadlift } : DEFAULT_STRENGTH_VOLUME); setStyle(query.data?.style ?? null); }}>Reset</Button>
+        <Button type="button" variant="ghost" disabled={!changed || save.isPending} onClick={() => { setDraft(query.data ? { squat: query.data.squat, bench: query.data.bench, deadlift: query.data.deadlift } : DEFAULT_STRENGTH_VOLUME); setStyle(query.data?.style ?? null); setTolerance(query.data?.tolerance ?? "normal"); setCap(query.data?.cap ? String(query.data.cap) : ""); }}>Reset</Button>
         <Button type="button" disabled={!changed || query.isError || save.isPending} onClick={() => save.mutate()}>{save.isPending ? "Saving…" : "Save profile"}</Button>
       </div>
     </CardContent>

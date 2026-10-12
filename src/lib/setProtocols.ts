@@ -10,7 +10,7 @@ export const SET_PROTOCOLS = [
   { id: "rep-drops", label: "Samma vikt, färre reps vid trötthet" },
   { id: "ramping", label: "Stegrande vikt" },
   { id: "descending", label: "Fallande reps, stegrande vikt" },
-  { id: "metabolic", label: "Topp-set + tidsstyrda backoff-set" },
+  { id: "metabolic", label: "Topp-set + backoff" },
   { id: "double", label: "Dubbel progression" },
 ] as const;
 export type SetProtocol = (typeof SET_PROTOCOLS)[number]["id"];
@@ -27,11 +27,11 @@ export const PROTOCOL_GROUPS = [
 ] as const;
 export const PROTOCOL_DESCRIPTION: Record<SetProtocol, string> = {
   keep: "Mallens ordinarie set, reps och ansträngning.",
-  straight: "Samma reps och vikt. Första setet styr viktvalet; sänk vikten 5 % vid mål-RPE + 1,5 (högst 8,5).",
+  straight: "Samma reps och vikt. Första setet styr viktvalet; sänk vikten 5 % om ett set överstiger mål-RPE med 1 eller mer, eller når RPE 9.",
   "rep-drops": "Samma vikt som första setet. Anpassa därefter antalet reps till en lägre RPE, utan att gå till failure. Inte för arbete över cirka 85 % av 1RM.",
   ramping: "Samma reps, successivt högre RPE och vikt inom passet. Uppvärmningen är separat.",
   descending: "Färre reps för varje set, med högre vikt men bibehållen RPE. Aldrig färre än två reps.",
-  metabolic: "Ett topp-set följt av högst fem reps per backoff-set, på högst 70 % av övningens uppskattade 1RM och högst 90 % av toppvikten. Två minuters vila för assistans; 3–5 minuter för huvudlyft. Inga extra set.",
+  metabolic: "Ett topp-set följt av högst fem reps per backoff-set, på högst 70 % av övningens uppskattade 1RM och högst 90 % av toppvikten. Två minuters vila för assistans; 3–5 minuter för huvudlyft. Extra backoff-set är tillåtna enligt trötthetsregeln, inom vikt- och RPE-taken.",
   double: "Öka reps inom ett intervall. När alla set når övre gränsen inom mål-RPE, höj vikten nästa gång och börja på nedre gränsen.",
 };
 
@@ -110,7 +110,7 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
     const hi = e.target_reps + 4;
     lines.splice(0, lines.length, `${e.target_sets} set × ${e.target_reps}–${hi} reps @ högst RPE ${numberText(first.rpe)}. Samma vikt i alla set.`, `När alla ${e.target_sets} set når ${hi} reps inom mål-RPE: höj med minsta tillgängliga viktsteg nästa gång och börja på ${e.target_reps} reps igen. Annars behåll vikten. Logga faktiskt utförda reps.`);
   }
-  if (protocol === "straight") lines.push(`Behåll vikten. Om ett set når RPE ${numberText(Math.min(8.5, first.rpe + 1.5))}: sänk vikten 5 % i resterande set.`);
+  if (protocol === "straight") lines.push(`Behåll vikten. Om ett set når RPE ${numberText(Math.min(9, first.rpe + 1))}: sänk vikten 5 % i resterande set.`);
   if (protocol !== "metabolic") lines.push(protocolGroup(e) === "accessories" ? "Vila 2–3 minuter, längre om det behövs för mål-RPE." : "Vila 3–5 minuter mellan arbetsset, längre vid behov för bibehållen teknik och mål-RPE.");
   lines.push("Avbryt setet om position eller teknik inte kan hållas. Uppvärmningsset räknas inte in.");
   // Keep neutral technique cues, not conflicting legacy set/failure prescriptions.

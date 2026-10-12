@@ -274,6 +274,7 @@ export function GenerateStrengthTemplateDialog({
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
+  useEffect(() => { if (daysPerWeek < 4) setOverload((o) => (o.benchConsolidation ? { ...o, benchConsolidation: false } : o)); }, [daysPerWeek]);
   const [setProtocols, setSetProtocols] = useState<SetProtocolOptions>(DEFAULT_SET_PROTOCOLS);
   const blockEvals = useMemo(() => {
     const h = historyQuery.data;
@@ -286,7 +287,8 @@ export function GenerateStrengthTemplateDialog({
       const weeks = applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
       if (isPeaking) return { weeks, warnings: [] as string[] };
       const adapted = applyBlockVolume(weeks, blockEvals, volumeProfileQuery.data?.cap);
-      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks), setProtocols), warnings: adapted.warnings };
+      const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
+      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks), effProtocols), warnings: adapted.warnings };
     },
     [finalWeeks, overload, isPeaking, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data],
   );
@@ -608,7 +610,7 @@ export function GenerateStrengthTemplateDialog({
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">
               <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
-                Overload pushing
+                Tillägg
               </div>
               {overloadTouched(overload) && (
                 <button
@@ -625,21 +627,21 @@ export function GenerateStrengthTemplateDialog({
                 [
                   {
                     key: "overWarmSingles" as const,
-                    title: "Heavy over-warm singles (RPE 8)",
-                    desc: "Work up to one clean single at ~90–92% before working sets — keeps neural familiarity with heavy bar speeds.",
+                    title: "Tung singel (RPE 8)",
+                    desc: "En ren singel på cirka 90–92 % före arbetsseten. Singeln blir dagens mätset för EAk.",
                   },
                   {
                     key: "waveLoading" as const,
-                    title: "Structured wave loading",
-                    desc: "Tre veckor: 5/4 reps @ RPE 7 → 4/3 reps @ RPE 8 → 3/2 reps @ RPE 8,5 → deload. Vikten följer reps och RPE; procent är uppskattningar.",
+                    title: "Vågladdning",
+                    desc: "Tre veckor: 5/4 reps @ RPE 7 → 4/3 reps @ RPE 8 → 3/2 reps @ RPE 8,5 → deload. Vågen styr reps och RPE på huvudlyften; valt setupplägg gäller då bara assistansen.",
                   },
                   {
                     key: "benchConsolidation" as const,
-                    title: "Reduce weekly bench redundancy",
-                    desc: "Consolidates bench into heavy comp-pause, hypertrophy and close-grip days instead of several semi-heavy ones.",
+                    title: "Bänkkonsolidering",
+                    desc: "Samlar bänken i ett tungt pausbänkpass, ett volympass och ett pass med smal grepp i stället för flera halvtunga. Visas vid 4 eller fler dagar.",
                   },
                 ]
-              ).map((o) => {
+              ).filter((o) => o.key !== "benchConsolidation" || daysPerWeek >= 4).map((o) => {
                 const on = overload[o.key];
                 return (
                   <label

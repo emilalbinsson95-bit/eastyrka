@@ -354,13 +354,13 @@ export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions): Templa
 export function overloadSummary(o: OverloadOptions): string[] {
   const out: string[] = [];
   if (o.overWarmSingles)
-    out.push("Heavy over-warm single @ RPE 8 (~90–92%) before working sets on main lifts");
+    out.push("Tung singel @ RPE 8 (~90–92 %) före arbetsseten på huvudlyften — dagens mätset för EAk");
   if (o.deadliftStance !== "keep")
     out.push(
       `Deadlift stance committed to ${o.deadliftStance} — second pull becomes RDL / deficit`,
     );
-  if (o.waveLoading) out.push("3-week wave: 5s/4s @ RPE 7 → 4s/3s @ RPE 8 → 3s/2s @ RPE 8.5 → deload");
+  if (o.waveLoading) out.push("Vågladdning 3 veckor: 5/4 reps @ RPE 7 → 4/3 @ RPE 8 → 3/2 @ RPE 8,5 → deload");
   if (o.benchConsolidation)
-    out.push("Bench consolidated into heavy pause / hypertrophy / close-grip days");
+    out.push("Bänken samlad i tungt pausbänkpass, volympass och smalt grepp");
   return out;
 }

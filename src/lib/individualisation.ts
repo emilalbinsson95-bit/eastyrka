@@ -27,6 +27,7 @@ export interface HistLog {
   reps: number;
   weight_kg: number;
   rpe: number | null;
+  set_number?: number;
 }
 
 export interface HistReadiness {

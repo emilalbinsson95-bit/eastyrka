@@ -344,7 +344,7 @@ function CyclesListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-2 mb-1">
             <Link
@@ -361,7 +361,7 @@ function CyclesListPage() {
             Plan a multi-week block, then publish 1–2 weeks at a time.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <GenerateMarathonPlanDialog
             athleteId={athleteId}
             coachId={userId}

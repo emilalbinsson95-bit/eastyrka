@@ -347,7 +347,7 @@ Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
           ska växa fram över flera veckor. Rep drops är mitt val när atletens dagsform
           svänger mycket mellan pass. Vikten behålls och antalet reps anpassas efter RPE.</p>
         <p className="text-xs">Källor: Zourdos MC et al. (2016) JSCR 30(1), RPE-skalan som
-          alla trösklar bygger på; Helms ER et al. (2018) Strength Cond J 38, RIR-baserad
+          RPE-skalan bygger på; Helms ER et al. (2016) Strength Cond J 38(4), RIR-baserad
           autoreglering; Greig L et al. (2020) Sports Med 50, autoreglering kräver
           konsekvent styrning för att vara tolkbar; Helms ER et al. (2019) Muscle and
           Strength Pyramid, dubbel progression som standardmodell för assistans.</p>
@@ -363,8 +363,9 @@ Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
             Rating of Perceived Exertion Scale for Resistance Training</em>. Strength Cond J 38(4).</li>
           <li>Helms ER et al. (2017). <em>RPE and Velocity Relationships for the Back Squat,
             Bench Press, and Deadlift in Powerlifters</em>. JSCR 31(2).</li>
-          <li>LeSuer DA et al. (1997). JSCR 11(4). Epley underskattade marklyft — en av
-            anledningarna till att E1RM nu räknas med RTS-tabellen i stället.</li>
+          <li>LeSuer DA et al. (1997). <em>The Accuracy of Prediction Equations for Estimating
+            1-RM Performance in the Bench Press, Squat, and Deadlift</em>. JSCR 11(4).
+            De testade ekvationerna underskattade marklyft. Studien validerar inte RTS-tabellen.</li>
         </ul>
         <p>Trösklar för topp och baseline-höjning är mina egna designval.</p>
       </Section>
@@ -637,7 +638,7 @@ Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
           avgöra om atleten får i sig tillräckligt med mat.</p>
         <p>Här skickar jag vidare till legitimerad dietist eller läkare:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>Tecken på låg energitillgänglighet (RED-S): utebliven eller oregelbunden mens,
+          <li>Tecken på låg energitillgänglighet (REDs): utebliven eller oregelbunden mens,
             upprepade stressfrakturer, oförklarlig trötthet, att man blir sjuk ofta, sjunkande
             prestation trots bra träning eller att vikten går ner fast den inte ska.</li>
           <li>Medicinska tillstånd som påverkar kosten, till exempel diabetes, celiaki, IBS,
@@ -647,6 +648,11 @@ Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
             äter. Då ger jag inga fler kostråd utan hänvisar till vården.
             Träningen får anpassas efter bedömningen där.</li>
         </ul>
+
+        <p><b>REDs gäller även män.</b> Sänkt libido, uteblivna morgonerektioner och oförklarligt
+          prestationstapp kan vara skäl att söka vård, särskilt tillsammans med trötthet eller
+          återkommande skador. Symtomen kan ha andra orsaker; de räcker inte för en diagnos.
+          REDs CAT2 är ett kliniskt bedömningsverktyg, inte en checklista för coachen.</p>
 
         <p className="mt-3"><b>När vardagen påverkar träningen</b></p>
         <p>Jag frågar om sömn, återhämtning och hur mycket tid som finns till passen.
@@ -661,10 +667,14 @@ Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
           <li>Tävlingsångest eller prestationsångest som inte släpper trots anpassning.</li>
           <li>Alkohol, spel eller andra beroenden som påverkar livet.</li>
         </ul>
-        <p>Akut via 112 eller psykiatrisk akutmottagning: Om atleten pratar om att inte vilja leva
-          eller om att skada sig själv. Fråga rakt, ta det på allvar och se till att atleten får
-          hjälp samma dag. Som tränare behöver du inte kunna hantera situationen. Du behöver se
-          till att den inte stannar hos dig.</p>
+        <p>Om atleten pratar om att inte vilja leva eller om att skada sig själv: fråga rakt,
+          ta det på allvar och hjälp till att få kontakt med vården. Vid omedelbar fara eller
+          konkreta självmordsplaner, ring <b>112</b> eller sök psykiatrisk akutmottagning.
+          Lämna inte personen ensam vid akut fara.</p>
+        <p><a className="text-primary underline" href="https://mind.se/stod-kunskap/prata-eller-chatta-med-volontar/sjalvmordslinjen/"
+          target="_blank" rel="noopener noreferrer">Självmordslinjen (Mind), 90101</a>,
+          ger samtalsstöd. Det är ett komplement till vården, inte en ersättning för 112 vid akut fara.
+          Ring 1177 om du behöver hjälp att hitta rätt vård.</p>
 
         <p className="mt-3"><b>Så lämnar du över på ett bra sätt</b></p>
         <p>Jag förklarar vad jag inte kan bedöma och vilken hjälp atleten behöver.
@@ -680,35 +690,140 @@ Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
           <li>Följ en plan. Jag anpassar träningen efter vad den som behandlar säger, och inte
             tvärtom. Be om konkreta ramar, till exempel vilka rörelser som är okej, vilken
             belastning som gäller och vilka tecken som betyder stopp.</li>
-          <li>Följ upp. Fråga hur besöket gick, logga det och stäm av med jämna mellanrum.</li>
+          <li>Följ upp vilka ramar som gäller för träningen. Anteckna bara det som behövs för
+            planeringen, inte hela vårdbesöket.</li>
         </ul>
 
         <p className="mt-3"><b>I SETPOINT</b></p>
         <p>Jag antecknar de anpassningar som behövs för träningen och följer upp om de
           fungerar. Medicinska bedömningar hör till vården. Dela bara de uppgifter som
           behövs för planeringen och som atleten har godkänt att du delar.</p>
+        <p className="mt-3"><b>Hälsoanteckningar och samtycke</b></p>
+        <p>Skade- och hälsoanteckningar är känsliga personuppgifter. Innan de sparas behöver
+          den som ansvarar för uppgifterna ha en rättslig grund enligt GDPR artikel 6 och
+          ett tillämpligt undantag enligt artikel 9. För coaching kan uttryckligt samtycke
+          vara det undantaget. Det ska vara frivilligt, tydligt och gå att återkalla.</p>
+        <p>Förklara vad som sparas, varför, vilka som får läsa och hur länge uppgifterna behövs.
+          Begränsa åtkomsten, bestäm en gallringsplan och dela inte mer än nödvändigt.
+          Vid återkallat samtycke ska den behandling som bygger på samtycket upphöra;
+          uppgifter utan annan giltig grund ska raderas. Den här texten ersätter inte ett
+          samtyckesförfarande eller en kontroll av appens hantering.</p>
+        <p className="text-xs">Källa: <a className="text-primary underline" target="_blank" rel="noopener noreferrer"
+          href="https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/introduktion-till-gdpr/personuppgifter/kansliga-personuppgifter/nar-far-ni-behandla-kansliga-personuppgifter/">IMY — när får ni behandla känsliga personuppgifter?</a></p>
+      </Section>
+
+      <Section title="Val och återkoppling under träningen">
+        <p>Ge val där båda alternativen fungerar. Atleten kan till exempel välja mellan två
+          överenskomna assistansövningar eller deras ordning. Tävlingslyftets plats, belastning
+          och säkerhetskrav behöver inte vara förhandlingsbara. Förklara varför ramen finns.
+          Mageau och Vallerand beskriver hur val, tydliga ramar och stöd kan stärka motivationen;
+          deras artikel är en modell, inte ett bevis för att varje val ger bättre prestation.</p>
+        <p>Återkoppla även efter set som fungerar: ”Du höll bröstet uppe genom vändningen.”
+          Testa en kort cue som ”tryck bort golvet”, och fråga om den hjälpte. Externt fokus
+          och valmöjligheter har stöd i forskning om motorisk inlärning, men resultaten från
+          enklare uppgifter bevisar inte att samma cue passar alla erfarna styrkelyftare.</p>
+      </Section>
+
+      <Section title="Sömn, dagsform och besvär">
+        <p>Gå igenom sömn, stress, ömhet och motivation före passet. Jämför med atletens
+          vanliga nivå och med hur uppvärmningen går, inte med ett generellt idealvärde.
+          Självskattningar kan fånga förändringar som andra mått missar, men de kan inte
+          avgöra orsaken. EAk beskriver uppskattad styrka, inte hälsa.</p>
+        <p>Flera korta nätter i rad är anledning att fråga vad som har förändrats och om
+          träningen behöver anpassas. Sju timmar är ingen skarp gräns för alla atleter.
+          Ihållande sömnproblem hör till vården, inte till ett nytt träningsupplägg.</p>
+        <p>Fråga varje vecka om besvär: vad provocerar dem, vad har ändrats och hur fungerade
+          anpassningen? Strömbäcks studie visar att besvär är vanliga bland styrkelyftare och
+          ofta påverkar träningen. Att många tränar vidare betyder inte att all smärta är ofarlig.
+          Följ remissråden ovan när besvären kräver bedömning.</p>
+        <p>Psykisk ohälsa bedöms och behandlas av vården. Träning kan ibland fortsätta med
+          anpassning och rätt stöd, men det avgörs individuellt. IOC:s verifierade konsensus
+          från 2019 är underlaget här; den angivna 2026-referensen har inte kunnat bekräftas.</p>
+      </Section>
+
+      <Section title="Mat, tillskott och individuella skillnader">
+        <p><b>Protein:</b> omkring 1,6 g/kg kroppsvikt och dag i totalt intag är ett rimligt
+          allmänt riktvärde för friska vuxna som styrketränar. Det kommer från ett gruppresultat,
+          inte ett exakt behov eller ett tak för varje atlet. Vanlig mat räknas; proteintillskott
+          är inget krav. Tillräcklig energi och kolhydrater spelar också roll.</p>
+        <p><b>Kosttillskott:</b> kreatin och koffein har stöd i vissa prestationssammanhang.
+          Nitrat och buffertsubstanser har mer uppgiftsspecifika användningar; inget av detta
+          är en standardlista för styrkelyftare. Kontrollera behov, biverkningar och tävlingsregler.
+          Kontaminerade produkter kan innehålla förbjudna ämnen. Oberoende batchtestning minskar
+          risken men garanterar inte att en produkt är säker eller dopingfri.</p>
+        <p><b>REDs:</b> en atlet kan få för lite energi utan att vara underviktig. Låg
+          kolhydrattillgång kan också påverka. Vid misstanke hänvisar jag till läkare och
+          legitimerad dietist i stället för att ge en egen diagnos eller behandlingsdiet.</p>
+        <p><b>P-piller:</b> gruppresultaten visar små och varierande effekter på prestation.
+          Lägg inte samma regel på alla. Följ upp om atleten själv märker en skillnad;
+          val eller byte av preventivmedel diskuteras med barnmorska eller läkare.</p>
+      </Section>
+
+      <Section title="Ansträngning, toppning och kondition">
+        <p><b>Närhet till failure:</b> styrka kan utvecklas utan att alla set körs till stopp.
+          För muskeltillväxt verkar närmare failure ofta ge mer stimulus, men exakt var
+          nyttan planar ut är osäkert. RPE 8–9 kan passa vissa assistans- och volymset,
+          om teknik och återhämtning håller. Det är ett coachval, inte ett nytt automatiskt
+          RPE-tak i generatorn.</p>
+        <p><b>Toppning:</b> forskningen för maximal styrka är begränsad. Följ upp hur den
+          minskade volymen, sista tunga passet och vilodagarna fungerade, tillsammans med
+          tävlingsresultatet. Använd det när nästa toppning planeras. Tunga singlar kan
+          hjälpa vissa att känna sig förberedda, men behöver inte vara obligatoriska.</p>
+        <p><b>Kombinerad löpning och styrka:</b> effekten beror på mängd, intensitet,
+          återhämtning och vad som ska prioriteras. Lundbergs analys fann möjlig påverkan
+          på muskelfibrernas tillväxt, tydligare med löpning än cykling. Det är inte samma
+          sak som att all löpning försämrar styrka. Om benen inte återhämtar sig i ett
+          hypertrofiblock kan cykling vara ett alternativ. Planera hårda löppass och tunga
+          benpass så att atleten kan genomföra båda med kvalitet.</p>
+      </Section>
+
+      <Section title="Källor till coachråden">
+        <ul className="list-disc pl-5 space-y-2">
+          <li>Mageau GA, Vallerand RJ (2003). <em>The coach–athlete relationship: a motivational model.</em> J Sports Sci 21(11).</li>
+          <li>Wulf G et al. (2018). <em>Triple play: Additive contributions of enhanced expectancies, autonomy support, and external attentional focus to motor learning.</em> Q J Exp Psychol 71(4).</li>
+          <li>Saw AE, Main LC, Gastin PB (2016). <em>Monitoring the athlete training response: subjective self-reported measures trump commonly used objective measures.</em> BJSM 50(5).</li>
+          <li>Walsh NP et al. (2021). <em>Sleep and the athlete: narrative review and 2021 expert consensus recommendations.</em> BJSM.</li>
+          <li>Morton RW et al. (2018). <em>A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults.</em> BJSM 52(6).</li>
+          <li>Maughan RJ et al. (2018). <em>IOC consensus statement: dietary supplements and the high-performance athlete.</em> Int J Sport Nutr Exerc Metab 28(2).</li>
+          <li>Mountjoy M et al. (2023). <em>2023 IOC's consensus statement on Relative Energy Deficiency in Sport (REDs).</em> BJSM 57(17).</li>
+          <li>Reardon CL et al. (2019). <a className="text-primary underline" target="_blank" rel="noopener noreferrer" href="https://pubmed.ncbi.nlm.nih.gov/31097450/">Mental health in elite athletes: International Olympic Committee consensus statement (2019).</a> BJSM 53(11).</li>
+          <li>Strömbäck E et al. (2018). <em>Prevalence and Consequences of Injuries in Powerlifting: A Cross-sectional Study.</em> Orthop J Sports Med 6(5).</li>
+          <li>Robinson ZP et al. (2024). <em>Exploring the Dose–Response Relationship Between Estimated Resistance Training Proximity to Failure, Strength Gain, and Muscle Hypertrophy: A Series of Meta-Regressions.</em> Sports Med 54(9).</li>
+          <li>Refalo MC et al. (2023). <em>Influence of Resistance Training Proximity-to-Failure on Skeletal Muscle Hypertrophy: A Systematic Review with Meta-analysis.</em> Sports Med 53(3).</li>
+          <li>Travis SK et al. (2020). <em>Tapering and Peaking Maximal Strength for Powerlifting Performance: A Review.</em> Sports 8(9).</li>
+          <li>Lundberg TR et al. (2022). <em>The Effects of Concurrent Aerobic and Strength Training on Muscle Fiber Hypertrophy: A Systematic Review and Meta-Analysis.</em> Sports Med 52(10).</li>
+          <li>Elliott-Sale KJ et al. (2020). <em>The Effects of Oral Contraceptives on Exercise Performance in Women: A Systematic Review and Meta-analysis.</em> Sports Med 50(10).</li>
+        </ul>
+        <p>Översikter och konsensus sammanfattar grupper och flera typer av studier.
+          De ersätter inte en individuell bedömning och validerar inte appens egna trösklar.</p>
       </Section>
 
       <Section title="Träningslast: Foster sRPE">
-        <p>Per pass: <code>load = minuter × RPE</code> (linjär, validerad). När
-          per-steg/per-rep actuals finns används tidsviktad segment-summa istället för
-          ett snitt-RPE för hela passet (så 4×4 min @ RPE 9 inte späds ut av jogg-vila).</p>
+        <p>Fosters metod: <code>last = minuter × pass-RPE</code>. Atleten skattar hela
+          passets ansträngning cirka 30 minuter efter avslut, inte bara det hårdaste setet.</p>
+        <p>När faktiska segmentvärden finns använder appen en tidsviktad segmentsumma.
+          Det är en egen beräkningsvariant, inte samma mätprotokoll som Foster validerade.</p>
         <p>Vi använder aldrig <code>peak_rpe</code> i fallback-kedjan — den överskattar last.</p>
       </Section>
 
-      <Section title="ACWR (skaderisk-indikator)">
+      <Section title="ACWR — förändring i träningslast">
         <Formula>
 {`acute   = summa sRPE senaste 7 dagarna
 chronic = (snitt daglig last senaste 28 dagarna) × 7
 ratio   = acute / chronic`}
         </Formula>
         <ul className="list-disc pl-5 space-y-1">
-          <li><b>&lt; 0.8</b> låg (undertränad)</li>
-          <li><b>0.8 – 1.3</b> optimal sweet spot</li>
-          <li><b>1.3 – 1.5</b> hög (varning)</li>
-          <li><b>&gt; 1.5</b> danger (skaderisk-spik)</li>
+          <li><b>&lt; 0,8</b> lägre last än den senaste referensperioden</li>
+          <li><b>0,8–1,3</b> nära referensperiodens last</li>
+          <li><b>1,3–1,5</b> högre last</li>
+          <li><b>&gt; 1,5</b> tydligt högre last</li>
         </ul>
-        <p>Vi visar inget ratio förrän kronisk last &gt; 50 AU — annars är talet brus.</p>
+        <p>Gränserna kommer från ett omdiskuterat ramverk med mycket data från lagidrott.
+          De är inte validerade säkerhetszoner för löpning eller styrkelyft. ACWR kan inte
+          förutsäga om en enskild atlet skadar sig och bör inte ensamt styra träningen.</p>
+        <p>Appen visar inget förhållande förrän kronisk last är över 50 AU. Det är vår
+          egen spärr mot en liten nämnare, inte en forskningsbaserad gräns från Hulin.
+          De befintliga justeringsreglerna ändras inte av den här textgranskningen.</p>
       </Section>
 
       <Section title="Banister fitness/fatigue (CTL/ATL/TSB)">
@@ -718,6 +833,9 @@ ATL = EMA av daglig last,  τ = 7 dagar   → "fatigue"
 TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
         </Formula>
         <p>60 dagars warm-up före synligt fönster så CTL hinner stabilisera sig.</p>
+        <p>42 och 7 dagar är konventioner i prestationsdiagram, inte universella biologiska
+          konstanter från Banister. Originalmodellen anpassade tidskonstanterna individuellt.
+          Diagrammet uppskattar belastningshistorik, inte faktisk fitness eller trötthet.</p>
       </Section>
 
       <Section title="Drift-detektion (feedback-loop)">
@@ -736,10 +854,11 @@ TSB = CTL − ATL                          → "form"  (positiv = fresh)`}
 {`acute   = 4 × (60 × 7) + 1 × (120 × 6)
         = 1680 + 720 = 2400 AU
 chronic = (snitt 28d ~ 280 AU/dag) × 7 = 1960 AU
-ratio   = 2400 / 1960 = 1.22  → sweet spot`}
+ratio   = 2400 / 1960 = 1.22  → nära referensperiodens last`}
         </Formula>
-        <p>Hade samma vecka kommit på en kronisk bas på 1200 AU blev ratio 2.0
-          → danger, och drift-/retune-logiken skulle skala kommande veckor × 0.85.</p>
+        <p>På en kronisk bas på 1200 AU blir förhållandet 2,0: dubbla referenslasten.
+          Det säger inte hur stor skaderisken är. Kontrollera datatäckning, dagsform,
+          besvär och vad lastökningen består av innan träningen ändras.</p>
       </Section>
 
       <Section title="Beslutsdiagram — drift → retune">
@@ -772,8 +891,10 @@ ratio   = 2400 / 1960 = 1.22  → sweet spot`}
         <ul className="list-disc pl-5 space-y-1">
           <li>VDOT är validerad för 1500 m – maraton. Ultra/track-sprint avviker.</li>
           <li>EAkoefficient antar samma rörelse som baseline-test (samma bar, samma djup).</li>
-          <li>sRPE kräver att RPE loggas inom ~30 min efter passet — senare logg är brus.</li>
-          <li>ACWR är ett <em>varningssystem</em>, inte en diagnos. Vi ratio:ar inte under 28 d data.</li>
+          <li>Fosters protokoll använder pass-RPE cirka 30 minuter efter passet. Håll
+            tidpunkten konsekvent; senare skattningar är inte automatiskt oanvändbara.</li>
+          <li>ACWR beskriver relativ last. Det saknar validerade individuella
+            skaderiskgränser. Appens 28-dagars referens är ett beräkningsval.</li>
           <li>Re-tune rör aldrig race-passet eller pass markerade som testfönster.</li>
           <li>HIIT-tungt schema vid låg volym förutsätter att atleten är skadefri — vid
             ACWR &gt; 1.3 prioriterar systemet alltid easy oavsett volymbucket.</li>
@@ -781,6 +902,9 @@ ratio   = 2400 / 1960 = 1.22  → sweet spot`}
       </Section>
 
       <Section title="Forskningsgrund — coachning & ledarskap">
+        <p>De idrottsspecifika källorna finns i ”Källor till coachråden” ovan. Listan nedan
+          är kompletterande läsning, främst om arbetsliv och organisationer. Den ger inte
+          direkt stöd för att samma arbetssätt förbättrar en styrkelyftares resultat.</p>
         <p className="font-semibold text-foreground mt-3">Självledarskap och rolltagning</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Sundlin AL, Sundlin P. (2018). <em>Ta din roll på jobbet</em>. Liber.</li>
@@ -868,21 +992,21 @@ ratio   = 2400 / 1960 = 1.22  → sweet spot`}
         <p className="font-semibold text-foreground mt-3">ACWR — akut:kronisk last</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Gabbett TJ. (2016). <em>The training-injury prevention paradox</em>.
-            BJSM 50(5). Källan till sweet-spot 0.8–1.3 och danger &gt; 1.5.</li>
+            BJSM 50(5). Ramverket bygger främst på lagidrott och validerar inte
+            säkra ACWR-gränser för löpning eller styrkelyft.</li>
           <li>Hulin BT et al. (2016). <em>The acute:chronic workload ratio predicts injury</em>.
-            BJSM 50. Hög kronisk last skyddar — varför vi inte rapporterar ratio under
-            chronic ≤ 50 AU.</li>
-          <li>Impellizzeri FM et al. (2020). <em>What role do chronic workloads play in the
-            ACWR?</em> Sports Med 50. Kritisk replik som motiverar 28-dagars warm-up
-            och att vi presenterar ACWR som varning, inte diagnos.</li>
+            BJSM 50. Samband i elit-rugby league; studien stöder inte appens 50 AU-spärr.</li>
+          <li>Impellizzeri FM et al. (2020). <em>Acute:Chronic Workload Ratio: Conceptual
+            Issues and Fundamental Pitfalls</em>. IJSPP 15(6). Kritik av kvotens
+            statistiska och kausala tolkning, inte stöd för en 28-dagars uppvärmning.</li>
         </ul>
 
         <p className="font-semibold text-foreground mt-3">Banister fitness/fatigue (CTL/ATL/TSB)</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Banister EW. (1991). <em>Modeling Elite Athletic Performance</em>.
-            Originalmodellen med τ = 42 / τ = 7-konstanterna.</li>
-          <li>Coggan AR. (2003). <em>TrainingPeaks Performance Management Chart</em>.
-            Operationaliseringen till CTL/ATL/TSB som vi följer.</li>
+            Originalmodellen med individuellt anpassade tidskonstanter.</li>
+          <li>TrainingPeaks/Coggan, Performance Management Chart. Praktisk
+            CTL/ATL/TSB-konvention med 42/7 dagar, inte en universellt validerad modell.</li>
           <li>Busso T. (2003). <em>Variable dose-response relationship between exercise
             training and performance</em>. MSSE 35.</li>
         </ul>

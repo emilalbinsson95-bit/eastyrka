@@ -493,7 +493,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
             </select>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
+        <CardContent className="relative overflow-x-auto p-0">
           {logsQuery.isLoading && (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading…</div>
           )}

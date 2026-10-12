@@ -108,7 +108,7 @@ function LearnPage() {
       </Topic>
 
       <Topic title="E1RM och EAk">
-        <p><strong>E1RM</strong> är ett uppskattat maxlyft räknat från ett set, t.ex. 125 kg × 3 @ RPE 10 ≈ 136 kg.</p>
+        <p><strong>E1RM</strong> är ett uppskattat maxlyft räknat från setets vikt, reps och RPE med samma tabell som programmet använder, t.ex. 125 kg × 3 @ RPE 10 ≈ 136 kg. Det är ett uppskattat värde, inte ett testat max.</p>
         <p><strong>EAk</strong> jämför dagens set med din vanliga nivå. Över 100 % = starkare än vanligt, under = en
           tyngre dag. En enstaka låg dag betyder inget; det är trenden som räknas.</p>
       </Topic>
@@ -117,6 +117,28 @@ function LearnPage() {
         <p><strong>Huvudlyft</strong> är knäböj, bänk och mark. <strong>Variationer</strong> (pausböj, tempobänk,
           deficitmark) är egna övningar som tränar en viss del av lyftet. <strong>Assistans</strong> bygger muskler
           som hjälper lyften. Din coach väljer dem efter dina mål och hur du tränar.</p>
+      </Topic>
+
+      <Topic title="Sömn, mat och besvär">
+        <p>Berätta för coachen om du sovit sämre än vanligt, känner dig ovanligt trött
+          eller har ont. Jämför med hur du brukar må och hur uppvärmningen går.
+          Ett lågt EAk-värde kan inte tala om varför ett pass känns tungt.</p>
+        <p>För friska vuxna som styrketränar är omkring 1,6 g protein per kilo kroppsvikt
+          och dag ett allmänt riktvärde, inte ett exakt krav. Vanlig mat räknas och
+          proteinpulver behövs inte. Tillräckligt med mat, kolhydrater och sömn spelar också roll.</p>
+        <p>Återkommande skador, oförklarlig trötthet eller prestationstapp kan behöva
+          bedömas av vården. För lite energi kan drabba både kvinnor och män, även utan
+          undervikt. Utebliven mens, sänkt libido eller uteblivna morgonerektioner kan
+          vara skäl att söka hjälp; de kan också ha andra orsaker.</p>
+        <p>Coachen kan anpassa träningen, men ställer inte medicinska diagnoser.
+          Ring 1177 om du är osäker på var du ska söka vård. Vid akut fara, ring 112.</p>
+      </Topic>
+
+      <Topic title="Kosttillskott när du tävlar">
+        <p>Tillskott är inget krav för att bli starkare. Även produkter som säljs öppet
+          kan innehålla förbjudna ämnen som inte står på etiketten. Kontrollera
+          tävlingsreglerna innan du använder något. Oberoende batchtestning minskar
+          risken för kontaminering men är ingen garanti mot doping.</p>
       </Topic>
 
       <Topic title="Ha SETPOINT som app på mobilen">

@@ -25,6 +25,20 @@ function snapRpe(rpe: number): number {
   return Math.round(clamped * 2) / 2;
 }
 
+/**
+ * %1RM with linear interpolation between half-RPE rows (no downward
+ * rounding). Used by E1RM so measurement and prescription share one model.
+ */
+export function pctOf1RMInterp(rpe: number, reps: number): number {
+  const r = clamp(rpe, 6, 10);
+  const repClamp = clamp(Math.round(reps), 1, 12);
+  const lo = Math.floor(r * 2) / 2;
+  const hi = Math.ceil(r * 2) / 2;
+  const a = RPE_REPS_PCT[lo][repClamp];
+  const b = RPE_REPS_PCT[hi][repClamp];
+  return lo === hi ? a : a + ((b - a) * (r - lo)) / (hi - lo);
+}
+
 /** Convert RIR to RPE: RPE = 10 - RIR (clamped). */
 export function rirToRpe(rir: number): number {
   return clamp(10 - rir, 6, 10);

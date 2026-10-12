@@ -232,52 +232,56 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
         </TabsContent>
         <TabsContent value="strength" className="space-y-6">
       <Section title="EAkoefficient (styrke-autoregulering)">
-        <p>Dagligt estimerat 1RM från ett loggat set, normaliserat mot baseline 1RM:</p>
+        <p>EAk svarar på en fråga: hur ligger dagsformen till mot atletens baseline, och vad gör vi åt det idag? Mätning och förskrivning använder samma RTS-tabell, så talet betyder samma sak oavsett reps.</p>
         <Formula>
-{`cappedReps = min(reps, 8)
-E1RM       = vikt × (1 + (cappedReps + (10 − RPE)) / 30)
-EAk %      = (dagens E1RM ÷ baseline 1RM) × 100`}
+{`E1RM  = vikt ÷ RTS-%(reps, RPE)      // RPE interpoleras, avrundas aldrig nedåt
+Set med RPE < 7 räknas inte
+EAk % = (mätsetets E1RM ÷ baseline 1RM) × 100`}
         </Formula>
-        <p>Statusband ger snabb läsning av dagsformen:</p>
+        <p><b>Mätset:</b> den tunga singeln om tillägget "tung singel" är aktivt, annars första arbetssetet med RPE ≥ 7. Samma regel varje pass, så värdena går att jämföra.</p>
+        <p>Statusband och åtgärd idag:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><b>&lt; 92 %</b> Exhausted — sänk volym/intensitet</li>
-          <li><b>92–97 %</b> Undertrained — kör som planerat, lite extra</li>
-          <li><b>97–102 %</b> Adapting — sweet spot</li>
-          <li><b>&gt; 102 %</b> Peaking — möjligt PB-fönster</li>
+          <li><b>&lt; 92 %</b> Trött — sänk vikten 5–10 % eller ta bort ett set</li>
+          <li><b>92–97 %</b> Under baseline — kör som planerat, ingen extra volym</li>
+          <li><b>97–103 %</b> Normal — kör som planerat</li>
+          <li><b>&gt; 103 %</b> Topp — möjligt att gå tyngre eller testa, kräver två pass i rad</li>
         </ul>
-        <p>Volymkvalitet inom passet: jämför set 2+ mot set 1:s E1RM samma dag.
-          ≤ 4 % drop = optimal, 4–5 % = acceptabel, ≥ 5 % = fatigue limit nått.</p>
-        <p className="mt-2"><b>Auto-flytande baseline (trögt):</b> när atleten har samlat
-          ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste baseline-ändringen höjs baseline
-          till <code>median(peak-E1RM) × 0.98</code>, avrundat till 0.5 kg. Endast höjningar
-          tillåts; coach hanterar nedjusteringar manuellt. Enstaka topp-pass flyttar
-          inte baslinjen; höjningen kräver förbättring över flera pass.</p>
+        <p>Ett värde under baseline betyder inte att atleten har tränat för lite.</p>
+        <p><b>Dag och trend skiljs åt:</b> det enskilda passet styr dagens justering. Ett glidande medel över 3 pass styr coachbeslut, eftersom ett RPE-fel på ±0,5–1 motsvarar 2–4 % i E1RM.</p>
+        <p><b>Volymkvalitet:</b> set efter mätsetet (bara RPE ≥ 7) jämförs mot mätsetets E1RM. ≤ 4 % tapp = bra, 4–5 % = godtagbart, ≥ 5 % = trötthetsgräns.</p>
+        <p className="mt-2"><b>Auto-flytande baseline:</b> höjs när minst 12 av de senaste 16 mätpassen ligger på ≥ 103 %. Ny baseline = median(topp-E1RM) × 0,98, högst +5 % per höjning. Om 6 av de 8 senaste passen ligger under 92 % får coachen en varning. Höjningar sker automatiskt, sänkningar manuellt. Baseline gäller bara den egna övningen.</p>
+        <p>Trösklarna (92/97/103 %, 12 av 16, +5 %) är mina egna designval, inte värden från forskningen.</p>
       </Section>
 
-      <Section title="RPE → %1RM (RTS / Helms-tabell)">
-        <p>Föreskriven vikt vid given RPE och rep-mål använder standard-tabellen
-          (RPE 10 @ 1 rep = 100 %). Vi snappar RPE nedåt till närmsta 0.5 i [6, 10],
-          klampar reps till [1, 12], och avrundar vikten till närmsta 2.5 kg.</p>
+      <Section title="Volym — trötthetsstyrd och blockvis">
+        <p><b>Extra set inom passet:</b> när de planerade seten är klara får atleten lägga till set på samma vikt så länge tappet mot mätsetet är ≤ 4 % och RPE ligger högst 1 över målet. Stopp vid tapp ≥ 5 % eller planerat + 2 set. Gäller inte deload, toppning eller singlar. Idén är densamma som RTS "fatigue stops"; stödet i forskningen är svagt, så det är mitt designval.</p>
+        <p><b>Mellan block:</b> varje lyft utvärderas på senaste blocket. +1 arbetsset per vecka om tappet var ≤ 4 % i minst 75 % av passen och EAk-trenden var stabil eller steg. −1 set om trenden föll under 97 % eller tappet var ≥ 5 % i mer än en tredjedel av passen. Annars oförändrat. Högst +2 set per lyft och block, och coachen kan sätta ett veckotak per lyft.</p>
+        <p><b>Volymtolerans:</b> låg / normal / hög ger −1 / 0 / +1 set per lyft och vecka som startvärde tills det finns data från ett block. Valet sparas på atleten.</p>
+        <p><b>Fler set eller fler dagar:</b> ökad volym läggs först som fler set i befintliga pass. Når ett pass cirka 6 arbetsset på samma lyft föreslår generatorn en dag till eller att volymen sprids.</p>
+        <p className="text-xs">Dos–respons mellan volym och muskeltillväxt: Schoenfeld BJ et al. (2017) J Sports Sci 35(11). Den individuella variationen är stor, därför styr datan volymen i stället för mallen.</p>
+      </Section>
+
+      <Section title="RPE → %1RM (RTS-tabell)">
+        <p>Föreskriven vikt och E1RM använder samma tabell (RPE 10 @ 1 rep = 100 %). RPE interpoleras mellan halvsteg, reps klampas till [1, 12] och föreskriven vikt avrundas till närmaste 2,5 kg.</p>
         <p>RIR konverteras till RPE som <code>RPE = 10 − RIR</code> (klampat till ≥ 6).</p>
       </Section>
 
       <Section title="Räkneexempel — EAkoefficient">
         <p>Atlet med baseline 1RM knäböj 150 kg. Idag: 130 kg × 5 reps @ RPE 8.</p>
         <Formula>
-{`E1RM = 130 × (1 + (5 + (10 − 8)) / 30)
-     = 130 × (1 + 7/30)
-     = 130 × 1.2333
-     = 160.3 kg
-EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
+{`RTS-%(5 reps, RPE 8) = 81,1 %
+E1RM = 130 ÷ 0,811 = 160,3 kg
+EAk  = 160,3 / 150 × 100 = 106,9 %  → Topp
+
+Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
         </Formula>
-        <p>Tolkning: dagsformen är 6.9 % över baseline → grönt ljus för tungt set
-          eller test, men logga och se om det håller två pass i rad innan baseline justeras.</p>
+        <p>Tolkning: dagsformen är 6,9 % över baseline. Gå tyngre eller testa bara om det håller två pass i rad.</p>
       </Section>
 
       <Section title="Setupplägg — hur seten läggs upp">
         <p>Setupplägget styr hur seten inom en övning fördelas. Det väljs manuellt av
           coachen i programgeneratorn, separat för knäböj, bänk, mark och assistansövningar.
-          Antalet övningar, dagar och arbetsset är oförändrat. Deload-, taper-,
+          Antalet övningar och dagar är oförändrat; antalet arbetsset styrs av volymprofilen. Deload-, taper-,
           toppnings- och återhämtningsveckor behåller sina upplägg. De ändrade seten får
           RPE 6–8,5 och sparas i övningens anteckningar.</p>
 
@@ -287,7 +291,7 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
 
         <p className="mt-3"><b>Samma vikt och reps (straight sets)</b></p>
         <p>Alla set körs på samma vikt och samma reps. Första setet sätter vikten. Om ett
-          set når mål-RPE + 1,5 (högst 8,5) sänks vikten 5 % i resterande set för att
+          set överstiger mål-RPE med 1 eller mer, eller når RPE 9, sänks vikten 5 % i resterande set för att
           undvika att ansträngningen blir för hög. Upplägget är enkelt att följa upp
           och passar ofta tävlingslyften i styrkeblock.</p>
 
@@ -310,11 +314,10 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
           maximalt, och passar när atleten behöver vänja sig vid tyngre vikter i
           ackumulationsfasen.</p>
 
-        <p className="mt-3"><b>Topp-set + tidsstyrda backoff-set (metabolic)</b></p>
+        <p className="mt-3"><b>Topp-set + backoff</b></p>
         <p>Ett topp-set i huvudförskrivningen, följt av backoff-set på högst 5 reps, högst
           70 % av övningens uppskattade 1RM och högst 90 % av toppvikten, med RPE-tak.
-          Vila: 2 minuter för assistans, 3–5 minuter för huvudlyft. Inga extra set läggs
-          till. Vikt- och RPE-gränserna begränsar ansträngningen i backoff-seten.</p>
+          Vila: 2 minuter för assistans, 3–5 minuter för huvudlyft. Extra backoff-set får läggas till enligt trötthetsregeln, inom vikt- och RPE-taken. Vikt- och RPE-gränserna begränsar ansträngningen i backoff-seten.</p>
 
         <p className="mt-3"><b>Dubbel progression</b></p>
         <p>Reps rör sig inom ett intervall, till exempel 3–7 reps, på samma vikt i alla set.
@@ -351,32 +354,19 @@ EAk  = 160.3 / 150 × 100 = 106.9 %  → Peaking`}
       </Section>
 
       <Section title="Forskningsgrund — styrka">
-        <p className="font-semibold text-foreground mt-3">Epley 1RM-formel (EAkoefficient)</p>
+        <p className="font-semibold text-foreground mt-3">E1RM och RPE</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>Epley B. (1985). <em>Poundage Chart</em>. Boyd Epley Workout. Original-källan
-            till <code>1RM = vikt × (1 + reps/30)</code>.</li>
-          <li>LeSuer DA et al. (1997). <em>The Accuracy of Prediction Equations for
-            Estimating 1-RM Performance in the Bench Press, Squat, and Deadlift</em>.
-            J Strength Cond Res 11(4). Visar att Epley håller r &gt; 0.95 upp till ~10 reps —
-            varför vi klampar reps till 8.</li>
-          <li>Helms ER et al. (2016). <em>RPE and Velocity Relationships for the Back Squat,
-            Bench Press, and Deadlift in Powerlifters</em>. J Strength Cond Res 30(11).
-            Validerar RIR-baserad RPE som autoregleringsmått — grunden för
-            <code>RPE = 10 − RIR</code>.</li>
           <li>Zourdos MC et al. (2016). <em>Novel Resistance Training-Specific Rating of
             Perceived Exertion Scale Measuring Repetitions in Reserve</em>. JSCR 30(1).
-            Definierar RPE@reps-tabellen vi använder för preskription.</li>
+            RPE/RIR-skalan som tabellen bygger på.</li>
+          <li>Helms ER et al. (2016). <em>Application of the Repetitions in Reserve-Based
+            Rating of Perceived Exertion Scale for Resistance Training</em>. Strength Cond J 38(4).</li>
+          <li>Helms ER et al. (2017). <em>RPE and Velocity Relationships for the Back Squat,
+            Bench Press, and Deadlift in Powerlifters</em>. JSCR 31(2).</li>
+          <li>LeSuer DA et al. (1997). JSCR 11(4). Epley underskattade marklyft — en av
+            anledningarna till att E1RM nu räknas med RTS-tabellen i stället.</li>
         </ul>
-
-        <p className="font-semibold text-foreground mt-3">Autoregulering & RIR-baserad styrka</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Helms ER et al. (2018). <em>Application of the RIR-Based RPE Scale for
-            Resistance Training</em>. Strength Cond J 38. Motiverar &gt; 102 % E1RM
-            regelbundet som legitimt peaking-signal — vår auto-flytande baseline-tröskel.</li>
-          <li>Greig L et al. (2020). <em>Autoregulation in resistance training: addressing
-            the inconsistencies</em>. Sports Med 50. Varför vi kräver ≥ 12 observationer
-            innan baseline justeras (signal vs. brus).</li>
-        </ul>
+        <p>Trösklar för topp och baseline-höjning är mina egna designval.</p>
       </Section>
       <Section title="Svagheter i lyften – först cues, sen övningsval">
         <p>Min grundregel är att använda cues tidigt, när det finns större tekniska fel att rätta till,

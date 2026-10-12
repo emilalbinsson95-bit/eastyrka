@@ -486,10 +486,10 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
               className="h-9 rounded-md border border-input bg-background px-2 text-sm"
             >
               <option value="all">All statuses</option>
-              <option value="peaking">Peaking</option>
-              <option value="adapting">Adapting</option>
-              <option value="undertrained">Undertrained</option>
-              <option value="exhausted">Exhausted</option>
+              <option value="peaking">Topp</option>
+              <option value="adapting">Normal</option>
+              <option value="undertrained">Under baseline</option>
+              <option value="exhausted">Trött</option>
             </select>
           </div>
         </CardHeader>

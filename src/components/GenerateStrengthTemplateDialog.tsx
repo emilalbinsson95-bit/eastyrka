@@ -45,6 +45,7 @@ import {
 } from "@/lib/overload";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
+import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
 import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
 import { SetProtocolPicker } from "@/components/SetProtocolPicker";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
@@ -108,7 +109,7 @@ export function GenerateStrengthTemplateDialog({
       const [logs, readiness, baselines, unavail] = await Promise.all([
         supabase
           .from("training_logs")
-          .select("date, exercise, variation, reps, weight_kg, rpe")
+          .select("date, exercise, variation, reps, weight_kg, rpe, set_number")
           .eq("athlete_id", athleteId)
           .gte("date", since92),
         supabase
@@ -152,9 +153,9 @@ export function GenerateStrengthTemplateDialog({
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase.from("athlete_strength_volume_profiles")
-        .select("squat_factor, bench_factor, deadlift_factor").eq("athlete_id", athleteId).maybeSingle();
+        .select("squat_factor, bench_factor, deadlift_factor, volume_tolerance, weekly_set_cap").eq("athlete_id", athleteId).maybeSingle();
       if (error) throw error;
-      return volumeProfileFromRow(data);
+      return { ...volumeProfileFromRow(data), tolerance: (data?.volume_tolerance ?? "normal") as VolumeTolerance, cap: data?.weekly_set_cap ?? null };
     },
   });
   const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
@@ -273,14 +274,25 @@ export function GenerateStrengthTemplateDialog({
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
+  useEffect(() => { if (daysPerWeek < 4) setOverload((o) => (o.benchConsolidation ? { ...o, benchConsolidation: false } : o)); }, [daysPerWeek]);
   const [setProtocols, setSetProtocols] = useState<SetProtocolOptions>(DEFAULT_SET_PROTOCOLS);
-  const plannedWeeks = useMemo(
+  const blockEvals = useMemo(() => {
+    const h = historyQuery.data;
+    if (!h) return [];
+    const bl = Object.fromEntries(h.baselines.map((b) => [b.exercise, Number(b.one_rm_kg)]));
+    return evaluateBlock(h.logs, bl, volumeProfileQuery.data?.tolerance ?? "normal", h.today);
+  }, [historyQuery.data, volumeProfileQuery.data]);
+  const blockResult = useMemo(
     () => {
       const weeks = applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
-      return isPeaking ? weeks : applySetProtocols(applyVolumeGuards(weeks), setProtocols);
+      if (isPeaking) return { weeks, warnings: [] as string[] };
+      const adapted = applyBlockVolume(weeks, blockEvals, volumeProfileQuery.data?.cap);
+      const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
+      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks), effProtocols), warnings: adapted.warnings };
     },
-    [finalWeeks, overload, isPeaking, weakIds, styleQuery.data, setProtocols],
+    [finalWeeks, overload, isPeaking, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data],
   );
+  const plannedWeeks = blockResult.weeks;
 
   const weeklySets = useMemo(() => {
     const m = templateWeeklySets(plannedWeeks);
@@ -598,7 +610,7 @@ export function GenerateStrengthTemplateDialog({
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">
               <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
-                Overload pushing
+                Tillägg
               </div>
               {overloadTouched(overload) && (
                 <button
@@ -615,21 +627,21 @@ export function GenerateStrengthTemplateDialog({
                 [
                   {
                     key: "overWarmSingles" as const,
-                    title: "Heavy over-warm singles (RPE 8)",
-                    desc: "Work up to one clean single at ~90–92% before working sets — keeps neural familiarity with heavy bar speeds.",
+                    title: "Tung singel (RPE 8)",
+                    desc: "En ren singel på cirka 90–92 % före arbetsseten. Singeln blir dagens mätset för EAk.",
                   },
                   {
                     key: "waveLoading" as const,
-                    title: "Structured wave loading",
-                    desc: "Tre veckor: 5/4 reps @ RPE 7 → 4/3 reps @ RPE 8 → 3/2 reps @ RPE 8,5 → deload. Vikten följer reps och RPE; procent är uppskattningar.",
+                    title: "Vågladdning",
+                    desc: "Tre veckor: 5/4 reps @ RPE 7 → 4/3 reps @ RPE 8 → 3/2 reps @ RPE 8,5 → deload. Vågen styr reps och RPE på huvudlyften; valt setupplägg gäller då bara assistansen.",
                   },
                   {
                     key: "benchConsolidation" as const,
-                    title: "Reduce weekly bench redundancy",
-                    desc: "Consolidates bench into heavy comp-pause, hypertrophy and close-grip days instead of several semi-heavy ones.",
+                    title: "Bänkkonsolidering",
+                    desc: "Samlar bänken i ett tungt pausbänkpass, ett volympass och ett pass med smal grepp i stället för flera halvtunga. Visas vid 4 eller fler dagar.",
                   },
                 ]
-              ).map((o) => {
+              ).filter((o) => o.key !== "benchConsolidation" || daysPerWeek >= 4).map((o) => {
                 const on = overload[o.key];
                 return (
                   <label
@@ -734,6 +746,15 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
 
+          {!isPeaking && blockEvals.length > 0 && (
+            <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Volym från förra blocket (per lyft)</p>
+              {blockEvals.map((e) => (
+                <p key={e.lift}><b className="text-foreground">{e.lift === "squat" ? "Knäböj" : e.lift === "bench" ? "Bänk" : "Mark"} {e.delta > 0 ? "+1" : e.delta < 0 ? "−1" : "±0"} set/vecka</b> — {e.reason}</p>
+              ))}
+              {blockResult.warnings.map((w) => <p key={w} className="text-destructive">{w}</p>)}
+            </div>
+          )}
           {/* ---- coach tuning sliders ---- */}
           <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
             Athlete volume baseline: squat {Math.round(volumeProfile.squat * 100)}%, bench {Math.round(volumeProfile.bench * 100)}%, deadlift {Math.round(volumeProfile.deadlift * 100)}%. Set this on the athlete's Baselines page; the preview below includes it.

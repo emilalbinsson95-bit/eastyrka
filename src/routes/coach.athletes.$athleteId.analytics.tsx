@@ -1212,7 +1212,7 @@ function AnalyticsPage() {
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">
                       <p className="font-medium text-foreground">Automatisk baslinje</p>
-                      <p>Höjer baseline när atleten har ≥ 12 set-1-pass med EAk ≥ 103 % efter senaste ändringen. Trögt — påverkas inte av enstaka topp-pass.</p>
+                      <p>Höjer baseline när minst 12 av de senaste 16 mätpassen ligger på EAk ≥ 103 %, högst +5 % per gång. Varnar om 6 av de 8 senaste ligger under 92 % — sänkningar gör du själv.</p>
                     </div>
                     <Button
                       size="sm"
@@ -1239,13 +1239,18 @@ function AnalyticsPage() {
                           ))}
                         </ul>
                       )}
+                      {autoFloatResult.warnings?.map((w) => (
+                        <p key={w.exercise} className="text-status-exhausted-foreground">
+                          ⚠ {w.exercise}: {w.lowCount} av de 8 senaste passen under 92 % — överväg att sänka baseline ({w.baseline} kg).
+                        </p>
+                      ))}
                       {autoFloatResult.skipped.filter((s) => s.peakCount > 0).length > 0 && (
                         <ul className="space-y-0.5 text-muted-foreground">
                           {autoFloatResult.skipped
                             .filter((s) => s.peakCount > 0)
                             .map((s) => (
                               <li key={s.exercise}>
-                                · {s.exercise}: {s.peakCount}/{autoFloatResult.threshold} peaks
+                                · {s.exercise}: {s.peakCount}/{autoFloatResult.threshold} topp-pass
                                 {s.reason === "no_improvement" ? " (ingen förbättring)" : ""}
                               </li>
                             ))}

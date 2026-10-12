@@ -25,3 +25,5 @@
 - [x] Publish Emil's own methodology texts: "Tränaren som projektledare" (Coachning tab) and "Varianter som fungerar på alla tre lyften" (Styrka tab), verified in the live preview.
 
 - [x] Restore page width boundaries and verify navigation and vertical scrolling.
+
+- [x] EAk on RTS model, measurement set, new bands, trend vs day, stricter baseline float; volume tolerance, block volume, fatigue extra sets; strength index RPE ≥ 7.

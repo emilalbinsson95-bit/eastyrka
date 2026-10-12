@@ -1,5 +1,6 @@
 import { isReadinessLift } from "@/lib/eakoefficient";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
+import { canAddExtraSet } from "@/lib/blockVolume";
 import { moveSessionLogs } from "@/lib/calendar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -38,6 +39,7 @@ import {
   eaKoefficient,
   readinessFromEAk,
   readinessLabel,
+  readinessAction,
   readinessClasses,
   volumeQualityClasses,
   volumeQualityLabel,
@@ -865,6 +867,30 @@ function PlannedExerciseRow({
           dateStr={dateStr}
         />
       )}
+      {isDone && (() => {
+        const extra = canAddExtraSet({
+          plannedSets: targetSets,
+          doneSets: logs.map((l) => ({ reps: l.reps, weight_kg: Number(l.weight_kg), rpe: Number(l.rpe), set_number: l.set_number })),
+          targetRpe: ex.target_rpe != null ? Number(ex.target_rpe) : ex.target_rir != null ? 10 - Number(ex.target_rir) : null,
+          isLightOrSingle: ex.target_reps <= 1 || /deload|toppning|peak|taper|singel|single/i.test(`${ex.notes ?? ""} ${ex.variation ?? ""}`),
+        });
+        if (!extra.reason) return null;
+        return (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">{extra.reason}</p>
+            {extra.allowed && (
+              <LogSetButton
+                ex={ex}
+                nextSet={completed + 1}
+                baseline={baseline}
+                previousLog={logs[logs.length - 1]}
+                athleteId={athleteId}
+                dateStr={dateStr}
+              />
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1032,6 +1058,9 @@ function LogSetButton({
                 >
                   {livePreview.eak.toFixed(0)}% · {readinessLabel(livePreview.status)}
                 </span>
+              )}
+              {baseline > 0 && readinessAction(livePreview.status) && (
+                <span className="text-xs text-muted-foreground">{readinessAction(livePreview.status)}</span>
               )}
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { pctOf1RMInterp } from "@/lib/intensity";
 /**
  * EAkoefficient — autoregulation engine.
  *
@@ -42,54 +43,83 @@ export interface SetInput {
   rpe: number;
 }
 
-/**
- * Daily Estimated 1RM (reps-to-failure Epley):
- */
 /** Sets below this RPE are too far from failure to estimate strength. */
 export const EAK_MIN_RPE = 7;
+/** Single threshold for "Topp" and for baseline auto-float. */
+export const EAK_PEAK_PCT = 103;
 
 export function countsForEAk(set: SetInput): boolean {
   return set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
 }
 
 /**
- *   RIR  = min(10 − RPE, 3)
- *   RTF  = min(reps + RIR, 10)
- *   E1RM = weight × (1 + (RTF − 1) / 30)
+ * Daily Estimated 1RM — same RTS table as prescription:
+ *   E1RM = weight ÷ RTS-%(reps, RPE)
+ * RPE is interpolated between half steps, never rounded down.
  */
 export function dailyE1RM(set: SetInput): number {
-  const rir = Math.min(Math.max(10 - set.rpe, 0), 3);
-  const rtf = Math.min(set.reps + rir, 10);
-  return set.weight_kg * (1 + (rtf - 1) / 30);
+  if (!set.weight_kg || set.reps <= 0) return 0;
+  return (set.weight_kg * 100) / pctOf1RMInterp(set.rpe, set.reps);
 }
 
-/** Single-set EAk (used for live previews). Sets under RPE 7 → 0. */
+/** Single-set EAk (live previews). Sets under RPE 7 → 0. */
 export function eaKoefficient(set: SetInput, baseline1RM: number): number {
   if (!baseline1RM || baseline1RM <= 0 || !countsForEAk(set)) return 0;
   return (dailyE1RM(set) / baseline1RM) * 100;
 }
 
 /**
- * Rolling EAk per (exercise, date): mean of the best qualifying E1RM from
- * this session and the two previous sessions of the same exercise.
- * Returns Map<"date::exercise", rollingE1RM>.
+ * Measurement set per session: the heavy single (reps 1, RPE ≥ 7) if one was
+ * done, otherwise the first working set with RPE ≥ 7. Same rule every
+ * session so values are comparable over time.
  */
-export function rollingE1RMBySession(
-  logs: Array<SetInput & { date: string; exercise: string }>,
-  window = 3,
+export function pickMeasurementSet<T extends SetInput & { set_number: number }>(sets: T[]): T | null {
+  const ok = sets.filter(countsForEAk).sort((a, b) => a.set_number - b.set_number);
+  return ok.find((s) => s.reps === 1) ?? ok[0] ?? null;
+}
+
+/** Measurement-set E1RM per "date::exercise". */
+export function measurementE1RMBySession(
+  logs: Array<SetInput & { date: string; exercise: string; set_number: number }>,
 ): Map<string, number> {
-  const best = new Map<string, Map<string, number>>();
+  const groups = new Map<string, typeof logs>();
   for (const l of logs) {
-    if (!countsForEAk(l)) continue;
-    const m = best.get(l.exercise) ?? new Map<string, number>();
-    m.set(l.date, Math.max(m.get(l.date) ?? 0, dailyE1RM(l)));
-    best.set(l.exercise, m);
+    const k = `${l.date}::${l.exercise}`;
+    const g = groups.get(k) ?? [];
+    g.push(l);
+    groups.set(k, g);
   }
   const out = new Map<string, number>();
-  for (const [ex, m] of best) {
-    const dates = [...m.keys()].sort();
-    dates.forEach((d, i) => {
-      const slice = dates.slice(Math.max(0, i - window + 1), i + 1).map((x) => m.get(x)!);
+  for (const [k, g] of groups) {
+    const m = pickMeasurementSet(g);
+    if (m) out.set(k, dailyE1RM(m));
+  }
+  return out;
+}
+
+/**
+ * Trend: moving average of the measurement-set E1RM over this and the two
+ * previous sessions of the same exercise. Used for coach decisions; the
+ * single session drives today's adjustment.
+ */
+export function rollingE1RMBySession(
+  logs: Array<SetInput & { date: string; exercise: string; set_number?: number }>,
+  window = 3,
+): Map<string, number> {
+  const withNum = logs.map((l, i) => ({ ...l, set_number: l.set_number ?? i + 1 }));
+  const meas = measurementE1RMBySession(withNum);
+  const byEx = new Map<string, Array<[string, number]>>();
+  for (const [k, v] of meas) {
+    const [d, ex] = k.split("::");
+    const arr = byEx.get(ex) ?? [];
+    arr.push([d, v]);
+    byEx.set(ex, arr);
+  }
+  const out = new Map<string, number>();
+  for (const [ex, arr] of byEx) {
+    arr.sort((a, b) => a[0].localeCompare(b[0]));
+    arr.forEach(([d], i) => {
+      const slice = arr.slice(Math.max(0, i - window + 1), i + 1).map((x) => x[1]);
       out.set(`${d}::${ex}`, slice.reduce((a, b) => a + b, 0) / slice.length);
     });
   }
@@ -99,23 +129,40 @@ export function rollingE1RMBySession(
 export function readinessFromEAk(eak: number): ReadinessStatus {
   if (!eak || eak <= 0) return "unknown";
   if (eak < 92) return "exhausted";
-  if (eak <= 97) return "undertrained";
-  if (eak <= 102) return "adapting";
+  if (eak < 97) return "undertrained";
+  if (eak <= EAK_PEAK_PCT) return "adapting";
   return "peaking";
 }
 
+/** Swedish labels. Internal keys kept for stored colour tokens. */
 export function readinessLabel(status: ReadinessStatus): string {
   switch (status) {
     case "exhausted":
-      return "Exhausted";
+      return "Trött";
     case "undertrained":
-      return "Undertrained";
+      return "Under baseline";
     case "adapting":
-      return "Adapting";
+      return "Normal";
     case "peaking":
-      return "Peaking";
+      return "Topp";
     default:
       return "—";
+  }
+}
+
+/** What to do today for a given status. */
+export function readinessAction(status: ReadinessStatus): string {
+  switch (status) {
+    case "exhausted":
+      return "Sänk vikten 5–10 % eller ta bort ett set";
+    case "undertrained":
+      return "Kör som planerat, ingen extra volym";
+    case "adapting":
+      return "Kör som planerat";
+    case "peaking":
+      return "Möjligt att gå tyngre eller testa — kräver två pass i rad";
+    default:
+      return "";
   }
 }
 
@@ -161,17 +208,17 @@ export function volumeQualityFromDrop(
 export function volumeQualityLabel(q: VolumeQuality): string {
   switch (q) {
     case "baseline":
-      return "Set 1 ref.";
+      return "Mätset";
     case "optimal":
-      return "Optimal";
+      return "Bra";
     case "acceptable":
-      return "Acceptable";
+      return "Godtagbart";
     case "fatigue_limit":
-      return "Fatigue limit";
+      return "Trötthetsgräns";
     case "sandbag":
-      return "Set 1 sandbagged?";
+      return "Mätset för lätt?";
     case "planned":
-      return "Planned light";
+      return "Planerat lätt";
     default:
       return "—";
   }
@@ -237,54 +284,66 @@ export function isBig3Lift(exercise: string): boolean {
   return BIG3_LIFT.test(exercise) && !NOT_READINESS_LIFT.test(exercise);
 }
 
+export interface ProcessedSetExtra {
+  /** Trend: 3-session moving average EAk (coach decisions). */
+  eakTrend: number;
+  isMeasurement: boolean;
+}
+
 export function processLogs<T extends RawLog>(
   logs: T[],
   baselines: Record<string, number>,
   plannedLightDates?: ReadonlySet<string>,
-): Array<ProcessedSet<T>> {
-  // Build set-1 reference per (date, exercise)
-  const set1Map = new Map<string, number>();
-  for (const log of logs) {
-    if (log.set_number === 1) {
-      const key = `${log.date}::${log.exercise}`;
-      set1Map.set(key, dailyE1RM(log));
-    }
+): Array<ProcessedSet<T> & ProcessedSetExtra> {
+  const groups = new Map<string, T[]>();
+  for (const l of logs) {
+    const k = `${l.date}::${l.exercise}`;
+    const g = groups.get(k) ?? [];
+    g.push(l);
+    groups.set(k, g);
   }
-
+  const measurement = new Map<string, T>();
+  for (const [k, g] of groups) {
+    const m = pickMeasurementSet(g);
+    if (m) measurement.set(k, m);
+  }
   const rolling = rollingE1RMBySession(logs);
+
   return logs.map((log) => {
+    const key = `${log.date}::${log.exercise}`;
     const baseline = baselines[log.exercise] ?? 0;
     const e1rm = dailyE1RM(log);
-    const roll = rolling.get(`${log.date}::${log.exercise}`) ?? 0;
-    const eak =
-      baseline > 0 && roll > 0 && countsForEAk(log) && isReadinessLift(log.exercise) ? (roll / baseline) * 100 : 0;
+    const meas = measurement.get(key);
+    const measE1 = meas ? dailyE1RM(meas) : 0;
+    const readiness = baseline > 0 && isReadinessLift(log.exercise);
+    // Day decision: today's measurement set. Trend: 3-session average.
+    const eak = readiness && measE1 > 0 ? (measE1 / baseline) * 100 : 0;
+    const roll = rolling.get(key) ?? 0;
+    const eakTrend = readiness && roll > 0 ? (roll / baseline) * 100 : 0;
     const planned = plannedLightDates?.has(log.date) ?? false;
-    // On a planned light / deload day the load is intentionally reduced, so a
-    // low EAkoefficient is the plan working — never alarm "exhausted" for it.
     let status = readinessFromEAk(eak);
     if (planned && status === "exhausted") status = "adapting";
 
-    const key = `${log.date}::${log.exercise}`;
-    const set1 = set1Map.get(key) ?? 0;
-    const drop = set1 > 0 && log.set_number > 1 ? ((set1 - e1rm) / set1) * 100 : 0;
-    let volume =
-      log.set_number === 1
-        ? "baseline"
-        : set1 > 0
-          ? volumeQualityFromDrop(log.set_number, drop)
-          : "unknown";
-    // A within-session drop during a planned light day is expected, not a
-    // fatigue alarm. Sandbagging stays flagged — inconsistent effort is still
-    // inconsistent effort.
+    const isMeasurement = meas === log;
+    let volume: VolumeQuality;
+    let drop = 0;
+    if (isMeasurement) volume = "baseline";
+    else if (!countsForEAk(log) || !meas || log.set_number < meas.set_number) volume = "unknown";
+    else {
+      drop = ((measE1 - e1rm) / measE1) * 100;
+      volume = volumeQualityFromDrop(2, drop);
+    }
     if (planned && volume === "fatigue_limit") volume = "planned";
 
     return {
       source: log,
       dailyE1RM: e1rm,
       eaKoefficient: eak,
+      eakTrend,
+      isMeasurement,
       baseline1RM: baseline,
       status,
-      set1E1RM: set1,
+      set1E1RM: measE1,
       dropPercent: drop,
       volume,
     };

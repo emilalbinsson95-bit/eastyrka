@@ -1244,7 +1244,7 @@ function BodyweightCard({
 
     // Strength index uses only the big 3 (squat, bench, deadlift) and their
     // barbell variations — accessory exercises don't belong in the index.
-    const big3 = logs.filter((l) => isBig3Lift(l.exercise));
+    const big3 = logs.filter((l) => isBig3Lift(l.exercise) && Number(l.rpe) >= 7 && l.reps > 0);
     const counts = new Map<string, number>();
     for (const l of big3) {
       counts.set(l.exercise, (counts.get(l.exercise) ?? 0) + 1);

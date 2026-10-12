@@ -22,6 +22,8 @@ export type Database = {
           deadlift_style: string | null
           squat_factor: number
           updated_at: string
+          volume_tolerance: string
+          weekly_set_cap: number | null
         }
         Insert: {
           athlete_id: string
@@ -30,6 +32,8 @@ export type Database = {
           deadlift_style?: string | null
           squat_factor?: number
           updated_at?: string
+          volume_tolerance?: string
+          weekly_set_cap?: number | null
         }
         Update: {
           athlete_id?: string
@@ -38,6 +42,8 @@ export type Database = {
           deadlift_style?: string | null
           squat_factor?: number
           updated_at?: string
+          volume_tolerance?: string
+          weekly_set_cap?: number | null
         }
         Relationships: []
       }

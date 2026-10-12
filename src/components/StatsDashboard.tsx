@@ -535,13 +535,13 @@ const STATUS_META: Record<
     help: "Loading phase — fitness rising, fatigue elevated.",
   },
   adapting: {
-    label: "Normal",
+    label: "Adapting",
     color:
       "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
     help: "Stable training load with signs of recovery.",
   },
   peaking: {
-    label: "Topp",
+    label: "Peaking",
     color:
       "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
     help: "Lower fatigue relative to recent training load.",

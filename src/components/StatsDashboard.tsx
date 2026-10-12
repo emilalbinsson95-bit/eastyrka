@@ -45,6 +45,7 @@ import {
   dailyE1RM,
   rollingE1RMBySession,
   eaKoefficient,
+  isBig3Lift,
   readinessFromEAk,
   readinessLabel,
   readinessClasses,
@@ -1321,7 +1322,8 @@ function BodyweightCard({
         </CardTitle>
         <CardDescription>
           Weekly bodyweight (from your daily readiness check-ins) against your
-          strength index (avg top-set e1RM across your most-trained lifts).
+          strength index (avg top-set e1RM across the big 3 — squat, bench and
+          deadlift).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

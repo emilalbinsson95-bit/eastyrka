@@ -22,3 +22,5 @@
 
 - Constrain document-level horizontal overflow with clipping, not a nested scroll container, and wrap role-layout headers so all controls remain reachable; wide tables and calendar views retain their local scrolling.
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
+- EAk and E1RM use the shared RTS table (src/lib/intensity.ts) with a fixed per-session measurement set, because measurement and prescription must agree.
+- Block-to-block volume adaptation and fatigue-stop extra sets live in src/lib/blockVolume.ts and run before volume guards, because data-driven volume must still respect realism caps.

@@ -223,10 +223,18 @@ export interface RawLog extends SetInput {
 
 const READINESS_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b|clean|snatch|jerk|ryck|st[öo]t|v[äa]ndning/i;
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;
-/** EAk/readiness only uses the big 3 (squat, bench, deadlift), their barbell
+/** EAk/readiness uses the big 3 (squat, bench, deadlift), their barbell
  *  variations and Olympic lifts — accessory margins distort readiness. */
 export function isReadinessLift(exercise: string): boolean {
   return READINESS_LIFT.test(exercise) && !NOT_READINESS_LIFT.test(exercise);
+}
+
+const BIG3_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b/i;
+/** Strictly the big 3 — squat, bench and deadlift plus their barbell
+ *  variations. Olympic lifts and accessories are excluded, used by charts
+ *  that should follow only the three competition lifts. */
+export function isBig3Lift(exercise: string): boolean {
+  return BIG3_LIFT.test(exercise) && !NOT_READINESS_LIFT.test(exercise);
 }
 
 export function processLogs<T extends RawLog>(

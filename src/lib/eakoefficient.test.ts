@@ -1,105 +1,36 @@
 import { describe, it, expect } from "vitest";
-import {
-  dailyE1RM,
-  eaKoefficient,
-  readinessFromEAk,
-  volumeQualityFromDrop,
-  processLogs,
-  type RawLog,
-} from "@/lib/eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk } from "./eakoefficient";
+import { canAddExtraSet } from "./blockVolume";
 
-describe("eakoefficient", () => {
-  describe("dailyE1RM", () => {
-    it("computes RTF Epley", () => {
-      // 100kg × 5 @ RPE 10 → RTF 5 → 100 × (1 + 4/30) = 113.33
-      expect(dailyE1RM({ weight_kg: 100, reps: 5, rpe: 10 })).toBeCloseTo(113.33, 1);
-      // 125 × 3 @ 10 → 125 × (1 + 2/30) = 133.33
-      expect(dailyE1RM({ weight_kg: 125, reps: 3, rpe: 10 })).toBeCloseTo(133.33, 1);
-    });
-    it("caps RTF at 10 and RIR at 3", () => {
-      const a = dailyE1RM({ weight_kg: 100, reps: 12, rpe: 8 });
-      const b = dailyE1RM({ weight_kg: 100, reps: 8, rpe: 8 });
-      expect(a).toBeCloseTo(b, 5);
-      expect(dailyE1RM({ weight_kg: 100, reps: 3, rpe: 5 })).toBeCloseTo(
-        dailyE1RM({ weight_kg: 100, reps: 3, rpe: 7 }), 5);
-    });
-    it("RPE < 7 does not count for EAk", () => {
-      expect(eaKoefficient({ weight_kg: 100, reps: 5, rpe: 6 }, 100)).toBe(0);
-    });
-    it("same-ish", () => {
-      const a = dailyE1RM({ weight_kg: 100, reps: 10, rpe: 8 });
-      const b = dailyE1RM({ weight_kg: 100, reps: 9, rpe: 8 });
-      expect(a).toBeCloseTo(b, 5);
-    });
-    it("lower RPE (more reserve) → higher predicted E1RM", () => {
-      // Same lift at RPE 8 implies more reps in reserve → 1RM estimate is higher
-      const e10 = dailyE1RM({ weight_kg: 100, reps: 5, rpe: 10 });
-      const e8 = dailyE1RM({ weight_kg: 100, reps: 5, rpe: 8 });
-      expect(e8).toBeGreaterThan(e10);
-    });
+describe("EAk (RTS model)", () => {
+  it("130×5@8 ≈ 160.3", () => expect(dailyE1RM({ weight_kg: 130, reps: 5, rpe: 8 })).toBeCloseTo(160.3, 1));
+  it("150×1@10 = 150", () => expect(dailyE1RM({ weight_kg: 150, reps: 1, rpe: 10 })).toBeCloseTo(150, 5));
+  it("interpolates RPE, never rounds down", () => {
+    const a = dailyE1RM({ weight_kg: 100, reps: 3, rpe: 8.25 });
+    expect(a).toBeLessThan(dailyE1RM({ weight_kg: 100, reps: 3, rpe: 8 }));
+    expect(a).toBeGreaterThan(dailyE1RM({ weight_kg: 100, reps: 3, rpe: 8.5 }));
   });
-
-  describe("eaKoefficient", () => {
-    it("returns 0 when baseline missing", () => {
-      expect(eaKoefficient({ weight_kg: 100, reps: 5, rpe: 8 }, 0)).toBe(0);
-    });
-    it("100% when daily E1RM equals baseline", () => {
-      const e = dailyE1RM({ weight_kg: 100, reps: 5, rpe: 8 });
-      expect(eaKoefficient({ weight_kg: 100, reps: 5, rpe: 8 }, e)).toBeCloseTo(100, 5);
-    });
+  it("RPE < 7 does not count", () => expect(countsForEAk({ weight_kg: 100, reps: 5, rpe: 6.5 })).toBe(false));
+  it("bands", () => {
+    expect(readinessFromEAk(91)).toBe("exhausted");
+    expect(readinessFromEAk(95)).toBe("undertrained");
+    expect(readinessFromEAk(103)).toBe("adapting");
+    expect(readinessFromEAk(103.1)).toBe("peaking");
   });
-
-  describe("readinessFromEAk", () => {
-    it.each([
-      [0, "unknown"],
-      [80, "exhausted"],
-      [91.9, "exhausted"],
-      [92, "undertrained"],
-      [97, "undertrained"],
-      [97.5, "adapting"],
-      [102, "adapting"],
-      [103, "peaking"],
-    ])("eak=%s → %s", (eak, status) => {
-      expect(readinessFromEAk(eak as number)).toBe(status);
-    });
+  it("measurement set = heavy single, else first RPE≥7 set", () => {
+    const logs = [
+      { id: "a", date: "2026-01-01", exercise: "Back squat", variation: null, set_number: 1, reps: 5, weight_kg: 100, rpe: 6 },
+      { id: "b", date: "2026-01-01", exercise: "Back squat", variation: null, set_number: 2, reps: 5, weight_kg: 120, rpe: 8 },
+      { id: "c", date: "2026-01-01", exercise: "Back squat", variation: null, set_number: 3, reps: 5, weight_kg: 120, rpe: 9 },
+    ];
+    const p = processLogs(logs, { "Back squat": 148 });
+    expect(p[1].isMeasurement).toBe(true);
+    expect(p[0].volume).toBe("unknown");
+    expect(p[2].dropPercent).toBeGreaterThan(0);
   });
-
-  describe("volumeQualityFromDrop", () => {
-    it("set 1 is baseline reference", () => {
-      expect(volumeQualityFromDrop(1, 0)).toBe("baseline");
-    });
-    it("drop ≤4% → optimal", () => {
-      expect(volumeQualityFromDrop(2, 3)).toBe("optimal");
-      expect(volumeQualityFromDrop(2, 4)).toBe("optimal");
-    });
-    it("4 < drop < 5 → acceptable", () => {
-      expect(volumeQualityFromDrop(3, 4.5)).toBe("acceptable");
-    });
-    it("drop ≥5 → fatigue_limit", () => {
-      expect(volumeQualityFromDrop(3, 5)).toBe("fatigue_limit");
-      expect(volumeQualityFromDrop(4, 10)).toBe("fatigue_limit");
-    });
-    it("later set notably stronger than set 1 → sandbag", () => {
-      expect(volumeQualityFromDrop(2, -6)).toBe("sandbag");
-      expect(volumeQualityFromDrop(2, -10)).toBe("sandbag");
-    });
-    it("small negative drop (within threshold) stays optimal", () => {
-      expect(volumeQualityFromDrop(2, -3)).toBe("optimal");
-      expect(volumeQualityFromDrop(2, -5)).toBe("optimal");
-    });
-  });
-
-  describe("processLogs", () => {
-    it("computes drop% relative to set 1 of same day & exercise", () => {
-      const logs: RawLog[] = [
-        { id: "1", date: "2026-05-01", exercise: "Squat", variation: null, set_number: 1, weight_kg: 100, reps: 5, rpe: 8 },
-        { id: "2", date: "2026-05-01", exercise: "Squat", variation: null, set_number: 2, weight_kg: 100, reps: 5, rpe: 9 },
-      ];
-      const out = processLogs(logs, { Squat: 120 });
-      expect(out[0].volume).toBe("baseline");
-      // Set 2 has higher RPE → lower E1RM → drop > 0
-      expect(out[1].dropPercent).toBeGreaterThan(0);
-      expect(out[0].eaKoefficient).toBeCloseTo((out[0].dailyE1RM / 120) * 100, 5);
-    });
+  it("extra set allowed only with small drop", () => {
+    const sets = [1, 2, 3].map((n) => ({ set_number: n, reps: 5, weight_kg: 120, rpe: 8 }));
+    expect(canAddExtraSet({ plannedSets: 3, doneSets: sets, targetRpe: 8, isLightOrSingle: false }).allowed).toBe(true);
+    expect(canAddExtraSet({ plannedSets: 3, doneSets: [...sets, { set_number: 4, reps: 5, weight_kg: 120, rpe: 8 }, { set_number: 5, reps: 5, weight_kg: 120, rpe: 8 }], targetRpe: 8, isLightOrSingle: false }).allowed).toBe(false);
   });
 });

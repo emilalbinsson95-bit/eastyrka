@@ -39,6 +39,7 @@ import {
   eaKoefficient,
   readinessFromEAk,
   readinessLabel,
+  readinessAction,
   readinessClasses,
   volumeQualityClasses,
   volumeQualityLabel,
@@ -1057,6 +1058,9 @@ function LogSetButton({
                 >
                   {livePreview.eak.toFixed(0)}% · {readinessLabel(livePreview.status)}
                 </span>
+              )}
+              {baseline > 0 && readinessAction(livePreview.status) && (
+                <span className="text-xs text-muted-foreground">{readinessAction(livePreview.status)}</span>
               )}
             </div>
           </div>

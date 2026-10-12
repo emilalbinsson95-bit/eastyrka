@@ -1,32 +1,23 @@
 /**
- * Auto-flytande baseline för EAkoefficient.
- *
- * Princip: baseline ska följa atletens verkliga form över tid — annars
- * fastnar EAk på "Peaking" hela mesocykeln när atleten faktiskt har lyft
- * baseline. Men den får inte vingla från ett bra pass. Vi gör därför
- * uppdateringen TRÖG: kräver minst PEAK_THRESHOLD (=12) set-1-observationer
- * med EAk ≥ 103 % efter senaste baseline-ändringen för det lyftet innan vi
- * höjer baseline.
- *
- * Ny baseline = medianen av dessa peak-E1RM × 0.98. Det placerar atletens
- * snitt-peak runt 102 % på det nya basvärdet (= "Adapting"), vilket är där
- * progression ska fortsätta drivas. Endast höjningar tillåts (autoflytande
- * är till för progression, inte regression — coach hanterar nedjusteringar
- * manuellt).
- *
- * Säkerhet: serverFn använder admin-klient eftersom RLS på `baselines`
- * tillåter bara coachen att uppdatera. Vi gate:ar på att caller är antingen
- * atleten själv eller en länkad coach (is_coach_of).
+ * Auto-flytande baseline för EAk (endast den egna övningen).
+ * - Mätset per pass (tung singel eller första arbetsset, RPE ≥ 7).
+ * - Höjning: minst 12 av de senaste 16 mätpassen efter senaste ändringen
+ *   ligger på ≥ 103 %. Ny baseline = median(topp-E1RM) × 0,98, högst +5 %.
+ * - Varning nedåt: 6 av de 8 senaste mätpassen under 92 %. Sänkningar görs
+ *   manuellt av coachen. Trösklarna är egna designval, inte forskningsvärden.
  */
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { dailyE1RM } from "./eakoefficient";
+import { dailyE1RM, pickMeasurementSet, EAK_PEAK_PCT } from "./eakoefficient";
 
-const PEAK_THRESHOLD = 12;          // minst 12 peak-pass innan baseline flyter
-const PEAK_EAK_PCT = 103;           // EAk ≥ 103 % räknas som "peak"
+const PEAK_THRESHOLD = 12;          // minst 12 av de senaste WINDOW mätpassen
+const WINDOW = 16;
+const PEAK_EAK_PCT = EAK_PEAK_PCT;
+const MAX_RAISE = 1.05;             // högst +5 % per höjning
+const LOW_PCT = 92, LOW_COUNT = 6, LOW_WINDOW = 8;
 const NEW_BASELINE_BUFFER = 0.98;   // ny baseline = median(peak) × 0.98
 const MIN_DELTA_KG = 1;             // ignorera ändringar < 1 kg (brus)
 
@@ -45,9 +36,16 @@ export interface BaselineAutoSkip {
   reason: "not_enough_peaks" | "no_improvement" | "no_logs";
 }
 
+export interface BaselineLowWarning {
+  exercise: string;
+  baseline: number;
+  lowCount: number;
+}
+
 export interface BaselineAutoResult {
   updated: BaselineAutoUpdate[];
   skipped: BaselineAutoSkip[];
+  warnings: BaselineLowWarning[];
   threshold: number;
   peakEakPct: number;
 }
@@ -81,6 +79,7 @@ export const autoFloatBaselines = createServerFn({ method: "POST" })
 
     const updated: BaselineAutoUpdate[] = [];
     const skipped: BaselineAutoSkip[] = [];
+    const warnings: BaselineLowWarning[] = [];
 
     for (const b of baselines ?? []) {
       const baseline = Number(b.one_rm_kg);
@@ -90,30 +89,34 @@ export const autoFloatBaselines = createServerFn({ method: "POST" })
       const sinceIso = (b.updated_at ?? "1970-01-01").slice(0, 10);
       const { data: logs, error: lErr } = await supabaseAdmin
         .from("training_logs")
-        .select("reps, weight_kg, rpe, date")
+        .select("reps, weight_kg, rpe, date, set_number")
         .eq("athlete_id", athleteId)
         .eq("exercise", b.exercise)
-        .eq("set_number", 1)
         .gte("date", sinceIso)
         .order("date", { ascending: false })
-        .limit(60);
+        .limit(600);
       if (lErr) throw new Error(lErr.message);
 
-      if (!logs || logs.length === 0) {
+      const byDate = new Map<string, Array<{ reps: number; weight_kg: number; rpe: number; set_number: number }>>();
+      for (const l of logs ?? []) {
+        const g = byDate.get(l.date) ?? [];
+        g.push({ reps: Number(l.reps), weight_kg: Number(l.weight_kg), rpe: Number(l.rpe), set_number: Number(l.set_number) });
+        byDate.set(l.date, g);
+      }
+      const sessions = [...byDate.keys()].sort().reverse()
+        .map((d) => pickMeasurementSet(byDate.get(d)!))
+        .filter((m): m is NonNullable<typeof m> => !!m)
+        .map((m) => dailyE1RM(m));
+
+      if (sessions.length === 0) {
         skipped.push({ exercise: b.exercise, baseline, peakCount: 0, reason: "no_logs" });
         continue;
       }
 
-      const peakE1RMs: number[] = [];
-      for (const l of logs) {
-        const e1rm = dailyE1RM({
-          reps: Number(l.reps),
-          weight_kg: Number(l.weight_kg),
-          rpe: Number(l.rpe),
-        });
-        const eak = (e1rm / baseline) * 100;
-        if (eak >= PEAK_EAK_PCT) peakE1RMs.push(e1rm);
-      }
+      const lowCount = sessions.slice(0, LOW_WINDOW).filter((e) => (e / baseline) * 100 < LOW_PCT).length;
+      if (lowCount >= LOW_COUNT) warnings.push({ exercise: b.exercise, baseline, lowCount });
+
+      const peakE1RMs = sessions.slice(0, WINDOW).filter((e) => (e / baseline) * 100 >= PEAK_EAK_PCT);
 
       if (peakE1RMs.length < PEAK_THRESHOLD) {
         skipped.push({
@@ -132,7 +135,7 @@ export const autoFloatBaselines = createServerFn({ method: "POST" })
         : (peakE1RMs[mid - 1] + peakE1RMs[mid]) / 2;
 
       // Round to nearest 0.5 kg.
-      const proposed = Math.round(median * NEW_BASELINE_BUFFER * 2) / 2;
+      const proposed = Math.round(Math.min(median * NEW_BASELINE_BUFFER, baseline * MAX_RAISE) * 2) / 2;
 
       if (proposed - baseline < MIN_DELTA_KG) {
         skipped.push({
@@ -159,5 +162,5 @@ export const autoFloatBaselines = createServerFn({ method: "POST" })
       });
     }
 
-    return { updated, skipped, threshold: PEAK_THRESHOLD, peakEakPct: PEAK_EAK_PCT };
+    return { updated, skipped, warnings, threshold: PEAK_THRESHOLD, peakEakPct: PEAK_EAK_PCT };
   });

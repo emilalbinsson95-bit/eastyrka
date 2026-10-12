@@ -110,7 +110,9 @@ export function rollingE1RMBySession(
   const meas = measurementE1RMBySession(withNum);
   const byEx = new Map<string, Array<[string, number]>>();
   for (const [k, v] of meas) {
-    const [d, ex] = k.split("::");
+    const separator = k.indexOf("::");
+    const d = k.slice(0, separator);
+    const ex = k.slice(separator + 2);
     const arr = byEx.get(ex) ?? [];
     arr.push([d, v]);
     byEx.set(ex, arr);

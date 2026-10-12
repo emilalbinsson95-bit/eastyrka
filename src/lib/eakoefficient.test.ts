@@ -1,8 +1,30 @@
 import { describe, it, expect } from "vitest";
-import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk } from "./eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession } from "./eakoefficient";
 import { canAddExtraSet } from "./blockVolume";
 
 describe("EAk (RTS model)", () => {
+  it("preserves athlete and exercise keys without mixing lifts or athletes", () => {
+    const logs = [
+      { date: "2026-01-01", exercise: "athlete-a::Back squat", set_number: 1, reps: 1, weight_kg: 100, rpe: 10 },
+      { date: "2026-01-02", exercise: "athlete-a::Back squat", set_number: 1, reps: 1, weight_kg: 120, rpe: 10 },
+      { date: "2026-01-02", exercise: "athlete-a::Bench press", set_number: 1, reps: 1, weight_kg: 80, rpe: 10 },
+      { date: "2026-01-02", exercise: "athlete-b::Back squat", set_number: 1, reps: 1, weight_kg: 200, rpe: 10 },
+    ];
+    const trend = rollingE1RMBySession(logs);
+    expect(trend.get("2026-01-02::athlete-a::Back squat")).toBe(110);
+    expect(trend.get("2026-01-02::athlete-a::Bench press")).toBe(80);
+    expect(trend.get("2026-01-02::athlete-b::Back squat")).toBe(200);
+    expect(measurementE1RMBySession(logs).get("2026-01-02::athlete-a::Back squat")).toBe(120);
+  });
+  it("uses the numbered measurement set rather than query order or backoffs", () => {
+    const logs = [
+      { date: "2026-01-01", exercise: "athlete-a::Back squat", set_number: 3, reps: 5, weight_kg: 100, rpe: 9 },
+      { date: "2026-01-01", exercise: "athlete-a::Back squat", set_number: 1, reps: 5, weight_kg: 120, rpe: 8 },
+      { date: "2026-01-01", exercise: "athlete-a::Back squat", set_number: 2, reps: 5, weight_kg: 120, rpe: 8.5 },
+    ];
+    expect(measurementE1RMBySession(logs).get("2026-01-01::athlete-a::Back squat"))
+      .toBe(dailyE1RM(logs[1]));
+  });
   it("130×5@8 ≈ 160.3", () => expect(dailyE1RM({ weight_kg: 130, reps: 5, rpe: 8 })).toBeCloseTo(160.3, 1));
   it("150×1@10 = 150", () => expect(dailyE1RM({ weight_kg: 150, reps: 1, rpe: 10 })).toBeCloseTo(150, 5));
   it("interpolates RPE, never rounds down", () => {

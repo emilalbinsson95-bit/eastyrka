@@ -218,6 +218,7 @@ function CoachRosterPage() {
 
   const updateTagMutation = useMutation({
     mutationFn: async ({ athleteId, tag }: { athleteId: string; tag: string }) => {
+      if (!coachId) throw new Error("Du behöver vara inloggad.");
       const { error } = await supabase
         .from("coach_athletes")
         .update({ tag: tag.trim() || null })

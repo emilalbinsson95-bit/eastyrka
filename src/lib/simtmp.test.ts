@@ -1,8 +1,8 @@
 import { it, expect } from "vitest";
-import { evaluateBlock, applyBlockVolume, canAddExtraSet } from "./src/lib/blockVolume";
-import { STRENGTH_TEMPLATES, volumeCategory } from "./src/lib/strengthTemplates";
-import { enforceTemplateFloors } from "./src/lib/individualisation";
-import { applyVolumeGuards } from "./src/lib/volumeGuards";
+import { evaluateBlock, applyBlockVolume, canAddExtraSet } from "./blockVolume";
+import { STRENGTH_TEMPLATES, volumeCategory } from "./strengthTemplates";
+import { enforceTemplateFloors } from "./individualisation";
+import { applyVolumeGuards } from "./volumeGuards";
 function logs(drop: number, trend: number, n = 8) {
   const out: any[] = [];
   for (let i = 0; i < n; i++) {

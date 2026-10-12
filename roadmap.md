@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Verify the uploaded coaching references and add practical guidance and corrected evidence limits to methodology; verify the page.
+
 - [x] Rewrite Coachning in practical, direct Swedish without psychological jargon; verify the tab.
 
 - [x] Review app copy and remove AI-like phrasing and formulaic text without changing training advice or Emil's own material.

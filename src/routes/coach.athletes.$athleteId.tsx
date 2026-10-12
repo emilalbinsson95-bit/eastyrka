@@ -493,7 +493,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
             </select>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
+        <CardContent className="relative overflow-x-auto p-0">
           {logsQuery.isLoading && (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading…</div>
           )}
@@ -513,7 +513,9 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                   <th className="bg-readiness-tint/30 px-4 py-3">Status</th>
                   <th className="bg-volume-tint/30 px-4 py-3">Drop</th>
                   <th className="bg-volume-tint/30 px-4 py-3">Volume</th>
-                  <th className="px-2 py-3 sr-only">Actions</th>
+                  <th className="px-2 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

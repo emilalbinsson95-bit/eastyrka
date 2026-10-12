@@ -233,17 +233,17 @@ function CoachRosterPage() {
             build their week.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search name or tag…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 pl-9"
+              className="w-full pl-9 sm:w-56"
             />
           </div>
-          <Button asChild>
+          <Button asChild className="shrink-0">
             <Link to="/coach/invites">
               <Mail className="mr-1 h-4 w-4" /> Invite athlete
             </Link>

@@ -18,9 +18,9 @@ import { Input } from "@/components/ui/input";
 import {
   readinessClasses,
   readinessLabel,
-  eaKoefficient,
+  countsForEAk,
   dailyE1RM,
-  rollingE1RMBySession,
+  measurementE1RMBySession,
   readinessFromEAk,
 } from "@/lib/eakoefficient";
 
@@ -39,6 +39,8 @@ export const Route = createFileRoute("/coach/")({
         property: "og:description",
         content: "Manage your athlete roster, baselines and weekly programming.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: CoachRosterPage,
@@ -55,11 +57,13 @@ interface AthleteRow {
 
 function CoachRosterPage() {
   const { user } = useAuth();
-  const coachId = user!.id;
+  const coachId = user?.id;
 
   const rosterQuery = useQuery({
     queryKey: ["coach-roster", coachId],
+    enabled: !!coachId,
     queryFn: async (): Promise<AthleteRow[]> => {
+      if (!coachId) return [];
       // 1. Get linked athletes with tags
       const { data: links, error: linkErr } = await supabase
         .from("coach_athletes")
@@ -85,18 +89,21 @@ function CoachRosterPage() {
       since.setDate(since.getDate() - 120);
       const sinceIso = since.toISOString().slice(0, 10);
 
-      const { data: recentLogs } = await supabase
+      const { data: recentLogs, error: logsError } = await supabase
         .from("training_logs")
         .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe")
         .in("athlete_id", athleteIds)
         .gte("date", sinceIso)
         .order("date", { ascending: false })
+        .order("set_number", { ascending: true })
         .limit(3000);
+      if (logsError) throw logsError;
 
-      const { data: baselines } = await supabase
+      const { data: baselines, error: baselineError } = await supabase
         .from("baselines")
         .select("athlete_id, exercise, one_rm_kg")
         .in("athlete_id", athleteIds);
+      if (baselineError) throw baselineError;
       const baselineMap = new Map<string, Record<string, number>>();
       for (const b of baselines ?? []) {
         const m = baselineMap.get(b.athlete_id) ?? {};
@@ -108,6 +115,7 @@ function CoachRosterPage() {
       const e1rmPool = new Map<string, number[]>();
       for (const log of recentLogs ?? []) {
         if (Number(log.set_number) !== 1) continue;
+        if (!countsForEAk({ reps: Number(log.reps), weight_kg: Number(log.weight_kg), rpe: Number(log.rpe) })) continue;
         const e1rm = dailyE1RM({
           reps: Number(log.reps),
           weight_kg: Number(log.weight_kg),
@@ -133,17 +141,18 @@ function CoachRosterPage() {
         derived.get(`${athleteId}::${exercise}`) ??
         0;
 
-      // Rolling 3-session E1RM per athlete+exercise
-      const rollingMap = rollingE1RMBySession(
+      // Current session uses its measurement set, not the 3-session trend.
+      const measurementMap = measurementE1RMBySession(
         (recentLogs ?? []).map((l) => ({
           date: l.date as string,
           exercise: `${l.athlete_id}::${l.exercise}`,
           reps: Number(l.reps),
           weight_kg: Number(l.weight_kg),
           rpe: Number(l.rpe),
+          set_number: Number(l.set_number),
         })),
       );
-      // Latest session per athlete: average EAk across that day's sets
+      // Latest session per athlete: one measurement per eligible lift.
       const latestByAthlete = new Map<string, { date: string; byEx: Map<string, number> }>();
       for (const log of recentLogs ?? []) {
         const current = latestByAthlete.get(log.athlete_id);
@@ -153,8 +162,9 @@ function CoachRosterPage() {
           if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, byEx: new Map() });
           continue;
         }
-        const roll = rollingMap.get(`${log.date}::${log.athlete_id}::${log.exercise}`) ?? 0;
-        const eak = roll > 0 ? (roll / baseline) * 100 : 0;
+        const measurement = measurementMap.get(`${log.date}::${log.athlete_id}::${log.exercise}`) ?? 0;
+        if (measurement <= 0) continue;
+        const eak = (measurement / baseline) * 100;
         const entry = current ?? { date: log.date, byEx: new Map<string, number>() };
         const exKey = log.exercise as string;
         entry.byEx.set(exKey, Math.max(entry.byEx.get(exKey) ?? 0, eak));
@@ -259,7 +269,11 @@ function CoachRosterPage() {
         </Card>
       )}
 
-      {!rosterQuery.isLoading && athletes.length === 0 && (
+      {rosterQuery.isError && (
+        <p role="alert" className="text-sm text-destructive">Kunde inte hämta atletöversikten. Försök igen.</p>
+      )}
+
+      {!rosterQuery.isLoading && !rosterQuery.isError && athletes.length === 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

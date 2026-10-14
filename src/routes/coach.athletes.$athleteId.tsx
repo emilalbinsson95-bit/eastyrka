@@ -1043,9 +1043,10 @@ function BaselineRow({
   onSave: (kg: number) => void;
   onDelete: () => void;
 }) {
-  const [value, setValue] = useState(kg);
+  const [value, setValue] = useState(String(kg));
   const [open, setOpen] = useState(false);
-  const dirty = value !== kg;
+  const parsed = Number(value.replace(",", "."));
+  const dirty = isFinite(parsed) && parsed !== kg;
 
   const historyQuery = useQuery({
     queryKey: ["baseline-history", athleteId, exercise],
@@ -1090,12 +1091,10 @@ function BaselineRow({
             </button>
           </div>
           <Input
-            type="number"
-            min={0}
-            max={1000}
-            step={2.5}
+            type="text"
+            inputMode="decimal"
             value={value}
-            onChange={(e) => setValue(Number(e.target.value))}
+            onChange={(e) => setValue(e.target.value)}
             className="mt-1"
           />
           <div className="mt-1 text-[10px] text-muted-foreground">

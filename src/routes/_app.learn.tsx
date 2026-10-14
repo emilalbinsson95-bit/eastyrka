@@ -67,6 +67,55 @@ function LearnPage() {
         <p>Långa statiska stretchar precis före tunga lyft behövs inte. Spara dem till efter passet om du vill.</p>
       </Topic>
 
+      <Topic title="Morgonflow — rörelser innan träningen (lång ca 14 min · kort ca 8 min)">
+        <p>Gör detta när du vaknar eller strax innan passet. Stegen märkta <em>ej i kort</em> hoppar du över i kortversionen; där doseringen skiljer sig står den under steget.</p>
+
+        <p className="font-medium text-foreground">1. Goddess-stans med höft framåt (1 min)</p>
+        <p>Stå brett, ungefär dubbla axelbredden, med tårna utåtvridna cirka 45 grader. Sjunk ner tills låren är nästan parallella med golvet. För aktivt knäna utåt så att de pekar åt samma håll som tårna. Tryck sedan fram höften och spänn sätet tills det öppnar i höftens framsida och insida lår. Börja högre och gå djupare under några andetag.</p>
+        <p>Kort: gå ner gradvis i cirka 30 s. Avsluta med 2–3 sidolutningar per sida enligt steg 2.</p>
+
+        <p className="font-medium text-foreground">2. Sidolutning i goddess-stans (45 s · ej i kort)</p>
+        <p>Stå kvar i stansen. Luta överkroppen åt höger med armen över huvudet, och sedan åt vänster. Gör 3–4 lutningar per sida och stanna 2 andetag i varje. Höften står still, rörelsen sker i bålens sida.</p>
+
+        <p className="font-medium text-foreground">3. Knästående bakåtlutning (45 s · ej i kort)</p>
+        <p>Sätt dig på knä med vristerna platta mot golvet och sitt på hälarna. Sätt händerna bakom dig och luta dig sakta bakåt. Det töjer framsida lår och framsida skenben. Lyft gärna höften något för att öka töjningen i låret. Håll 30–45 s.</p>
+
+        <p className="font-medium text-foreground">4. Katt–ko och thread the needle (1,5 min)</p>
+        <p>Katt–ko: gå upp på alla fyra med händerna under axlarna och knäna under höfterna. Runda ryggen mot taket på utandningen och sjunk ner med bröstet fram på inandningen. Gör 6–8 långsamma repetitioner.</p>
+        <p>Thread the needle: stå kvar på alla fyra. Sträck höger arm mot taket och följ handen med blicken. För sedan armen in under vänster arm och lägg ner axeln och tinningen mot golvet. Gör 5 per sida och stanna ett andetag i varje ytterläge.</p>
+        <p>Kort: 5 katt–ko och 3 thread the needle per sida.</p>
+
+        <p className="font-medium text-foreground">5. 90/90 till pigeon, aktivt (2 min · kort 1,5 min)</p>
+        <p>Sitt på golvet med båda knäna böjda 90 grader: främre benet vinklat framför dig och bakre benet vinklat åt sidan. Sitt upprätt och luta dig lätt fram över det främre benet. Gå sedan aktivt över till pigeon, med det främre benet kvar och det bakre sträckt rakt bakåt. Pressa främre benet mot golvet för att aktivera sätet. Gå tillbaka till 90/90 och byt sida. Gör 3–4 övergångar per sida.</p>
+        <p>Kort: 2 övergångar per sida.</p>
+
+        <p className="font-medium text-foreground">6. Höftböjare i djupt utfall (1,5 min · kort 1 min)</p>
+        <p>Stå i ett långt utfall med bakre knät strax ovanför golvet och bakre foten på tå. Spänn sätet på bakre benet och tryck fram höften. Håll bålen upprätt och svanka inte. Höftböjarstretchen ska kännas i framsidan av bakre höften. Håll 45 s per sida.</p>
+        <p>Knäet får passera tårna i det djupa utfallet. Det är inte fel och inte farligt — låt det glida fram så långt det går utan att hälen lyfter, och känn hur stretchen flyttas upp mot framsidan av höften.</p>
+        <p>Kort: 30 s per sida.</p>
+
+        <p className="font-medium text-foreground">7. Baksida lår och vader (2 min · ej i kort)</p>
+        <p>Baksida lår: från utfallet, för höften bakåt och sträck det främre benet med foten flexad. Håll ryggen rak och fäll fram från höften. Håll 30 s per sida.</p>
+        <p>Vader: kliv tillbaka till ett kortare utfall med båda fötterna i golvet. Sträck bakre benet och tryck ner hälen i golvet (övre vaden, 20 s). Böj sedan bakre knät något med hälen kvar i golvet (nedre vaden, soleus, 20 s). Gör båda sidorna.</p>
+
+        <p className="font-medium text-foreground">8. World's greatest stretch (2 min · kort 1,5 min)</p>
+        <p>Gå ner i ett djupt utfall med höger fot fram. Sätt vänster hand i golvet bredvid främre foten. För höger armbåge ner mot insidan av höger fotled. Vrid sedan bröstet uppåt och sträck höger arm mot taket. Avsluta med att föra höften bakåt och sträcka främre benet. Gör 3 repetitioner per sida.</p>
+        <p>Kort: 2 repetitioner per sida.</p>
+
+        <p className="font-medium text-foreground">9. Djup huk med rörelse (1 min)</p>
+        <p>Sätt dig så djupt du kan på huk med hälarna i golvet. Tryck fram knäna över tårna. Vagga sakta åt sidorna, framåt och bakåt. Håll ihop händerna framför bröstet och tryck armbågarna mot insidan av knäna. Om hälarna lyfter kan du stå lite bredare.</p>
+
+        <p className="font-medium text-foreground">10. Cossack squats (1 min · ej i kort)</p>
+        <p>Stå brett. Sjunk ner på ena benet medan det andra sträcks ut åt sidan med tårna mot taket. Håll hälen i golvet på det böjda benet och bröstet upprätt. Växla långsamt sida. Gör 5 per sida.</p>
+
+        <p className="font-medium text-foreground">11. Framåtfällning med armsvep (45 s · ej i kort)</p>
+        <p>Stå med fötterna höftbrett och raka ben, eller lätt böjda knän om baksidan är stram. Fäll fram och låt armar och huvud hänga tungt. Svep sakta med armarna från vänster till höger sida några gånger.</p>
+
+        <p className="font-medium text-foreground">12. Upprullning och axelcirklar (1 min)</p>
+        <p>Rulla upp sakta, kota för kota, med huvudet sist. Gör sedan 5 stora, långsamma armcirklar framåt och 5 bakåt, en arm i taget. Avsluta med att sträcka båda armarna mot taket och luta dig lätt åt höger och vänster.</p>
+      </Topic>
+
+
       <Topic title="RPE — hur tungt var setet?">
         <p>RPE (Rating of Perceived Exertion) är en skala 1–10 för hur ansträngande ett set var. I styrketräning
           betyder den i praktiken: <strong>hur många reps hade du kvar?</strong></p>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -113,13 +113,15 @@ function RoutineGate({
   children: React.ReactNode;
 }) {
   const key = `ea-routine-gate-${athleteId}-${dateStr}`;
-  const [resolved, setResolved] = useState<boolean>(() => {
+  const [resolved, setResolved] = useState(false);
+
+  useEffect(() => {
     try {
-      return window.localStorage.getItem(key) !== null;
+      if (window.localStorage.getItem(key) !== null) setResolved(true);
     } catch {
-      return false;
+      /* ignore */
     }
-  });
+  }, [key]);
 
   const resolve = (value: "done" | "skipped") => {
     try {

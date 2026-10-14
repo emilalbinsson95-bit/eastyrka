@@ -79,14 +79,21 @@ function AthleteDetailPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
-      const { data: link, error: linkErr } = await supabase
-        .from("coach_athletes")
-        .select("id")
-        .eq("coach_id", user.id)
-        .eq("athlete_id", athleteId)
-        .maybeSingle();
-      if (linkErr) throw linkErr;
-      if (!link) throw new Error("This athlete is not linked to your account");
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const isAdmin = (roleRows ?? []).some((r) => r.role === "admin");
+      if (!isAdmin) {
+        const { data: link, error: linkErr } = await supabase
+          .from("coach_athletes")
+          .select("id")
+          .eq("coach_id", user.id)
+          .eq("athlete_id", athleteId)
+          .maybeSingle();
+        if (linkErr) throw linkErr;
+        if (!link) throw new Error("This athlete is not linked to your account");
+      }
       const { data, error } = await supabase
         .from("profiles")
         .select("full_name, weight_class")

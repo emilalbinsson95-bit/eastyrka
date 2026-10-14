@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { RoutineLauncher } from "@/components/RoutinePlayer";
 
 const surveySchema = z.object({
   bodyweight_kg: z.number().min(20).max(400).optional(),
@@ -91,6 +92,7 @@ export function ReadinessGate({
   return (
     <div className="space-y-4">
       <ReadinessSummary survey={surveyQuery.data} athleteId={athleteId} />
+      <RoutineLauncher athleteId={athleteId} />
       {children}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 import { Dumbbell, Footprints, HeartPulse, Utensils, Moon, Flame, Wind, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
@@ -153,6 +153,39 @@ function PreviewBody({
     queryFn: async () => loadDetail(item),
   });
 
+  const fuelingQuery = useQuery({
+    queryKey: ["calendar-fueling", item.ownerId, todayStr],
+    queryFn: async () => {
+      const { data: cycles, error } = await supabase
+        .from("mesocycles")
+        .select("start_date, total_weeks")
+        .eq("athlete_id", item.ownerId)
+        .neq("status", "archived")
+        .lte("start_date", todayStr);
+      if (error) throw error;
+
+      // Generated endurance blocks can retain draft status. Identify them by
+      // their current date window and planned endurance work, not their name.
+      const currentCycles = (cycles ?? []).filter((cycle) =>
+        todayStr < format(addDays(parseISO(cycle.start_date), cycle.total_weeks * 7), "yyyy-MM-dd"),
+      );
+      const hasEndurance = await Promise.all(currentCycles.map(async (cycle) => {
+        const { data, error: sessionError } = await supabase
+          .from("endurance_sessions")
+          .select("id")
+          .eq("athlete_id", item.ownerId)
+          .neq("status", "draft")
+          .gt("planned_total_seconds", 0)
+          .gte("date", cycle.start_date)
+          .lt("date", format(addDays(parseISO(cycle.start_date), cycle.total_weeks * 7), "yyyy-MM-dd"))
+          .limit(1);
+        if (sessionError) throw sessionError;
+        return (data?.length ?? 0) > 0;
+      }));
+      return hasEndurance.some(Boolean);
+    },
+  });
+
   const dateLabel = format(parseISO(item.effectiveDate), "EEEE, MMM d");
   const detail = detailQuery.data;
   const strain = detail ? strainBand(detail.strain) : null;
@@ -185,7 +218,7 @@ function PreviewBody({
             ))}
           </div>
 
-          {strain && prompt && (
+          {fuelingQuery.data === true && strain && prompt && (
             <div className={cn("flex gap-3 rounded-md border p-3", strainTone(strain))}>
               <PromptIcon className="mt-0.5 h-5 w-5 flex-shrink-0" />
               <div className="space-y-0.5">

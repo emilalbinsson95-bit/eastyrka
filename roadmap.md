@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Hide calendar fueling without a current endurance cycle and verify signed-in calendar previews.
+
 - [x] Verify the uploaded coaching references and add practical guidance and corrected evidence limits to methodology and athlete learning; verified signed-in pages and 34 calculation/protocol tests.
 
 - [x] Rewrite Coachning in practical, direct Swedish without psychological jargon; verify the tab.

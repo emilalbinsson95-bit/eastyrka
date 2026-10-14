@@ -9,7 +9,9 @@
 
 - Reject outdated Vite dependency requests instead of serving stale optimized modules, so dependency updates reload the browser without mixing React dispatchers.
 
-- Keep public coaching availability in a singleton table with public read access and admin-only writes enforced by RLS; reuse one information component so login and athlete information show the same saved counts.
+- Keep coaching availability in a public-read, admin-write singleton and reuse its information component so counts agree.
+
+- Gate calendar fueling on a current non-archived cycle window containing planned non-draft endurance work, because generated blocks retain draft status and endurance sessions lack cycle IDs.
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Store per-athlete squat, bench, and deadlift set-volume preferences in a separately protected athlete settings table; generated strength plans read the saved settings so coach and athlete see the same baseline.- Generate the 3-week peak in `src/lib/peaking.ts` from the athlete's logged history (lifts, recent weekly sets, estimated 1RM) and let it bypass the MEV volume floors, because a taper is deliberately sub-maintenance volume at maintained intensity.

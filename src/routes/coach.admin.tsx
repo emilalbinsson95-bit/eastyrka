@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Search, Loader2, Users } from "lucide-react";
@@ -141,7 +141,10 @@ function AdminPage() {
               <p className="mt-2 text-muted-foreground">{a.training_set_count} sets · {a.plan_count} plans</p>
               <p className="text-muted-foreground">Last session: {a.last_training_date ?? "None"}</p>
                <p className="text-muted-foreground">Coach: {a.coaches.length ? a.coaches.join(", ") : "None"}</p>
-               <Button size="sm" variant="outline" className="mt-3" onClick={() => setSelectedAthlete(a)}>Inspect activity</Button>
+               <div className="mt-3 flex flex-wrap gap-2">
+                 <Button size="sm" variant="outline" onClick={() => setSelectedAthlete(a)}>Inspect activity</Button>
+                 <Button size="sm" asChild><Link to="/coach/athletes/$athleteId" params={{ athleteId: a.id }}>Öppna atletens sida</Link></Button>
+               </div>
             </div>
           ))}
         </div>

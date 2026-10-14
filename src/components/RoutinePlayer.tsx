@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pause, Play, RotateCcw, Star, X } from "lucide-react";
+import { Pause, Play, RotateCcw, Star, ThumbsDown, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,30 @@ export function useStarCount(athleteId: string) {
   return useQuery({
     queryKey: ["routine-stars", athleteId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("routine_completions")
-        .select("id", { count: "exact", head: true })
+        .select("routine")
         .eq("athlete_id", athleteId);
       if (error) throw error;
-      return count ?? 0;
+      const rows = data ?? [];
+      const thumbs = rows.filter((r) => r.routine === "skipped").length;
+      return { stars: rows.length - thumbs, thumbs };
     },
   });
+}
+
+export function RoutineScore({ athleteId }: { athleteId: string }) {
+  const q = useStarCount(athleteId);
+  return (
+    <span className="flex items-center gap-3 text-sm text-muted-foreground">
+      <span className="flex items-center gap-1" title="Genomförda flöden">
+        <Star className="h-4 w-4 fill-star text-star" /> {q.data?.stars ?? 0}
+      </span>
+      <span className="flex items-center gap-1" title="Överhoppade">
+        <ThumbsDown className="h-4 w-4" /> {q.data?.thumbs ?? 0}
+      </span>
+    </span>
+  );
 }
 
 export function RoutineLauncher({
@@ -49,14 +65,25 @@ export function RoutineLauncher({
   onSkip?: () => void;
 }) {
   const [active, setActive] = useState<RoutineId | null>(null);
-  const stars = useStarCount(athleteId);
+  const qc = useQueryClient();
+  const skip = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("routine_completions")
+        .insert({ athlete_id: athleteId, routine: "skipped" });
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["routine-stars", athleteId] });
+      toast("Tumme ned 👎 Uppvärmningen hoppades över.");
+      onSkip?.();
+    },
+  });
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-sm font-medium">Kör rörlighet eller uppvärmning innan dagens pass</p>
-        <span className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Star className="h-4 w-4 fill-star text-star" /> {stars.data ?? 0}
-        </span>
+        <RoutineScore athleteId={athleteId} />
       </div>
       <div className="flex flex-wrap gap-2">
         {(Object.keys(ROUTINE_LABEL) as RoutineId[]).map((id) => (
@@ -69,9 +96,10 @@ export function RoutineLauncher({
         <button
           type="button"
           className="mt-3 text-xs text-muted-foreground underline-offset-2 hover:underline"
-          onClick={onSkip}
+          disabled={skip.isPending}
+          onClick={() => skip.mutate()}
         >
-          Hoppa över för idag
+          Hoppa över för idag (ger en tumme ned)
         </button>
       )}
       {active && (

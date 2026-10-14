@@ -113,6 +113,20 @@ function LearnPage() {
           tyngre dag. En enstaka låg dag betyder inget; det är trenden som räknas.</p>
       </Topic>
 
+      <Topic title="Bra, Godtagbart och Trötthetsgräns">
+        <p>När du loggar flera set av samma lyft jämför appen varje set med ditt första set den dagen.
+          Tappar du mycket i styrka från set till set är det ett tecken på att du samlat på dig tillräckligt
+          med trötthet för dagen.</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li><strong>Bra</strong> — setet ligger inom 4 % av första setet. Du håller kvaliteten.</li>
+          <li><strong>Godtagbart</strong> — tapp på 4–5 %. Fortfarande okej, men nära gränsen.</li>
+          <li><strong>Trötthetsgräns</strong> — tapp på 5 % eller mer. Dags att avsluta lyftet; fler set ger mest trötthet, inte mer träningseffekt.</li>
+        </ul>
+        <p>Det är därför siffran bygger på RPE: ett lättare set med färre reps kan vara lika tungt som ett
+          tyngre med fler. Markeringen är en rekommendation, inte ett förbud — men sluta inte lyftet bara
+          för att etiketten ändrar färg om du och coachen kommit överens om något annat.</p>
+      </Topic>
+
       <Topic title="Huvudlyft, variationer och assistans">
         <p><strong>Huvudlyft</strong> är knäböj, bänk och mark. <strong>Variationer</strong> (pausböj, tempobänk,
           deficitmark) är egna övningar som tränar en viss del av lyftet. <strong>Assistans</strong> bygger muskler

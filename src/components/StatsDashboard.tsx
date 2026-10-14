@@ -1,4 +1,4 @@
-import { isReadinessLift } from "@/lib/eakoefficient";
+import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {

@@ -1,4 +1,4 @@
-import { isReadinessLift } from "@/lib/eakoefficient";
+import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { canAddExtraSet } from "@/lib/blockVolume";
 import { moveSessionLogs } from "@/lib/calendar";

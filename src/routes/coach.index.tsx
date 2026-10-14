@@ -1,4 +1,4 @@
-import { isReadinessLift } from "@/lib/eakoefficient";
+import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";

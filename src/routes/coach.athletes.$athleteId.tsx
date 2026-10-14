@@ -937,7 +937,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
   const selectable = library.filter((e) => !existingExercises.has(e.name));
 
   const [newExerciseId, setNewExerciseId] = useState<string>("");
-  const [newKg, setNewKg] = useState<number>(100);
+  const [newKg, setNewKg] = useState<string>("100");
 
   return (
     <Card>
@@ -992,12 +992,10 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
               <Label htmlFor="new-kg">1RM (kg)</Label>
               <Input
                 id="new-kg"
-                type="number"
-                min={0}
-                max={1000}
-                step={2.5}
+                type="text"
+                inputMode="decimal"
                 value={newKg}
-                onChange={(e) => setNewKg(Number(e.target.value))}
+                onChange={(e) => setNewKg(e.target.value)}
               />
             </div>
             <Button
@@ -1007,10 +1005,15 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
                   toast.error("Choose an exercise from the list");
                   return;
                 }
+                const kg = Number(newKg.replace(",", "."));
+                if (!isFinite(kg) || kg <= 0 || kg > 1000) {
+                  toast.error("Ange en giltig vikt, t.ex. 137,5");
+                  return;
+                }
                 upsertMutation.mutate({
                   exercise: ex.name,
                   exerciseId: ex.id,
-                  kg: newKg,
+                  kg,
                 });
                 setNewExerciseId("");
               }}
@@ -1040,9 +1043,10 @@ function BaselineRow({
   onSave: (kg: number) => void;
   onDelete: () => void;
 }) {
-  const [value, setValue] = useState(kg);
+  const [value, setValue] = useState(String(kg));
   const [open, setOpen] = useState(false);
-  const dirty = value !== kg;
+  const parsed = Number(value.replace(",", "."));
+  const dirty = isFinite(parsed) && parsed !== kg;
 
   const historyQuery = useQuery({
     queryKey: ["baseline-history", athleteId, exercise],
@@ -1087,19 +1091,17 @@ function BaselineRow({
             </button>
           </div>
           <Input
-            type="number"
-            min={0}
-            max={1000}
-            step={2.5}
+            type="text"
+            inputMode="decimal"
             value={value}
-            onChange={(e) => setValue(Number(e.target.value))}
+            onChange={(e) => setValue(e.target.value)}
             className="mt-1"
           />
           <div className="mt-1 text-[10px] text-muted-foreground">
             Last updated {format(parseISO(updatedAt), "MMM d, yyyy")}
           </div>
         </div>
-        <Button size="sm" disabled={!dirty} onClick={() => onSave(value)}>
+        <Button size="sm" disabled={!dirty} onClick={() => onSave(parsed)}>
           <Save className="mr-1 h-3.5 w-3.5" /> Save
         </Button>
         <Button size="sm" variant="ghost" onClick={onDelete}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -90,10 +90,60 @@ export function ReadinessGate({
   }
 
   return (
-    <div className="space-y-4">
-      <ReadinessSummary survey={surveyQuery.data} athleteId={athleteId} />
-      <RoutineLauncher athleteId={athleteId} />
+    <RoutineGate athleteId={athleteId} dateStr={dateStr} survey={surveyQuery.data}>
       {children}
+    </RoutineGate>
+  );
+}
+
+/**
+ * After the readiness survey, the athlete must actively choose a routine
+ * or skip it before today's training program is shown. The choice is
+ * remembered per day in localStorage.
+ */
+function RoutineGate({
+  athleteId,
+  dateStr,
+  survey,
+  children,
+}: {
+  athleteId: string;
+  dateStr: string;
+  survey: ReadinessSurvey;
+  children: React.ReactNode;
+}) {
+  const key = `ea-routine-gate-${athleteId}-${dateStr}`;
+  const [resolved, setResolved] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(key) !== null) setResolved(true);
+    } catch {
+      /* ignore */
+    }
+  }, [key]);
+
+  const resolve = (value: "done" | "skipped") => {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      /* ignore */
+    }
+    setResolved(true);
+  };
+
+  return (
+    <div className="space-y-4">
+      <ReadinessSummary survey={survey} athleteId={athleteId} />
+      {resolved ? (
+        children
+      ) : (
+        <RoutineLauncher
+          athleteId={athleteId}
+          onComplete={() => resolve("done")}
+          onSkip={() => resolve("skipped")}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { isReadinessLift } from "@/lib/eakoefficient";
+import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";
@@ -137,7 +137,7 @@ function CoachRosterPage() {
       }
 
       const baselineFor = (athleteId: string, exercise: string) =>
-        baselineMap.get(athleteId)?.[exercise] ??
+        lookupBaseline(baselineMap.get(athleteId), exercise) ??
         derived.get(`${athleteId}::${exercise}`) ??
         0;
 

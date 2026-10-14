@@ -313,7 +313,7 @@ export function processLogs<T extends RawLog>(
 
   return logs.map((log) => {
     const key = `${log.date}::${log.exercise}`;
-    const baseline = baselines[log.exercise] ?? 0;
+    const baseline = lookupBaseline(baselines, log.exercise) ?? 0;
     const e1rm = dailyE1RM(log);
     const meas = measurement.get(key);
     const measE1 = meas ? dailyE1RM(meas) : 0;
@@ -350,4 +350,19 @@ export function processLogs<T extends RawLog>(
       volume,
     };
   });
+}
+
+/** Case/whitespace-insensitive baseline lookup ("Sumo deadlift" == "Sumo Deadlift"). */
+export function lookupBaseline(
+  baselines: Record<string, number> | undefined | null,
+  exercise: string,
+): number | undefined {
+  if (!baselines) return undefined;
+  const direct = baselines[exercise];
+  if (direct !== undefined) return direct;
+  const norm = exercise.trim().toLowerCase().replace(/\s+/g, " ");
+  for (const [k, v] of Object.entries(baselines)) {
+    if (k.trim().toLowerCase().replace(/\s+/g, " ") === norm) return v;
+  }
+  return undefined;
 }

@@ -1,4 +1,4 @@
-import { isReadinessLift } from "@/lib/eakoefficient";
+import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { canAddExtraSet } from "@/lib/blockVolume";
 import { moveSessionLogs } from "@/lib/calendar";
@@ -627,7 +627,7 @@ function PlannedSessionCard({
                 ex={ex}
                 logs={exerciseLogs}
                 processed={exerciseProcessed}
-                baseline={baselines[ex.exercise] ?? 0}
+                baseline={lookupBaseline(baselines, ex.exercise) ?? 0}
                 athleteId={athleteId}
                 dateStr={dateStr}
               />

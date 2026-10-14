@@ -174,7 +174,7 @@ function RoutinePlayer({
           <Star className="h-28 w-28 fill-star text-star" />
           <h2 className="text-2xl font-semibold">Klart!</h2>
           <p className="text-muted-foreground">Du fick en guldstjärna. Du har {save.isSuccess ? (stars.data ?? 0) : "…"} totalt.</p>
-          <Button size="lg" onClick={onClose}>Stäng</Button>
+          <Button size="lg" onClick={() => { onComplete?.(); onClose(); }}>Till dagens pass</Button>
         </div>
       ) : (
         <>

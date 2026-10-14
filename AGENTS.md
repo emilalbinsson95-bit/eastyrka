@@ -26,3 +26,4 @@
 - Coach roster EAk uses the latest session's measurement per eligible lift; preserve full athlete/exercise composite keys in trend grouping so athletes and lifts never mix.
 - Block-to-block volume adaptation and fatigue-stop extra sets live in src/lib/blockVolume.ts and run before volume guards, because data-driven volume must still respect realism caps.
 - Guided routines (morning flow long/short, warm-up) live as step data in src/lib/routines.ts and completions are stored per athlete in routine_completions (athlete insert, coach/admin read), because the star count must persist and the steps must match the Learn page text.
+- Admins pass `is_coach_of` for every athlete so they can open any athlete's coach pages to inspect and fix data; skipped routines are stored as `routine='skipped'` rows in routine_completions (thumbs down), because stars and thumbs must share one auditable history.

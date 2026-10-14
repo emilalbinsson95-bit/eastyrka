@@ -1,4 +1,5 @@
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
+import { RoutineScore } from "@/components/RoutinePlayer";
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
@@ -157,6 +158,9 @@ function AthleteDetailPage() {
               <Calendar className="mr-1 h-4 w-4" /> Training program
             </Link>
           </Button>
+          <div className="flex items-center rounded-md border border-border px-3 py-1.5" title="Morgonflow/uppvärmning: genomförda och överhoppade">
+            <RoutineScore athleteId={athleteId} />
+          </div>
         </div>
       </div>
 

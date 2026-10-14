@@ -937,7 +937,7 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
   const selectable = library.filter((e) => !existingExercises.has(e.name));
 
   const [newExerciseId, setNewExerciseId] = useState<string>("");
-  const [newKg, setNewKg] = useState<number>(100);
+  const [newKg, setNewKg] = useState<string>("100");
 
   return (
     <Card>
@@ -992,12 +992,10 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
               <Label htmlFor="new-kg">1RM (kg)</Label>
               <Input
                 id="new-kg"
-                type="number"
-                min={0}
-                max={1000}
-                step={2.5}
+                type="text"
+                inputMode="decimal"
                 value={newKg}
-                onChange={(e) => setNewKg(Number(e.target.value))}
+                onChange={(e) => setNewKg(e.target.value)}
               />
             </div>
             <Button

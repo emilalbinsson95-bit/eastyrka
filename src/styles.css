@@ -66,6 +66,7 @@
   --color-status-adapting: var(--status-adapting);
   --color-status-adapting-foreground: var(--status-adapting-foreground);
   --color-status-peaking: var(--status-peaking);
+  --color-star: oklch(0.8 0.16 85);
   --color-status-peaking-foreground: var(--status-peaking-foreground);
 
   --color-volume-tint: var(--volume-tint);

@@ -134,6 +134,13 @@
       "when": 1791956944558,
       "tag": "0018_deadlift_style_aware_canonicalization",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791962325576,
+      "tag": "0019_routine_completions",
+      "breakpoints": true
     }
   ]
 }

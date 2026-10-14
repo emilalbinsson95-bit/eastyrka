@@ -1569,6 +1569,27 @@ export type Database = {
         }
         Relationships: []
       }
+      routine_completions: {
+        Row: {
+          athlete_id: string
+          completed_at: string
+          id: string
+          routine: string
+        }
+        Insert: {
+          athlete_id: string
+          completed_at?: string
+          id?: string
+          routine: string
+        }
+        Update: {
+          athlete_id?: string
+          completed_at?: string
+          id?: string
+          routine?: string
+        }
+        Relationships: []
+      }
       session_schedule_overrides: {
         Row: {
           cancel_reason: string | null

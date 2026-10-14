@@ -1005,10 +1005,15 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
                   toast.error("Choose an exercise from the list");
                   return;
                 }
+                const kg = Number(newKg.replace(",", "."));
+                if (!isFinite(kg) || kg <= 0 || kg > 1000) {
+                  toast.error("Ange en giltig vikt, t.ex. 137,5");
+                  return;
+                }
                 upsertMutation.mutate({
                   exercise: ex.name,
                   exerciseId: ex.id,
-                  kg: newKg,
+                  kg,
                 });
                 setNewExerciseId("");
               }}

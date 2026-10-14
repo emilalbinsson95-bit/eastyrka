@@ -5,10 +5,10 @@ import { CoachingInformation } from "@/components/CoachingInformation";
 export const Route = createFileRoute("/_app/learn")({
   head: () => ({
     meta: [
-      { title: "Lär dig: RPE, RIR, block, deload och toppning — SETPOINT" },
-      { name: "description", content: "Enkla förklaringar av begreppen i ditt träningsprogram." },
+      { title: "Lär dig: RPE, RIR, block, deload, toppning och morgonflow — SETPOINT" },
+      { name: "description", content: "Enkla förklaringar av begreppen i ditt träningsprogram, samt morgonflödet med steg för steg." },
       { property: "og:title", content: "Lär dig träningsbegreppen — SETPOINT" },
-      { property: "og:description", content: "Enkla förklaringar av RPE, RIR, block, deload och toppning." },
+      { property: "og:description", content: "Enkla förklaringar av RPE, RIR, block, deload och toppning, plus morgonflödet steg för steg." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

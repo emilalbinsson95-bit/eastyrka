@@ -120,6 +120,13 @@
       "when": 1791956416071,
       "tag": "0016_canonicalize_exercise_names",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791956696214,
+      "tag": "0017_exercise_aliases",
+      "breakpoints": true
     }
   ]
 }

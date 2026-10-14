@@ -292,7 +292,7 @@ function EAkoefficientCard({
       })),
     );
     for (const l of logs) {
-      const base = baselines[l.exercise];
+      const base = lookupBaseline(baselines, l.exercise);
       if (!base || base <= 0 || !isReadinessLift(l.exercise)) continue;
       const roll = rolling.get(`${l.date}::${l.exercise}`) ?? 0;
       const eak = roll > 0 ? (roll / base) * 100 : 0;

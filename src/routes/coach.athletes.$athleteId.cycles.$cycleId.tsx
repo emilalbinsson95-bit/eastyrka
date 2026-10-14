@@ -1,3 +1,4 @@
+import { lookupBaseline } from "@/lib/eakoefficient";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -917,7 +918,7 @@ function WeekEditor({
                     renderItem={(ex) => (
                       <ExerciseRow
                         ex={ex}
-                        oneRm={baselines[ex.exercise] ?? 0}
+                        oneRm={lookupBaseline(baselines, ex.exercise) ?? 0}
                         onUpdate={(patch) =>
                           updateExerciseMutation.mutate({ id: ex.id, patch })
                         }

@@ -627,7 +627,7 @@ function PlannedSessionCard({
                 ex={ex}
                 logs={exerciseLogs}
                 processed={exerciseProcessed}
-                baseline={baselines[ex.exercise] ?? 0}
+                baseline={lookupBaseline(baselines, ex.exercise) ?? 0}
                 athleteId={athleteId}
                 dateStr={dateStr}
               />

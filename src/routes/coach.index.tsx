@@ -137,7 +137,7 @@ function CoachRosterPage() {
       }
 
       const baselineFor = (athleteId: string, exercise: string) =>
-        baselineMap.get(athleteId)?.[exercise] ??
+        lookupBaseline(baselineMap.get(athleteId), exercise) ??
         derived.get(`${athleteId}::${exercise}`) ??
         0;
 

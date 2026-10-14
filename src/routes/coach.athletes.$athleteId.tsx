@@ -1101,7 +1101,7 @@ function BaselineRow({
             Last updated {format(parseISO(updatedAt), "MMM d, yyyy")}
           </div>
         </div>
-        <Button size="sm" disabled={!dirty} onClick={() => onSave(value)}>
+        <Button size="sm" disabled={!dirty} onClick={() => onSave(parsed)}>
           <Save className="mr-1 h-3.5 w-3.5" /> Save
         </Button>
         <Button size="sm" variant="ghost" onClick={onDelete}>

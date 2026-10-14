@@ -127,6 +127,13 @@
       "when": 1791956696214,
       "tag": "0017_exercise_aliases",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791956944558,
+      "tag": "0018_deadlift_style_aware_canonicalization",
+      "breakpoints": true
     }
   ]
 }

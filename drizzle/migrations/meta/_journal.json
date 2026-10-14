@@ -113,6 +113,13 @@
       "when": 1791783702376,
       "tag": "0015_volume_tolerance",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791956416071,
+      "tag": "0016_canonicalize_exercise_names",
+      "breakpoints": true
     }
   ]
 }

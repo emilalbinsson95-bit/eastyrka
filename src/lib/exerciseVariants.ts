@@ -17,8 +17,8 @@ const EXPLICIT: Array<[RegExp, RegExp, string]> = [
   [/^bench press$/i, /larsen/i, "Larsen press"],
   [/^overhead press$/i, /dumbbell seated/i, "Seated dumbbell press"],
   [/^power clean$/i, /hang/i, "Hang power clean"],
-  [/^deadlift$/i, /deficit/i, "Deficit deadlift"],
-  [/^deadlift$/i, /pause/i, "Pause deadlift"],
+  [/^(conventional )?deadlift$/i, /deficit/i, "Deficit deadlift"],
+  [/^(conventional )?deadlift$/i, /pause/i, "Pause deadlift"],
 ];
 
 export function resolveVariantExercise(

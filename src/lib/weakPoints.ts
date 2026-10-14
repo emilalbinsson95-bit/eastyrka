@@ -281,7 +281,7 @@ export function applyDeadliftStyle(weeks: TemplateWeek[], style: DeadliftStyle |
       ...s,
       exercises: s.exercises.map((e) => {
         if (style === "sumo") {
-          if (/^deadlift$/i.test(e.exercise) && isCompSlot(e)) {
+          if (/^(conventional )?deadlift$/i.test(e.exercise) && isCompSlot(e)) {
             return { ...e, target_weight_kg: undefined, exercise: "Sumo deadlift", variation: e.variation && /stance/i.test(e.variation) ? "Competition stance" : e.variation };
           }
           return e;
@@ -291,7 +291,7 @@ export function applyDeadliftStyle(weeks: TemplateWeek[], style: DeadliftStyle |
           return {
             ...e,
             target_weight_kg: undefined,
-            exercise: /^deadlift$/i.test(name) || !name ? "Deadlift" : name.charAt(0).toUpperCase() + name.slice(1),
+            exercise: /^(conventional )?deadlift$/i.test(name) || !name ? "Deadlift" : name.charAt(0).toUpperCase() + name.slice(1),
             variation: e.variation && /sumo/i.test(e.variation) ? "Conventional stance" : e.variation,
           };
         }

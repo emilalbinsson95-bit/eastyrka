@@ -475,6 +475,21 @@ export type Database = {
           },
         ]
       }
+      exercise_aliases: {
+        Row: {
+          alias: string
+          canonical: string
+        }
+        Insert: {
+          alias: string
+          canonical: string
+        }
+        Update: {
+          alias?: string
+          canonical?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           category: string | null

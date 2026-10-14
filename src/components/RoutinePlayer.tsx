@@ -39,13 +39,21 @@ export function useStarCount(athleteId: string) {
   });
 }
 
-export function RoutineLauncher({ athleteId }: { athleteId: string }) {
+export function RoutineLauncher({
+  athleteId,
+  onComplete,
+  onSkip,
+}: {
+  athleteId: string;
+  onComplete?: () => void;
+  onSkip?: () => void;
+}) {
   const [active, setActive] = useState<RoutineId | null>(null);
   const stars = useStarCount(athleteId);
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-sm font-medium">Kör rörlighet eller uppvärmning</p>
+        <p className="text-sm font-medium">Kör rörlighet eller uppvärmning innan dagens pass</p>
         <span className="flex items-center gap-1 text-sm text-muted-foreground">
           <Star className="h-4 w-4 fill-star text-star" /> {stars.data ?? 0}
         </span>
@@ -57,12 +65,38 @@ export function RoutineLauncher({ athleteId }: { athleteId: string }) {
           </Button>
         ))}
       </div>
-      {active && <RoutinePlayer athleteId={athleteId} routine={active} onClose={() => setActive(null)} />}
+      {onSkip && (
+        <button
+          type="button"
+          className="mt-3 text-xs text-muted-foreground underline-offset-2 hover:underline"
+          onClick={onSkip}
+        >
+          Hoppa över för idag
+        </button>
+      )}
+      {active && (
+        <RoutinePlayer
+          athleteId={athleteId}
+          routine={active}
+          onClose={() => setActive(null)}
+          onComplete={onComplete}
+        />
+      )}
     </div>
   );
 }
 
-function RoutinePlayer({ athleteId, routine, onClose }: { athleteId: string; routine: RoutineId; onClose: () => void }) {
+function RoutinePlayer({
+  athleteId,
+  routine,
+  onClose,
+  onComplete,
+}: {
+  athleteId: string;
+  routine: RoutineId;
+  onClose: () => void;
+  onComplete?: () => void;
+}) {
   const steps = getRoutine(routine);
   const [idx, setIdx] = useState(0);
   const [left, setLeft] = useState<number | null>(steps[0].seconds);

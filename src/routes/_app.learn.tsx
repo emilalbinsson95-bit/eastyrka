@@ -37,6 +37,7 @@ const RPE_ROWS: [string, string, string][] = [
 ];
 
 function LearnPage() {
+  const { user } = useAuth();
   return (
     <div className="space-y-4 pb-24">
       <div>
@@ -45,6 +46,8 @@ function LearnPage() {
       </div>
 
       <div className="border-b border-border pb-6"><CoachingInformation /></div>
+
+      {user && <RoutineLauncher athleteId={user.id} />}
 
       <Topic title="Uppvärmning för styrkelyft (10–15 min)">
         <p>Börja med hela kroppen och värm sedan upp med stången. Håll uppvärmningen kort så att du har energi kvar till arbetsseten.</p>

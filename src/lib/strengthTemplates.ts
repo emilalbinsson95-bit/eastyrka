@@ -756,6 +756,61 @@ function athleticPower(daysPerWeek: number): TemplateWeek[] {
   });
 }
 
+// ---------- Template 7: Strength for runners (2 days, fixed) ----------
+// Heavy, low-rep strength + plyometrics improve running economy without adding
+// body mass (Støren 2008, Beattie 2014, Blagrove 2018 review). Strength work cuts
+// overuse injuries roughly in half (Lauersen 2014). Calf/soleus capacity, tibialis,
+// adductors (Copenhagen) and hamstrings (Nordic) cover the usual running injuries.
+// Day A = heavy + power after an easy run, Day B = prehab that must not cause soreness.
+
+function runnerStrength(_daysPerWeek: number): TemplateWeek[] {
+  return [1, 2, 3, 4].map((w) => {
+    const isDeload = w === 4;
+    const heavy = [7, 7.5, 8, 6][w - 1];
+    const acc = [7, 7.5, 7.5, 6][w - 1];
+    const s = (n: number) => (isDeload ? Math.max(1, n - 1) : n);
+    const base: Omit<TemplateSession, "day_of_week">[] = [
+      {
+        title: "Styrka A — tungt + explosivt",
+        notes: "Efter ett lugnt pass, inte dagen före kvalitet. Hopprep och kraftövningar först, utvilad. Inga set till failure.",
+        exercises: [
+          { exercise: "Jump rope", target_sets: s(3), target_reps: 30, target_rpe: 6, intensity_metric: "rpe", notes: "Reps = sekunder. Låga, snabba studs. Stryk om smalbenen inte är tysta." },
+          { exercise: "Power clean", variation: "From knee", target_sets: s(w === 3 ? 4 : 3), target_reps: 2, target_rpe: Math.min(7.5, heavy), intensity_metric: "rpe", notes: "Snabba reps. Avsluta setet när stången går långsammare." },
+          { exercise: "Trap bar deadlift", target_sets: s(w === 1 ? 2 : 3), target_reps: 4, target_rpe: heavy, intensity_metric: "rpe", notes: "Tungt men aldrig malande. Tung styrka med få reps förbättrar löpekonomin utan att bygga massa." },
+          { exercise: "Bulgarian split squat", target_sets: s(2), target_reps: 6, target_rpe: acc, intensity_metric: "rpe", notes: "Per ben. Kontrollerat ned, kraftfullt upp." },
+          { exercise: "Seated calf raise", target_sets: s(3), target_reps: 8, target_rpe: acc, intensity_metric: "rpe", lengthened_partials: true, notes: "Soleus tar störst last i löpsteget. Tungt, paus i botten." },
+          { exercise: "Single-leg heel raise", variation: "Big toe press", target_sets: s(2), target_reps: 12, target_rpe: acc, intensity_metric: "rpe", notes: "Per ben. Tryck ned stortån hela vägen upp." },
+          { exercise: "Lying leg curl", target_sets: s(2), target_reps: 8, target_rpe: acc, intensity_metric: "rpe" },
+          { exercise: "Hanging knee raise", variation: "Lengthened hip flexor", target_sets: s(2), target_reps: 10, target_rpe: acc, intensity_metric: "rpe", notes: "Starta från helt utsträckt höft. Alternativ: psoas-march med band." },
+        ],
+      },
+      {
+        title: "Styrka B — prehab + överkropp",
+        notes: "Ska inte ge träningsvärk. Lätt nog att köras dagen efter kvalitet eller två dagar före långpass.",
+        exercises: [
+          { exercise: "Isometric calf raise", target_sets: s(4), target_reps: 30, target_rpe: 7, intensity_metric: "rpe", notes: "Reps = sekunder. Tungt, raka eller lätt böjda knän." },
+          { exercise: "Tibialis raise", target_sets: s(2), target_reps: 20, target_rpe: acc, intensity_metric: "rpe", notes: "Skydd för skenbenet." },
+          { exercise: "Isometric ankle inversion", target_sets: s(3), target_reps: 30, target_rpe: 6, intensity_metric: "rpe", notes: "Reps = sekunder. Band eller mot vägg." },
+          { exercise: "Single-leg Romanian deadlift", target_sets: s(2), target_reps: 8, target_rpe: acc, intensity_metric: "rpe", notes: "Per ben. Höften rak, balans och baksida." },
+          { exercise: "Hip abduction", target_sets: s(2), target_reps: 15, target_rpe: acc, intensity_metric: "rpe" },
+          { exercise: "Copenhagen plank", target_sets: s(2), target_reps: 20, target_rpe: 7, intensity_metric: "rpe", notes: "Reps = sekunder per sida. Kort hävarm (knä på bänken) om det är nytt." },
+          { exercise: "Side plank", target_sets: s(2), target_reps: 20, target_rpe: 6, intensity_metric: "rpe", notes: "Reps = sekunder per sida." },
+          { exercise: "Pull-up", target_sets: s(3), target_reps: 6, target_rpe: acc, intensity_metric: "rpe" },
+          { exercise: "Push-up", target_sets: s(2), target_reps: 12, target_rpe: acc, intensity_metric: "rpe" },
+        ],
+      },
+    ];
+    return {
+      week_index: w,
+      label: isDeload ? "Deload" : `Löparstyrka V${w}`,
+      notes: isDeload
+        ? "Deload — ett set mindre per övning, samma vikter som vecka 1."
+        : "Löparstyrka: tungt med få reps och explosivt, plus prehab för vader, skenben, höft och ljumske. Lägg pass A efter ett lugnt pass och minst 48 h före långpass eller kvalitet. Tappa löpningen före styrkan i tävlingsveckan.",
+      sessions: base.map((b, i) => ({ ...normalizeSession(b), day_of_week: i === 0 ? 1 : 5 })) as TemplateSession[],
+    };
+  });
+}
+
 // ---------- Registry ----------
 
 export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
@@ -830,6 +885,19 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     maxDays: 4,
     inspiration: "Explosive, sport-specific power work + effort set by RPE",
     buildWeeks: athleticPower,
+  },
+  {
+    id: "runner-strength",
+    name: "Styrka för löpare",
+    short: "Tungt + explosivt + prehab — 2 dagar / 4 veckor",
+    goal: "Styrka som komplement till löpning: tung styrka med få reps och plyometri för löpekonomi, prehab för vader, skenben, höft och ljumske. Låg volym så att löpningen går först.",
+    weeks: 4,
+    daysPerWeek: 2,
+    minDays: 2,
+    maxDays: 2,
+    inspiration: "Støren 2008, Beattie 2014, Blagrove 2018 (löpekonomi) · Lauersen 2014 (skadeprevention)",
+    buildWeeks: runnerStrength,
+    skipVolumeFloors: true,
   },
   {
     id: "peak-3w",

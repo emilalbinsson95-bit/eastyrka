@@ -11,7 +11,7 @@ const MAIN_CATS = ["squat", "horizontal-press", "hinge"] as const;
 const SESSION_CAP = 30;
 const WEEK_FLOOR = 6;
 const WEEK_CEIL = 24;
-const isLight = (w: TemplateWeek) => /deload|taper|peak|återhämt|toppning/i.test(`${w.label} ${(w as { notes?: string }).notes ?? ""}`);
+const isLight = (w: TemplateWeek) => /deload|taper|peak|återhämt|toppning|löparstyrka/i.test(`${w.label} ${(w as { notes?: string }).notes ?? ""}`);
 
 export function compSetCap(reps: number): number {
   return reps <= 3 ? 6 : reps <= 4 ? 7 : 8;

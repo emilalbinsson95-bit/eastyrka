@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoachingInformation } from "@/components/CoachingInformation";
+import { RoutineLauncher } from "@/components/RoutinePlayer";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/learn")({
   head: () => ({

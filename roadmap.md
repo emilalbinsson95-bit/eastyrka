@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Add clear readiness guidelines, scale anchors and examples in Swedish and English; verify submission and routine flow.
+- [ ] Test strength generation and set logging on a test athlete without changing real athletes' training.
+
 - [x] Hide calendar fueling without a current endurance cycle; verified a signed-in preview with real logged sets and no fueling card.
 
 - [x] Verify the uploaded coaching references and add practical guidance and corrected evidence limits to methodology and athlete learning; verified signed-in pages and 34 calculation/protocol tests.

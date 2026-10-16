@@ -1,7 +1,9 @@
 # Architecture decisions
 
-- Reconcile prescribed load after overload modifiers: recalculate for rep/effort changes on the identical exercise and clear it for exercise/stance changes, because kilogram targets must match the final prescription.
-- Allocate each historical accessory's peaking volume once per week, never once per session, because increased frequency must not multiply a taper's maintenance budget.
+- Keep readiness guidance in locale dictionaries without changing scoring, because copy updates must preserve historical comparisons.
+
+- Reconcile loads after overload: recalculate for rep/effort changes, clear for exercise/stance changes, so loads match prescriptions.
+- Allocate historical accessory peaking volume once per week, not session, so frequency cannot multiply taper volume.
 
 - Apply coach-selected set protocols as a final volume-neutral transformation after exercise and stance selection; persist per-set prescriptions in the existing athlete-visible exercise notes and retain the first-set target fields, because logging supports one default prescription per exercise and renamed variations must never inherit another lift's load.
 

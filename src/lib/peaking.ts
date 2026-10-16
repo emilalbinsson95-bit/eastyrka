@@ -15,6 +15,7 @@
 // Everything here is pure — no Supabase, no React.
 
 import { differenceInCalendarDays, parseISO } from "date-fns";
+import { compSetCap } from "@/lib/volumeGuards";
 import {
   volumeCategory,
   type TemplateExercise,

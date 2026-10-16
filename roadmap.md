@@ -5,4 +5,9 @@
 - [x] Spara coachens generatorval och godkända setjusteringar per atlet mellan block.
 - [x] Testa datum och volymvakter samt sparning i inloggad coachvy; skrivbehörigheter skyddas med RLS.
 
-Avgränsning: första steget är säsongsplanering och sparade coachval. Anpassningsbar toppningslängd, nya tunga singlar och nya styrketrendvyer ingår inte i detta steg. Befintliga program ändras inte.
+- [ ] Tillåt pauser och ändringar av kommande block utan att flytta skapade program.
+- [ ] Integrera valbar toppningslängd och coachvalda tunga singlar.
+- [ ] Jämför styrkeutveckling över flera likvärdiga pass.
+- [ ] Provkör ändrade säsonger, generator och sparning; kontrollera tester.
+
+Befintliga program och loggar ändras inte automatiskt.

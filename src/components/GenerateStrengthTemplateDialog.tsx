@@ -45,6 +45,7 @@ import {
   type OverloadOptions,
 } from "@/lib/overload";
 import { applyCoachSingles } from "@/lib/coachSingles";
+import { applyPeakSingles, suggestOpeners, OPENER_LABELS } from "@/lib/peakOpeners";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
@@ -208,17 +209,19 @@ export function GenerateStrengthTemplateDialog({
   }, [template, historyQuery.data, peakReference]);
 
   const [peakWeeks, setPeakWeeks] = useState(defaultPeakWeeks ?? 3);
-  const [openers, setOpeners] = useState(false);
+  const [peakOptions, setPeakOptions] = useState<GeneratorSettings["peak"]>({ singles: "unset", rpe: 8, weeks: [1, 2, 3], openers: {} });
+  const openerSuggestions = useMemo(() => historyQuery.data ? suggestOpeners(historyQuery.data, styleQuery.data) : [], [historyQuery.data, styleQuery.data]);
+  const chosenOpeners = Object.fromEntries(openerSuggestions.map((s) => [s.key, peakOptions.openers[s.key] ?? s.kg ?? undefined]));
 
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory && peakSummary) {
-      return template.buildFromHistory(daysPerWeek, peakSummary, { openers, weeks: peakWeeks });
+      return template.buildFromHistory(daysPerWeek, peakSummary, { openers: false, weeks: peakWeeks });
     }
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, peakSummary, openers, peakWeeks, styleQuery.data]);
+  }, [template, daysPerWeek, peakSummary, peakWeeks, styleQuery.data]);
 
 
   const suggestion = useMemo(() => {
@@ -307,10 +310,10 @@ export function GenerateStrengthTemplateDialog({
   useEffect(() => {
     if (settingsLoaded || !preferencesQuery.isSuccess) return;
     const saved = preferencesQuery.data;
-    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); }
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); }
     setSettingsLoaded(true);
   }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
-  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles };
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions };
   const savePreferences = useMutation({
     mutationFn: async () => {
       const parsed = generatorSettingsSchema.parse(settings);
@@ -329,7 +332,7 @@ export function GenerateStrengthTemplateDialog({
   const blockResult = useMemo(
     () => {
       const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload, tuning.intensity), weakIds), styleQuery.data);
-      if (isPeaking) return { weeks, warnings: [] as string[] };
+      if (isPeaking) return { weeks: applyPeakSingles(weeks, peakOptions.singles === "yes", peakOptions.rpe, chosenOpeners, peakOptions.weeks, styleQuery.data), warnings: [] as string[] };
       if (template?.sessionSetBudget) return {
         weeks: applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),
         warnings: [] as string[],
@@ -349,7 +352,7 @@ export function GenerateStrengthTemplateDialog({
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
       return { weeks: applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
   );
   const plannedWeeks = blockResult.weeks;
 
@@ -392,7 +395,7 @@ export function GenerateStrengthTemplateDialog({
           start_date: startDate,
           total_weeks: weeks.length,
           days_per_week: daysPerWeek,
-          notes: `${blockNotes ? `${blockNotes}\n` : ""}Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
+          notes: `${isPeaking ? `Öppningsvikter (coachens preliminära val): ${openerSuggestions.map((s) => `${OPENER_LABELS[s.key]} ${chosenOpeners[s.key] ?? "saknar underlag"}${chosenOpeners[s.key] ? " kg" : ""}`).join(", ")}. Toppningssinglar: ${peakOptions.singles === "yes" ? `ja, RPE ${peakOptions.rpe}, veckor ${peakOptions.weeks.filter((w) => w < peakWeeks).join(", ")}` : "nej"}.\n` : ""}${blockNotes ? `${blockNotes}\n` : ""}Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
             activeAdjustments.length > 0
               ? ` Individualised from history: ${activeAdjustments.map((a) => a.title).join("; ")}.`
               : ""

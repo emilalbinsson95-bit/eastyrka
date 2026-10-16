@@ -61,7 +61,7 @@ export interface StrengthTemplate {
   buildFromHistory?: (
     daysPerWeek: number,
     summary: PeakSummary,
-    opts?: { openers?: boolean },
+    opts?: { openers?: boolean; weeks?: number },
   ) => TemplateWeek[];
   /** Skip the generic MEV volume floors — used by intentionally low-volume blocks. */
   skipVolumeFloors?: boolean;
@@ -955,17 +955,17 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
   },
   {
     id: "peak-3w",
-    name: "3-week peak (from history)",
-    short: "Taper to a meet — 3–4 days / 3 weeks",
+    name: "Toppning från historik (2–4 veckor)",
+    short: "Tävlingsförberedelse — 3–4 dagar / 2–4 veckor",
     goal:
-      "Peak for a meet or a max-out day. Built from the athlete's own last 3 months: their lifts, their recent weekly set counts, their estimated 1RMs. Volume drops ~35% → ~60% → ~80% while intensity is held.",
+      "Toppning från atletens senaste tre månaders träning. Volymen minskas stegvis medan belastningen behålls. Coachen väljer 2–4 veckor; sista veckan har två korta pass.",
     weeks: 3,
     daysPerWeek: 3,
     minDays: 3,
     maxDays: 4,
     inspiration: "Bosquet 2007 taper meta-analysis — pure volume reduction, intensity held",
     buildWeeks: (d: number) => buildPeakingWeeks(d, null),
-    buildFromHistory: (d: number, summary: PeakSummary, opts?: { openers?: boolean }) =>
+    buildFromHistory: (d: number, summary: PeakSummary, opts?: { openers?: boolean; weeks?: number }) =>
       buildPeakingWeeks(d, summary, opts),
     skipVolumeFloors: true,
   },

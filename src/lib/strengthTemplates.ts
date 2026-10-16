@@ -860,14 +860,6 @@ function fullBody50(_daysPerWeek: number): TemplateWeek[] {
 
 export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
   {
-    id: "full-body-50", name: "Helkropp — 2 dagar, ca 50 min",
-    short: "5 övningar och 12 arbetsset per pass — 4 veckor",
-    goal: "Två effektiva helkroppspass för styrka och muskelmassa. Ben, press och drag i båda passen. Cirka 50 minuter inklusive uppvärmning vid angiven vila; separat flow ingår inte. Vecka 4 är lättare.",
-    weeks: 4, daysPerWeek: 2, minDays: 2, maxDays: 2,
-    inspiration: "Flerledsövningar, RPE 7–8 och begränsad volym. Inga set till failure.",
-    buildWeeks: fullBody50, skipVolumeFloors: true, sessionSetBudget: 12,
-  },
-  {
     id: "standard-pl",
     name: "Standard powerlifting",
     short: "Balanced SBD — 3–6 days / 4 weeks",
@@ -938,6 +930,14 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     maxDays: 4,
     inspiration: "Explosive, sport-specific power work + effort set by RPE",
     buildWeeks: athleticPower,
+  },
+  {
+    id: "full-body-50", name: "Helkropp — 2 dagar, ca 50 min",
+    short: "5 övningar och 12 arbetsset per pass — 4 veckor",
+    goal: "Två effektiva helkroppspass för styrka och muskelmassa. Ben, press och drag i båda passen. Cirka 50 minuter inklusive uppvärmning vid angiven vila; separat flow ingår inte. Vecka 4 är lättare.",
+    weeks: 4, daysPerWeek: 2, minDays: 2, maxDays: 2,
+    inspiration: "Flerledsövningar, RPE 7–8 och begränsad volym. Inga set till failure.",
+    buildWeeks: fullBody50, skipVolumeFloors: true, sessionSetBudget: 12,
   },
   {
     id: "runner-strength",

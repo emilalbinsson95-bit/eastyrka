@@ -11,9 +11,9 @@ export const coachingAvailabilityOptions = queryOptions({
   queryKey: ["coaching-availability"],
   queryFn: async () => {
     const { data, error } = await supabase.from("coaching_availability")
-      .select("id, coaching_places, overview_places").eq("id", true).single();
+      .select("id, coaching_places, overview_places").eq("id", true).maybeSingle();
     if (error) throw error;
-    return data;
+    return data ?? { id: true, coaching_places: 5, overview_places: 10 };
   },
   refetchInterval: 60_000,
 });

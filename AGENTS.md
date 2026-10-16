@@ -1,6 +1,6 @@
 # Architecture decisions
 
-- Keep readiness copy in locale dictionaries without changing scoring, to preserve comparisons.
+- Keep readiness copy in locale dictionaries without changing scoring, to preserve history.
 
 - Reconcile loads after overload: recalculate for rep/effort changes, clear for exercise/stance changes, so loads match prescriptions.
 - Allocate historical accessory peaking volume once per week, not session, so frequency cannot multiply taper volume.

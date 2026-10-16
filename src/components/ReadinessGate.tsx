@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ export function ReadinessGate({
   dateStr: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const surveyQuery = useQuery({
     queryKey: ["readiness-survey", athleteId, dateStr],
     queryFn: async (): Promise<ReadinessSurvey | null> => {
@@ -79,7 +81,7 @@ export function ReadinessGate({
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          Loading…
+          {t("readiness.loading")}
         </CardContent>
       </Card>
     );
@@ -155,6 +157,7 @@ function ReadinessSummary({
   survey: ReadinessSurvey;
   athleteId: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const tone =
     survey.daily_form >= 8
@@ -174,7 +177,7 @@ function ReadinessSummary({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Survey reset");
+      toast.success(t("readiness.reset"));
       queryClient.invalidateQueries({
         queryKey: ["readiness-survey", athleteId, survey.date],
       });
@@ -188,7 +191,7 @@ function ReadinessSummary({
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Activity className="h-4 w-4 text-primary" />
-            Daily form
+            {t("readiness.summary")}
           </CardTitle>
           <span
             className={cn(
@@ -202,36 +205,37 @@ function ReadinessSummary({
       </CardHeader>
       <CardContent className="space-y-2 text-xs text-muted-foreground">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Stat label="Work stress" value={survey.work_stress} />
-          <Stat label="Life stress" value={survey.life_stress} />
-          <Stat label="Fatigue" value={survey.fatigue} />
+          <Stat label={t("readiness.work")} value={survey.work_stress} />
+          <Stat label={t("readiness.life")} value={survey.life_stress} />
+          <Stat label={t("readiness.fatigue")} value={survey.fatigue} />
           {survey.sleep_quality !== null && (
-            <Stat label="Sleep quality" value={survey.sleep_quality} />
+            <Stat label={t("readiness.sleepQ")} value={survey.sleep_quality} />
           )}
           {survey.nutrition !== null && (
-            <Stat label="Nutrition" value={survey.nutrition} />
+            <Stat label={t("readiness.nutrition")} value={survey.nutrition} />
           )}
           {survey.stiffness !== null && (
-            <Stat label="Stiffness" value={survey.stiffness} />
+            <Stat label={t("readiness.stiffness")} value={survey.stiffness} />
           )}
           {survey.bodyweight_kg !== null && (
-            <Stat label="Bodyweight" value={`${survey.bodyweight_kg} kg`} />
+            <Stat label={t("readiness.bodyweight")} value={`${survey.bodyweight_kg} kg`} />
           )}
           {survey.sleep_hours !== null && (
-            <Stat label="Sleep" value={`${survey.sleep_hours}h`} />
+            <Stat label={t("readiness.sleep")} value={`${survey.sleep_hours}h`} />
           )}
         </div>
         {survey.notes && (
           <p className="rounded bg-muted/40 px-2 py-1.5">{survey.notes}</p>
         )}
-        <button
+        <Button
           type="button"
-          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+          variant="link"
+          className="h-auto p-0 text-xs text-muted-foreground"
           onClick={() => reset.mutate()}
           disabled={reset.isPending}
         >
-          Re-take survey
-        </button>
+          {t("readiness.retake")}
+        </Button>
       </CardContent>
     </Card>
   );
@@ -253,6 +257,7 @@ function ReadinessSurveyForm({
   athleteId: string;
   dateStr: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [bodyweight, setBodyweight] = useState<string>("");
   const [sleep, setSleep] = useState<string>("");
@@ -314,7 +319,7 @@ function ReadinessSurveyForm({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Form recorded — let's train");
+      toast.success(t("readiness.saved"));
       queryClient.invalidateQueries({
         queryKey: ["readiness-survey", athleteId, dateStr],
       });
@@ -327,17 +332,26 @@ function ReadinessSurveyForm({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
-          Daily readiness check
+          {t("readiness.title")}
         </CardTitle>
         <CardDescription>
-          Quick survey to estimate today's form before you start lifting.
-          Bodyweight is optional.
+          {t("readiness.desc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <details className="rounded border border-border p-3 text-sm">
+          <summary className="cursor-pointer font-medium">{t("readiness.guideTitle")}</summary>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-muted-foreground">
+            {[0, 1, 2, 3].map((i) => <li key={i}>{t(`readiness.guide.${i}`)}</li>)}
+          </ul>
+          <h3 className="mb-2 mt-4 font-medium">{t("readiness.examplesTitle")}</h3>
+          <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
+            {[0, 1, 2].map((i) => <li key={i}>{t(`readiness.examples.${i}`)}</li>)}
+          </ul>
+        </details>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="bw">Bodyweight (kg, optional)</Label>
+            <Label htmlFor="bw">{t("readiness.bw")}</Label>
             <Input
               id="bw"
               type="number"
@@ -350,7 +364,7 @@ function ReadinessSurveyForm({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="sl">Sleep (hours, optional)</Label>
+            <Label htmlFor="sl">{t("readiness.sleepH")}</Label>
             <Input
               id="sl"
               type="number"
@@ -365,58 +379,58 @@ function ReadinessSurveyForm({
         </div>
 
         <Slider10
-          label="Work stress"
-          help="1 = calm, 10 = overwhelmed"
+          label={t("readiness.work")}
+          help={t("readiness.workHelp")}
           value={workStress}
           onChange={setWorkStress}
         />
         <Slider10
-          label="Life stress"
-          help="1 = serene, 10 = chaotic"
+          label={t("readiness.life")}
+          help={t("readiness.lifeHelp")}
           value={lifeStress}
           onChange={setLifeStress}
         />
         <Slider10
-          label="Fatigue"
-          help="1 = fresh, 10 = wrecked"
+          label={t("readiness.fatigue")}
+          help={t("readiness.fatigueHelp")}
           value={fatigue}
           onChange={setFatigue}
         />
         <Slider10
-          label="Sleep quality"
-          help="1 = terrible, 10 = excellent"
+          label={t("readiness.sleepQ")}
+          help={t("readiness.sleepQHelp")}
           value={sleepQuality}
           onChange={setSleepQuality}
         />
         <Slider10
-          label="Nutrition"
-          help="1 = poor, 10 = dialed in"
+          label={t("readiness.nutrition")}
+          help={t("readiness.nutritionHelp")}
           value={nutrition}
           onChange={setNutrition}
         />
         <Slider10
-          label="Stiffness"
-          help="1 = loose, 10 = very stiff"
+          label={t("readiness.stiffness")}
+          help={t("readiness.stiffnessHelp")}
           value={stiffness}
           onChange={setStiffness}
         />
 
         <div className="space-y-1">
-          <Label htmlFor="notes">Notes (optional)</Label>
+          <Label htmlFor="notes">{t("readiness.notes")}</Label>
           <Textarea
             id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             maxLength={500}
             rows={2}
-            placeholder="Anything your coach should know"
+            placeholder={t("readiness.notesPh")}
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-border bg-readiness-tint p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-readiness-tint p-3">
           <div>
             <div className="text-xs font-medium text-muted-foreground">
-              Estimated daily form
+              {t("readiness.est")}
             </div>
             <div className="text-2xl font-bold">{dailyForm}/10</div>
           </div>
@@ -426,7 +440,7 @@ function ReadinessSurveyForm({
             disabled={submit.isPending}
           >
             <Save className="mr-1 h-4 w-4" />
-            {submit.isPending ? "Saving…" : "Submit & start"}
+            {submit.isPending ? t("readiness.saving") : t("readiness.submit")}
           </Button>
         </div>
       </CardContent>
@@ -447,13 +461,14 @@ function Slider10({
 }) {
   return (
     <div className="space-y-1">
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <Label>{label}</Label>
         <span className="text-xs text-muted-foreground">{help}</span>
       </div>
       <div className="flex items-center gap-2">
         <input
           type="range"
+          aria-label={label}
           min={1}
           max={10}
           step={1}

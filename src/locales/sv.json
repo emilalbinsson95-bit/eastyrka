@@ -323,5 +323,48 @@
     "error": "Lediga platser kan inte visas just nu.",
     "swishBefore": "Swish till",
     "swishAfter": "för coachning eller träningsöverblick."
+  },
+  "readiness": {
+    "title": "Dagsform innan passet",
+    "desc": "Svara efter hur det är just nu. Kroppsvikt och sömntimmar är frivilliga.",
+    "guideTitle": "Hur fyller jag i?",
+    "guide": [
+      "Fyll i innan uppvärmningen, gärna vid samma tid som vanligt.",
+      "Använd beskrivningen vid varje skala och jämför dina svar med dina tidigare dagar, inte med andra atleter.",
+      "Stress, trötthet och stelhet: högre betyder mer besvär. Sömn och mat: högre betyder bättre. Svara som det är, inte som du tror att coachen vill.",
+      "Dagsformspoängen är en sammanvägning av dina svar, inte ett test av din styrka eller en diagnos. Vid smärta, skada eller sjukdom: skriv var, när och hur det märks. Prata med coachen och sök vård vid behov."
+    ],
+    "examplesTitle": "Exempel",
+    "examples": [
+      "Sov 5 timmar, stressig jobbvecka, benen sega efter förra passet: sömnkvalitet 3, jobbstress 8, trötthet 7.",
+      "Vanlig dag, åt bra, lite stel i höften på morgonen: allt runt 5, kost 7, stelhet 6.",
+      "Ledig, sov 8 timmar och känner dig pigg: trötthet 2, sömnkvalitet 8, stress 2–3."
+    ],
+    "work": "Jobb-/skolstress",
+    "workHelp": "1 lugnt · 5 vanligt · 10 överväldigande",
+    "life": "Övrig stress",
+    "lifeHelp": "1 lugnt · 5 vanligt · 10 kaotiskt",
+    "fatigue": "Trötthet i kroppen",
+    "fatigueHelp": "1 pigg · 5 som vanligt · 10 helt slut",
+    "sleepQ": "Sömnkvalitet i natt",
+    "sleepQHelp": "1 mycket dålig · 5 okej · 10 utmärkt",
+    "nutrition": "Mat och vätska senaste dygnet",
+    "nutritionHelp": "1 nästan inget · 5 okej · 10 riktigt bra",
+    "stiffness": "Stelhet / ömhet",
+    "stiffnessHelp": "1 rörlig · 5 viss stelhet · 10 mycket stel",
+    "bw": "Kroppsvikt (kg, frivilligt)",
+    "sleepH": "Sömn (timmar, frivilligt)",
+    "notes": "Anteckning (frivilligt)",
+    "notesPh": "T.ex. ont i vänster knä vid böj, sjuk i helgen, ny jobbtid",
+    "est": "Uppskattad dagsform",
+    "submit": "Spara och fortsätt",
+    "saving": "Sparar…",
+    "saved": "Dagsformen är sparad",
+    "summary": "Dagsform",
+    "retake": "Fyll i igen",
+    "reset": "Formuläret är nollställt",
+    "loading": "Laddar…",
+    "bodyweight": "Kroppsvikt",
+    "sleep": "Sömn"
   }
 }

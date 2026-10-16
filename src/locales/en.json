@@ -323,5 +323,48 @@
     "error": "Available spots cannot be shown right now.",
     "swishBefore": "Swish to",
     "swishAfter": "for coaching or training overview."
+  },
+  "readiness": {
+    "title": "Readiness before training",
+    "desc": "Answer how things are right now. Bodyweight and sleep hours are optional.",
+    "guideTitle": "How do I fill this in?",
+    "guide": [
+      "Fill it in before warming up, ideally at your usual time.",
+      "Use the descriptions on each scale and compare your answers with your previous days, not other athletes.",
+      "Stress, fatigue and stiffness: higher means more trouble. Sleep and food: higher means better. Answer honestly, not how you think your coach wants you to.",
+      "The readiness score combines your answers; it is not a strength test or a diagnosis. For pain, injury or illness, note where, when and how it affects you. Talk to your coach and seek care if needed."
+    ],
+    "examplesTitle": "Examples",
+    "examples": [
+      "Slept 5 hours, stressful work week, legs heavy after last session: sleep quality 3, work stress 8, fatigue 7.",
+      "Normal day, ate well, slightly stiff hips this morning: everything around 5, nutrition 7, stiffness 6.",
+      "Day off, slept 8 hours and feel fresh: fatigue 2, sleep quality 8, stress 2–3."
+    ],
+    "work": "Work/school stress",
+    "workHelp": "1 calm · 5 normal · 10 overwhelming",
+    "life": "Other stress",
+    "lifeHelp": "1 calm · 5 normal · 10 chaotic",
+    "fatigue": "Body fatigue",
+    "fatigueHelp": "1 fresh · 5 normal · 10 exhausted",
+    "sleepQ": "Sleep quality last night",
+    "sleepQHelp": "1 very poor · 5 okay · 10 excellent",
+    "nutrition": "Food and fluids last 24 h",
+    "nutritionHelp": "1 almost nothing · 5 okay · 10 very good",
+    "stiffness": "Stiffness / soreness",
+    "stiffnessHelp": "1 mobile · 5 some stiffness · 10 very stiff",
+    "bw": "Bodyweight (kg, optional)",
+    "sleepH": "Sleep (hours, optional)",
+    "notes": "Note (optional)",
+    "notesPh": "E.g. left knee hurts in squats, ill at the weekend, new work hours",
+    "est": "Estimated readiness",
+    "submit": "Save and continue",
+    "saving": "Saving…",
+    "saved": "Readiness saved",
+    "summary": "Readiness",
+    "retake": "Fill in again",
+    "reset": "Form reset",
+    "loading": "Loading…",
+    "bodyweight": "Bodyweight",
+    "sleep": "Sleep"
   }
 }

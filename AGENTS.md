@@ -32,10 +32,10 @@
 - Guided routines (morning flow long/short, warm-up) live as step data in src/lib/routines.ts and completions are stored per athlete in routine_completions (athlete insert, coach/admin read), because the star count must persist and the steps must match the Learn page text.
 - Admins pass `is_coach_of` for every athlete so they can open any athlete's coach pages to inspect and fix data; skipped routines are stored as `routine='skipped'` rows in routine_completions (thumbs down), because stars and thumbs must share one auditable history.
 
-- Runner strength template: fixed 2 days, skips MEV floors and volume guards (label "Löparstyrka"), because running takes priority.
+- Runner strength template: fixed 2 days, skips MEV floors and volume guards (label "Löparstyrka"), as running takes priority.
 
 - Short full-body templates keep base slots via `applySessionSetBudget`; accessory sets trim first, main lifts keep ≥3.
 
 - Catalog reads allow shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without catalog leakage.
 
-- Store season outlines separately from programs; prepare blocks as drafts with locked dates/templates, and persist coach-approved generator settings separately, so existing training stays unchanged.
+- Store season outlines separately from programs; prepare blocks as drafts with locked dates/templates, and persist coach-approved generator settings separately, to preserve existing training.

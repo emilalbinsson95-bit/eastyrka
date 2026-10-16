@@ -326,13 +326,13 @@
   },
   "readiness": {
     "title": "Readiness before training",
-    "desc": "Answer how things are right now, not how you want them to be. It takes under a minute. Bodyweight and sleep hours are optional.",
+    "desc": "Answer how things are right now. Bodyweight and sleep hours are optional.",
     "guideTitle": "How do I fill this in?",
     "guide": [
       "Fill it in before warming up, ideally at your usual time.",
-      "Compare with a normal day for you. 5 means about as usual.",
-      "Be honest. A low score is not a failure; it helps your coach adjust training.",
-      "This form cannot diagnose anything. For pain, injury or illness, write it in the note and talk to your coach. Seek care if needed."
+      "Use the descriptions on each scale and compare your answers with your previous days, not other athletes.",
+      "Stress, fatigue and stiffness: higher means more trouble. Sleep and food: higher means better. Answer honestly, not how you think your coach wants you to.",
+      "The readiness score combines your answers; it is not a strength test or a diagnosis. For pain, injury or illness, note where, when and how it affects you. Talk to your coach and seek care if needed."
     ],
     "examplesTitle": "Examples",
     "examples": [
@@ -351,7 +351,7 @@
     "nutrition": "Food and fluids last 24 h",
     "nutritionHelp": "1 almost nothing · 5 okay · 10 very good",
     "stiffness": "Stiffness / soreness",
-    "stiffnessHelp": "1 loose · 5 normal · 10 very stiff",
+    "stiffnessHelp": "1 mobile · 5 some stiffness · 10 very stiff",
     "bw": "Bodyweight (kg, optional)",
     "sleepH": "Sleep (hours, optional)",
     "notes": "Note (optional)",

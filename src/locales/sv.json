@@ -326,13 +326,13 @@
   },
   "readiness": {
     "title": "Dagsform innan passet",
-    "desc": "Svara efter hur det är just nu, inte hur du vill att det ska vara. Det tar under en minut. Kroppsvikt och sömntimmar är frivilliga.",
+    "desc": "Svara efter hur det är just nu. Kroppsvikt och sömntimmar är frivilliga.",
     "guideTitle": "Hur fyller jag i?",
     "guide": [
       "Fyll i innan uppvärmningen, gärna vid samma tid som vanligt.",
-      "Jämför med en vanlig dag för dig. 5 betyder ungefär som vanligt.",
-      "Svara ärligt. Ett lågt värde är inget misslyckande, det hjälper coachen att anpassa träningen.",
-      "Formuläret kan inte ställa diagnoser. Vid smärta, skada eller sjukdom: skriv det i anteckningen och prata med coachen. Sök vård vid behov."
+      "Använd beskrivningen vid varje skala och jämför dina svar med dina tidigare dagar, inte med andra atleter.",
+      "Stress, trötthet och stelhet: högre betyder mer besvär. Sömn och mat: högre betyder bättre. Svara som det är, inte som du tror att coachen vill.",
+      "Dagsformspoängen är en sammanvägning av dina svar, inte ett test av din styrka eller en diagnos. Vid smärta, skada eller sjukdom: skriv var, när och hur det märks. Prata med coachen och sök vård vid behov."
     ],
     "examplesTitle": "Exempel",
     "examples": [
@@ -351,7 +351,7 @@
     "nutrition": "Mat och vätska senaste dygnet",
     "nutritionHelp": "1 nästan inget · 5 okej · 10 riktigt bra",
     "stiffness": "Stelhet / ömhet",
-    "stiffnessHelp": "1 lös · 5 som vanligt · 10 mycket stel",
+    "stiffnessHelp": "1 rörlig · 5 viss stelhet · 10 mycket stel",
     "bw": "Kroppsvikt (kg, frivilligt)",
     "sleepH": "Sömn (timmar, frivilligt)",
     "notes": "Anteckning (frivilligt)",

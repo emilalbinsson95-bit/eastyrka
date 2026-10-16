@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add clear readiness guidelines, scale anchors and examples in Swedish and English; verify submission and routine flow.
-- [ ] Test strength generation and set logging on a test athlete without changing real athletes' training.
+- [x] Add readiness guidelines, scale anchors and examples in Swedish and English; verified saved survey, timer start/pause, star and unlock on test athlete.
+- [x] Test strength generation and set logging on a test athlete; read back saved set and generated 4-week draft, warm-up from Learn and 40 calculation tests passed. Real athletes unchanged.
 
 - [x] Hide calendar fueling without a current endurance cycle; verified a signed-in preview with real logged sets and no fueling card.
 

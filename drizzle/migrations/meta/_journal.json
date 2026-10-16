@@ -162,6 +162,13 @@
       "when": 1792145541993,
       "tag": "0022_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792145592754,
+      "tag": "0023_scope_shared_catalog_reads",
+      "breakpoints": true
     }
   ]
 }

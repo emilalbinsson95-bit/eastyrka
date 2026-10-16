@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROTOCOL_GROUPS, SET_PROTOCOLS, PROTOCOL_DESCRIPTION, type SetProtocolOptions } from "@/lib/setProtocols";
 
-export function SetProtocolPicker({ value, onChange }: { value: SetProtocolOptions; onChange: (value: SetProtocolOptions) => void }) {
+export function SetProtocolPicker({ value, onChange, shortSessions = false }: { value: SetProtocolOptions; onChange: (value: SetProtocolOptions) => void; shortSessions?: boolean }) {
   return <section className="space-y-3 border-y py-4" aria-labelledby="set-protocol-title">
     <h3 id="set-protocol-title" className="text-sm font-semibold">Setupplägg</h3>
     <div className="grid gap-4 sm:grid-cols-2">
@@ -19,6 +19,6 @@ export function SetProtocolPicker({ value, onChange }: { value: SetProtocolOptio
         {group.id !== "accessories" && (value[group.id] === "metabolic" || value[group.id] === "double") && <p role="status" className="text-xs text-muted-foreground">Avsett för volym och muskelbygge, inte toppning. Behåll tävlingsnära arbete i andra pass.</p>}
       </div>)}
     </div>
-    <p className="text-xs text-muted-foreground">Individens antal arbetsset styrs av volymprofilen (volymtolerans och blockutvärdering). Efter planerade set får atleten lägga till upp till 2 set när tappet är ≤ 4 % (inte deload, toppning eller singlar). Deload, toppning, singlar, tyngdlyftning och 1,5-reps behåller sina särskilda upplägg. Vid repsminskning behålls arbete över cirka 85 % oförändrat.</p>
+    {!shortSessions && <p className="text-xs text-muted-foreground">Individens antal arbetsset styrs av volymprofilen (volymtolerans och blockutvärdering). Efter planerade set får atleten lägga till upp till 2 set när tappet är ≤ 4 % (inte deload, toppning eller singlar). Deload, toppning, singlar, tyngdlyftning och 1,5-reps behåller sina särskilda upplägg. Vid repsminskning behålls arbete över cirka 85 % oförändrat.</p>}
   </section>;
 }

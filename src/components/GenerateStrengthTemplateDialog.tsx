@@ -270,9 +270,9 @@ export function GenerateStrengthTemplateDialog({
             historyQuery.data ?? emptyHistory,
             tuning,
              volumeProfile,
-            { skipFloors: template?.skipVolumeFloors === true },
+            { skipFloors: template?.skipVolumeFloors === true, shortSessions: isTimeLimited },
           ),
-    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile, template],
+    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile, template, isTimeLimited],
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
@@ -558,7 +558,7 @@ export function GenerateStrengthTemplateDialog({
           </div>
 
           {/* ---- peaking options ---- */}
-          {!isPeaking && <SetProtocolPicker value={setProtocols} onChange={setSetProtocols} />}
+          {!isPeaking && <SetProtocolPicker value={setProtocols} onChange={setSetProtocols} shortSessions={isTimeLimited} />}
           {isPeaking && (
             <div className="rounded-lg border bg-card">
               <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
@@ -764,6 +764,7 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
           {/* ---- coach tuning sliders ---- */}
+          {isTimeLimited && <p className="text-xs text-muted-foreground">För att hålla passen korta används högst mallens 12 arbetsset och fem övningar per pass. Volymval kan minska antalet set, men inte lägga till fler. Annat setupplägg eller längre vila kan förlänga passet.</p>}
           <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
             Athlete volume baseline: squat {Math.round(volumeProfile.squat * 100)}%, bench {Math.round(volumeProfile.bench * 100)}%, deadlift {Math.round(volumeProfile.deadlift * 100)}%. Set this on the athlete's Baselines page; the preview below includes it.
           </div>

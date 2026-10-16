@@ -34,4 +34,4 @@
 
 - Runner strength template: fixed 2 days, skips MEV floors and volume guards (label "Löparstyrka"), because running takes priority.
 
-- Short full-body templates retain base slots/set ceilings via `applySessionSetBudget` to preserve session length.
+- Short full-body templates keep base slots via `applySessionSetBudget`; accessory sets trim first, main lifts keep ≥3.

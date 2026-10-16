@@ -5,6 +5,8 @@ export interface RoutineStep {
   text: string;
   /** Timer in seconds; null = no timer (do the reps at your own pace). */
   seconds: number | null;
+  /** True = timer runs once per side (seconds is per side). */
+  sides?: boolean;
 }
 
 interface FlowStep {
@@ -14,6 +16,8 @@ interface FlowStep {
   /** Seconds in the short version; null = skipped in short. */
   short: number | null;
   shortText?: string;
+  /** long/short are seconds per side. */
+  sides?: boolean;
 }
 
 const MORNING: FlowStep[] = [
@@ -46,29 +50,33 @@ const MORNING: FlowStep[] = [
   {
     title: "90/90 till pigeon, aktivt",
     text: "Sitt med båda knäna böjda 90 grader. Luta dig lätt fram över främre benet. Gå över till pigeon med bakre benet sträckt bakåt och pressa främre benet mot golvet. Tillbaka till 90/90 och byt sida. 3–4 övergångar per sida.",
-    long: 120,
-    short: 90,
+    long: 60,
+    short: 45,
     shortText: "2 övergångar per sida.",
+    sides: true,
   },
   {
     title: "Höftböjare i djupt utfall",
     text: "Långt utfall, bakre knät strax ovanför golvet. Spänn sätet på bakre benet och tryck fram höften. Bålen upprätt, svanka inte. Knäet får passera tårna – låt det glida fram så långt hälen håller sig i golvet. 45 s per sida.",
-    long: 90,
-    short: 60,
+    long: 45,
+    short: 30,
     shortText: "30 s per sida.",
+    sides: true,
   },
   {
     title: "Baksida lår och vader",
     text: "Baksida: för höften bakåt och sträck främre benet med foten flexad, 30 s per sida. Vader: sträck bakre benet och tryck ner hälen (20 s), böj sedan bakre knät något (20 s). Båda sidorna.",
-    long: 120,
+    long: 60,
     short: null,
+    sides: true,
   },
   {
     title: "World's greatest stretch",
     text: "Djupt utfall med höger fot fram. Vänster hand i golvet. För höger armbåge mot fotleden, vrid bröstet upp och sträck armen mot taket. Avsluta med höften bakåt och främre benet sträckt. 3 per sida.",
-    long: 120,
-    short: 90,
+    long: 60,
+    short: 45,
     shortText: "2 per sida.",
+    sides: true,
   },
   {
     title: "Djup huk med rörelse",
@@ -99,11 +107,11 @@ const MORNING: FlowStep[] = [
 const WARMUP: RoutineStep[] = [
   { title: "Puls", text: "Cykel, roddmaskin eller rask promenad tills du blir lite varm.", seconds: 240 },
   { title: "Cat–camel × 8", text: "Alla fyra. Runda och svanka ryggen lugnt i takt med andningen.", seconds: 45 },
-  { title: "World's greatest stretch × 5/sida", text: "Djupt utfall, hand i golvet, armbåge mot fotleden, vrid upp och sträck armen mot taket.", seconds: 90 },
+  { title: "World's greatest stretch × 5/sida", text: "Djupt utfall, hand i golvet, armbåge mot fotleden, vrid upp och sträck armen mot taket.", seconds: 45, sides: true },
   { title: "Goblet squat × 8", text: "Djup knäböj med vikt framför bröstet. Häng i botten 2–3 s varje rep.", seconds: 60 },
   { title: "Höftlyft × 10", text: "Ligg på rygg med fötterna i golvet. Tryck upp höften och spänn sätet i toppen.", seconds: 45 },
   { title: "Band pull-apart × 15 + dislocates × 10", text: "Raka armar. Dra isär bandet mot bröstet, för det sedan över huvudet och tillbaka.", seconds: 60 },
-  { title: "Dead bug × 6/sida", text: "Ländryggen mot golvet. Sträck ut motsatt arm och ben på utandningen.", seconds: 60 },
+  { title: "Dead bug × 6/sida", text: "Ländryggen mot golvet. Sträck ut motsatt arm och ben på utandningen.", seconds: 30, sides: true },
   {
     title: "Uppvärmning med stången",
     text: "Öka stegvis mot dagens första arbetsset, färre reps ju tyngre. Ungefär tom stång × 10, 40 % × 5, 60 % × 3, 75 % × 2, 90 % × 1. Vila kort i början, längre mot slutet.",
@@ -112,17 +120,18 @@ const WARMUP: RoutineStep[] = [
 ];
 
 export const ROUTINE_LABEL: Record<RoutineId, string> = {
-  morning_long: "Morgonflow – lång (ca 14 min)",
+  morning_long: "Morgonflow – lång (ca 15 min)",
   morning_short: "Morgonflow – kort (ca 8 min)",
   warmup: "Uppvärmning (10–15 min)",
 };
 
 export function getRoutine(id: RoutineId): RoutineStep[] {
   if (id === "warmup") return WARMUP;
-  if (id === "morning_long") return MORNING.map((s) => ({ title: s.title, text: s.text, seconds: s.long }));
+  if (id === "morning_long") return MORNING.map((s) => ({ title: s.title, text: s.text, seconds: s.long, sides: s.sides }));
   return MORNING.filter((s) => s.short != null).map((s) => ({
     title: s.title,
     text: s.shortText ? `${s.text} Kort: ${s.shortText}` : s.text,
     seconds: s.short,
+    sides: s.sides,
   }));
 }

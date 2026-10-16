@@ -341,7 +341,9 @@ export function GenerateStrengthTemplateDialog({
         }
       }
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
-      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks, volumeProfile), effProtocols), warnings: adapted.warnings };
+      const guarded = applyVolumeGuards(adapted.weeks, volumeProfile);
+      const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
+      return { weeks: applySetProtocols(guarded, effProtocols), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
     },
     [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, volumeProfileQuery.data, volumeProfile],
   );
@@ -537,6 +539,7 @@ export function GenerateStrengthTemplateDialog({
                 type="button"
                 variant="outline"
                 aria-pressed={templateId === t.id}
+                disabled={Boolean(blockName) && templateId !== t.id}
                 onClick={() => setTemplateId(t.id)}
                 className={cn(
                   "h-auto flex-col items-stretch whitespace-normal rounded-lg border p-3 text-left transition-colors hover:border-primary/50",
@@ -571,6 +574,7 @@ export function GenerateStrengthTemplateDialog({
               <Label htmlFor="tpl-start">Start date (Monday)</Label>
               <Input
                 id="tpl-start"
+                disabled={Boolean(blockName)}
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -580,6 +584,7 @@ export function GenerateStrengthTemplateDialog({
               <Label htmlFor="tpl-dpw">Training days / week</Label>
               <select
                 id="tpl-dpw"
+                disabled={Boolean(blockName)}
                 value={daysPerWeek}
                 onChange={(e) => setDaysPerWeek(Number(e.target.value))}
                 className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"

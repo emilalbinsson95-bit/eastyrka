@@ -1,13 +1,13 @@
 # Architecture decisions
 
-- Keep readiness guidance in locale dictionaries without changing scoring, because copy updates must preserve historical comparisons.
+- Keep readiness copy in locale dictionaries without changing scoring, to preserve comparisons.
 
 - Reconcile loads after overload: recalculate for rep/effort changes, clear for exercise/stance changes, so loads match prescriptions.
 - Allocate historical accessory peaking volume once per week, not session, so frequency cannot multiply taper volume.
 
 - Apply coach-selected protocols last, volume-neutrally; save per-set notes and first-set targets, because logging has one default and changed exercises must not inherit loads.
 
-- Store one admin-managed monthly payment schedule per athlete and derive fixed calendar occurrences from its original start day; athlete reads are RLS-protected, and reminders never become movable training sessions.
+- Store monthly athlete payments in one admin-managed schedule; derive fixed calendar dates from its original start day, with RLS reads, never movable sessions.
 
 - Reject outdated Vite dependency requests so updates reload instead of mixing React dispatchers.
 
@@ -18,7 +18,7 @@
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Store per-athlete squat, bench, and deadlift set-volume preferences in a separately protected athlete settings table; generated strength plans read the saved settings so coach and athlete see the same baseline.- Generate the 3-week peak in `src/lib/peaking.ts` from the athlete's logged history (lifts, recent weekly sets, estimated 1RM) and let it bypass the MEV volume floors, because a taper is deliberately sub-maintenance volume at maintained intensity.
 
-- Keep the coach methodology on one route with three tabs (running, strength, coaching) so existing links remain valid and future coaching notes have a dedicated home.
+- Keep methodology on one route with running/strength/coaching tabs to preserve links.
 - Weak points (`src/lib/weakPoints.ts`): coach-only, one/lift, variation + one accessory/week; 8/7/6 exercise caps for 2/3/4+ days; replace comp > weak-point > variation > compound > isolation > core, skipping deloads for focus and realism.
 - Competition deadlift style (conventional/sumo) lives on athlete_strength_volume_profiles.deadlift_style and is applied last in generation (`applyDeadliftStyle`): sumo lifters may get conventional accessories, conventional lifters never get sumo work, because most conventional lifters can't reach a sumo stance.
 - 1.5-rep variations are their own exercises (`exerciseVariants.ts`): load = main lift 1RM × 0.8, 3–5×3–5 @ RPE 6–8, counted as 1.25 sets in weekly volume, because each rep costs more than a normal rep.
@@ -37,3 +37,5 @@
 - Short full-body templates keep base slots via `applySessionSetBudget`; accessory sets trim first, main lifts keep ≥3.
 
 - Catalog reads allow shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without catalog leakage.
+
+- Store season outlines separately from programs; prepare blocks as drafts with locked dates/templates, and persist coach-approved generator settings separately, so existing training stays unchanged.

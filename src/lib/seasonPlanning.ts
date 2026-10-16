@@ -16,7 +16,8 @@ export type GeneratorSettings = z.infer<typeof generatorSettingsSchema>;
 export const seasonBlockSchema = z.object({
   id: z.string(), name: z.string().trim().min(1).max(100),
   focus: z.enum(["volume", "strength", "competition"]),
-  templateId: z.string().refine((id) => Boolean(getTemplate(id)), "Välj en befintlig mall"),
+  templateId: z.string().refine((id) => id === "manual" || Boolean(getTemplate(id)), "Välj eget upplägg eller en befintlig mall"),
+  manualWeeks: z.number().int().min(1).max(24).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   daysPerWeek: z.number().int().min(2).max(6),
   notes: z.string().max(2000).default(""),
@@ -27,6 +28,7 @@ export type SeasonBlock = z.infer<typeof seasonBlockSchema>;
 export const seasonBlocksSchema = z.array(seasonBlockSchema).min(1).max(20);
 export const FOCUS_LABELS = { volume: "Volymfokus", strength: "Styrkefokus", competition: "Tävlingsförberedelse" };
 export function blockWeeks(block: SeasonBlock): number {
+  if (block.templateId === "manual") return block.manualWeeks ?? 4;
   return block.templateId === "peak-3w" ? block.peakWeeks ?? 3 : getTemplate(block.templateId)?.weeks ?? 4;
 }
 export function validSeasonDate(value: string): boolean {
@@ -53,7 +55,7 @@ export function validateSeason(blocks: SeasonBlock[], competitionDate: string): 
     const b = blocks[i];
     if (!validSeasonDate(b.startDate)) return `${b.name}: kontrollera startdatumet.`;
     const template = getTemplate(b.templateId);
-    if (!template || b.daysPerWeek < template.minDays || b.daysPerWeek > template.maxDays) return `${b.name}: kontrollera antal träningsdagar.`;
+    if (b.templateId !== "manual" && (!template || b.daysPerWeek < template.minDays || b.daysPerWeek > template.maxDays)) return `${b.name}: kontrollera antal träningsdagar.`;
     if (i > 0 && differenceInCalendarDays(parseISO(b.startDate), parseISO(blockEnd(blocks[i - 1]))) < 1) return "Blocken får inte överlappa. Pauser mellan block är tillåtna.";
     if (competitionDate && blockEnd(b) >= competitionDate) return "Sista träningsdagen måste ligga före tävlingsdatumet.";
   }

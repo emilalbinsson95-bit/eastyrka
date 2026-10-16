@@ -42,3 +42,7 @@
 - Keep season outlines separate; shift only unprepared blocks, allow gaps and detach without deleting programs. Version-check writes and resolve cycle links to prevent stale edits.
 - Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
 - Compare first measurement sets across six matching exercise/variant/reps/RPE sessions, because isolated peaks distort trends.
+
+<!-- LOVABLE:BEGIN -->
+- Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.
+<!-- LOVABLE:END -->

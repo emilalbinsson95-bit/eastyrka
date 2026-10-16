@@ -30,11 +30,16 @@ import {
 } from "@/components/ui/dialog";
 import { GenerateMarathonPlanDialog } from "@/components/GenerateMarathonPlanDialog";
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
+import { SeasonPlanner } from "@/components/SeasonPlanner";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/cycles")({
   head: () => ({
     meta: [
-      { title: "Mesocycles — SETPOINT Coach" },
+      { title: "Träningsblock och säsongsplan — SETPOINT Coach" },
+      { property: "og:title", content: "Träningsblock och säsongsplan — SETPOINT Coach" },
+      { property: "og:description", content: "Planera atletens säsong, förbered träningsblock och publicera veckor." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:
@@ -70,7 +75,7 @@ function CyclesListPage() {
     from: "/coach/athletes/$athleteId/cycles",
   });
   const { user } = useAuth();
-  const userId = user!.id;
+  const userId = user?.id ?? "";
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const childMatches = useChildMatches();
@@ -387,6 +392,8 @@ function CyclesListPage() {
         </div>
       </div>
 
+      {userId && <SeasonPlanner athleteId={athleteId} coachId={userId} athleteName={profileQuery.data?.full_name ?? "Athlete"} />}
+
       {cyclesQuery.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (cyclesQuery.data ?? []).length === 0 ? (
@@ -397,7 +404,7 @@ function CyclesListPage() {
         </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {cyclesQuery.data!.map((m) => (
+          {(cyclesQuery.data ?? []).map((m) => (
             <Card key={m.id} className="transition-colors hover:border-primary/50">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">

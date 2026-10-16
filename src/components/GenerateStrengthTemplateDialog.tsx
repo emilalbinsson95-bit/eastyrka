@@ -50,6 +50,8 @@ import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blo
 import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
 import { SetProtocolPicker } from "@/components/SetProtocolPicker";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
+import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPlanning";
+import type { Json } from "@/integrations/supabase/types";
 
 
 export function GenerateStrengthTemplateDialog({
@@ -62,6 +64,7 @@ export function GenerateStrengthTemplateDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger,
+  defaultDaysPerWeek, blockName, blockNotes, blockFocus,
 }: {
   athleteId: string;
   coachId: string;
@@ -75,6 +78,10 @@ export function GenerateStrengthTemplateDialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  defaultDaysPerWeek?: number;
+  blockName?: string;
+  blockNotes?: string;
+  blockFocus?: "volume" | "strength" | "competition";
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -93,8 +100,8 @@ export function GenerateStrengthTemplateDialog({
 
   // When template changes, reset days-per-week to that template's default.
   useEffect(() => {
-    if (template) setDaysPerWeek(template.daysPerWeek);
-  }, [templateId, template]);
+    if (template) setDaysPerWeek(defaultDaysPerWeek ?? template.daysPerWeek);
+  }, [templateId, template, defaultDaysPerWeek]);
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const since28 = useMemo(() => format(addDays(new Date(), -28), "yyyy-MM-dd"), []);
@@ -283,6 +290,32 @@ export function GenerateStrengthTemplateDialog({
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
   useEffect(() => { if (daysPerWeek < 4) setOverload((o) => (o.benchConsolidation ? { ...o, benchConsolidation: false } : o)); }, [daysPerWeek]);
   const [setProtocols, setSetProtocols] = useState<SetProtocolOptions>(DEFAULT_SET_PROTOCOLS);
+  const [volumeDeltas, setVolumeDeltas] = useState({ squat: 0, bench: 0, deadlift: 0 });
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const preferencesQuery = useQuery({
+    queryKey: ["generator-preferences", athleteId], enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("athlete_generator_preferences").select("settings").eq("athlete_id", athleteId).maybeSingle();
+      if (error) throw error;
+      return data ? generatorSettingsSchema.parse(data.settings) : null;
+    },
+  });
+  useEffect(() => {
+    if (settingsLoaded || !preferencesQuery.isSuccess) return;
+    const saved = preferencesQuery.data;
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); }
+    setSettingsLoaded(true);
+  }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas };
+  const savePreferences = useMutation({
+    mutationFn: async () => {
+      const parsed = generatorSettingsSchema.parse(settings);
+      const { error } = await supabase.from("athlete_generator_preferences").upsert({ athlete_id: athleteId, settings: parsed as unknown as Json, updated_by: coachId, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["generator-preferences", athleteId] }); toast.success("Coachvalen är sparade för nästa block"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const blockEvals = useMemo(() => {
     const h = historyQuery.data;
     if (!h) return [];
@@ -298,11 +331,21 @@ export function GenerateStrengthTemplateDialog({
         warnings: [] as string[],
       };
       // Runner strength keeps its fixed dose: no data-driven extra sets.
-      const adapted = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBlockVolume(weeks, blockEvals, volumeProfileQuery.data?.cap);
+      // Suggestions are displayed, but only coach-approved deltas alter the plan.
+      let adapted = { weeks, warnings: [] as string[] };
+      if (!template?.skipVolumeFloors) {
+        for (let step = 0; step < 6; step++) {
+          const evals = blockEvals.map((ev) => ({ ...ev, delta: (Math.abs(volumeDeltas[ev.lift]) > step ? Math.sign(volumeDeltas[ev.lift]) : 0) as -1 | 0 | 1 }));
+          const next = applyBlockVolume(adapted.weeks, evals, volumeProfileQuery.data?.cap);
+          adapted = { weeks: next.weeks, warnings: [...new Set([...adapted.warnings, ...next.warnings])] };
+        }
+      }
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
-      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks, volumeProfile), effProtocols), warnings: adapted.warnings };
+      const guarded = applyVolumeGuards(adapted.weeks, volumeProfile);
+      const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
+      return { weeks: applySetProtocols(guarded, effProtocols), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data, volumeProfile],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, volumeProfileQuery.data, volumeProfile],
   );
   const plannedWeeks = blockResult.weeks;
 
@@ -322,6 +365,7 @@ export function GenerateStrengthTemplateDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
+      if (!settingsLoaded || preferencesQuery.isError) throw new Error("Coachvalen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
       if (!isPeaking && !isTimeLimited) {
@@ -339,12 +383,12 @@ export function GenerateStrengthTemplateDialog({
         .insert({
           coach_id: coachId,
           athlete_id: athleteId,
-          name: template.name,
-          goal: template.goal,
+          name: blockName ?? template.name,
+          goal: blockFocus ? `${blockFocus === "volume" ? "Volymfokus" : blockFocus === "strength" ? "Styrkefokus" : "Tävlingsförberedelse"}. ${template.goal}` : template.goal,
           start_date: startDate,
-          total_weeks: template.weeks,
+          total_weeks: weeks.length,
           days_per_week: daysPerWeek,
-          notes: `Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
+          notes: `${blockNotes ? `${blockNotes}\n` : ""}Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
             activeAdjustments.length > 0
               ? ` Individualised from history: ${activeAdjustments.map((a) => a.title).join("; ")}.`
               : ""
@@ -447,6 +491,8 @@ export function GenerateStrengthTemplateDialog({
         }
       }
 
+      const { error: settingsError } = await supabase.from("athlete_generator_preferences").upsert({ athlete_id: athleteId, settings: generatorSettingsSchema.parse(settings) as unknown as Json, updated_by: coachId, updated_at: new Date().toISOString() });
+      if (settingsError) toast.error("Programmet skapades, men coachvalen kunde inte sparas för nästa block.");
       return meso.id;
     },
     onSuccess: (mesoId) => {
@@ -456,8 +502,9 @@ export function GenerateStrengthTemplateDialog({
           : `${template?.name} generated`,
       );
       qc.invalidateQueries({ queryKey: ["mesocycles", athleteId] });
-      setOpen(false);
+      qc.invalidateQueries({ queryKey: ["generator-preferences", athleteId] });
       onCreated?.(mesoId);
+      setOpen(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -492,6 +539,7 @@ export function GenerateStrengthTemplateDialog({
                 type="button"
                 variant="outline"
                 aria-pressed={templateId === t.id}
+                disabled={Boolean(blockName) && templateId !== t.id}
                 onClick={() => setTemplateId(t.id)}
                 className={cn(
                   "h-auto flex-col items-stretch whitespace-normal rounded-lg border p-3 text-left transition-colors hover:border-primary/50",
@@ -526,6 +574,7 @@ export function GenerateStrengthTemplateDialog({
               <Label htmlFor="tpl-start">Start date (Monday)</Label>
               <Input
                 id="tpl-start"
+                disabled={Boolean(blockName)}
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -535,6 +584,7 @@ export function GenerateStrengthTemplateDialog({
               <Label htmlFor="tpl-dpw">Training days / week</Label>
               <select
                 id="tpl-dpw"
+                disabled={Boolean(blockName)}
                 value={daysPerWeek}
                 onChange={(e) => setDaysPerWeek(Number(e.target.value))}
                 className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
@@ -769,6 +819,12 @@ export function GenerateStrengthTemplateDialog({
               {blockResult.warnings.map((w) => <p key={w} className="text-destructive">{w}</p>)}
             </div>
           )}
+          {!isPeaking && !isTimeLimited && !template?.skipVolumeFloors && <div className="space-y-2 border-t border-border pt-3">
+            <h3 className="text-sm font-medium">Godkänd setjustering per vecka</h3>
+            <div className="grid grid-cols-3 gap-2">{(["squat", "bench", "deadlift"] as const).map((lift) => <div key={lift}><Label htmlFor={`delta-${lift}`}>{lift === "squat" ? "Knäböj" : lift === "bench" ? "Bänk" : "Mark"}</Label><Input id={`delta-${lift}`} type="number" min={-6} max={6} step={1} value={volumeDeltas[lift]} onChange={(e) => setVolumeDeltas((prev) => ({ ...prev, [lift]: Math.max(-6, Math.min(6, Math.trunc(Number(e.target.value)))) }))} /></div>)}</div>
+            {blockResult.warnings.map((w) => <p key={w} className="text-xs text-destructive">{w}</p>)}
+          </div>}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3"><span className="text-xs text-muted-foreground">{preferencesQuery.isError ? "Kunde inte hämta sparade coachval." : preferencesQuery.data ? "Sparade coachval från tidigare block" : "Inga tidigare coachval sparade"}</span><Button variant="outline" size="sm" disabled={!settingsLoaded || savePreferences.isPending || preferencesQuery.isError} onClick={() => savePreferences.mutate()}>{savePreferences.isPending ? "Sparar…" : "Spara coachval"}</Button></div>
           {/* ---- coach tuning sliders ---- */}
           {isTimeLimited && <p className="text-xs text-muted-foreground">För att hålla passen korta används högst mallens 12 arbetsset och fem övningar per pass. Volymval kan minska antalet set, men inte lägga till fler. Annat setupplägg eller längre vila kan förlänga passet.</p>}
           <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
@@ -935,7 +991,7 @@ export function GenerateStrengthTemplateDialog({
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={!template || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
+            disabled={!template || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
           >
             {mutation.isPending ? "Generating…" : "Generate mesocycle"}
           </Button>

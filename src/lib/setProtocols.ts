@@ -67,7 +67,7 @@ function adjustedWeight(e: TemplateExercise, reps: number, rpe: number): number 
 
 export function protocolSets(e: TemplateExercise, protocol: SetProtocol): ProtocolSet[] {
   const count = Math.max(1, Math.round(e.target_sets));
-  const rpe = clamp(e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : (e.target_rpe ?? 7), 6, 8.5);
+  const rpe = clamp(e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : (e.target_rpe ?? 7), 5, 10);
   const reps = e.target_reps;
   return Array.from({ length: count }, (_, i) => {
     let setReps = reps;
@@ -104,7 +104,7 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
   }
   if (protocol === "metabolic") {
     const rest = protocolGroup(e) === "accessories" ? "2 minuter" : "3–5 minuter, längre vid behov";
-    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " på högst 70 % av uppskattat 1RM för just denna övning och högst 90 % av toppvikten" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · högst RPE 7 · vila ${rest}. Sänk vikten om RPE-gränsen överskrids.`;
+    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " på högst 70 % av uppskattat 1RM för just denna övning och högst 90 % av toppvikten" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · mål RPE 6, högst RPE 7 · vila ${rest}. Sänk vikten om RPE-gränsen överskrids.`;
   }
   if (protocol === "double") {
     const hi = e.target_reps + 4;

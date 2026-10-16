@@ -127,7 +127,7 @@ const LIFT_CAT: Record<WeakLift, ReturnType<typeof volumeCategory>> = {
 const VARIANT = /pause squat|tempo|pin|deficit|block|spoto|larsen|touch|close|wide|board|floor/i;
 
 function isCompSlot(e: TemplateExercise): boolean {
-  return /^(back squat|bench press|deadlift|sumo deadlift)$/i.test(e.exercise) && (!e.variation || !VARIANT.test(e.variation));
+  return /^(back squat|squat|bench press|deadlift|sumo deadlift|conventional deadlift)$/i.test(e.exercise) && (!e.variation || !VARIANT.test(e.variation));
 }
 
 export function getWeakPoints(ids: string[]): WeakPoint[] {

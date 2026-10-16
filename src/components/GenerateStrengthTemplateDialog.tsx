@@ -205,9 +205,10 @@ export function GenerateStrengthTemplateDialog({
     if (template.buildFromHistory && peakSummary) {
       return template.buildFromHistory(daysPerWeek, peakSummary, { openers });
     }
-    if (template.skipVolumeFloors) return template.buildWeeks(daysPerWeek);
-    return enforceTemplateFloors(template.buildWeeks(daysPerWeek));
-  }, [template, daysPerWeek, peakSummary, openers]);
+    // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
+    if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
+    return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
+  }, [template, daysPerWeek, peakSummary, openers, styleQuery.data]);
 
 
   const suggestion = useMemo(() => {
@@ -286,17 +287,18 @@ export function GenerateStrengthTemplateDialog({
   }, [historyQuery.data, volumeProfileQuery.data]);
   const blockResult = useMemo(
     () => {
-      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
+      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload, tuning.intensity), weakIds), styleQuery.data);
       if (isPeaking) return { weeks, warnings: [] as string[] };
       if (template?.sessionSetBudget) return {
         weeks: applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),
         warnings: [] as string[],
       };
-      const adapted = applyBlockVolume(weeks, blockEvals, volumeProfileQuery.data?.cap);
+      // Runner strength keeps its fixed dose: no data-driven extra sets.
+      const adapted = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBlockVolume(weeks, blockEvals, volumeProfileQuery.data?.cap);
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
-      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks), effProtocols), warnings: adapted.warnings };
+      return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks, volumeProfile), effProtocols), warnings: adapted.warnings };
     },
-    [finalWeeks, overload, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data, volumeProfile],
   );
   const plannedWeeks = blockResult.weeks;
 

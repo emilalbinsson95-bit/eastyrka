@@ -225,6 +225,7 @@ export type VolumeCategory =
   | "core";
 
 const CATEGORY_RULES: Array<[RegExp, VolumeCategory]> = [
+  [/jump squat|squat jump|box jump|broad jump|hurdle hop|depth jump|plyo|bounding|skip/i, "quads"],
   // quads-biased accessories before the generic squat rule
   [/split squat|leg press|leg extension|lunge|step.?up|sissy squat|goblet squat|belt squat|cyclist squat|smith squat|leg machine/i, "quads"],
   [/front squat|back squat|pause squat|hack squat|box squat|safety bar|ssb|zercher|\bsquat\b/i, "squat"],

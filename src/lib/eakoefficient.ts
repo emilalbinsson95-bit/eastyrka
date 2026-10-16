@@ -69,13 +69,13 @@ export function eaKoefficient(set: SetInput, baseline1RM: number): number {
 }
 
 /**
- * Measurement set per session: the heavy single (reps 1, RPE ≥ 7) if one was
- * done, otherwise the first working set with RPE ≥ 7. Same rule every
+ * Measurement set per session: the first qualifying working set, including
+ * a leading heavy single. A later single never replaces it. Same rule every
  * session so values are comparable over time.
  */
 export function pickMeasurementSet<T extends SetInput & { set_number: number }>(sets: T[]): T | null {
   const ok = sets.filter(countsForEAk).sort((a, b) => a.set_number - b.set_number);
-  return ok.find((s) => s.reps === 1) ?? ok[0] ?? null;
+  return ok[0] ?? null;
 }
 
 /** Measurement-set E1RM per "date::exercise". */

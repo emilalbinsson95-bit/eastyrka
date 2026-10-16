@@ -315,7 +315,7 @@ export function buildAdjustments(
   const gap = summary.daysSinceLastLog;
   const bigGap = gap != null && gap >= 10;
   if (summary.offDaysLast28 >= 4 || bigGap) {
-    const severityDays = Math.max(summary.offDaysLast28, bigGap ? gap! : 0);
+    const severityDays = Math.max(summary.offDaysLast28, bigGap ? (gap ?? 0) : 0);
     const rampWeeks = severityDays >= 14 ? 2 : 1;
     const mult = severityDays >= 14 ? 0.7 : 0.8;
     adjustments.push({
@@ -358,7 +358,12 @@ export function buildAdjustments(
 // ---------- baseline matching ----------
 
 function normName(s: string): string {
-  return s.toLowerCase().replace(/[^a-z ]/g, "").trim();
+  const name = s.toLowerCase().trim().replace(/\s+/g, " ");
+  if (/^(back squat|squat|comp squat|competition squat|knäböj)$/.test(name)) return "squat";
+  if (/^(bench|bench press|comp bench|competition bench|bänkpress)$/.test(name)) return "bench press";
+  if (/^(deadlift|conventional deadlift|marklyft|smal mark)$/.test(name)) return "conventional deadlift";
+  if (/^(sumo|sumo deadlift|sumomark)$/.test(name)) return "sumo deadlift";
+  return name;
 }
 
 export function matchBaseline(
@@ -366,19 +371,9 @@ export function matchBaseline(
   baselines: HistBaseline[],
 ): HistBaseline | undefined {
   const name = normName(ex.exercise);
-  let best: HistBaseline | undefined;
-  let bestLen = 0;
-  for (const b of baselines) {
-    const bn = normName(b.exercise);
-    if (!bn) continue;
-    if (name === bn || name.includes(bn) || bn.includes(name)) {
-      if (bn.length > bestLen) {
-        best = b;
-        bestLen = bn.length;
-      }
-    }
-  }
-  return best;
+  const valid = baselines.filter((b) => Number(b.one_rm_kg) > 0);
+  return valid.find((b) => b.exercise.trim().toLowerCase() === ex.exercise.trim().toLowerCase())
+    ?? valid.find((b) => normName(b.exercise) === name);
 }
 
 function countLoadableExercises(weeks: TemplateWeek[], baselines: HistBaseline[]) {
@@ -663,9 +658,9 @@ export function applyAdjustments(
   const doLoads = adjustments.some((a) => a.kind === "loads");
 
   return weeks.map((w) => {
-    const isDeload = /deload/i.test(w.label) || (opts.skipFloors === true && !opts.shortSessions);
+    const isDeload = /deload|taper|peak|återhämt|toppning/i.test(w.label);
     const inRamp = ramp && !isDeload && w.week_index <= (ramp.rampWeeks ?? 1);
-    const rampMult = inRamp ? (ramp!.multiplier ?? 0.8) : 1;
+    const rampMult = inRamp ? (ramp?.multiplier ?? 0.8) : 1;
 
     // 1. Collect every exercise in the week and its combined multiplier.
     const slots: SetSlot[] = [];

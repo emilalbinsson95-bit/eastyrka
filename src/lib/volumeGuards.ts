@@ -1,4 +1,5 @@
 import { volumeCategory, type TemplateWeek } from "@/lib/strengthTemplates";
+import { DEFAULT_STRENGTH_VOLUME, volumeFactorForCategory, type StrengthVolumeProfile } from "@/lib/strengthVolumeProfile";
 
 /**
  * Final realism guards for generated strength weeks (skips deload/taper weeks):
@@ -6,7 +7,7 @@ import { volumeCategory, type TemplateWeek } from "@/lib/strengthTemplates";
  * - session cap of 30 total sets, trimming accessories first
  * - weekly floor (6) and ceiling (24) of hard sets for squat, bench and deadlift
  */
-const COMP = /^(back squat|bench press|deadlift|sumo deadlift)$/i;
+const COMP = /^(back squat|squat|bench press|deadlift|sumo deadlift|conventional deadlift)$/i;
 const MAIN_CATS = ["squat", "horizontal-press", "hinge"] as const;
 const SESSION_CAP = 30;
 const WEEK_FLOOR = 6;
@@ -17,7 +18,7 @@ export function compSetCap(reps: number): number {
   return reps <= 3 ? 6 : reps <= 4 ? 7 : 8;
 }
 
-export function applyVolumeGuards(weeks: TemplateWeek[]): TemplateWeek[] {
+export function applyVolumeGuards(weeks: TemplateWeek[], profile: StrengthVolumeProfile = DEFAULT_STRENGTH_VOLUME): TemplateWeek[] {
   return weeks.map((week) => {
     if (isLight(week)) return week;
     const sessions = week.sessions.map((s) => {
@@ -35,11 +36,14 @@ export function applyVolumeGuards(weeks: TemplateWeek[]): TemplateWeek[] {
       return { ...s, exercises };
     });
     for (const cat of MAIN_CATS) {
+      const factor = volumeFactorForCategory(cat, profile);
+      const floorSets = Math.round(WEEK_FLOOR * Math.min(1, factor));
+      const ceilSets = Math.round(WEEK_CEIL * factor);
       const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat).map((e) => ({ s, e })));
       if (!items.length) continue;
       let sum = items.reduce((a, x) => a + x.e.target_sets, 0);
       // Floor: add to competition lifts (then variations) below their cap, in sessions under the cap.
-      while (sum < WEEK_FLOOR) {
+      while (sum < floorSets) {
         const cand = items
           .filter(({ s, e }) => e.target_sets < compSetCap(e.target_reps) && s.exercises.reduce((a, x) => a + x.target_sets, 0) < SESSION_CAP)
           .sort((a, b) => Number(COMP.test(b.e.exercise)) - Number(COMP.test(a.e.exercise)) || a.e.target_sets - b.e.target_sets)[0];
@@ -48,7 +52,7 @@ export function applyVolumeGuards(weeks: TemplateWeek[]): TemplateWeek[] {
         sum += 1;
       }
       // Ceiling: trim variations first, never below 2 sets (comp lifts never below 3).
-      while (sum > WEEK_CEIL) {
+      while (sum > ceilSets) {
         const cand = items
           .filter(({ e }) => e.target_sets > (COMP.test(e.exercise) ? 3 : 2))
           .sort((a, b) => Number(COMP.test(a.e.exercise)) - Number(COMP.test(b.e.exercise)) || b.e.target_sets - a.e.target_sets)[0];

@@ -2,12 +2,11 @@ import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 import { z } from "zod";
 import { getTemplate } from "@/lib/strengthTemplates";
 import { DEFAULT_TUNING } from "@/lib/individualisation";
-import { DEFAULT_OVERLOAD } from "@/lib/overload";
 import { DEFAULT_SET_PROTOCOLS } from "@/lib/setProtocols";
 
 export const generatorSettingsSchema = z.object({
   tuning: z.object({ volume: z.number().min(.7).max(1.3), intensity: z.number().min(-1.5).max(1.5), accessory: z.number().min(.5).max(1.5), mainLifts: z.number().min(.7).max(1.3) }).default(DEFAULT_TUNING),
-  overload: z.object({ overWarmSingles: z.boolean(), waveLoading: z.boolean(), benchConsolidation: z.boolean() }).passthrough().optional(),
+  overload: z.object({ overWarmSingles: z.boolean(), waveLoading: z.boolean(), benchConsolidation: z.boolean(), deadliftStance: z.enum(["keep", "conventional", "sumo"]) }).optional(),
   setProtocols: z.object({ squat: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), bench: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), deadlift: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), accessories: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]) }).default(DEFAULT_SET_PROTOCOLS),
   volumeDeltas: z.object({ squat: z.number().int().min(-6).max(6), bench: z.number().int().min(-6).max(6), deadlift: z.number().int().min(-6).max(6) }).default({ squat: 0, bench: 0, deadlift: 0 }),
 });

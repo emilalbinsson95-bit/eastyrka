@@ -16,9 +16,9 @@ export type Lift = "squat" | "bench" | "deadlift";
 export type VolumeTolerance = "low" | "normal" | "high";
 export const LIFT_CAT: Record<Lift, string> = { squat: "squat", bench: "horizontal-press", deadlift: "hinge" };
 const COMP: Record<Lift, RegExp> = {
-  squat: /^back squat$/i,
+  squat: /^(back )?squat$/i,
   bench: /^bench press$/i,
-  deadlift: /^(sumo )?deadlift$/i,
+  deadlift: /^((sumo|conventional) )?deadlift$/i,
 };
 export const SESSION_LIFT_LIMIT = 6;
 const MIN_SESSIONS = 4;

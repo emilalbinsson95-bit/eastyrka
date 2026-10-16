@@ -193,13 +193,14 @@ const WAVE: WaveStep[] = [
   { reps: 3, deadliftReps: 2, rpe: 8.5, pct: "88–91%" },
 ];
 
-function withWaveLoading(week: TemplateWeek, workingIndex: number): TemplateWeek {
+function withWaveLoading(week: TemplateWeek, workingIndex: number, intensityOffset: number): TemplateWeek {
   const step = WAVE[workingIndex % WAVE.length];
   const out = mapSessions(week, (s) => ({
     ...s,
     exercises: s.exercises.map((e) => {
       const lift = mainLift(e);
       if (!lift) return e;
+      if (e.variation && !/^(competition stance|competition grip & pause|conventional stance|sumo stance)$/i.test(e.variation)) return e;
       if ((e.variation ?? "") === OVER_WARM_VARIATION) return e;
       // Leave dedicated hypertrophy prescriptions (8+ reps) alone.
       if (e.target_reps > 6) return e;
@@ -207,10 +208,10 @@ function withWaveLoading(week: TemplateWeek, workingIndex: number): TemplateWeek
       return reconcileLoad(e, {
         ...e,
         target_reps: reps,
-        target_rpe: step.rpe,
+        target_rpe: Math.max(5, Math.min(10, step.rpe + intensityOffset)),
         target_rir: undefined,
         intensity_metric: "rpe" as const,
-        notes: appendNote(e.notes, `Wave week ${workingIndex + 1}: ${reps}s @ ~${step.pct}.`),
+        notes: appendNote(e.notes, `Wave week ${workingIndex + 1}: ${reps} reps @ RPE ${Math.max(5, Math.min(10, step.rpe + intensityOffset))}.`),
       });
     }),
   }));
@@ -333,7 +334,7 @@ function withBenchConsolidation(week: TemplateWeek): TemplateWeek {
 
 // ---------- public API ----------
 
-export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions): TemplateWeek[] {
+export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions, intensityOffset = 0): TemplateWeek[] {
   if (!overloadTouched(o)) return weeks;
   let workingIndex = 0;
   return weeks.map((week) => {
@@ -342,7 +343,7 @@ export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions): Templa
     if (o.deadliftStance !== "keep") w = withStanceCommitment(w, o.deadliftStance);
     if (o.benchConsolidation) w = withBenchConsolidation(w);
     if (o.waveLoading && !deload) {
-      w = withWaveLoading(w, workingIndex);
+      w = withWaveLoading(w, workingIndex, intensityOffset);
       workingIndex += 1;
     }
     if (o.overWarmSingles) w = withOverWarmSingles(w);

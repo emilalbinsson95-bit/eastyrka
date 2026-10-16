@@ -170,8 +170,12 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const lifts = {} as Record<MainLiftKey, MainLiftInfo>;
   for (const key of ["squat", "bench", "deadlift"] as MainLiftKey[]) {
     const match = MATCHER[key];
-    const hits = logs.filter((l) => match(l.exercise));
-    const recentHits = recent.filter((l) => match(l.exercise));
+    const allHits = logs.filter((l) => match(l.exercise));
+    const topByDate = new Map<string, number>();
+    for (const l of allHits) topByDate.set(l.date, Math.max(topByDate.get(l.date) ?? 0, l.weight_kg));
+    // Warm-up sets do not count: logged RPE under 6, or unrated sets below 80 % of that day's top weight.
+    const hits = allHits.filter((l) => l.rpe != null ? l.rpe >= 6 : l.weight_kg >= (topByDate.get(l.date) ?? 0) * 0.8);
+    const recentHits = recent.filter((l) => hits.includes(l));
 
     // Most frequently logged name for this lift — use the athlete's own wording.
     const counts = new Map<string, number>();
@@ -298,7 +302,7 @@ function mainSetsFor(info: MainLiftInfo, cfg: WeekCfg, sessionsForLift: number):
   // Reference: the athlete's own recent weekly sets for this lift; if they have
   // no history, fall back to a conventional peak volume.
   const reference = info.weeklySets > 0 ? info.weeklySets : 9;
-  const weekly = clamp(Math.round(reference * cfg.volFactor), 2, 9);
+  const weekly = clamp(Math.round(reference * cfg.volFactor), 2, 20);
   return Math.max(1, Math.round(weekly / Math.max(1, sessionsForLift)));
 }
 

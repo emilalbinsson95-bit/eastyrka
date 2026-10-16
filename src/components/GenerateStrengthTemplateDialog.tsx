@@ -269,7 +269,11 @@ export function GenerateStrengthTemplateDialog({
             baseWeeks,
             activeAdjustments,
             historyQuery.data ?? emptyHistory,
-            tuning,
+            // Runner strength keeps its fixed dose: coach tuning may lower
+            // volume but never raise it (running takes priority).
+            template?.skipVolumeFloors
+              ? { ...tuning, volume: Math.min(1, tuning.volume), mainLifts: Math.min(1, tuning.mainLifts), accessory: Math.min(1, tuning.accessory) }
+              : tuning,
              volumeProfile,
             { skipFloors: template?.skipVolumeFloors === true, shortSessions: isTimeLimited },
           ),

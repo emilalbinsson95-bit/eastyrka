@@ -12,7 +12,7 @@ describe("weak points", () => {
   it("never exceeds the session cap and keeps comp lifts", () => {
     for (const t of STRENGTH_TEMPLATES) {
       if (t.id === "peak-3w") continue;
-      for (const d of [2, 3, 4]) {
+      for (const d of [2, 3, 4].filter(d => d >= t.minDays && d <= t.maxDays)) {
         const base = t.buildWeeks(d);
         const out = applyWeakPoints(base, ["squat-quads", "bench-elbows", "dl-hitch"]);
         out.forEach((w, wi) =>

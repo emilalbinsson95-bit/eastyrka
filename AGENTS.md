@@ -36,4 +36,4 @@
 
 - Short full-body templates keep base slots via `applySessionSetBudget`; accessory sets trim first, main lifts keep ≥3.
 
-- Catalog reads allow shared defaults, owners, accepted care relationships, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without cross-coach catalog leakage.
+- Catalog reads allow shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without catalog leakage.

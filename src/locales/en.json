@@ -365,6 +365,85 @@
     "reset": "Form reset",
     "loading": "Loading…",
     "bodyweight": "Bodyweight",
-    "sleep": "Sleep"
+    "sleep": "Sleep",
+    "grades": {
+      "work": [
+        "No work or school pressure. You can switch off.",
+        "A little to do, with plenty of time and control.",
+        "Some tasks or a deadline, but manageable.",
+        "Quite busy. You sometimes think about it outside work.",
+        "Moderate pressure. It takes effort to keep up.",
+        "High workload. Hard to stop thinking about work or school.",
+        "Clear stress. Hard to concentrate or unwind.",
+        "Very high pressure, such as multiple deadlines or overtime. Recovery is affected.",
+        "Almost overwhelming. Work or school drains you even during time off.",
+        "Overwhelming pressure. Very hard to relax and recover."
+      ],
+      "life": [
+        "Life outside work and school feels calm. No particular worries.",
+        "Small everyday issues, but easy to put aside.",
+        "Some worries or errands, but manageable.",
+        "Some pressure from family, finances or practical matters.",
+        "Moderate everyday stress. You often think about things to sort out.",
+        "Daily life takes a lot of energy. Hard to rest properly.",
+        "Worries or conflicts clearly affect energy and concentration.",
+        "High stress outside work. Sleep or recovery is affected.",
+        "Almost overwhelming, with few calm moments.",
+        "Overwhelming life stress. You feel unable to keep up or cope with the situation."
+      ],
+      "fatigue": [
+        "Very fresh. Your body feels rested.",
+        "Fresh, with very little fatigue.",
+        "Slightly tired, but everyday movement feels easy.",
+        "Noticeably tired from the day or previous training, with plenty of energy left.",
+        "Moderately tired. Your body feels a little heavy, but everyday tasks are fine.",
+        "Clearly tired. Stairs and everyday movements take more effort than usual.",
+        "Very tired. Your body feels sluggish and you need more breaks.",
+        "Extremely tired. Simple physical tasks feel demanding.",
+        "Almost exhausted. Very little physical energy left.",
+        "Exhausted. Even simple everyday movements feel very demanding."
+      ],
+      "sleepQ": [
+        "Almost no continuous sleep. Not rested at all.",
+        "Very poor night with trouble falling asleep or many long awakenings.",
+        "Poor, broken sleep. Clearly tired on waking.",
+        "Below your usual quality. Several awakenings or restless sleep.",
+        "Okay night. Some interruptions, but some recovery.",
+        "Fairly good sleep. A few minor interruptions; fairly rested.",
+        "Good night. Mostly continuous sleep; fairly fresh on waking.",
+        "Very good sleep. Few interruptions; clearly rested.",
+        "Almost uninterrupted sleep. Woke fresh and recovered.",
+        "Excellent night for you. Slept peacefully and woke fully rested."
+      ],
+      "nutrition": [
+        "Almost no food or fluids in the last day.",
+        "Missed most meals and drank very little.",
+        "Clearly too little food and fluids, such as only one small meal.",
+        "Missed a main meal or ate little for most of the day.",
+        "Had several meals and fluids, but amounts or regularity could be better.",
+        "Ate fairly regularly and drank reasonably well. One meal was small.",
+        "Regular meals with enough food and fluids for most of the day.",
+        "Ate well, including protein and carbohydrates, and drank regularly.",
+        "Food and fluids matched your training and activity very well.",
+        "Enough regular, varied food for your day. No missed meals or clear feelings of dehydration."
+      ],
+      "stiffness": [
+        "No stiffness or muscle soreness. You move freely.",
+        "Slight stiffness at first, easing almost immediately.",
+        "Mild stiffness or soreness with little effect on movement.",
+        "Noticeable stiffness, such as in the first squat or when standing up.",
+        "Moderate stiffness or soreness. A little movement helps you loosen up.",
+        "Clear stiffness. Some movements feel restricted or take more time.",
+        "Very stiff or sore. Bending, stairs or arm movements are affected.",
+        "Extremely stiff. You clearly change movements to work around the restriction.",
+        "Severe stiffness or soreness. Everyday movements are difficult.",
+        "Extreme stiffness or soreness. Everyday movement is very restricted."
+      ]
+    },
+    "gradesTitle": "What do the numbers mean?",
+    "gradesNote": "These descriptions are examples to help you choose, not medical thresholds. Pick the closest and use the scale consistently from day to day.",
+    "stiffnessNote": "Rate stiffness and muscle soreness, not sharp pain. Describe pain and its location in the note.",
+    "sleepQNote": "Rate how you slept and how rested you felt on waking. Enter sleep hours separately.",
+    "nutritionNote": "Rate whether you had enough food and fluids for your day, not whether the food was “perfect”."
   }
 }

@@ -381,36 +381,42 @@ function ReadinessSurveyForm({
         <Slider10
           label={t("readiness.work")}
           help={t("readiness.workHelp")}
+          scaleKey="work"
           value={workStress}
           onChange={setWorkStress}
         />
         <Slider10
           label={t("readiness.life")}
           help={t("readiness.lifeHelp")}
+          scaleKey="life"
           value={lifeStress}
           onChange={setLifeStress}
         />
         <Slider10
           label={t("readiness.fatigue")}
           help={t("readiness.fatigueHelp")}
+          scaleKey="fatigue"
           value={fatigue}
           onChange={setFatigue}
         />
         <Slider10
           label={t("readiness.sleepQ")}
           help={t("readiness.sleepQHelp")}
+          scaleKey="sleepQ"
           value={sleepQuality}
           onChange={setSleepQuality}
         />
         <Slider10
           label={t("readiness.nutrition")}
           help={t("readiness.nutritionHelp")}
+          scaleKey="nutrition"
           value={nutrition}
           onChange={setNutrition}
         />
         <Slider10
           label={t("readiness.stiffness")}
           help={t("readiness.stiffnessHelp")}
+          scaleKey="stiffness"
           value={stiffness}
           onChange={setStiffness}
         />
@@ -451,14 +457,17 @@ function ReadinessSurveyForm({
 function Slider10({
   label,
   help,
+  scaleKey,
   value,
   onChange,
 }: {
   label: string;
   help: string;
+  scaleKey: string;
   value: number;
   onChange: (n: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -478,6 +487,21 @@ function Slider10({
         />
         <span className="w-8 text-center text-sm font-bold">{value}</span>
       </div>
+      <p className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+        <span className="font-semibold text-foreground">{value}/10:</span> {t(`readiness.grades.${scaleKey}.${value - 1}`)}
+      </p>
+      <details className="text-xs">
+        <summary className="cursor-pointer py-1 font-medium text-muted-foreground">{t("readiness.gradesTitle")}</summary>
+        <p className="my-2 leading-relaxed text-muted-foreground">{t("readiness.gradesNote")}</p>
+        {["stiffness", "sleepQ", "nutrition"].includes(scaleKey) && <p className="mb-2 leading-relaxed text-muted-foreground">{t(`readiness.${scaleKey}Note`)}</p>}
+        <ol className="space-y-2 border-l border-border pl-3">
+          {Array.from({ length: 10 }, (_, i) => (
+            <li key={i} className={cn("flex gap-2 leading-relaxed", value === i + 1 ? "font-medium text-foreground" : "text-muted-foreground")}>
+              <span className="w-10 shrink-0 tabular-nums">{i + 1}/10</span><span>{t(`readiness.grades.${scaleKey}.${i}`)}</span>
+            </li>
+          ))}
+        </ol>
+      </details>
     </div>
   );
 }

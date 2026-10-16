@@ -65,6 +65,8 @@ export interface StrengthTemplate {
   ) => TemplateWeek[];
   /** Skip the generic MEV volume floors — used by intentionally low-volume blocks. */
   skipVolumeFloors?: boolean;
+  /** Bound final prescriptions for short, full-body sessions after all modifiers. */
+  sessionSetBudget?: number;
 }
 
 // ---------- helpers ----------
@@ -813,7 +815,58 @@ function runnerStrength(_daysPerWeek: number): TemplateWeek[] {
 
 // ---------- Registry ----------
 
+function fullBody50(_daysPerWeek: number): TemplateWeek[] {
+  return [1, 2, 3, 4].map((w) => {
+    const deload = w === 4;
+    const effort = [7, 7.5, 8, 6][w - 1] ?? 7;
+    const exercise = (name: string, sets: number, reps: number, notes: string, variation?: string): TemplateExercise => ({
+      exercise: name, variation, target_sets: deload ? Math.max(1, sets - 1) : sets,
+      target_reps: reps, target_rpe: effort, intensity_metric: "rpe", notes,
+    });
+    const mainRest = "Vila 2–3 minuter mellan arbetsset. Ta längre vila om tekniken eller mål-RPE kräver det.";
+    const accessoryRest = "Vila 60–90 sekunder. Behåll 2–3 reps i reserv.";
+    return {
+      week_index: w, label: deload ? "Deload" : `Helkropp V${w}`,
+      notes: deload
+        ? "Lättare vecka: färre set och RPE 6. Passet blir kortare."
+        : "Två helkroppspass med minst två vilodagar emellan. Vecka 1–3: RPE 7, 7,5 och 8. Höj vikten med minsta möjliga steg när alla reps klaras inom mål-RPE; annars behåll eller sänk vikten. Inga set till failure.",
+      sessions: assignWeekdays([
+        {
+          title: "Helkropp A — knäböj + bänk",
+          notes: "Cirka 50 minuter inklusive 8–10 minuters uppvärmning och stegringsset, utan separat morgonflow. Knäböj och bänk görs var för sig. Växla vid behov mellan rodd och Pallof press för att spara tid, utan att korta vilan för huvudlyften. Tiden varierar med vilobehov och tillgång till utrustning.",
+          exercises: [
+            exercise("Squat", 3, 5, mainRest, "Competition stance"),
+            exercise("Bench press", 3, 6, mainRest, "Competition grip & pause"),
+            exercise("Romanian deadlift", 2, 8, "Kontrollerat ned. " + accessoryRest),
+            exercise("Chest-supported row", 2, 10, accessoryRest),
+            exercise("Pallof press", 2, 10, "10 reps per sida. " + accessoryRest),
+          ],
+        },
+        {
+          title: "Helkropp B — marklyft + press",
+          notes: "Cirka 50 minuter inklusive 8–10 minuters uppvärmning och stegringsset, utan separat morgonflow. Marklyft först, sedan axelpress. Växla vid behov mellan latsdrag och lårcurl. Ta den vila som behövs för rena reps; tidsmålet går inte före tekniken.",
+          exercises: [
+            exercise("Deadlift", 3, 4, "Återställ mellan reps. " + mainRest, "Competition stance"),
+            exercise("Overhead press", 3, 6, mainRest),
+            exercise("Leg press", 2, 10, accessoryRest),
+            exercise("Lat pulldown", 2, 10, accessoryRest),
+            exercise("Leg curl", 2, 10, accessoryRest),
+          ],
+        },
+      ]),
+    };
+  });
+}
+
 export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
+  {
+    id: "full-body-50", name: "Helkropp — 2 dagar, ca 50 min",
+    short: "5 övningar och 12 arbetsset per pass — 4 veckor",
+    goal: "Två effektiva helkroppspass för styrka och muskelmassa. Ben, press och drag i båda passen. Cirka 50 minuter inklusive uppvärmning vid angiven vila; separat flow ingår inte. Vecka 4 är lättare.",
+    weeks: 4, daysPerWeek: 2, minDays: 2, maxDays: 2,
+    inspiration: "Flerledsövningar, RPE 7–8 och begränsad volym. Inga set till failure.",
+    buildWeeks: fullBody50, skipVolumeFloors: true, sessionSetBudget: 12,
+  },
   {
     id: "standard-pl",
     name: "Standard powerlifting",

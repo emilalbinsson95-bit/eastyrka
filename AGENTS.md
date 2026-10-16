@@ -5,7 +5,7 @@
 - Reconcile loads after overload: recalculate for rep/effort changes, clear for exercise/stance changes, so loads match prescriptions.
 - Allocate historical accessory peaking volume once per week, not session, so frequency cannot multiply taper volume.
 
-- Apply coach-selected set protocols as a final volume-neutral transformation after exercise and stance selection; persist per-set prescriptions in the existing athlete-visible exercise notes and retain the first-set target fields, because logging supports one default prescription per exercise and renamed variations must never inherit another lift's load.
+- Apply coach-selected protocols last, volume-neutrally; save per-set notes and first-set targets, because logging has one default and changed exercises must not inherit loads.
 
 - Store one admin-managed monthly payment schedule per athlete and derive fixed calendar occurrences from its original start day; athlete reads are RLS-protected, and reminders never become movable training sessions.
 
@@ -33,3 +33,5 @@
 - Admins pass `is_coach_of` for every athlete so they can open any athlete's coach pages to inspect and fix data; skipped routines are stored as `routine='skipped'` rows in routine_completions (thumbs down), because stars and thumbs must share one auditable history.
 
 - Runner strength template: fixed 2 days, skips MEV floors and volume guards (label "Löparstyrka"), because running takes priority.
+
+- Short full-body templates retain base slots/set ceilings via `applySessionSetBudget` to preserve session length.

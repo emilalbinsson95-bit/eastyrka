@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Add a two-day full-body template targeting approximately 50 minutes, capped at five exercises/12 working sets; generated and read back on the test athlete, 172 tests passed.
+
 - [x] Add readiness guidelines, scale anchors and examples in Swedish and English; verified saved survey, timer start/pause, star and unlock on test athlete.
 - [x] Test strength generation and set logging on a test athlete; read back saved set and generated 4-week draft, warm-up from Learn and 40 calculation tests passed. Real athletes unchanged.
 

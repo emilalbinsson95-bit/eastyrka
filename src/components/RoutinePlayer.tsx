@@ -10,19 +10,78 @@ function fmt(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function beep() {
+let audioCtx: AudioContext | null = null;
+
+/** Must be called from a tap so iOS allows sound later. */
+function unlockAudio() {
   try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new Ctx();
-    const o = ctx.createOscillator();
-    o.frequency.value = 880;
-    o.connect(ctx.destination);
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === "suspended") void audioCtx.resume();
+    // Silent blip to fully unlock on iOS.
+    const g = audioCtx.createGain();
+    g.gain.value = 0.0001;
+    const o = audioCtx.createOscillator();
+    o.connect(g).connect(audioCtx.destination);
     o.start();
-    o.stop(ctx.currentTime + 0.4);
-    navigator.vibrate?.(300);
+    o.stop(audioCtx.currentTime + 0.01);
   } catch {
     /* ignore */
   }
+}
+
+function beep(count = 3) {
+  try {
+    navigator.vibrate?.([250, 120, 250, 120, 250]);
+    const ctx = audioCtx;
+    if (!ctx) return;
+    if (ctx.state === "suspended") void ctx.resume();
+    for (let i = 0; i < count; i++) {
+      const t = ctx.currentTime + i * 0.3;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "square";
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.6, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.connect(g).connect(ctx.destination);
+      o.start(t);
+      o.stop(t + 0.22);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+type Lock = { release: () => Promise<void>; released?: boolean };
+
+function useWakeLock() {
+  const lock = useRef<Lock | null>(null);
+  const request = async () => {
+    try {
+      const wl = (navigator as unknown as { wakeLock?: { request: (t: string) => Promise<Lock> } }).wakeLock;
+      if (!wl || (lock.current && !lock.current.released)) return;
+      lock.current = await wl.request("screen");
+    } catch {
+      /* ignore */
+    }
+  };
+  useEffect(() => {
+    void request();
+    const onVis = () => {
+      if (document.visibilityState === "visible") void request();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      lock.current?.release().catch(() => {});
+      lock.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return request;
 }
 
 export function useStarCount(athleteId: string) {
@@ -135,36 +194,42 @@ function RoutinePlayer({
   const timer = useRef<number | null>(null);
   const step = steps[idx];
 
+  const [side, setSide] = useState<1 | 2>(1);
+  const keepAwake = useWakeLock();
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    let lock: { release: () => Promise<void> } | null = null;
-    (navigator as unknown as { wakeLock?: { request: (t: string) => Promise<typeof lock> } }).wakeLock
-      ?.request("screen")
-      .then((l) => (lock = l))
-      .catch(() => {});
     return () => {
       document.body.style.overflow = "";
-      lock?.release().catch(() => {});
     };
   }, []);
 
   useEffect(() => {
     if (!running) return;
     timer.current = window.setInterval(() => {
-      setLeft((l) => {
-        if (l == null) return l;
-        if (l <= 1) {
-          setRunning(false);
-          beep();
-          return 0;
-        }
-        return l - 1;
-      });
+      setLeft((l) => (l == null || l <= 0 ? l : l - 1));
     }, 1000);
     return () => {
       if (timer.current) window.clearInterval(timer.current);
     };
   }, [running]);
+
+  useEffect(() => {
+    if (!running || left !== 0) return;
+    beep();
+    if (step.sides && side === 1) {
+      setSide(2);
+      setLeft(step.seconds);
+    } else {
+      setRunning(false);
+    }
+  }, [left, running, side, step]);
+
+  const toggle = () => {
+    unlockAudio();
+    void keepAwake();
+    setRunning((r) => !r);
+  };
 
   const save = useMutation({
     mutationFn: async () => {
@@ -183,6 +248,7 @@ function RoutinePlayer({
       return;
     }
     setIdx(n);
+    setSide(1);
     setLeft(steps[n].seconds);
   };
 
@@ -211,13 +277,18 @@ function RoutinePlayer({
             <p className="text-lg leading-relaxed text-muted-foreground">{step.text}</p>
             {step.seconds != null && left != null && (
               <div className="flex flex-col items-center gap-4">
+                {step.sides && (
+                  <div className="text-lg font-medium">
+                    {side === 1 ? "Första sidan" : "Andra sidan"} <span className="text-muted-foreground">({side}/2)</span>
+                  </div>
+                )}
                 <div className={`font-mono text-7xl tabular-nums ${left === 0 ? "text-primary" : ""}`}>{fmt(left)}</div>
                 <div className="flex gap-2">
-                  <Button size="lg" onClick={() => setRunning((r) => !r)} disabled={left === 0}>
+                  <Button size="lg" onClick={toggle} disabled={left === 0}>
                     {running ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
                     {running ? "Pausa" : "Starta"}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={() => { setRunning(false); setLeft(step.seconds); }} aria-label="Börja om">
+                  <Button size="lg" variant="outline" onClick={() => { setRunning(false); setSide(1); setLeft(step.seconds); }} aria-label="Börja om">
                     <RotateCcw className="h-5 w-5" />
                   </Button>
                 </div>

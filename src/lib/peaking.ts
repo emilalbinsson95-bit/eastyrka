@@ -356,7 +356,9 @@ function mainExercises(
         : "Top set by feel — no 1RM on file yet.",
   });
 
-  const backoffs = total - 1;
+  // Cap back-offs at the realism cap for the rep range so a high-volume
+  // athlete never gets an unrealistic peaking session (e.g. 10×4 deadlift).
+  const backoffs = Math.min(total - 1, compSetCap(cfg.backoffReps));
   if (backoffs > 0) {
     out.push({
       exercise: info.name,

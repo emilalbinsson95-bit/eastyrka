@@ -1,4 +1,4 @@
-import { prescribedWeightKg } from "@/lib/intensity";
+import { pctOf1RMInterp, prescribedWeightKg } from "@/lib/intensity";
 import type { TemplateWeek } from "@/lib/strengthTemplates";
 
 export interface HeavySingles { enabled: boolean; rpe: number; weeks: number[] }
@@ -13,10 +13,11 @@ export function applyCoachSingles(weeks: TemplateWeek[], options: HeavySingles, 
     return { ...week, sessions: week.sessions.map((session) => ({ ...session, exercises: session.exercises.flatMap((e) => {
       const name = e.exercise.toLowerCase().trim();
       const key = /squat/.test(name) ? "squat" : /bench/.test(name) ? "bench" : "deadlift";
-      if (!competitionLift.test(name) || used.has(key) || e.target_sets < 3 || e.target_reps <= 1 || /pause|tempo|deficit|technique|variation/i.test(e.variation ?? "")) return [e];
+      if (!competitionLift.test(name) || used.has(key) || e.target_sets < 3 || e.target_reps <= 1 || /tempo|deficit|technique|variation|touch.and.go|close.grip|wide.grip|board|pin/i.test(e.variation ?? "")) return [e];
       used.add(key);
-      const oneRm = e.target_weight_kg && e.target_rpe != null
-        ? e.target_weight_kg / ((prescribedWeightKg({ oneRmKg: 10000, reps: e.target_reps, metric: "rpe", rpe: e.target_rpe, roundTo: .001 }) ?? 10000) / 10000)
+      const effort = e.intensity_metric === "rir" && e.target_rir != null ? 10 - e.target_rir : e.target_rpe;
+      const oneRm = e.target_weight_kg && effort != null
+        ? e.target_weight_kg * 100 / pctOf1RMInterp(effort, e.target_reps)
         : null;
       const rpe = Math.max(8, Math.min(9.5, options.rpe));
       return [{ ...e, target_sets: 1, target_reps: 1, target_rpe: rpe, intensity_metric: "rpe" as const,

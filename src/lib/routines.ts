@@ -57,10 +57,9 @@ const MORNING: FlowStep[] = [
   },
   {
     title: "Höftböjare i djupt utfall",
-    text: "Långt utfall, bakre knät strax ovanför golvet. Spänn sätet på bakre benet och tryck fram höften. Bålen upprätt, svanka inte. Knäet får passera tårna – låt det glida fram så långt hälen håller sig i golvet. 45 s per sida.",
+    text: "Långt utfall, bakre knät strax ovanför golvet. Spänn sätet på bakre benet och tryck fram höften. Bålen upprätt, svanka inte. Knäet får passera tårna – låt det glida fram så långt hälen håller sig i golvet.",
     long: 45,
     short: 30,
-    shortText: "30 s per sida.",
     sides: true,
   },
   {

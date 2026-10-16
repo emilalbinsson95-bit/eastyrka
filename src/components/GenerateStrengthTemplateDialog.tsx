@@ -372,6 +372,7 @@ export function GenerateStrengthTemplateDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
+      if (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) throw new Error("Välj om atleten behöver singlar och minst en vecka om svaret är ja.");
       if (!settingsLoaded || preferencesQuery.isError) throw new Error("Coachvalen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
@@ -653,25 +654,28 @@ export function GenerateStrengthTemplateDialog({
                     ))}
                   </div>
                 </div>
-                <label
-                  className={cn(
-                    "flex cursor-pointer gap-3 rounded-md border p-2 transition-colors",
-                    openers ? "border-primary/40 bg-primary/5" : "border-border",
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={openers}
-                    onChange={(e) => setOpeners(e.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-sm font-medium">Opener singles (optional)</span>
-                    <span className="block text-xs text-muted-foreground">
-                      En valfri singel på RPE 8 under veckorna före tävlingsveckan. Kontrollera den totala belastningen före publicering.
-                    </span>
-                  </span>
-                </label>
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-medium">Behöver atleten tunga singlar under toppningen?</legend>
+                  <div className="flex gap-2">
+                    {(["yes", "no"] as const).map((choice) => <Button key={choice} type="button" variant={peakOptions.singles === choice ? "default" : "outline"} aria-pressed={peakOptions.singles === choice} onClick={() => setPeakOptions((p) => ({ ...p, singles: choice }))}>{choice === "yes" ? "Ja, tunga singlar" : "Nej, utan singlar"}</Button>)}
+                  </div>
+                  {peakOptions.singles === "unset" && <p className="text-xs text-muted-foreground">Coachen behöver välja ja eller nej före generering.</p>}
+                  {peakOptions.singles === "yes" && <>
+                    <div><Label htmlFor="peak-single-rpe">Singelns högsta RPE</Label><Input id="peak-single-rpe" type="number" min={7} max={9} step={.5} value={peakOptions.rpe} onChange={(e) => setPeakOptions((p) => ({ ...p, rpe: Math.round(Math.max(7, Math.min(9, Number(e.target.value) || 8)) * 2) / 2 }))} /></div>
+                    <div className="flex flex-wrap gap-4">{Array.from({ length: peakWeeks - 1 }, (_, i) => i + 1).map((n) => <label key={n} className="flex items-center gap-2"><Checkbox checked={peakOptions.weeks.includes(n)} onCheckedChange={(v) => setPeakOptions((p) => ({ ...p, weeks: v === true ? [...p.weeks, n] : p.weeks.filter((w) => w !== n) }))} />Vecka {n}</label>)}</div>
+                    <p className="text-xs text-muted-foreground">En singel per tävlingslyft och vald vecka ersätter toppsetet. Inga tunga singlar på tävlingsveckan.</p>
+                  </>}
+                </fieldset>
+                <fieldset className="space-y-3 border-t border-border pt-3">
+                  <legend className="text-sm font-medium">Preliminära öppningsvikter</legend>
+                  <p className="text-xs text-muted-foreground">RTS-tabellens singel @ RPE 8 från medianen av upp till tre senaste mätset inom 42 dagar, avrundat nedåt till 2,5 kg. Ett beräknat förslag, inte ett officiellt RTS-recept eller en garanti.</p>
+                  <div className="grid gap-3 sm:grid-cols-3">{openerSuggestions.map((s) => <div key={s.key}>
+                    <Label htmlFor={`opener-${s.key}`}>{OPENER_LABELS[s.key]} (kg)</Label>
+                    <Input id={`opener-${s.key}`} type="number" min={2.5} step={2.5} value={chosenOpeners[s.key] ?? ""} placeholder="Coachens vikt" onChange={(e) => setPeakOptions((p) => ({ ...p, openers: { ...p.openers, [s.key]: e.target.value === "" ? undefined : Math.max(2.5, Number(e.target.value) || 2.5) } }))} />
+                    <p className="mt-1 text-xs text-muted-foreground">{s.kg ? `Förslag ${s.kg} kg · ${s.count} mätset · senast ${s.latest}${s.count < 3 ? " · begränsat underlag" : ""}` : "Inget aktuellt mätset med RPE 7–10 och 1–5 reps. Ange vikten själv."}</p>
+                  </div>)}</div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setPeakOptions((p) => ({ ...p, openers: {} }))}>Återställ historikförslagen</Button>
+                </fieldset>
               </div>
             </div>
           )}
@@ -1003,7 +1007,7 @@ export function GenerateStrengthTemplateDialog({
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={!template || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
+            disabled={!template || (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
           >
             {mutation.isPending ? "Generating…" : "Generate mesocycle"}
           </Button>

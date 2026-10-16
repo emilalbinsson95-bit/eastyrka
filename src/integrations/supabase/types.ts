@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_generator_preferences: {
+        Row: {
+          athlete_id: string
+          settings: Json
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          athlete_id: string
+          settings?: Json
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          athlete_id?: string
+          settings?: Json
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       athlete_season_plans: {
         Row: {
           athlete_id: string

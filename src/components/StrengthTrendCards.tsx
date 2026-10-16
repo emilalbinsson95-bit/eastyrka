@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { dailyE1RM } from "@/lib/eakoefficient";
+import { compareStrength } from "@/lib/strengthComparison";
 import { cn } from "@/lib/utils";
 
 interface LogRow {
@@ -18,6 +18,8 @@ interface LogRow {
   reps: number;
   weight_kg: number;
   rpe: number;
+  set_number: number;
+  variation: string | null;
 }
 
 /**
@@ -32,7 +34,7 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
     queryFn: async (): Promise<LogRow[]> => {
       const { data, error } = await supabase
         .from("training_logs")
-        .select("date, exercise, reps, weight_kg, rpe")
+        .select("date, exercise, variation, set_number, reps, weight_kg, rpe")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: false })
         .limit(2000);
@@ -43,43 +45,14 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
         reps: l.reps,
         weight_kg: Number(l.weight_kg),
         rpe: Number(l.rpe),
+        set_number: l.set_number,
+        variation: l.variation,
       }));
     },
   });
 
   const rows = useMemo(() => {
-    const logs = logsQuery.data ?? [];
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    const cutoffIso = cutoff.toISOString().slice(0, 10);
-    const cutoffPrev = new Date();
-    cutoffPrev.setDate(cutoffPrev.getDate() - 60);
-    const cutoffPrevIso = cutoffPrev.toISOString().slice(0, 10);
-
-    const byEx = new Map<
-      string,
-      { pb: number; pbDate: string; recent: number; prev: number }
-    >();
-    for (const l of logs) {
-      const e1 = dailyE1RM(l);
-      const cur = byEx.get(l.exercise) ?? {
-        pb: 0,
-        pbDate: "",
-        recent: 0,
-        prev: 0,
-      };
-      if (e1 > cur.pb) {
-        cur.pb = e1;
-        cur.pbDate = l.date;
-      }
-      if (l.date >= cutoffIso && e1 > cur.recent) cur.recent = e1;
-      else if (l.date >= cutoffPrevIso && l.date < cutoffIso && e1 > cur.prev)
-        cur.prev = e1;
-      byEx.set(l.exercise, cur);
-    }
-    return Array.from(byEx.entries())
-      .map(([exercise, v]) => ({ exercise, ...v }))
-      .sort((a, b) => b.pb - a.pb);
+    return compareStrength(logsQuery.data ?? [], new Date().toISOString().slice(0, 10));
   }, [logsQuery.data]);
 
   if (logsQuery.isLoading) return null;
@@ -89,10 +62,10 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Trophy className="h-4 w-4 text-primary" /> Estimated 1RM PRs
+          <Trophy className="h-4 w-4 text-primary" /> Styrkeutveckling — jämförbara pass
         </CardTitle>
         <CardDescription className="text-xs">
-          RPE-adjusted Epley e1RM. Δ compares best of last 30d vs prior 30d.
+          Uppskattat max från mätsetet. Samma övning, variant, reps och RPE; tre senaste pass jämförs med tre föregående.
         </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
@@ -101,14 +74,14 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
             <tr>
               <th className="px-4 py-2">Exercise</th>
               <th className="px-4 py-2 text-right">PB</th>
-              <th className="px-4 py-2 text-right">Last 30d</th>
+              <th className="px-4 py-2 text-right">Senaste 3</th>
               <th className="px-4 py-2 text-right">Δ</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => {
               const delta =
-                r.prev > 0 && r.recent > 0
+                r.prev != null && r.recent != null && r.prev > 0
                   ? ((r.recent - r.prev) / r.prev) * 100
                   : 0;
               const trendCls =
@@ -121,11 +94,12 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
                 delta > 1 ? TrendingUp : delta < -1 ? TrendingDown : Minus;
               return (
                 <tr
-                  key={r.exercise}
+                  key={r.key}
                   className="border-b border-border last:border-0"
                 >
                   <td className="px-4 py-2">
                     <div className="font-medium">{r.exercise}</div>
+                    <div className="text-xs text-muted-foreground">{r.variation ? `${r.variation} · ` : ""}{r.reps} reps @ {r.rpe} · {r.count} pass</div>
                     {r.pbDate && (
                       <div className="text-[10px] text-muted-foreground">
                         PB {r.pbDate}
@@ -136,10 +110,10 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
                     {r.pb.toFixed(1)} kg
                   </td>
                   <td className="px-4 py-2 text-right font-mono">
-                    {r.recent > 0 ? `${r.recent.toFixed(1)} kg` : "—"}
+                    {r.recent != null ? `${r.recent.toFixed(1)} kg` : "—"}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {r.prev > 0 && r.recent > 0 ? (
+                    {r.prev != null && r.recent != null && r.prev > 0 ? (
                       <span
                         className={cn(
                           "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",

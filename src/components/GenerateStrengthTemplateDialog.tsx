@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addDays, startOfWeek, parseISO } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
@@ -44,6 +44,7 @@ import {
   DEFAULT_OVERLOAD,
   type OverloadOptions,
 } from "@/lib/overload";
+import { applyCoachSingles } from "@/lib/coachSingles";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
@@ -64,7 +65,7 @@ export function GenerateStrengthTemplateDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger,
-  defaultDaysPerWeek, blockName, blockNotes, blockFocus,
+  defaultDaysPerWeek, defaultPeakWeeks, blockName, blockNotes, blockFocus,
 }: {
   athleteId: string;
   coachId: string;
@@ -79,6 +80,7 @@ export function GenerateStrengthTemplateDialog({
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
   defaultDaysPerWeek?: number;
+  defaultPeakWeeks?: number;
   blockName?: string;
   blockNotes?: string;
   blockFocus?: "volume" | "strength" | "competition";
@@ -205,17 +207,18 @@ export function GenerateStrengthTemplateDialog({
     }, peakReference);
   }, [template, historyQuery.data, peakReference]);
 
+  const [peakWeeks, setPeakWeeks] = useState(defaultPeakWeeks ?? 3);
   const [openers, setOpeners] = useState(false);
 
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory && peakSummary) {
-      return template.buildFromHistory(daysPerWeek, peakSummary, { openers });
+      return template.buildFromHistory(daysPerWeek, peakSummary, { openers, weeks: peakWeeks });
     }
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, peakSummary, openers, styleQuery.data]);
+  }, [template, daysPerWeek, peakSummary, openers, peakWeeks, styleQuery.data]);
 
 
   const suggestion = useMemo(() => {
@@ -290,6 +293,7 @@ export function GenerateStrengthTemplateDialog({
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
   useEffect(() => { if (daysPerWeek < 4) setOverload((o) => (o.benchConsolidation ? { ...o, benchConsolidation: false } : o)); }, [daysPerWeek]);
   const [setProtocols, setSetProtocols] = useState<SetProtocolOptions>(DEFAULT_SET_PROTOCOLS);
+  const [heavySingles, setHeavySingles] = useState<GeneratorSettings["heavySingles"]>({ enabled: false, rpe: 8, weeks: [2, 3] });
   const [volumeDeltas, setVolumeDeltas] = useState({ squat: 0, bench: 0, deadlift: 0 });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const preferencesQuery = useQuery({
@@ -303,10 +307,10 @@ export function GenerateStrengthTemplateDialog({
   useEffect(() => {
     if (settingsLoaded || !preferencesQuery.isSuccess) return;
     const saved = preferencesQuery.data;
-    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); }
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); }
     setSettingsLoaded(true);
   }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
-  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas };
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles };
   const savePreferences = useMutation({
     mutationFn: async () => {
       const parsed = generatorSettingsSchema.parse(settings);
@@ -343,9 +347,9 @@ export function GenerateStrengthTemplateDialog({
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
       const guarded = applyVolumeGuards(adapted.weeks, volumeProfile);
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
-      return { weeks: applySetProtocols(guarded, effProtocols), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
+      return { weeks: applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, volumeProfileQuery.data, volumeProfile],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile],
   );
   const plannedWeeks = blockResult.weeks;
 
@@ -413,7 +417,7 @@ export function GenerateStrengthTemplateDialog({
         athlete_id: athleteId,
         mesocycle_id: meso.id,
         week_index: w.week_index,
-        week_start_date: format(addDays(new Date(startDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
+        week_start_date: format(addDays(parseISO(startDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
         status: "draft" as const,
         notes: w.notes ?? null,
       }));
@@ -621,6 +625,7 @@ export function GenerateStrengthTemplateDialog({
                 Peaking options
               </div>
               <div className="space-y-3 p-3">
+                <div><Label htmlFor="peak-length">Toppningslängd, veckor</Label><Input id="peak-length" type="number" min={2} max={4} disabled={Boolean(blockName)} value={peakWeeks} onChange={(e) => setPeakWeeks(Math.max(2, Math.min(4, Number(e.target.value) || 3)))} /></div>
                 <div>
                   <span className="block text-sm font-medium">Reference volume</span>
                   <span className="block text-xs text-muted-foreground">
@@ -660,8 +665,7 @@ export function GenerateStrengthTemplateDialog({
                   <span>
                     <span className="block text-sm font-medium">Opener singles (optional)</span>
                     <span className="block text-xs text-muted-foreground">
-                      Adds one single at ~opener weight (RPE 8) before the top set in weeks 1–2.
-                      Research shows no measurable performance effect — pure confidence rep.
+                      En valfri singel på RPE 8 under veckorna före tävlingsveckan. Kontrollera den totala belastningen före publicering.
                     </span>
                   </span>
                 </label>
@@ -669,6 +673,11 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
 
+          {!isPeaking && !isTimeLimited && !template?.skipVolumeFloors && <fieldset className="space-y-3 border-t border-border pt-3">
+            <legend className="text-sm font-medium">Coachvalda tunga singlar</legend>
+            <div className="flex items-center gap-2"><Checkbox id="heavy-singles" checked={heavySingles.enabled} onCheckedChange={(v) => setHeavySingles((s) => ({ ...s, enabled: v === true }))} /><Label htmlFor="heavy-singles">En singel per huvudlyft och vald vecka</Label></div>
+            {heavySingles.enabled && <><div><Label htmlFor="heavy-single-rpe">Singelns RPE</Label><Input id="heavy-single-rpe" type="number" min={8} max={9.5} step={.5} value={heavySingles.rpe} onChange={(e) => setHeavySingles((s) => ({ ...s, rpe: Math.max(8, Math.min(9.5, Number(e.target.value) || 8)) }))} /></div><div className="flex flex-wrap gap-4">{[1,2,3].map((n) => <label key={n} className="flex items-center gap-2"><Checkbox checked={heavySingles.weeks.includes(n)} onCheckedChange={(v) => setHeavySingles((s) => ({ ...s, weeks: v === true ? [...s.weeks, n] : s.weeks.filter((w) => w !== n) }))} />Vecka {n}</label>)}</div></>}
+          </fieldset>}
           {/* ---- overload pushing ---- */}
           {!isPeaking && !isTimeLimited && (
           <div className="rounded-lg border bg-card">

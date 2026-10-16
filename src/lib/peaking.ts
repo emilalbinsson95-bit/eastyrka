@@ -16,6 +16,7 @@
 
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { compSetCap } from "@/lib/volumeGuards";
+import { dailyE1RM } from "@/lib/eakoefficient";
 import {
   volumeCategory,
   type TemplateExercise,
@@ -96,8 +97,7 @@ const norm = (s: string) => s.toLowerCase().trim();
 
 /** RIR-adjusted Epley estimate — same formula the weekly review uses. */
 export function peakE1rm(weight: number, reps: number, rpe: number | null): number {
-  const rir = Math.max(0, 10 - (rpe ?? 8));
-  return weight * (1 + (reps + rir) / 30);
+  return dailyE1RM({ weight_kg: weight, reps, rpe: rpe ?? 8 });
 }
 
 function isCompetitionSquat(name: string): boolean {
@@ -405,7 +405,7 @@ const DAYS_MEET = [1, 3];
 export function buildPeakingWeeks(
   daysPerWeek: number,
   sum: PeakSummary | null,
-  opts: { openers?: boolean } = {},
+  opts: { openers?: boolean; weeks?: number } = {},
 ): TemplateWeek[] {
   const summary: PeakSummary =
     sum ??
@@ -433,9 +433,13 @@ export function buildPeakingWeeks(
 
   const days = clamp(Math.round(daysPerWeek), 3, 4);
 
-  return WEEK_CFG.map((cfg, i) => {
+  const duration = clamp(Math.round(opts.weeks ?? 3), 2, 4);
+  const configs = duration === 2 ? WEEK_CFG.slice(1) : duration === 4
+    ? [{ ...WEEK_CFG[0], label: "Peak transition", volFactor: 1, accFactor: 1, topReps: 5, topRpe: 7.5, notes: "Transition week: normal reference volume, no added work. Review recovery before the final hard week." }, ...WEEK_CFG]
+    : WEEK_CFG;
+  return configs.map((cfg, i) => {
     const weekIndex = i + 1;
-    const meetWeek = weekIndex === 3;
+    const meetWeek = weekIndex === configs.length;
     const sessions: Omit<TemplateSession, "day_of_week">[] = [];
     // Each exercise gets one weekly maintenance budget, not one per session.
     const accessoryBudget = accessoryExercises(summary, cfg, days >= 4 ? 4 : 3);

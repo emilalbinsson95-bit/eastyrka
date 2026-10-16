@@ -16,7 +16,8 @@
 - Gate calendar fueling on a current non-archived cycle window containing planned non-draft endurance work, because generated blocks retain draft status and endurance sessions lack cycle IDs.
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
-- Store per-athlete squat, bench, and deadlift set-volume preferences in a separately protected athlete settings table; generated strength plans read the saved settings so coach and athlete see the same baseline.- Generate the 3-week peak in `src/lib/peaking.ts` from the athlete's logged history (lifts, recent weekly sets, estimated 1RM) and let it bypass the MEV volume floors, because a taper is deliberately sub-maintenance volume at maintained intensity.
+- Persist coach-only lift-volume preferences for shared generation baselines.
+- Build 2–4 week peaks from history with RTS estimates and no MEV floors; taper volume must stay reduced.
 
 - Keep methodology on one route with running/strength/coaching tabs to preserve links.
 - Weak points (`src/lib/weakPoints.ts`): coach-only, one/lift, variation + one accessory/week; 8/7/6 exercise caps for 2/3/4+ days; replace comp > weak-point > variation > compound > isolation > core, skipping deloads for focus and realism.
@@ -38,4 +39,6 @@
 
 - Catalog reads allow shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without catalog leakage.
 
-- Store season outlines separately from programs; prepare blocks as drafts with locked dates/templates, and persist coach-approved generator settings separately, to preserve existing training.
+- Keep season outlines separate; shift only unprepared blocks, allow gaps and detach without deleting programs. Version-check writes and resolve cycle links to prevent stale edits.
+- Apply coach singles last by replacing work, excluding taper/runners/short sessions; saved choices must not inflate volume.
+- Compare first measurement sets across six matching exercise/variant/reps/RPE sessions, because isolated peaks distort trends.

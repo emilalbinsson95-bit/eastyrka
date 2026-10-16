@@ -16,7 +16,8 @@ export function peakLift(name: string, style?: string | null): MainLiftKey | nul
 export function suggestOpeners(history: PeakHistoryInput, style?: string | null) {
   return (["squat", "bench", "deadlift"] as MainLiftKey[]).map((key) => {
     const days = new Map<string, number>();
-    for (const log of history.logs) {
+    const ordered = [...history.logs].sort((a, b) => ((a as typeof a & { set_number?: number }).set_number ?? 0) - ((b as typeof b & { set_number?: number }).set_number ?? 0));
+    for (const log of ordered) {
       const age = differenceInCalendarDays(parseISO(history.today), parseISO(log.date));
       if (age < 0 || age > 42 || peakLift(log.exercise, style) !== key || days.has(log.date) ||
         (log.variation && !/^(competition stance & commands|competition technique|competition pause|paused|pause)$/i.test(log.variation.trim())) ||

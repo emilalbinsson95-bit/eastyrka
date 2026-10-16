@@ -1,5 +1,8 @@
 # Säsongsplanering
 
+- [ ] Tillåt egna säsongsblock med valfri längd och manuellt skrivna pass utan generatorn.
+- [ ] Verifiera sparning, koppling till säsongen och manuell passredigering i coachvyn.
+
 - [x] Spara coachstyrd säsongsplan med tävlingsdatum och sammanhängande block.
 - [x] Öppna varje block i befintlig generator och koppla det skapade utkastet till planen.
 - [x] Spara coachens generatorval och godkända setjusteringar per atlet mellan block.

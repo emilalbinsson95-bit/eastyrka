@@ -365,6 +365,85 @@
     "reset": "Formuläret är nollställt",
     "loading": "Laddar…",
     "bodyweight": "Kroppsvikt",
-    "sleep": "Sömn"
+    "sleep": "Sömn",
+    "grades": {
+      "work": [
+        "Ingen press från jobb eller skola. Du kan koppla bort det.",
+        "Lite att göra, men gott om tid och kontroll.",
+        "En del uppgifter eller en deadline, men det känns hanterbart.",
+        "Ganska mycket att göra. Du tänker på det ibland utanför arbetstid.",
+        "Måttlig press. Du behöver anstränga dig för att hinna med.",
+        "Hög arbetsbelastning. Det är svårt att släppa tankarna på jobbet eller skolan.",
+        "Tydlig stress. Svårt att koncentrera dig eller varva ner.",
+        "Mycket press, till exempel flera deadlines eller övertid. Det påverkar återhämtningen.",
+        "Nästan övermäktigt. Jobbet eller skolan tar mycket av din ork även när du är ledig.",
+        "Överväldigande press. Du har mycket svårt att koppla av och få återhämtning."
+      ],
+      "life": [
+        "Lugnt utanför jobb och skola. Inget särskilt oroar dig.",
+        "Små vardagssaker, men du kan släppa dem.",
+        "Lite oro eller många ärenden, men det fungerar bra.",
+        "En del press från till exempel familj, ekonomi eller praktiska saker.",
+        "Måttlig stress i vardagen. Du tänker ofta på det som behöver lösas.",
+        "Vardagen tar mycket energi. Svårt att få ordentlig vila.",
+        "Oro eller konflikter tar tydligt av din ork och koncentration.",
+        "Mycket stress utanför jobbet. Det påverkar sömn eller återhämtning.",
+        "Situationen känns nästan övermäktig och du har svårt att få lugna stunder.",
+        "Överväldigande livsstress. Du känner att du inte hinner eller orkar hantera situationen."
+      ],
+      "fatigue": [
+        "Mycket pigg. Kroppen känns utvilad.",
+        "Pigg, med bara lite trötthet.",
+        "Lite trött, men vardagsrörelser känns lätta.",
+        "Märkbart trött efter dagen eller tidigare träning, men har gott om ork kvar.",
+        "Måttligt trött. Kroppen känns lite tung, men vanliga saker fungerar.",
+        "Tydligt trött. Trappor och vardagsrörelser kräver mer än vanligt.",
+        "Mycket trött. Kroppen känns seg och du behöver fler pauser.",
+        "Väldigt trött. Enkla fysiska saker känns ansträngande.",
+        "Nästan helt slut. Du har mycket lite fysisk ork kvar.",
+        "Helt slut. Även enkla vardagsrörelser känns mycket krävande."
+      ],
+      "sleepQ": [
+        "Nästan ingen sammanhängande sömn och inte alls utvilad.",
+        "Mycket dålig natt med stora svårigheter att somna eller många långa uppvaknanden.",
+        "Dålig sömn. Mycket avbruten och klart trött när du vaknade.",
+        "Under din vanliga kvalitet. Vaknade flera gånger eller sov oroligt.",
+        "Okej natt. En del avbrott, men fick ändå viss återhämtning.",
+        "Ganska bra sömn. Några mindre avbrott och ganska utvilad.",
+        "Bra natt. Sov mestadels sammanhängande och vaknade rätt pigg.",
+        "Mycket bra sömn. Få avbrott och tydligt utvilad.",
+        "Nästan helt ostörd sömn. Vaknade pigg och återhämtad.",
+        "Utmärkt natt för dig. Sov lugnt och vaknade helt utvilad."
+      ],
+      "nutrition": [
+        "Nästan ingen mat eller vätska senaste dygnet.",
+        "Missat de flesta måltider och druckit väldigt lite.",
+        "Ätit och druckit klart för lite, till exempel bara en mindre måltid.",
+        "Missat en större måltid eller ätit lite under större delen av dagen.",
+        "Fått i dig flera måltider och vätska, men mängden eller regelbundenheten kunde varit bättre.",
+        "Ätit ganska regelbundet och druckit okej. Någon måltid var liten.",
+        "Regelbundna måltider med tillräckligt med mat och vätska större delen av dagen.",
+        "Ätit ordentligt, fått med protein och kolhydrater och druckit regelbundet.",
+        "Mat och vätska har passat dagens träning och aktivitetsnivå mycket bra.",
+        "Fått i dig tillräckligt, regelbundet och varierat för din dag. Inga missade måltider eller tydliga vätskebristkänslor."
+      ],
+      "stiffness": [
+        "Ingen stelhet eller muskelömhet. Du rör dig fritt.",
+        "Lite stel när du börjar röra dig, men det släpper nästan direkt.",
+        "Lätt stelhet eller träningsvärk som knappt påverkar rörelserna.",
+        "Märkbar stelhet, till exempel i första böjen eller när du reser dig.",
+        "Måttlig stelhet eller ömhet. Du behöver lite rörelse för att känna dig smidig.",
+        "Tydlig stelhet. Vissa rörelser känns begränsade eller kräver mer tid.",
+        "Mycket stel eller öm. Det påverkar hur du böjer dig, går i trappor eller rör armarna.",
+        "Väldigt stel. Du ändrar tydligt dina rörelser för att komma runt begränsningen.",
+        "Kraftig stelhet eller ömhet. Vanliga rörelser är svåra.",
+        "Extrem stelhet eller ömhet. Du är mycket begränsad i vanliga rörelser."
+      ]
+    },
+    "gradesTitle": "Vad betyder siffrorna?",
+    "gradesNote": "Beskrivningarna är exempel som hjälper dig välja, inte medicinska gränsvärden. Välj närmast och använd skalan på samma sätt från dag till dag.",
+    "stiffnessNote": "Bedöm stelhet och muskelömhet, inte skarp smärta. Skriv smärta och var den sitter i anteckningen.",
+    "sleepQNote": "Bedöm hur du sov och hur utvilad du vaknade. Antal timmar fyller du i separat.",
+    "nutritionNote": "Bedöm om du fått tillräckligt med mat och vätska för din dag, inte om maten var ”perfekt”."
   }
 }

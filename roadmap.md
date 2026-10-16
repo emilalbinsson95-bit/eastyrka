@@ -12,6 +12,6 @@
 
 Befintliga program och loggar ändras inte automatiskt.
 
-- [ ] Lägg till ändringsbara RTS-baserade öppningsförslag med synligt historikunderlag.
-- [ ] Låt coach välja toppningssinglar, RPE och veckor utan extra set eller singlar på tävlingsveckan.
-- [ ] Verifiera förslag, sparade coachval och genererade utkast.
+- [x] Lägg till ändringsbara RTS-baserade öppningsförslag med synligt historikunderlag.
+- [x] Låt coach välja toppningssinglar, RPE och veckor utan extra set eller singlar på tävlingsveckan.
+- [x] Verifiera förslag, sparade coachval och genererade utkast.

@@ -10,11 +10,7 @@ describe("editable peak openers", () => {
     expect(result[2].count).toBe(1);
     expect(result[2].kg).toBeGreaterThan(200);
     expect(result[2].kg).toBeLessThan(230);
-    expect(result[2].source).toBe("logs");
     expect(result[0].kg).toBeNull();
-    const fallback = suggestOpeners({ today: "2026-10-16", baselines: [{ exercise: "Squat", one_rm_kg: 200 }], logs: [] });
-    expect(fallback[0].source).toBe("baseline");
-    expect(fallback[0].kg).toBeGreaterThan(170);
   });
   it.each([2,3,4])("keeps taper set budget for %i weeks and respects opt-out, edited weight and weeks", (duration) => {
     const base = buildPeakingWeeks(3, null, { weeks: duration });

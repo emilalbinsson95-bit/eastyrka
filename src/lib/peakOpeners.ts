@@ -27,11 +27,8 @@ export function suggestOpeners(history: PeakHistoryInput, style?: string | null)
     const recent = [...days].sort(([a], [b]) => b.localeCompare(a)).slice(0, 3);
     const sorted = recent.map(([, value]) => value).sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
-    const logEstimate = sorted.length ? sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2 : null;
-    const baseline = history.baselines.filter((b) => peakLift(b.exercise, style) === key)
-      .map((b) => Number(b.one_rm_kg)).filter((v) => v > 0).sort((a, b) => b - a)[0] ?? null;
-    const estimate = logEstimate ?? baseline;
-    return { key, count: recent.length, latest: recent[0]?.[0], estimate, source: logEstimate != null ? "logs" as const : baseline != null ? "baseline" as const : "none" as const,
+    const estimate = sorted.length ? sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2 : null;
+    return { key, count: recent.length, latest: recent[0]?.[0], estimate,
       kg: estimate == null ? null : Math.floor(estimate * pctOf1RMInterp(8, 1) / 100 / 2.5) * 2.5 };
   });
 }

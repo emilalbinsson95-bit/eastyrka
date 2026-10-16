@@ -169,6 +169,13 @@
       "when": 1792145592754,
       "tag": "0023_scope_shared_catalog_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792145660044,
+      "tag": "0024_require_accepted_catalog_sharing",
+      "breakpoints": true
     }
   ]
 }

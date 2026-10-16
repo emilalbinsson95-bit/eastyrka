@@ -11,3 +11,7 @@
 - [x] Provkör ändrade säsonger, generator och sparning; kontrollera tester.
 
 Befintliga program och loggar ändras inte automatiskt.
+
+- [x] Lägg till ändringsbara RTS-baserade öppningsförslag med synligt historikunderlag.
+- [x] Låt coach välja toppningssinglar, RPE och veckor utan extra set eller singlar på tävlingsveckan.
+- [x] Verifiera förslag, sparade coachval och genererade utkast.

@@ -40,5 +40,5 @@
 - Catalog reads allow shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without catalog leakage.
 
 - Keep season outlines separate; shift only unprepared blocks, allow gaps and detach without deleting programs. Version-check writes and resolve cycle links to prevent stale edits.
-- Apply coach singles last by replacing work, excluding taper/runners/short sessions; saved choices must not inflate volume.
+- Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
 - Compare first measurement sets across six matching exercise/variant/reps/RPE sessions, because isolated peaks distort trends.

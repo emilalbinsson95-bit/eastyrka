@@ -45,6 +45,7 @@ import {
   type OverloadOptions,
 } from "@/lib/overload";
 import { applyCoachSingles } from "@/lib/coachSingles";
+import { applyPeakSingles, suggestOpeners, OPENER_LABELS } from "@/lib/peakOpeners";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
@@ -208,17 +209,19 @@ export function GenerateStrengthTemplateDialog({
   }, [template, historyQuery.data, peakReference]);
 
   const [peakWeeks, setPeakWeeks] = useState(defaultPeakWeeks ?? 3);
-  const [openers, setOpeners] = useState(false);
+  const [peakOptions, setPeakOptions] = useState<GeneratorSettings["peak"]>({ singles: "unset", rpe: 8, weeks: [1, 2, 3], openers: {} });
+  const openerSuggestions = useMemo(() => historyQuery.data ? suggestOpeners(historyQuery.data, styleQuery.data) : [], [historyQuery.data, styleQuery.data]);
+  const chosenOpeners = Object.fromEntries(openerSuggestions.map((s) => [s.key, peakOptions.openers[s.key] ?? s.kg ?? undefined]));
 
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory && peakSummary) {
-      return template.buildFromHistory(daysPerWeek, peakSummary, { openers, weeks: peakWeeks });
+      return template.buildFromHistory(daysPerWeek, peakSummary, { openers: false, weeks: peakWeeks });
     }
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, peakSummary, openers, peakWeeks, styleQuery.data]);
+  }, [template, daysPerWeek, peakSummary, peakWeeks, styleQuery.data]);
 
 
   const suggestion = useMemo(() => {
@@ -307,10 +310,10 @@ export function GenerateStrengthTemplateDialog({
   useEffect(() => {
     if (settingsLoaded || !preferencesQuery.isSuccess) return;
     const saved = preferencesQuery.data;
-    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); }
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); }
     setSettingsLoaded(true);
   }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
-  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles };
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions };
   const savePreferences = useMutation({
     mutationFn: async () => {
       const parsed = generatorSettingsSchema.parse(settings);
@@ -329,7 +332,7 @@ export function GenerateStrengthTemplateDialog({
   const blockResult = useMemo(
     () => {
       const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload, tuning.intensity), weakIds), styleQuery.data);
-      if (isPeaking) return { weeks, warnings: [] as string[] };
+      if (isPeaking) return { weeks: applyPeakSingles(weeks, peakOptions.singles === "yes", peakOptions.rpe, chosenOpeners, peakOptions.weeks, styleQuery.data), warnings: [] as string[] };
       if (template?.sessionSetBudget) return {
         weeks: applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),
         warnings: [] as string[],
@@ -349,7 +352,7 @@ export function GenerateStrengthTemplateDialog({
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
       return { weeks: applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
   );
   const plannedWeeks = blockResult.weeks;
 
@@ -369,6 +372,7 @@ export function GenerateStrengthTemplateDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
+      if (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) throw new Error("Välj om atleten behöver singlar och minst en vecka om svaret är ja.");
       if (!settingsLoaded || preferencesQuery.isError) throw new Error("Coachvalen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
@@ -392,7 +396,7 @@ export function GenerateStrengthTemplateDialog({
           start_date: startDate,
           total_weeks: weeks.length,
           days_per_week: daysPerWeek,
-          notes: `${blockNotes ? `${blockNotes}\n` : ""}Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
+          notes: `${isPeaking ? `Öppningsvikter (coachens preliminära val): ${openerSuggestions.map((s) => `${OPENER_LABELS[s.key]} ${chosenOpeners[s.key] ?? "saknar underlag"}${chosenOpeners[s.key] ? " kg" : ""}`).join(", ")}. Toppningssinglar: ${peakOptions.singles === "yes" ? `ja, RPE ${peakOptions.rpe}, veckor ${peakOptions.weeks.filter((w) => w < peakWeeks).join(", ")}` : "nej"}.\n` : ""}${blockNotes ? `${blockNotes}\n` : ""}Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
             activeAdjustments.length > 0
               ? ` Individualised from history: ${activeAdjustments.map((a) => a.title).join("; ")}.`
               : ""
@@ -650,25 +654,28 @@ export function GenerateStrengthTemplateDialog({
                     ))}
                   </div>
                 </div>
-                <label
-                  className={cn(
-                    "flex cursor-pointer gap-3 rounded-md border p-2 transition-colors",
-                    openers ? "border-primary/40 bg-primary/5" : "border-border",
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={openers}
-                    onChange={(e) => setOpeners(e.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-sm font-medium">Opener singles (optional)</span>
-                    <span className="block text-xs text-muted-foreground">
-                      En valfri singel på RPE 8 under veckorna före tävlingsveckan. Kontrollera den totala belastningen före publicering.
-                    </span>
-                  </span>
-                </label>
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-medium">Behöver atleten tunga singlar under toppningen?</legend>
+                  <div className="flex gap-2">
+                    {(["yes", "no"] as const).map((choice) => <Button key={choice} type="button" variant={peakOptions.singles === choice ? "default" : "outline"} aria-pressed={peakOptions.singles === choice} onClick={() => setPeakOptions((p) => ({ ...p, singles: choice }))}>{choice === "yes" ? "Ja, tunga singlar" : "Nej, utan singlar"}</Button>)}
+                  </div>
+                  {peakOptions.singles === "unset" && <p className="text-xs text-muted-foreground">Coachen behöver välja ja eller nej före generering.</p>}
+                  {peakOptions.singles === "yes" && <>
+                    <div><Label htmlFor="peak-single-rpe">Singelns högsta RPE</Label><Input id="peak-single-rpe" type="number" min={7} max={9} step={.5} value={peakOptions.rpe} onChange={(e) => setPeakOptions((p) => ({ ...p, rpe: Math.round(Math.max(7, Math.min(9, Number(e.target.value) || 8)) * 2) / 2 }))} /></div>
+                    <div className="flex flex-wrap gap-4">{Array.from({ length: peakWeeks - 1 }, (_, i) => i + 1).map((n) => <label key={n} className="flex items-center gap-2"><Checkbox checked={peakOptions.weeks.includes(n)} onCheckedChange={(v) => setPeakOptions((p) => ({ ...p, weeks: v === true ? [...p.weeks, n] : p.weeks.filter((w) => w !== n) }))} />Vecka {n}</label>)}</div>
+                    <p className="text-xs text-muted-foreground">En singel per tävlingslyft och vald vecka ersätter toppsetet. Inga tunga singlar på tävlingsveckan.</p>
+                  </>}
+                </fieldset>
+                <fieldset className="space-y-3 border-t border-border pt-3">
+                  <legend className="text-sm font-medium">Preliminära öppningsvikter</legend>
+                  <p className="text-xs text-muted-foreground">RTS-tabellens singel @ RPE 8 från medianen av upp till tre senaste mätset inom 42 dagar, avrundat nedåt till 2,5 kg. Ett beräknat förslag, inte ett officiellt RTS-recept eller en garanti.</p>
+                  <div className="grid gap-3 sm:grid-cols-3">{openerSuggestions.map((s) => <div key={s.key}>
+                    <Label htmlFor={`opener-${s.key}`}>{OPENER_LABELS[s.key]} (kg)</Label>
+                    <Input id={`opener-${s.key}`} type="number" min={2.5} step={2.5} value={chosenOpeners[s.key] ?? ""} placeholder="Coachens vikt" onChange={(e) => setPeakOptions((p) => ({ ...p, openers: { ...p.openers, [s.key]: e.target.value === "" ? undefined : Math.max(2.5, Number(e.target.value) || 2.5) } }))} />
+                    <p className="mt-1 text-xs text-muted-foreground">{s.kg ? `Förslag ${s.kg} kg · ${s.count} mätset · senast ${s.latest}${s.count < 3 ? " · begränsat underlag" : ""}` : "Inget aktuellt mätset med RPE 7–10 och 1–5 reps. Ange vikten själv."}</p>
+                  </div>)}</div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setPeakOptions((p) => ({ ...p, openers: {} }))}>Återställ historikförslagen</Button>
+                </fieldset>
               </div>
             </div>
           )}
@@ -1000,7 +1007,7 @@ export function GenerateStrengthTemplateDialog({
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={!template || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
+            disabled={!template || (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
           >
             {mutation.isPending ? "Generating…" : "Generate mesocycle"}
           </Button>

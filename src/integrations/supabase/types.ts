@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_season_plans: {
+        Row: {
+          athlete_id: string
+          blocks: Json
+          coach_id: string
+          competition_date: string | null
+          created_at: string
+          generator_settings: Json
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          blocks?: Json
+          coach_id: string
+          competition_date?: string | null
+          created_at?: string
+          generator_settings?: Json
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          blocks?: Json
+          coach_id?: string
+          competition_date?: string | null
+          created_at?: string
+          generator_settings?: Json
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       athlete_strength_volume_profiles: {
         Row: {
           athlete_id: string

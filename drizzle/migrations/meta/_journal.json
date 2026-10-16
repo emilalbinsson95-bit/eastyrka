@@ -176,6 +176,13 @@
       "when": 1792145660044,
       "tag": "0024_require_accepted_catalog_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792146397822,
+      "tag": "0025_athlete_season_plans",
+      "breakpoints": true
     }
   ]
 }

@@ -371,7 +371,9 @@ export function matchBaseline(
   baselines: HistBaseline[],
 ): HistBaseline | undefined {
   const name = normName(ex.exercise);
-  return baselines.find((b) => normName(b.exercise) === name && Number(b.one_rm_kg) > 0);
+  const valid = baselines.filter((b) => Number(b.one_rm_kg) > 0);
+  return valid.find((b) => b.exercise.trim().toLowerCase() === ex.exercise.trim().toLowerCase())
+    ?? valid.find((b) => normName(b.exercise) === name);
 }
 
 function countLoadableExercises(weeks: TemplateWeek[], baselines: HistBaseline[]) {

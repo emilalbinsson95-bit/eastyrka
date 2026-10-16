@@ -152,12 +152,12 @@ describe("buildAdjustments", () => {
 });
 
 describe("matchBaseline", () => {
-  it("matches on normalized substrings, preferring the longest", () => {
+  it("prefers the exact name before equivalent competition aliases", () => {
     const b = matchBaseline({ exercise: "Back squat" }, [
       { exercise: "squat", one_rm_kg: 150 },
       { exercise: "back squat", one_rm_kg: 200 },
     ]);
-    expect(b!.one_rm_kg).toBe(200);
+    expect(b?.one_rm_kg).toBe(200);
   });
 
   it("returns undefined with no match", () => {

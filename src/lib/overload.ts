@@ -87,7 +87,11 @@ function appendNote(existing: string | undefined, add: string): string {
 function reconcileLoad(before: TemplateExercise, after: TemplateExercise): TemplateExercise {
   const original = resolveVariantExercise(before.exercise, before.variation);
   const next = resolveVariantExercise(after.exercise, after.variation);
-  if (original.exercise !== next.exercise || original.variation !== next.variation) {
+  const stance = (e: TemplateExercise) => /sumo/i.test(`${e.exercise} ${e.variation ?? ""}`) ? "sumo" : "conventional";
+  const sameDeadlift = mainLift(before) === "deadlift" && mainLift(after) === "deadlift" && stance(before) === stance(after)
+    && /^(competition stance|conventional stance|sumo stance)?$/i.test(before.variation ?? "")
+    && /^(competition stance|conventional stance|sumo stance)?$/i.test(after.variation ?? "");
+  if (!sameDeadlift && (original.exercise !== next.exercise || original.variation !== next.variation)) {
     return { ...after, target_weight_kg: undefined };
   }
   const effort = (e: TemplateExercise) => e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : e.target_rpe;

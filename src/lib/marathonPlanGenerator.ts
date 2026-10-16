@@ -223,7 +223,7 @@ function buildSession(
       notes = "Very easy shakeout.";
       break;
     case "strides":
-      const easyMin = Math.max(15, durationMin - 11);
+      const easyMin = Math.max(0, durationMin - 11);
       steps = easyWithStrides(easyMin, 6);
       title = `Easy ${easyMin} min + 6×strides`;
       avgRpe = 4.5;
@@ -245,7 +245,7 @@ function buildSession(
       title = `LT ${ltReps}×${ltMin}min tempo`;
       avgRpe = 6;
       mode = "structured";
-      durationMin = 15 + ltReps * (ltMin + ltRest) - ltRest + 10;
+      durationMin = 15 + ltReps * (ltMin + ltRest) + 10;
       break;
     case "vo2":
       const vo2Phase = PHASE_LABELS[weekIndex - 1];
@@ -284,7 +284,9 @@ function buildSession(
 
   return {
     date, weekIndex, dayOfWeek, type, title, discipline: "run", mode,
-    planned_total_seconds: Math.round(durationMin * 60),
+    planned_total_seconds: steps.filter((s) => !s.parent_local_id).reduce((total, step) => total + (step.is_group
+      ? steps.filter((child) => child.parent_local_id === step.local_id).reduce((sum, child) => sum + (child.duration_seconds ?? 0) * child.repeat_count, 0) * step.repeat_count
+      : (step.duration_seconds ?? 0) * step.repeat_count), 0),
     planned_avg_rpe: avgRpe, notes, steps,
   };
 }
@@ -304,11 +306,9 @@ export function generate20WeekMarathonPlan(opts: {
     const slots = weeklySlots(daysPerWeek, w);
     
     // Resolve types and durations to prevent overshoot
-    const weekPlan = slots.map(slot => {
-      let type = slot.type as SessionType;
-      if (type === "quality1") type = resolveQuality("quality1", w);
-      else if (type === "quality2") type = resolveQuality("quality2", w);
-      return { ...slot, type };
+    const weekPlan: Array<{ dayOfWeek: number; type: SessionType; duration?: number }> = slots.map(slot => {
+      const type = slot.type === "quality1" || slot.type === "quality2" ? resolveQuality(slot.type, w) : slot.type;
+      return { ...slot, type: type === "long" && isMpLongRun(w).mp ? "long_mp" : type };
     });
 
     let fixedTotal = 0;
@@ -328,17 +328,27 @@ export function generate20WeekMarathonPlan(opts: {
     const variableSessions = weekPlan.filter(s => s.duration === undefined);
     const weights: Record<string, number> = { easy: 1.0, medium_long: 1.3, strides: 1.1, recovery: 0.7 };
     const totalWeight = variableSessions.reduce((acc, s) => acc + (weights[s.type] || 1.0), 0);
-    const remaining = Math.max(0, weeklyMin - fixedTotal);
+    const remaining = Math.max(0, weeklyMin - fixedTotal - variableSessions.length * 20);
+    let allocated = 0;
 
     for (const s of variableSessions) {
       const wgt = weights[s.type] || 1.0;
-      s.duration = Math.max(20, Math.round((remaining * wgt / totalWeight) / 5) * 5);
+      s.duration = 20 + Math.floor(remaining * wgt / totalWeight);
+      allocated += s.duration;
+    }
+    // Preserve the exact remaining budget, not independent rounding per day.
+    let remainder = Math.round(Math.max(variableSessions.length * 20, weeklyMin - fixedTotal) - allocated);
+    for (let idx = 0; remainder > 0 && variableSessions.length > 0; idx++, remainder--) {
+      const slot = variableSessions[idx % variableSessions.length];
+      slot.duration = (slot.duration ?? 20) + 1;
     }
 
     for (const s of weekPlan) {
       const date = format(addDays(startDate, (w - 1) * 7 + s.dayOfWeek), "yyyy-MM-dd");
       sessions.push(buildSession(date, w, s.dayOfWeek, s.type, s.duration || 0));
     }
+    // Race duration is unknown; this is training time only, excluding the race.
+    weeklyVolumeMin[w - 1] = sessions.filter((s) => s.weekIndex === w).reduce((sum, s) => sum + s.planned_total_seconds / 60, 0);
   }
 
   return {

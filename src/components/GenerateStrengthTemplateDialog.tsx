@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
 import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
 import { applyVolumeGuards } from "@/lib/volumeGuards";
+import { applySessionSetBudget } from "@/lib/sessionSetBudget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -222,6 +223,7 @@ export function GenerateStrengthTemplateDialog({
   }, [suggestionKey]);
 
   const isPeaking = Boolean(template?.buildFromHistory);
+  const isTimeLimited = Boolean(template?.sessionSetBudget);
 
   // A peak is already derived from history — only the load prescription and
   // genuine fatigue cuts apply; never let the engine add volume back into a taper.
@@ -284,13 +286,17 @@ export function GenerateStrengthTemplateDialog({
   }, [historyQuery.data, volumeProfileQuery.data]);
   const blockResult = useMemo(
     () => {
-      const weeks = applyDeadliftStyle(isPeaking ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
+      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
       if (isPeaking) return { weeks, warnings: [] as string[] };
+      if (template?.sessionSetBudget) return {
+        weeks: applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),
+        warnings: [] as string[],
+      };
       const adapted = applyBlockVolume(weeks, blockEvals, volumeProfileQuery.data?.cap);
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
       return { weeks: applySetProtocols(applyVolumeGuards(adapted.weeks), effProtocols), warnings: adapted.warnings };
     },
-    [finalWeeks, overload, isPeaking, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data],
+    [finalWeeks, overload, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeProfileQuery.data],
   );
   const plannedWeeks = blockResult.weeks;
 
@@ -303,8 +309,8 @@ export function GenerateStrengthTemplateDialog({
   }, [plannedWeeks]);
 
   const warnings = useMemo(
-    () => (isPeaking ? [] : volumeWarnings(plannedWeeks, volumeProfile)),
-    [plannedWeeks, volumeProfile, isPeaking],
+    () => (isPeaking || isTimeLimited ? [] : volumeWarnings(plannedWeeks, volumeProfile)),
+    [plannedWeeks, volumeProfile, isPeaking, isTimeLimited],
   );
 
   const mutation = useMutation({
@@ -312,7 +318,7 @@ export function GenerateStrengthTemplateDialog({
       if (!template) throw new Error("Pick a template");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
-      if (!isPeaking) {
+      if (!isPeaking && !isTimeLimited) {
         const { error: wpErr } = await supabase.from("athlete_weak_points").upsert(
           { athlete_id: athleteId, weak_points: weakIds, updated_at: new Date().toISOString() },
           { onConflict: "athlete_id" },
@@ -475,12 +481,14 @@ export function GenerateStrengthTemplateDialog({
         <div className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-2">
             {STRENGTH_TEMPLATES.map((t) => (
-              <button
+              <Button
                 key={t.id}
                 type="button"
+                variant="outline"
+                aria-pressed={templateId === t.id}
                 onClick={() => setTemplateId(t.id)}
                 className={cn(
-                  "rounded-lg border p-3 text-left transition-colors hover:border-primary/50",
+                  "h-auto flex-col items-stretch whitespace-normal rounded-lg border p-3 text-left transition-colors hover:border-primary/50",
                   templateId === t.id
                     ? "border-primary bg-primary/5"
                     : "border-border bg-card",
@@ -496,7 +504,7 @@ export function GenerateStrengthTemplateDialog({
                 <div className="mt-2 text-[11px] text-muted-foreground italic">
                   {t.inspiration}
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -606,7 +614,7 @@ export function GenerateStrengthTemplateDialog({
           )}
 
           {/* ---- overload pushing ---- */}
-          {!isPeaking && (
+          {!isPeaking && !isTimeLimited && (
           <div className="rounded-lg border bg-card">
             <div className="flex items-center justify-between border-b px-3 py-2">
               <div className="font-mono text-[11px] uppercase tracking-wider text-primary">
@@ -694,7 +702,7 @@ export function GenerateStrengthTemplateDialog({
           </div>
           )}
 
-          {!isPeaking && (
+          {!isPeaking && !isTimeLimited && (
             <div className="rounded-lg border bg-card">
               <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">
                 {t("generate.weakPointsTitle")}
@@ -746,7 +754,7 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
 
-          {!isPeaking && blockEvals.length > 0 && (
+          {!isPeaking && !isTimeLimited && blockEvals.length > 0 && (
             <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Volym från förra blocket (per lyft)</p>
               {blockEvals.map((e) => (

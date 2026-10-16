@@ -26,7 +26,7 @@
 
 - Clip document-level horizontal overflow (no nested scroll container) and wrap role headers; wide tables/calendars keep local scrolling.
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
-- EAk and E1RM use the shared RTS table (src/lib/intensity.ts) with a fixed per-session measurement set, because measurement and prescription must agree.
+- EAk and E1RM use the shared RTS table with the first qualifying set as measurement; baselines match exact names or competition aliases only, because late singles and variation baselines distort loads and fatigue.
 - Coach roster EAk uses the latest session's measurement per eligible lift; preserve full athlete/exercise composite keys in trend grouping so athletes and lifts never mix.
 - Block-to-block volume adaptation and fatigue-stop extra sets live in src/lib/blockVolume.ts and run before volume guards, because data-driven volume must still respect realism caps.
 - Guided routines (morning flow long/short, warm-up) live as step data in src/lib/routines.ts and completions are stored per athlete in routine_completions (athlete insert, coach/admin read), because the star count must persist and the steps must match the Learn page text.

@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Correct all reviewed strength and marathon generation bugs; add full-chain regression tests and verify the saved test-athlete plan without changing real athletes.
+- [x] Correct all reviewed strength and marathon generation bugs; add full-chain regression tests and verify the saved test-athlete plan without changing real athletes.
 
 - [x] Add a two-day full-body template targeting approximately 50 minutes, capped at five exercises/12 working sets; generated and read back on the test athlete, 172 tests passed.
 

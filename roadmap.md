@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Aktuellt
-- [ ] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering, med testad volymminskning
+- [x] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering; 239 tester gröna, sexveckorsutkast och sparad säsongsplan verifierade som coach för Alex Athlete
 
 ## Klart
 - [x] Passredigering direkt från kalendern (PlannedSessionEditor) — bygge/tester OK

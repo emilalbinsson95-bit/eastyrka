@@ -84,7 +84,7 @@ export function sessionPoints(logs: SetLog[], lift: CompLift, baseline: number):
   return [...byDate.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, sets]) => {
-      const m = pickMeasurementSet(sets.map((s, i) => ({ ...s, set_number: s.set_number ?? i + 1 })));
+      const m = pickMeasurementSet(sets.map((s, i) => ({ ...s, rpe: Number(s.rpe), set_number: s.set_number ?? i + 1 })));
       if (!m) return null;
       const e1rm = dailyE1RM(m);
       return { date, e1rm, eak: baseline > 0 ? (100 * e1rm) / baseline : 0 };

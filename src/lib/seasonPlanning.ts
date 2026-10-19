@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getTemplate } from "@/lib/strengthTemplates";
 import { DEFAULT_TUNING } from "@/lib/individualisation";
 import { DEFAULT_SET_PROTOCOLS } from "@/lib/setProtocols";
+import { peakStartDate } from "@/lib/peakingDates";
 
 export const generatorSettingsSchema = z.object({
   tuning: z.object({ volume: z.number().min(.7).max(1.3), intensity: z.number().min(-1.5).max(1.5), accessory: z.number().min(.5).max(1.5), mainLifts: z.number().min(.7).max(1.3) }).default(DEFAULT_TUNING),
@@ -58,6 +59,7 @@ export function validateSeason(blocks: SeasonBlock[], competitionDate: string): 
     if (b.templateId !== "manual" && (!template || b.daysPerWeek < template.minDays || b.daysPerWeek > template.maxDays)) return `${b.name}: kontrollera antal träningsdagar.`;
     if (i > 0 && differenceInCalendarDays(parseISO(b.startDate), parseISO(blockEnd(blocks[i - 1]))) < 1) return "Blocken får inte överlappa. Pauser mellan block är tillåtna.";
     if (competitionDate && blockEnd(b) >= competitionDate) return "Sista träningsdagen måste ligga före tävlingsdatumet.";
+    if (competitionDate && b.templateId === "peak-3w" && !b.mesocycleId && b.startDate !== peakStartDate(competitionDate, blockWeeks(b))) return `${b.name}: lägg toppningen direkt före tävlingen så att de lätta passen hamnar rätt.`;
   }
   return null;
 }

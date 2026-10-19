@@ -42,6 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createCompetition, deleteCompetition } from "@/lib/competitions";
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
+import { peakStartDate } from "@/lib/peakingDates";
 import {
   CalendarItem,
   cancelSession,
@@ -700,10 +701,8 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           open
           onOpenChange={(o) => !o && setPeakingFor(null)}
           defaultTemplateId="peak-3w"
-          defaultStartDate={format(
-            addDays(startOfWeek(parseISO(peakingFor.effectiveDate), { weekStartsOn: 1 }), -14),
-            "yyyy-MM-dd",
-          )}
+          defaultCompetitionDate={peakingFor.effectiveDate}
+          defaultStartDate={peakStartDate(peakingFor.effectiveDate, 3)}
           onCreated={() => setPeakingFor(null)}
         />
       )}

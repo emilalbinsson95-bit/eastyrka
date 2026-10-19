@@ -3,7 +3,7 @@
 - Keep readiness copy in locale dictionaries without changing scoring, to preserve history.
 
 - Reconcile loads after overload: recalculate for rep/effort changes, clear for exercise/stance changes, so loads match prescriptions.
-- Allocate historical accessory peaking volume once per week, not session, so frequency cannot multiply taper volume.
+- Allocate accessory peak volume weekly, not per session, to avoid multiplying taper work.
 
 - Apply coach-selected protocols last, volume-neutrally; save per-set notes and first-set targets, because logging has one default and changed exercises must not inherit loads.
 
@@ -17,7 +17,7 @@
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Persist coach-only lift-volume preferences for shared generation baselines.
-- Build 2–6 week peaks from history with RTS estimates and no MEV floors; longer blocks add preparation before the final taper, frequency redistributes weekly sets, and meet week retains two early sessions.
+- Build peaks from RTS history without MEV floors; preparation precedes taper and frequency redistributes sets. Use peakingDates.ts to anchor seven-day windows before competition; final sessions at −7/−5 days ensure rest. Never move saved programs.
 
 - Keep methodology on one route with running/strength/coaching tabs to preserve links.
 - Weak points (`src/lib/weakPoints.ts`): coach-only, one/lift, variation + one accessory/week; 8/7/6 exercise caps for 2/3/4+ days; replace comp > weak-point > variation > compound > isolation > core, skipping deloads for focus and realism.

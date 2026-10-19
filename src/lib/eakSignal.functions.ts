@@ -5,7 +5,10 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+async function admin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { evaluateMesocycle, reboundTest, sessionPoints, type BlockWindow, type CheckIn, type SetLog } from "./eakSignal";
 import { compLiftKey, COMP_NAME, type CompLift } from "./liftIdentity";
@@ -14,14 +17,14 @@ const LIFTS: CompLift[] = ["squat", "bench", "deadlift"];
 
 async function assertCoachOrSelf(userId: string, athleteId: string) {
   if (userId === athleteId) return;
-  const { data: link } = await supabaseAdmin
+  const { data: link } = await (await admin())
     .from("coach_athletes")
     .select("id")
     .eq("coach_id", userId)
     .eq("athlete_id", athleteId)
     .maybeSingle();
   if (link) return;
-  const { data: role } = await supabaseAdmin
+  const { data: role } = await (await admin())
     .from("user_roles")
     .select("id")
     .eq("user_id", userId)
@@ -109,7 +112,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       const windowEnd = window[window.length - 1].date;
 
       // Hoppa över om fönstret redan är utvärderat.
-      const { data: existing } = await supabaseAdmin
+      const { data: existing } = await (await admin())
         .from("eak_meso_evaluations")
         .select("id, window_end, l_m")
         .eq("athlete_id", athleteId)
@@ -125,7 +128,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       const previous = existing?.l_m ? { L_M: Number(existing.l_m) } : null;
       const r = evaluateMesocycle({ logs: allLogs, lift, baseline: B, checkIns, previous, blocks });
 
-      const { error } = await supabaseAdmin.from("eak_meso_evaluations").insert({
+      const { error } = await (await admin()).from("eak_meso_evaluations").insert({
         athlete_id: athleteId,
         lift,
         window_start: windowStart,
@@ -150,7 +153,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       const deloads = blocks.filter((b) => b.kind === "deload").sort((a, b) => a.start.localeCompare(b.start));
       const lastDeload = deloads[deloads.length - 1];
       if (lastDeload) {
-        const { data: existingRebound } = await supabaseAdmin
+        const { data: existingRebound } = await (await admin())
           .from("rebound_tests")
           .select("id")
           .eq("athlete_id", athleteId)
@@ -160,7 +163,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         if (!existingRebound) {
           const rb = reboundTest(points, blocks);
           if (rb.R != null) {
-            await supabaseAdmin.from("rebound_tests").insert({
+            await (await admin()).from("rebound_tests").insert({
               athlete_id: athleteId,
               lift,
               deload_week_start: lastDeload.start,
@@ -188,7 +191,7 @@ export const decideEakEvaluation = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: row } = await supabaseAdmin
+    const { data: row } = await (await admin())
       .from("eak_meso_evaluations")
       .select("athlete_id")
       .eq("id", data.evaluationId)
@@ -196,7 +199,7 @@ export const decideEakEvaluation = createServerFn({ method: "POST" })
     if (!row) throw new Error("Evaluation not found");
     await assertCoach(context.userId, row.athlete_id);
 
-    const { error } = await supabaseAdmin
+    const { error } = await (await admin())
       .from("eak_meso_evaluations")
       .update({ coach_decision: data.decision, coach_note: data.note ?? null, decided_at: new Date().toISOString() })
       .eq("id", data.evaluationId);
@@ -225,7 +228,7 @@ export const applyBaselineChange = createServerFn({ method: "POST" })
     await assertCoach(context.userId, data.athleteId);
     const exercise = COMP_NAME[data.lift];
 
-    const { error: hErr } = await supabaseAdmin.from("baseline_history").insert({
+    const { error: hErr } = await (await admin()).from("baseline_history").insert({
       athlete_id: data.athleteId,
       exercise,
       one_rm_kg: data.valueKg,
@@ -236,20 +239,20 @@ export const applyBaselineChange = createServerFn({ method: "POST" })
     if (hErr) throw new Error(hErr.message);
 
     // Spegla till baselines (upsert per atlet+övning).
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await (await admin())
       .from("baselines")
       .select("id")
       .eq("athlete_id", data.athleteId)
       .eq("exercise", exercise)
       .maybeSingle();
     if (existing) {
-      const { error } = await supabaseAdmin
+      const { error } = await (await admin())
         .from("baselines")
         .update({ one_rm_kg: data.valueKg, updated_at: new Date().toISOString() })
         .eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabaseAdmin.from("baselines").insert({
+      const { error } = await (await admin()).from("baselines").insert({
         athlete_id: data.athleteId,
         exercise,
         one_rm_kg: data.valueKg,

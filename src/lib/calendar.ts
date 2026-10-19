@@ -57,28 +57,13 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
   // 1. Strength planned sessions via week_plans
   const { data: weekPlans } = await supabase
     .from("week_plans")
-    .select("id, week_start_date, status, planned_sessions(id, day_of_week, title)")
-    .eq("athlete_id", ownerId)
-    .eq("status", "published")
-    .gte("week_start_date", fmt(addDays(parseISO(rangeStart), -7)))
-    .lte("week_start_date", rangeEnd);
-
-  const plannedItems: CalendarItem[] = [];
-  for (const wp of weekPlans ?? []) {
-    const sessions = (wp.planned_sessions ?? []) as { id: string; day_of_week: number; title: string | null }[];
-    for (const ps of sessions) {
-      const suggested = plannedSessionDate(wp.week_start_date as string, ps, sessions);
-      plannedItems.push({
-        key: `planned:${ps.id}`,
-        source: "planned",
-        sourceId: ps.id,
-        ownerId,
-        title: ps.title || "Strength session",
-        subtitle: "Strength",
+    .select("id, week_start_date, status, mesocycle_id, planned_sessions(id, day_of_week, title)")
+...
         suggestedDate: suggested,
         effectiveDate: suggested,
         isGhost: true,
         isCancelled: false,
+        cycleId: (wp.mesocycle_id as string | null) ?? undefined,
       });
     }
   }

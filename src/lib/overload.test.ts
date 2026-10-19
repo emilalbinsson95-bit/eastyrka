@@ -90,3 +90,43 @@ describe("overload options", () => {
     }
   });
 });
+
+describe("wave loading (fix 6)", () => {
+  it("applies RPE as an offset so coach tuning is preserved, not overwritten", () => {
+    const base = weeks();
+    // Simulate coach intensity tuning: week 1 squat at RPE 8.5 instead of 8.
+    const tuned = base.map((w, i) => i === 0
+      ? { ...w, sessions: w.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => e.exercise === "Back squat" && !e.variation ? { ...e, target_rpe: 8.5 } : e) })) }
+      : w);
+    const out = applyOverload(tuned, { ...DEFAULT_OVERLOAD, waveLoading: true });
+    const w1 = out[0].sessions.flatMap((s) => s.exercises).find((e) => e.exercise === "Back squat" && !e.variation);
+    expect(w1?.target_rpe).toBe(8.5);
+    // Week 2 wave step is +0.5 RPE relative to week 1.
+    const w2 = out[1].sessions.flatMap((s) => s.exercises).find((e) => e.exercise === "Back squat" && !e.variation);
+    expect(w2?.target_rpe).toBe(9);
+  });
+
+  it("never waves pause, tempo or touch-and-go variants", () => {
+    const out = applyOverload(weeks(), { ...DEFAULT_OVERLOAD, waveLoading: true });
+    const variants = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises))
+      .filter((e) => e.variation && /pause|tempo|touch/i.test(e.variation) && e.variation !== "Over-warm single");
+    for (const v of variants) expect(v.notes ?? "").not.toMatch(/Wave week/);
+  });
+});
+
+describe("reconcileLoad with stance labels (fix 7)", () => {
+  it("keeps the prescribed kg when a deadlift stance is committed", () => {
+    const base = weeks().map((w) => ({
+      ...w,
+      sessions: w.sessions.map((s) => ({
+        ...s,
+        exercises: s.exercises.map((e) => e.exercise === "Deadlift" && !e.variation ? { ...e, target_weight_kg: 200 } : e),
+      })),
+    }));
+    const out = applyOverload(base, { ...DEFAULT_OVERLOAD, deadliftStance: "sumo" });
+    const committed = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises))
+      .filter((e) => e.exercise === "Deadlift" && e.variation === "Sumo stance");
+    expect(committed.length).toBeGreaterThan(0);
+    for (const e of committed) expect(e.target_weight_kg).toBe(200);
+  });
+});

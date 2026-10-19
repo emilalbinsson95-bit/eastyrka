@@ -270,6 +270,16 @@ function PreviewBody({
         </div>
       )}
 
+      {editHref && (
+        <DialogFooter>
+          <Button variant="outline" asChild className="w-full sm:w-auto">
+            <Link to={editHref}>
+              <Pencil className="mr-1 h-4 w-4" /> Redigera programmet
+            </Link>
+          </Button>
+        </DialogFooter>
+      )}
+
       {showStart && (
         <DialogFooter>
           {isToday ? (

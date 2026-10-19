@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Kontrollera och rätta tävlingsankrad toppning i kalender, generator och säsongsplanering; verifiera med Alex.
 - [x] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering; 239 tester gröna, sexveckorsutkast och sparad säsongsplan verifierade som coach för Alex Athlete
 
 ## Klart

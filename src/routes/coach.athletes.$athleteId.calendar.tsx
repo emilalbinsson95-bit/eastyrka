@@ -34,7 +34,7 @@ function CoachAthleteCalendarPage() {
           {t("calendar.coachDescription")}
         </p>
       </div>
-      <SharedCalendar ownerId={athleteId} readOnly viewerRole="coach" />
+      <SharedCalendar ownerId={athleteId} viewerRole="coach" />
     </div>
   );
 }

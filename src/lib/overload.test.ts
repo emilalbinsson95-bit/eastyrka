@@ -81,12 +81,15 @@ describe("overload options", () => {
     expect(after.target_weight_kg).toBe(Math.round(100 * to / from / 2.5) * 2.5);
     expect(after.target_weight_kg).not.toBe(100);
   });
-  it("clears load when stance or bench exercise changes", () => {
+  it("clears load when the exercise truly changes, but keeps it on a stance commit", () => {
     const base = weeks().map(w => ({ ...w, sessions: w.sessions.map(s => ({ ...s, exercises: s.exercises.map(e => ({ ...e, target_weight_kg: 100 })) })) }));
     const out = applyOverload(base, { ...DEFAULT_OVERLOAD, deadliftStance: "sumo", benchConsolidation: true });
     for (const w of out) for (const [si, s] of w.sessions.entries()) for (const [ei, e] of s.exercises.entries()) {
       const before = base.find(b => b.week_index === w.week_index)?.sessions[si]?.exercises[ei];
-      if (e.variation === "Sumo stance" || e.exercise === "Romanian deadlift" || (e.variation === "Touch-and-go" && before?.variation !== "Touch-and-go")) expect(e.target_weight_kg).toBeUndefined();
+      // A true exercise change (secondary pull becomes RDL, bench variant swap) clears the load.
+      if (e.exercise === "Romanian deadlift" || (e.variation === "Touch-and-go" && before?.variation !== "Touch-and-go")) expect(e.target_weight_kg).toBeUndefined();
+      // A stance label on the same lift keeps the prescribed kg (fix 7).
+      if (e.exercise === "Deadlift" && e.variation === "Sumo stance") expect(e.target_weight_kg).toBe(100);
     }
   });
 });
@@ -96,20 +99,22 @@ describe("wave loading (fix 6)", () => {
     const base = weeks();
     // Simulate coach intensity tuning: week 1 squat at RPE 8.5 instead of 8.
     const tuned = base.map((w, i) => i === 0
-      ? { ...w, sessions: w.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => e.exercise === "Back squat" && !e.variation ? { ...e, target_rpe: 8.5 } : e) })) }
+      ? { ...w, sessions: w.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => e.exercise === "Back squat" && (!e.variation || e.variation === "Competition stance") ? { ...e, target_rpe: 8.5 } : e) })) }
       : w);
     const out = applyOverload(tuned, { ...DEFAULT_OVERLOAD, waveLoading: true });
-    const w1 = out[0].sessions.flatMap((s) => s.exercises).find((e) => e.exercise === "Back squat" && !e.variation);
+    const compSquat = (e: { exercise: string; variation?: string }) =>
+      e.exercise === "Back squat" && (!e.variation || e.variation === "Competition stance");
+    const w1 = out[0].sessions.flatMap((s) => s.exercises).find(compSquat);
     expect(w1?.target_rpe).toBe(8.5);
     // Week 2 wave step is +0.5 RPE relative to week 1.
-    const w2 = out[1].sessions.flatMap((s) => s.exercises).find((e) => e.exercise === "Back squat" && !e.variation);
+    const w2 = out[1].sessions.flatMap((s) => s.exercises).find(compSquat);
     expect(w2?.target_rpe).toBe(9);
   });
 
   it("never waves pause, tempo or touch-and-go variants", () => {
     const out = applyOverload(weeks(), { ...DEFAULT_OVERLOAD, waveLoading: true });
     const variants = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises))
-      .filter((e) => e.variation && /pause|tempo|touch/i.test(e.variation) && e.variation !== "Over-warm single");
+      .filter((e) => e.variation && /pause|tempo|touch/i.test(e.variation) && e.variation !== "Over-warm single" && e.variation !== "Competition grip & pause");
     for (const v of variants) expect(v.notes ?? "").not.toMatch(/Wave week/);
   });
 });
@@ -120,7 +125,7 @@ describe("reconcileLoad with stance labels (fix 7)", () => {
       ...w,
       sessions: w.sessions.map((s) => ({
         ...s,
-        exercises: s.exercises.map((e) => e.exercise === "Deadlift" && !e.variation ? { ...e, target_weight_kg: 200 } : e),
+        exercises: s.exercises.map((e) => e.exercise === "Deadlift" && (!e.variation || e.variation === "Competition stance") ? { ...e, target_weight_kg: 200 } : e),
       })),
     }));
     const out = applyOverload(base, { ...DEFAULT_OVERLOAD, deadliftStance: "sumo" });

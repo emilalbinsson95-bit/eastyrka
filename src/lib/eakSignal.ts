@@ -196,7 +196,7 @@ export function evaluateMesocycle(input: MesoInput): MesoResult {
   if (dL_M <= -threshold_i && b_M <= 0 && (readinessSignal || aSignal)) {
     return { ...numbers, status: "red", suggestion: "Minska volymen nästa block." };
   }
-  if (dL_M <= -threshold_i || (b_M <= 0 && dL_M <= 0)) {
+  if (dL_M <= -threshold_i || (b_M < 0 && dL_M < 0)) {
     return { ...numbers, status: "yellow", suggestion: "Behåll planerad progression, bevaka nästa mesocykel." };
   }
   return { ...numbers, status: "green", suggestion: "Planerad progression fortsätter." };

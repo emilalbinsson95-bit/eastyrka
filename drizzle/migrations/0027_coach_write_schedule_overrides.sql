@@ -1,0 +1,3 @@
+CREATE POLICY "Coach insert athlete overrides" ON public.session_schedule_overrides FOR INSERT TO authenticated WITH CHECK (public.is_coach_of(auth.uid(), owner_id));
+CREATE POLICY "Coach update athlete overrides" ON public.session_schedule_overrides FOR UPDATE TO authenticated USING (public.is_coach_of(auth.uid(), owner_id)) WITH CHECK (public.is_coach_of(auth.uid(), owner_id));
+CREATE POLICY "Coach delete athlete overrides" ON public.session_schedule_overrides FOR DELETE TO authenticated USING (public.is_coach_of(auth.uid(), owner_id));

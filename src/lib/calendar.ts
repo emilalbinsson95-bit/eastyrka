@@ -32,6 +32,8 @@ export type CalendarItem = {
   cancelReason?: string | null;
   /** Link to detail page (optional). */
   href?: string;
+  /** Mesocycle the session belongs to (planned sessions only). */
+  cycleId?: string;
   paymentService?: "coaching" | "overview";
 };
 
@@ -55,7 +57,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
   // 1. Strength planned sessions via week_plans
   const { data: weekPlans } = await supabase
     .from("week_plans")
-    .select("id, week_start_date, status, planned_sessions(id, day_of_week, title)")
+    .select("id, week_start_date, status, mesocycle_id, planned_sessions(id, day_of_week, title)")
     .eq("athlete_id", ownerId)
     .eq("status", "published")
     .gte("week_start_date", fmt(addDays(parseISO(rangeStart), -7)))
@@ -77,6 +79,7 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
         effectiveDate: suggested,
         isGhost: true,
         isCancelled: false,
+        cycleId: (wp.mesocycle_id as string | null) ?? undefined,
       });
     }
   }

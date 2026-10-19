@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
-import { Dumbbell, Footprints, HeartPulse, Utensils, Moon, Flame, Wind, Play } from "lucide-react";
+import { Dumbbell, Footprints, HeartPulse, Utensils, Moon, Flame, Wind, Play, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,12 +62,15 @@ export function SessionPreviewDialog({
   open,
   onOpenChange,
   canStartToday = false,
+  editHref,
 }: {
   item: CalendarItem | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   /** Show "Start workout today" button (athlete viewing own calendar). */
   canStartToday?: boolean;
+  /** Link to edit the underlying program (coach viewing a planned session). */
+  editHref?: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,6 +79,7 @@ export function SessionPreviewDialog({
           <PreviewBody
             item={item}
             canStartToday={canStartToday}
+            editHref={editHref}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -87,10 +91,12 @@ export function SessionPreviewDialog({
 function PreviewBody({
   item,
   canStartToday,
+  editHref,
   onClose,
 }: {
   item: CalendarItem;
   canStartToday: boolean;
+  editHref?: string;
   onClose: () => void;
 }) {
   const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
@@ -262,6 +268,16 @@ function PreviewBody({
             </div>
           )}
         </div>
+      )}
+
+      {editHref && (
+        <DialogFooter>
+          <Button variant="outline" asChild className="w-full sm:w-auto">
+            <Link to={editHref}>
+              <Pencil className="mr-1 h-4 w-4" /> Redigera programmet
+            </Link>
+          </Button>
+        </DialogFooter>
       )}
 
       {showStart && (

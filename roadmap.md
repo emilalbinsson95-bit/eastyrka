@@ -14,13 +14,11 @@
   - kind-baserad deload/taper/peak-detektering i blockVolume/volumeGuards/weakPoints/setProtocols/overload/individualisation
   - weakPoints hoppar över peak/taper; applyAdjustments justerar peak-veckor (skipFloors separerat)
   - 216 tester + build OK
-
-## Pågår
-- [ ] STEG 2: src/lib/eakSignal.ts + eakSignal.test.ts — ren TS, återanvänder dailyE1RM/pickMeasurementSet/lookupBaseline; session-nivå + mesocykel-evaluering, rebound-test, baseline med coach-godkännande, förslag istället för automatisk blockvolym
+- [x] STEG 2: eakSignal.ts + tester (session, mesocykel, rebound, coach-godkännande)
+- [x] STEG 3: tabeller + RLS + serverfunktioner (runEakEvaluation, decideEakEvaluation, applyBaselineChange); auto-flytning av baseline borttagen — bara förslag
+- [x] STEG 4: statuschips + sortering i coachöversikt, EAk-mesocykelsektion i analysvyn
 
 ## Väntar
-- [ ] STEG 3: databastabeller eak_meso_evaluations, baseline_history, rebound_tests + RLS
-- [ ] STEG 4: coachvy — statuschips per lyft, EAk-sektion, godkänn/avvisa/justera, baseline-korrigering
 - [ ] STEG 5 (valfritt): volymtak skalar med volymfaktor
 - [ ] Provköra egna säsongsblock ("Eget upplägg") som coach i appen
 - [ ] Granska maratonplanens tävlingsvecka (monitoring-fynd)

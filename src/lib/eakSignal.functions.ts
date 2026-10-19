@@ -63,7 +63,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         .limit(500),
       supabaseAdmin
         .from("week_plans")
-        .select("week_index, week_start_date, status, mesocycles(label, status)")
+        .select("week_index, week_start_date, status, is_deload, mesocycles(label, status)")
         .eq("athlete_id", athleteId)
         .limit(200),
     ]);
@@ -82,7 +82,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       .filter((w) => w.week_start_date)
       .map((w) => {
         const text = `${(w as { mesocycles?: { label?: string } | null }).mesocycles?.label ?? ""}`;
-        const kind: BlockWindow["kind"] = /deload|avlast/i.test(text)
+        const kind: BlockWindow["kind"] = (w as { is_deload?: boolean }).is_deload
           ? "deload"
           : /taper/i.test(text)
             ? "taper"

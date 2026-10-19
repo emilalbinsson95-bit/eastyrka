@@ -53,7 +53,19 @@ interface AthleteRow {
   last_log_date: string | null;
   last_eak: number | null;
   last_form: number | null;
+  eak_signals: Map<string, { status: string; pending: boolean }> | null;
 }
+
+const LIFT_CHIP: Record<string, string> = { squat: "Knäböj", bench: "Bänk", deadlift: "Mark" };
+
+const SIGNAL_CHIP: Record<string, { label: string; cls: string }> = {
+  green: { label: "Enligt plan", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
+  yellow: { label: "Bevaka", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  red: { label: "Bromsa", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
+  red_strong: { label: "Bromsa nu", cls: "bg-red-600/20 text-red-700 dark:text-red-300" },
+  push: { label: "Redo för mer", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
+  insufficient_data: { label: "För lite data", cls: "bg-muted text-muted-foreground" },
+};
 
 function CoachRosterPage() {
   const { user } = useAuth();
@@ -184,6 +196,27 @@ function CoachRosterPage() {
         formMap.set(s.athlete_id, Number(s.daily_form));
       }
 
+      // 5. Latest pending EAk mesocycle signal per athlete + lift
+      const { data: eakEvals } = await supabase
+        .from("eak_meso_evaluations")
+        .select("athlete_id, lift, status, coach_decision, created_at")
+        .in("athlete_id", athleteIds)
+        .order("created_at", { ascending: false })
+        .limit(600);
+      const signalMap = new Map<string, Map<string, { status: string; pending: boolean }>>();
+      for (const e of eakEvals ?? []) {
+        let byLift = signalMap.get(e.athlete_id);
+        if (!byLift) {
+          byLift = new Map();
+          signalMap.set(e.athlete_id, byLift);
+        }
+        if (byLift.has(e.lift)) continue; // newest first wins
+        byLift.set(e.lift, {
+          status: e.status,
+          pending: e.coach_decision === "pending",
+        });
+      }
+
       return athleteIds.map((id) => {
         const latest = latestByAthlete.get(id);
         const eaks = latest ? Array.from(latest.byEx.values()) : [];
@@ -196,6 +229,7 @@ function CoachRosterPage() {
             ? eaks.reduce((a, b) => a + b, 0) / eaks.length
             : null,
           last_form: formMap.get(id) ?? null,
+          eak_signals: signalMap.get(id) ?? null,
         };
       });
 
@@ -206,10 +240,22 @@ function CoachRosterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
 
+  const signalRank = (a: AthleteRow): number => {
+    if (!a.eak_signals) return 4;
+    const sigs = Array.from(a.eak_signals.values());
+    const pending = sigs.filter((s) => s.pending);
+    if (pending.some((s) => s.status === "red_strong" || s.status === "red")) return 0;
+    if (pending.some((s) => s.status === "push")) return 1;
+    if (pending.some((s) => s.status === "yellow")) return 2;
+    if (pending.length > 0) return 3;
+    return 4;
+  };
+
   const filteredAthletes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return athletes;
-    return athletes.filter(
+    const base = [...athletes].sort((x, y) => signalRank(x) - signalRank(y));
+    if (!q) return base;
+    return base.filter(
       (a) =>
         (a.full_name ?? "").toLowerCase().includes(q) ||
         (a.tag ?? "").toLowerCase().includes(q),
@@ -456,6 +502,28 @@ function AthleteCard({
               <span className="font-mono text-xs text-muted-foreground">—</span>
             )}
           </div>
+          {athlete.eak_signals && athlete.eak_signals.size > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {(["squat", "bench", "deadlift"] as const).map((lift) => {
+                const sig = athlete.eak_signals?.get(lift);
+                if (!sig) return null;
+                const chip = SIGNAL_CHIP[sig.status] ?? SIGNAL_CHIP.insufficient_data;
+                return (
+                  <span
+                    key={lift}
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px]",
+                      chip.cls,
+                      sig.pending ? "ring-1 ring-current" : "opacity-70",
+                    )}
+                    title={sig.pending ? "Väntar på ditt beslut" : "Beslutad"}
+                  >
+                    {LIFT_CHIP[lift]}: {chip.label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
           <div className="flex items-center justify-between text-sm">
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Form

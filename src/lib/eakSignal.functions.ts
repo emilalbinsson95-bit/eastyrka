@@ -49,6 +49,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { athleteId } = data;
     await assertCoachOrSelf(context.userId, athleteId);
+    const supabaseAdmin = await admin();
 
     const [{ data: logs }, { data: baselines }, { data: surveys }, { data: weeks }] = await Promise.all([
       supabaseAdmin

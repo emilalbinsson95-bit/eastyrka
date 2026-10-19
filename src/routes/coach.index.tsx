@@ -184,6 +184,27 @@ function CoachRosterPage() {
         formMap.set(s.athlete_id, Number(s.daily_form));
       }
 
+      // 5. Latest pending EAk mesocycle signal per athlete + lift
+      const { data: eakEvals } = await supabase
+        .from("eak_meso_evaluations")
+        .select("athlete_id, lift, status, coach_decision, created_at")
+        .in("athlete_id", athleteIds)
+        .order("created_at", { ascending: false })
+        .limit(600);
+      const signalMap = new Map<string, Map<string, { status: string; pending: boolean }>>();
+      for (const e of eakEvals ?? []) {
+        let byLift = signalMap.get(e.athlete_id);
+        if (!byLift) {
+          byLift = new Map();
+          signalMap.set(e.athlete_id, byLift);
+        }
+        if (byLift.has(e.lift)) continue; // newest first wins
+        byLift.set(e.lift, {
+          status: e.status,
+          pending: e.coach_decision === "pending",
+        });
+      }
+
       return athleteIds.map((id) => {
         const latest = latestByAthlete.get(id);
         const eaks = latest ? Array.from(latest.byEx.values()) : [];
@@ -196,6 +217,7 @@ function CoachRosterPage() {
             ? eaks.reduce((a, b) => a + b, 0) / eaks.length
             : null,
           last_form: formMap.get(id) ?? null,
+          eak_signals: signalMap.get(id) ?? null,
         };
       });
 
@@ -206,10 +228,22 @@ function CoachRosterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
 
+  const signalRank = (a: AthleteRow): number => {
+    if (!a.eak_signals) return 4;
+    const sigs = Array.from(a.eak_signals.values());
+    const pending = sigs.filter((s) => s.pending);
+    if (pending.some((s) => s.status === "red_strong" || s.status === "red")) return 0;
+    if (pending.some((s) => s.status === "push")) return 1;
+    if (pending.some((s) => s.status === "yellow")) return 2;
+    if (pending.length > 0) return 3;
+    return 4;
+  };
+
   const filteredAthletes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return athletes;
-    return athletes.filter(
+    const base = [...athletes].sort((x, y) => signalRank(x) - signalRank(y));
+    if (!q) return base;
+    return base.filter(
       (a) =>
         (a.full_name ?? "").toLowerCase().includes(q) ||
         (a.tag ?? "").toLowerCase().includes(q),

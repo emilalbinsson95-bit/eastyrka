@@ -54,6 +54,7 @@ import { SetProtocolPicker } from "@/components/SetProtocolPicker";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
 import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPlanning";
 import type { Json } from "@/integrations/supabase/types";
+import { peakStartDate, peakFinalSessionDates, validPeakDate } from "@/lib/peakingDates";
 
 
 export function GenerateStrengthTemplateDialog({
@@ -66,7 +67,7 @@ export function GenerateStrengthTemplateDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger,
-  defaultDaysPerWeek, defaultPeakWeeks, blockName, blockNotes, blockFocus,
+  defaultDaysPerWeek, defaultPeakWeeks, blockName, blockNotes, blockFocus, defaultCompetitionDate,
 }: {
   athleteId: string;
   coachId: string;
@@ -82,6 +83,7 @@ export function GenerateStrengthTemplateDialog({
   hideTrigger?: boolean;
   defaultDaysPerWeek?: number;
   defaultPeakWeeks?: number;
+  defaultCompetitionDate?: string;
   blockName?: string;
   blockNotes?: string;
   blockFocus?: "volume" | "strength" | "competition";
@@ -209,6 +211,13 @@ export function GenerateStrengthTemplateDialog({
   }, [template, historyQuery.data, peakReference]);
 
   const [peakWeeks, setPeakWeeks] = useState(defaultPeakWeeks ?? 3);
+  const [competitionDate, setCompetitionDate] = useState(defaultCompetitionDate ?? "");
+  const anchoredStart = peakStartDate(competitionDate, peakWeeks);
+  const effectiveStartDate = template?.buildFromHistory && anchoredStart && !blockName ? anchoredStart : startDate;
+  const peakDateError = template?.buildFromHistory && competitionDate
+    ? !validPeakDate(competitionDate) ? "Kontrollera tävlingsdatumet."
+      : effectiveStartDate !== anchoredStart ? "Toppningsblocket ligger inte rätt inför tävlingen. Ändra placeringen i säsongsplanen först." : null
+    : null;
   const [peakOptions, setPeakOptions] = useState<GeneratorSettings["peak"]>({ singles: "unset", rpe: 8, weeks: [1, 2, 3], openers: {} });
   const openerSuggestions = useMemo(() => historyQuery.data ? suggestOpeners(historyQuery.data, styleQuery.data) : [], [historyQuery.data, styleQuery.data]);
   const chosenOpeners = Object.fromEntries(openerSuggestions.map((s) => [s.key, peakOptions.openers[s.key] ?? s.kg ?? undefined]));
@@ -375,6 +384,8 @@ export function GenerateStrengthTemplateDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!template) throw new Error("Pick a template");
+      if (!validPeakDate(effectiveStartDate)) throw new Error("Kontrollera startdatumet.");
+      if (peakDateError) throw new Error(peakDateError);
       if (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) throw new Error("Välj om atleten behöver singlar och minst en vecka om svaret är ja.");
       if (!settingsLoaded || preferencesQuery.isError) throw new Error("Coachvalen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
@@ -396,7 +407,7 @@ export function GenerateStrengthTemplateDialog({
           athlete_id: athleteId,
           name: blockName ?? template.name,
           goal: blockFocus ? `${blockFocus === "volume" ? "Volymfokus" : blockFocus === "strength" ? "Styrkefokus" : "Tävlingsförberedelse"}. ${template.goal}` : template.goal,
-          start_date: startDate,
+          start_date: effectiveStartDate,
           total_weeks: weeks.length,
           days_per_week: daysPerWeek,
           notes: `${isPeaking ? `Öppningsvikter (coachens preliminära val): ${openerSuggestions.map((s) => `${OPENER_LABELS[s.key]} ${chosenOpeners[s.key] ?? "saknar underlag"}${chosenOpeners[s.key] ? " kg" : ""}`).join(", ")}. Toppningssinglar: ${peakOptions.singles === "yes" ? `ja, RPE ${peakOptions.rpe}, veckor ${peakOptions.weeks.filter((w) => w < peakWeeks).join(", ")}` : "nej"}.\n` : ""}${blockNotes ? `${blockNotes}\n` : ""}Template: ${template.name} · Inspiration: ${template.inspiration}. All sessions editable.${
@@ -424,7 +435,7 @@ export function GenerateStrengthTemplateDialog({
         athlete_id: athleteId,
         mesocycle_id: meso.id,
         week_index: w.week_index,
-        week_start_date: format(addDays(parseISO(startDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
+        week_start_date: format(addDays(parseISO(effectiveStartDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
         status: "draft" as const,
         notes: w.notes ?? null,
       }));
@@ -582,12 +593,12 @@ export function GenerateStrengthTemplateDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="tpl-start">Start date (Monday)</Label>
+              <Label htmlFor="tpl-start">Startdatum</Label>
               <Input
                 id="tpl-start"
-                disabled={Boolean(blockName)}
+                disabled={Boolean(blockName) || (isPeaking && Boolean(anchoredStart))}
                 type="date"
-                value={startDate}
+                value={effectiveStartDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
@@ -632,6 +643,9 @@ export function GenerateStrengthTemplateDialog({
                 Peaking options
               </div>
               <div className="space-y-3 p-3">
+                <div><Label htmlFor="peak-meet">Tävlingsdatum</Label><Input id="peak-meet" type="date" disabled={Boolean(blockName)} value={competitionDate} onChange={(e) => setCompetitionDate(e.target.value)} /></div>
+                {anchoredStart && <p className="text-xs text-muted-foreground">Sista lätta passen: {peakFinalSessionDates(competitionDate).join(" och ")}. Därefter vila till tävlingen {competitionDate}.</p>}
+                {peakDateError && <p className="text-sm text-destructive">{peakDateError}</p>}
                 <div><Label htmlFor="peak-length">Toppningslängd, veckor</Label><Input id="peak-length" type="number" min={2} max={6} step={1} disabled={Boolean(blockName)} value={peakWeeks} onChange={(e) => setPeakWeeks(Math.max(2, Math.min(6, Math.round(Number(e.target.value)) || 3)))} /></div>
                 <div>
                   <span className="block text-sm font-medium">Reference volume</span>
@@ -1010,7 +1024,7 @@ export function GenerateStrengthTemplateDialog({
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={!template || (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
+            disabled={!template || Boolean(peakDateError) || !validPeakDate(effectiveStartDate) || (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) || !settingsLoaded || preferencesQuery.isError || mutation.isPending || volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError}
           >
             {mutation.isPending ? "Generating…" : "Generate mesocycle"}
           </Button>

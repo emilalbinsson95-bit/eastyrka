@@ -22,6 +22,12 @@ describe("coach season planning", () => {
     expect(validateSeason([block], "2026-11-29")).toContain("tävlingsdatumet");
     for (const weeks of [0, 25, 2.5]) expect(seasonBlocksSchema.safeParse([{ ...block, manualWeeks: weeks }]).success).toBe(false);
   });
+  it("requires unprepared peaks to end directly before competition but never moves prepared programs", () => {
+    const block = { ...defaultSeason("2026-10-19")[2], startDate: "2027-01-02" };
+    expect(validateSeason([block], "2027-01-23")).toBeNull();
+    expect(validateSeason([{ ...block, startDate: "2027-01-01" }], "2027-01-23")).toContain("direkt före");
+    expect(validateSeason([{ ...block, startDate: "2027-01-01", mesocycleId: "22222222-2222-2222-2222-222222222222" }], "2027-01-23")).toBeNull();
+  });
   it("reflows future blocks when own block length changes and preserves prepared programs", () => {
     const blocks = defaultSeason("2026-10-19");
     blocks[0] = { ...blocks[0], templateId: "manual", manualWeeks: 4 };

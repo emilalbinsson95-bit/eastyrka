@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
 import { blockEnd, blockWeeks, defaultSeason, FOCUS_LABELS, rescheduleFuture, seasonBlocksSchema, validateSeason, type SeasonBlock } from "@/lib/seasonPlanning";
+import { peakStartDate } from "@/lib/peakingDates";
 
 export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: string; coachId: string; athleteName: string }) {
   const qc = useQueryClient();
@@ -25,7 +26,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
   const [competitionDate, setCompetitionDate] = useState("");
   const [notes, setNotes] = useState("");
   const [blocks, setBlocks] = useState<SeasonBlock[]>([]);
-  const [generating, setGenerating] = useState<{ planId: string; block: SeasonBlock } | null>(null);
+  const [generating, setGenerating] = useState<{ planId: string; block: SeasonBlock; competitionDate: string } | null>(null);
   const plans = useQuery({
     queryKey: ["season-plans", athleteId],
     queryFn: async () => {
@@ -135,7 +136,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
         <div className="min-w-0"><p className="font-medium break-words">{b.name} <span className="text-xs font-normal text-muted-foreground">· {FOCUS_LABELS[b.focus]}</span></p><p className="text-xs text-muted-foreground">{b.startDate} – {blockEnd(b)} · {b.templateId === "manual" ? `Eget upplägg, ${blockWeeks(b)} veckor` : getTemplate(b.templateId)?.name} · {b.daysPerWeek} dagar/vecka</p>{b.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{b.notes}</p>}</div>
         {b.mesocycleId ? <Button asChild variant="outline" size="sm"><Link to="/coach/athletes/$athleteId/cycles/$cycleId" params={{ athleteId, cycleId: b.mesocycleId }}>Öppna program<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
           : b.templateId === "manual" ? <Button variant="outline" size="sm" disabled={createManual.isPending} onClick={() => createManual.mutate({ planId: p.id, block: b })}>{createManual.isPending ? "Skapar…" : "Skapa tomt block"}</Button>
-          : <Button variant="outline" size="sm" onClick={() => setGenerating({ planId: p.id, block: b })}>Förbered block</Button>}
+          : <Button variant="outline" size="sm" onClick={() => setGenerating({ planId: p.id, block: b, competitionDate: p.competition_date ?? "" })}>Förbered block</Button>}
       </div>)}
     </div>)}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editId ? "Redigera säsongsplan" : "Ny säsongsplan"}</DialogTitle></DialogHeader>
@@ -148,7 +149,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
         <div><Label>Träningsdagar/vecka</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.daysPerWeek)} onValueChange={(v) => updateBlock(b.id, { daysPerWeek: Number(v) })}><SelectTrigger aria-label={`Träningsdagar block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{(b.templateId === "manual" ? [2,3,4,5,6] : Array.from({ length: (getTemplate(b.templateId)?.maxDays ?? 6) - (getTemplate(b.templateId)?.minDays ?? 3) + 1 }, (_, n) => n + (getTemplate(b.templateId)?.minDays ?? 3))).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent></Select></div></div>
         <div className="grid gap-2 sm:grid-cols-2"><div><Label htmlFor={`block-date-${b.id}`}>Startdatum</Label><Input id={`block-date-${b.id}`} type="date" value={b.startDate} onChange={(e) => { if (e.target.value) updateBlock(b.id, { startDate: e.target.value }); }} /></div>{b.templateId === "peak-3w" && <div><Label>Toppning, veckor</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.peakWeeks ?? 3)} onValueChange={(v) => updateBlock(b.id, { peakWeeks: Number(v) })}><SelectTrigger aria-label={`Toppningslängd block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{[2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{n} veckor</SelectItem>)}</SelectContent></Select></div>}{b.templateId === "manual" && <div><Label>Antal veckor</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.manualWeeks ?? 4)} onValueChange={(v) => updateBlock(b.id, { manualWeeks: Number(v) })}><SelectTrigger aria-label={`Antal veckor block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 24 }, (_, n) => n + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} {n === 1 ? "vecka" : "veckor"}</SelectItem>)}</SelectContent></Select></div>}</div>
         {b.templateId === "manual" && !b.mesocycleId && <p className="text-xs text-muted-foreground">Blocket skapas tomt med veckor och dagar. Du lägger själv in övningar, set och vikter i programmet.</p>}
-        {b.templateId === "peak-3w" && competitionDate && !b.mesocycleId && <Button variant="outline" size="sm" onClick={() => updateBlock(b.id, { startDate: format(addDays(parseISO(competitionDate), -blockWeeks(b) * 7), "yyyy-MM-dd") })}>Lägg toppningen före tävlingen</Button>}
+        {b.templateId === "peak-3w" && competitionDate && !b.mesocycleId && <Button variant="outline" size="sm" onClick={() => { const startDate = peakStartDate(competitionDate, blockWeeks(b)); if (startDate) updateBlock(b.id, { startDate }); }}>Lägg toppningen före tävlingen</Button>}
         <Textarea aria-label={`Anteckningar block ${i + 1}`} maxLength={2000} placeholder="Coachanteckningar" value={b.notes} onChange={(e) => updateBlock(b.id, { notes: e.target.value })} />
         <Button variant="ghost" size="sm" disabled={blocks.length <= 1} onClick={() => setBlocks(blocks.filter((x) => x.id !== b.id))}><Trash2 className="mr-1 h-4 w-4" />Ta bort block</Button>
       </fieldset>{b.mesocycleId && <Button variant="outline" size="sm" onClick={() => {
@@ -159,6 +160,6 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
       {validateSeason(blocks, competitionDate) && <p className="text-sm text-destructive">{validateSeason(blocks, competitionDate)}</p>}
       <DialogFooter><Button variant="ghost" onClick={() => setOpen(false)}>Avbryt</Button><Button disabled={save.isPending || Boolean(validateSeason(blocks, competitionDate))} onClick={() => save.mutate()}><Save className="mr-1 h-4 w-4" />{save.isPending ? "Sparar…" : "Spara säsongsplan"}</Button></DialogFooter>
     </DialogContent></Dialog>
-    {generating && <GenerateStrengthTemplateDialog key={`${generating.planId}-${generating.block.id}`} athleteId={athleteId} coachId={coachId} athleteName={athleteName} defaultTemplateId={generating.block.templateId} defaultStartDate={generating.block.startDate} defaultDaysPerWeek={generating.block.daysPerWeek} defaultPeakWeeks={generating.block.peakWeeks} blockName={generating.block.name} blockNotes={generating.block.notes} blockFocus={generating.block.focus} open hideTrigger onOpenChange={(v) => { if (!v) setGenerating(null); }} onCreated={attach} />}
+    {generating && <GenerateStrengthTemplateDialog key={`${generating.planId}-${generating.block.id}`} athleteId={athleteId} coachId={coachId} athleteName={athleteName} defaultCompetitionDate={generating.competitionDate} defaultTemplateId={generating.block.templateId} defaultStartDate={generating.block.startDate} defaultDaysPerWeek={generating.block.daysPerWeek} defaultPeakWeeks={generating.block.peakWeeks} blockName={generating.block.name} blockNotes={generating.block.notes} blockFocus={generating.block.focus} open hideTrigger onOpenChange={(v) => { if (!v) setGenerating(null); }} onCreated={attach} />}
   </section>;
 }

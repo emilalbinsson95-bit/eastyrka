@@ -12,7 +12,7 @@ describe("integrated flexible season", () => {
     const shifted = rescheduleFuture(blocks, "strength", { startDate: "2026-11-23" });
     expect(shifted[0]).toEqual(blocks[0]);
     expect(shifted[2].startDate).toBe("2026-12-21");
-    expect(validateSeason(shifted, "2027-01-12")).toBeNull();
+    expect(validateSeason(shifted, "2027-01-11")).toBeNull();
     expect(rescheduleFuture(blocks, "volume", { startDate: "2026-10-26" })).toEqual(blocks);
   });
   it("does not silently move a prepared later block", () => {

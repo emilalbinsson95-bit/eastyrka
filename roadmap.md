@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Toppning: gradvis volymnedtrappning från tre föregående arbetsveckor, valbara start/slutdatum och kontrollerat forskningsunderlag; verifiera med Alex Athlete.
 - [x] Tävlingsankrad toppning rättad; 243 tester gröna, Alex sexveckorsutkast sparat och återläst inför lördagstävling.
 - [x] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering; 239 tester gröna, sexveckorsutkast och sparad säsongsplan verifierade som coach för Alex Athlete
 

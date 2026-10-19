@@ -119,11 +119,31 @@ function RoutineGate({
 
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(key) !== null) setResolved(true);
+      if (window.localStorage.getItem(key) !== null) {
+        setResolved(true);
+        return;
+      }
     } catch {
       /* ignore */
     }
-  }, [key]);
+    // Ny enhet eller rensad lagring: kolla databasen så valet inte efterfrågas igen.
+    let cancelled = false;
+    const start = new Date(`${dateStr}T00:00:00`);
+    const end = new Date(start.getTime() + 864e5);
+    supabase
+      .from("routine_completions")
+      .select("id")
+      .eq("athlete_id", athleteId)
+      .gte("completed_at", start.toISOString())
+      .lt("completed_at", end.toISOString())
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled && data && data.length > 0) setResolved(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, athleteId, dateStr]);
 
   const resolve = (value: "done" | "skipped") => {
     try {

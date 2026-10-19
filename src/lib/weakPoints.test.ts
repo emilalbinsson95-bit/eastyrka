@@ -55,8 +55,9 @@ describe("1.5-reps", () => {
 
 describe("light weeks", () => {
   it("leaves peak and taper weeks exactly as the peaking block designed them", () => {
-    const peakWeek: TemplateWeek = { ...WEEKS[0], kind: "peak", label: "Peak W2" };
-    const taperWeek: TemplateWeek = { ...WEEKS[0], kind: "taper", label: "Taper" };
+    const base = STRENGTH_TEMPLATES.find((t) => t.id === "standard-pl")!.buildWeeks(3)[0];
+    const peakWeek = { ...base, kind: "peak" as const, label: "Peak W2" };
+    const taperWeek = { ...base, kind: "taper" as const, label: "Taper" };
     const out = applyWeakPoints([peakWeek, taperWeek], ["squat-lockout"]);
     expect(out[0]).toEqual(peakWeek);
     expect(out[1]).toEqual(taperWeek);

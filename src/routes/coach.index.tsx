@@ -53,7 +53,19 @@ interface AthleteRow {
   last_log_date: string | null;
   last_eak: number | null;
   last_form: number | null;
+  eak_signals: Map<string, { status: string; pending: boolean }> | null;
 }
+
+const LIFT_CHIP: Record<string, string> = { squat: "Knäböj", bench: "Bänk", deadlift: "Mark" };
+
+const SIGNAL_CHIP: Record<string, { label: string; cls: string }> = {
+  green: { label: "Enligt plan", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
+  yellow: { label: "Bevaka", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  red: { label: "Bromsa", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
+  red_strong: { label: "Bromsa nu", cls: "bg-red-600/20 text-red-700 dark:text-red-300" },
+  push: { label: "Redo för mer", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
+  insufficient_data: { label: "För lite data", cls: "bg-muted text-muted-foreground" },
+};
 
 function CoachRosterPage() {
   const { user } = useAuth();
@@ -490,6 +502,28 @@ function AthleteCard({
               <span className="font-mono text-xs text-muted-foreground">—</span>
             )}
           </div>
+          {athlete.eak_signals && athlete.eak_signals.size > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {(["squat", "bench", "deadlift"] as const).map((lift) => {
+                const sig = athlete.eak_signals?.get(lift);
+                if (!sig) return null;
+                const chip = SIGNAL_CHIP[sig.status] ?? SIGNAL_CHIP.insufficient_data;
+                return (
+                  <span
+                    key={lift}
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px]",
+                      chip.cls,
+                      sig.pending ? "ring-1 ring-current" : "opacity-70",
+                    )}
+                    title={sig.pending ? "Väntar på ditt beslut" : "Beslutad"}
+                  >
+                    {LIFT_CHIP[lift]}: {chip.label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
           <div className="flex items-center justify-between text-sm">
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Form

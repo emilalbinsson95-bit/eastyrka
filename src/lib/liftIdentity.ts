@@ -7,10 +7,17 @@
 
 export type CompLift = "squat" | "bench" | "deadlift";
 
-const COMP_NAME: Record<CompLift, RegExp> = {
+const COMP_RE: Record<CompLift, RegExp> = {
   squat: /^(back squat|squat)$/i,
   bench: /^bench press$/i,
   deadlift: /^(deadlift|sumo deadlift|conventional deadlift)$/i,
+};
+
+/** Canonical exercise name per competition lift (matches baselines table). */
+export const COMP_NAME: Record<CompLift, string> = {
+  squat: "Back squat",
+  bench: "Bench press",
+  deadlift: "Deadlift",
 };
 
 /** Variations that make the entry a true variant, not the competition lift. */
@@ -24,8 +31,8 @@ const NON_VARIANT =
 /** Which competition lift an exercise name belongs to, regardless of variation. */
 export function compLiftKey(exercise: string): CompLift | null {
   const name = exercise.trim();
-  for (const key of Object.keys(COMP_NAME) as CompLift[]) {
-    if (COMP_NAME[key].test(name)) return key;
+  for (const key of Object.keys(COMP_RE) as CompLift[]) {
+    if (COMP_RE[key].test(name)) return key;
   }
   return null;
 }

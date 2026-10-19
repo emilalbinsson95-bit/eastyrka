@@ -63,7 +63,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         .limit(500),
       supabaseAdmin
         .from("week_plans")
-        .select("week_index, start_date, end_date, notes, mesocycles!inner(label, status)")
+        .select("week_index, week_start_date, status, mesocycles(label, status)")
         .eq("athlete_id", athleteId)
         .limit(200),
     ]);
@@ -79,9 +79,9 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
 
     // Blockfönster från veckoplaner (deload/peak exkluderas ur brusberäkningen).
     const blocks: BlockWindow[] = (weeks ?? [])
-      .filter((w) => w.start_date && w.end_date)
+      .filter((w) => w.week_start_date)
       .map((w) => {
-        const text = `${(w as { notes?: string }).notes ?? ""} ${(w as { mesocycles?: { label?: string } }).mesocycles?.label ?? ""}`;
+        const text = `${(w as { mesocycles?: { label?: string } | null }).mesocycles?.label ?? ""}`;
         const kind: BlockWindow["kind"] = /deload|avlast/i.test(text)
           ? "deload"
           : /taper/i.test(text)
@@ -89,7 +89,9 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
             : /peak|topp/i.test(text)
               ? "peak"
               : "working";
-        return { kind, start: w.start_date, end: w.end_date };
+        const start = w.week_start_date as string;
+        const end = new Date(new Date(start).getTime() + 6 * 864e5).toISOString().slice(0, 10);
+        return { kind, start, end };
       });
 
     const results: Array<{ lift: CompLift; status: string; stored: boolean }> = [];

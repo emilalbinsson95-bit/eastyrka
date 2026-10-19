@@ -972,12 +972,12 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     name: "Toppning från historik (2–6 veckor)",
     short: "Tävlingsförberedelse — 2–6 dagar / 2–6 veckor",
     goal:
-      "Toppning från atletens senaste tre månaders träning. Volymen minskas stegvis medan belastningen behålls. Coachen väljer 2–6 dagar och 2–6 veckor; sista veckan har två korta pass.",
+      "Toppning med volym från tre senaste arbetsveckorna. Gradvis nedtrappning över 14–42 dagar med valbara datum och 2–6 dagar/vecka; sista veckan har två korta pass.",
     weeks: 3,
     daysPerWeek: 3,
     minDays: 2,
     maxDays: 6,
-    inspiration: "Bosquet 2007 taper meta-analysis — pure volume reduction, intensity held",
+    inspiration: "Pritchard 2015 (maximal styrka) · styrkelyftares rapporterade taper-praktik; exakt kurva är coachförslag",
     buildWeeks: (d: number) => buildPeakingWeeks(d, null),
     buildFromHistory: (d: number, summary: PeakSummary, opts?: { openers?: boolean; weeks?: number }) =>
       buildPeakingWeeks(d, summary, opts),

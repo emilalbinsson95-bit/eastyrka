@@ -1,19 +1,4 @@
-// Flexible 2–6-week peaking / taper block built from the athlete's own last 3 months
-// of logged training — not from a fixed template.
-//
-// Evidence base:
-//  - Taper meta-analysis (Bosquet et al. 2007, MSSE): performance is maximised by a
-//    ~41–60% reduction in training VOLUME over ~2 weeks, while INTENSITY and
-//    FREQUENCY are maintained. Cutting intensity instead of volume loses adaptation.
-//  - Pritchard et al. 2015 (strength taper review): 1–4 day full rest before testing;
-//    no evidence that final-week heavy singles add anything beyond confidence.
-//  - Design choice: the taper here is a pure VOLUME reduction. Working weights and
-//    rep schemes stay in the athlete's normal range. Heavy opener singles are
-//    available as an OPT-IN — they don't move performance measurably, but some
-//    lifters want the confidence rep, so the coach can switch them on.
-//
-// Everything here is pure — no Supabase, no React.
-
+// Strength-specific taper evidence informs the range; the exact curve is a SETPOINT coaching default, not an RTS formula.
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { compSetCap } from "@/lib/volumeGuards";
 import { dailyE1RM } from "@/lib/eakoefficient";
@@ -36,6 +21,9 @@ export interface PeakLog {
 export interface PeakHistoryInput {
   today: string;
   logs: PeakLog[];
+  /** Exclusive volume cutoff; no training inside the peak contributes. */
+  startDate?: string;
+  deloadWeekStarts?: string[];
   baselines: Array<{ exercise: string; one_rm_kg: number }>;
 }
 
@@ -74,6 +62,7 @@ export interface PeakSummary {
   /** Which reference the weekly main-lift sets were derived from. */
   reference: PeakReference;
   referenceLabel: string;
+  referenceWeeks?: string[];
 }
 
 /**
@@ -82,11 +71,12 @@ export interface PeakSummary {
  * - median: median of trained weeks over ~12 weeks (ignores single odd weeks)
  * - robust: the higher of the two — a dip never makes the taper too light
  */
-export type PeakReference = "recent" | "median" | "robust";
+export type PeakReference = "work3" | "recent" | "median" | "robust";
 export const PEAK_REFERENCE_LABEL: Record<PeakReference, string> = {
-  recent: "mean of the last 6 weeks",
-  median: "median of trained weeks, last 12 weeks",
-  robust: "higher of 6-week mean and 12-week median",
+  work3: "tre senaste arbetsveckorna före toppningen",
+  recent: "snitt av senaste 6 veckorna",
+  median: "median av träningsveckor, senaste 12 veckorna",
+  robust: "högsta av 6-veckorssnitt och 12-veckorsmedian",
 };
 
 const HISTORY_DAYS = 92; // ~3 months
@@ -142,12 +132,24 @@ function median(nums: number[]): number {
 }
 
 /** Summarise the last ~3 months of logs into everything the peak needs. */
-export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference = "recent"): PeakSummary {
+export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference = "work3"): PeakSummary {
   const ago = (d: string) => differenceInCalendarDays(parseISO(h.today), parseISO(d));
   const logs = h.logs.filter((l) => {
     const d = ago(l.date);
     return d >= 0 && d < HISTORY_DAYS && l.weight_kg > 0 && l.reps > 0;
   });
+  const cutoff = h.startDate && h.startDate <= h.today ? h.startDate : h.today;
+  const volumeAgo = (d: string) => differenceInCalendarDays(parseISO(cutoff), parseISO(d));
+  const prior = logs.filter((l) => volumeAgo(l.date) > 0);
+  const workWindows = Array.from({ length: 13 }, (_, i) => i).filter((i) => {
+    const rows = prior.filter((l) => Math.floor((volumeAgo(l.date) - 1) / 7) === i);
+    const deload = (h.deloadWeekStarts ?? []).some((start) => rows.some((l) => {
+      const offset = differenceInCalendarDays(parseISO(l.date), parseISO(start));
+      return offset >= 0 && offset < 7;
+    }));
+    return !deload && rows.some((l) => l.rpe == null || l.rpe >= 6);
+  }).slice(0, 3);
+  const workLogs = prior.filter((l) => workWindows.includes(Math.floor((volumeAgo(l.date) - 1) / 7)));
   const recent = logs.filter((l) => ago(l.date) < VOLUME_WINDOW_DAYS);
 
   const dates = new Set(logs.map((l) => l.date));
@@ -201,7 +203,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
     const meanRecent = weeksCovered > 0 ? recentHits.length / weeksCovered : 0;
     const med = weekCounts.size ? median([...weekCounts.values()]) : 0;
     const weeklySets =
-      reference === "recent" ? meanRecent : reference === "median" ? med : Math.max(meanRecent, med);
+      reference === "work3" ? (workWindows.length ? hits.filter((l) => workLogs.includes(l)).length / workWindows.length : 0) : reference === "recent" ? meanRecent : reference === "median" ? med : Math.max(meanRecent, med);
 
     const singles = hits.filter((l) => l.reps === 1).map((l) => l.weight_kg);
 
@@ -219,7 +221,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   // Accessories: everything that is not one of the three competition lifts,
   // ranked by how much the athlete actually does of it.
   const accMap = new Map<string, { exercise: string; sets: number; reps: number[] }>();
-  for (const l of recent) {
+  for (const l of reference === "work3" ? workLogs : recent) {
     if (isCompetitionSquat(l.exercise) || isCompetitionBench(l.exercise) || isCompetitionDeadlift(l.exercise))
       continue;
     const key = norm(l.exercise);
@@ -231,7 +233,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const accessories: PeakAccessory[] = [...accMap.values()]
     .map((a) => ({
       exercise: a.exercise,
-      weeklySets: weeksCovered > 0 ? a.sets / weeksCovered : 0,
+      weeklySets: reference === "work3" ? a.sets / Math.max(1, workWindows.length) : weeksCovered > 0 ? a.sets / weeksCovered : 0,
       reps: clamp(Math.round(median(a.reps)) || 10, 5, 15),
     }))
     .sort((a, b) => b.weeklySets - a.weeklySets)
@@ -243,9 +245,10 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
     sessionsPerWeek,
     lifts,
     accessories,
-    thin: dates.size < 8,
+    thin: reference === "work3" ? workWindows.length < 3 : dates.size < 8,
     reference,
     referenceLabel: PEAK_REFERENCE_LABEL[reference],
+    referenceWeeks: workWindows.map((w) => { const d = parseISO(cutoff); d.setDate(d.getDate() - (w + 1) * 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }),
   };
 }
 
@@ -312,7 +315,7 @@ function mainExercises(
       {
         exercise: info.name,
         variation: "Competition technique",
-        target_sets: Math.min(total, 3),
+        target_sets: total,
         target_reps: 2,
         target_rpe: 6,
         intensity_metric: "rpe",
@@ -336,7 +339,7 @@ function mainExercises(
 
   // Cap back-offs at the realism cap for the rep range so a high-volume
   // athlete never gets an unrealistic peaking session (e.g. 10×4 deadlift).
-  const backoffs = Math.min(total - 1, compSetCap(cfg.backoffReps));
+  const backoffs = Math.min(total - 1, compSetCap(cfg.backoffReps) - 1);
   if (backoffs > 0) {
     out.push({
       exercise: info.name,
@@ -379,21 +382,25 @@ const DAYS_MEET = [1, 3];
 
 /** Longer blocks add preparation weeks, not extra weeks of deep taper. */
 function peakConfigs(duration: number): WeekCfg[] {
-  if (duration === 2) return WEEK_CFG.slice(1);
-  const preparation = Array.from({ length: duration - 3 }, (_, i) => ({
-    ...WEEK_CFG[0], label: `Peak transition W${i + 1}`,
-    volFactor: 1 - i * 0.05, accFactor: 1 - i * 0.05,
-    topReps: 5, topRpe: 7.5,
-    notes: "Competition preparation at reference volume or slightly below. No added work. The final two weeks reduce volume before the meet.",
+  // Gradual main-lift set dose: 90→45% for two weeks, 90→65→40% for three.
+  // Longer blocks keep preparation near normal, not six weeks of deep taper.
+  const curves: Record<number, number[]> = {
+    2: [0.9, 0.45], 3: [0.9, 0.65, 0.4], 4: [0.95, 0.8, 0.65, 0.4],
+    5: [1, 0.9, 0.8, 0.65, 0.4], 6: [1, 0.95, 0.9, 0.8, 0.65, 0.4],
+  };
+  return curves[duration].map((factor, i) => ({
+    ...WEEK_CFG[i === duration - 1 ? 2 : i === duration - 2 ? 1 : 0],
+    label: i === duration - 1 ? "Tävlingsvecka" : `Toppning vecka ${i + 1}`,
+    volFactor: factor, accFactor: i === duration - 1 ? 0 : Math.max(0, factor - 0.1),
+    notes: `Arbetsset: cirka ${Math.round(factor * 100)} % av referensveckan. ${i === duration - 1 ? "Två korta teknikpass, därefter vila." : "Behåll vana arbetsvikter och minska antalet set. Inga nya övningar."} SETPOINTs coachförslag, inte en validerad RTS-kurva.`,
   }));
-  return [...preparation, ...WEEK_CFG];
 }
 
 /** Build 2–6 weeks; frequency redistributes a single weekly set budget. */
 export function buildPeakingWeeks(
   daysPerWeek: number,
   sum: PeakSummary | null,
-  opts: { openers?: boolean; weeks?: number } = {},
+  opts: { openers?: boolean; weeks?: number; days?: number } = {},
 ): TemplateWeek[] {
   const summary: PeakSummary =
     sum ??
@@ -420,12 +427,15 @@ export function buildPeakingWeeks(
 
   const days = clamp(Math.round(daysPerWeek), 2, 6);
 
-  const duration = clamp(Math.round(opts.weeks ?? 3), 2, 6);
+  const periodDays = clamp(Math.round(opts.days ?? (opts.weeks ?? 3) * 7), 14, 42);
+  const duration = Math.ceil(periodDays / 7);
   const configs = peakConfigs(duration);
   return configs.map((cfg, i) => {
     const weekIndex = i + 1;
     const meetWeek = weekIndex === configs.length;
-    const sessionCount = meetWeek ? 2 : days;
+    const windowDays = i === 0 ? periodDays % 7 || 7 : 7;
+    const windowScale = windowDays / 7;
+    const sessionCount = meetWeek ? 2 : Math.min(days, windowDays);
     const sessions: Omit<TemplateSession, "day_of_week">[] = Array.from({ length: sessionCount }, () => ({
       title: "", notes: meetWeek ? "Short, light competition practice, then rest before the meet." : "Competition setup and commands. Stop if technique deteriorates.", exercises: [],
     }));
@@ -435,7 +445,7 @@ export function buildPeakingWeeks(
       const reference = info.weeklySets > 0 ? info.weeklySets : 9;
       // At least one set per scheduled exposure; never multiply the historical
       // weekly dose by the number of days. Extra days split existing work.
-      const weekly = clamp(Math.round(reference * cfg.volFactor), Math.max(2, Math.ceil(sessionCount / active.length)), 20);
+      const weekly = clamp(Math.round(reference * cfg.volFactor * windowScale), Math.max(2, Math.ceil(sessionCount / active.length)), 20);
       const desired = meetWeek ? (key === "deadlift" ? 1 : 2)
         : key === "bench" ? days : key === "squat" ? Math.min(days, 3) : days >= 5 ? 2 : 1;
       const exposures = Math.min(weekly, desired);
@@ -462,7 +472,7 @@ export function buildPeakingWeeks(
       donor.target_sets -= 1;
       empty.exercises.push({ ...donor, target_sets: 1 });
     }
-    const accessoryBudget = accessoryExercises(summary, cfg, days >= 4 ? 4 : 3);
+    const accessoryBudget = accessoryExercises(summary, { ...cfg, accFactor: cfg.accFactor * windowScale }, days >= 4 ? 4 : 3);
     for (const exercise of accessoryBudget) {
       const index = sessions.map((_, index) => index).sort((a, b) => sessionSets(a) - sessionSets(b) || a - b)[0];
       if (index !== undefined) sessions[index].exercises.push(exercise);
@@ -471,7 +481,7 @@ export function buildPeakingWeeks(
       ...session,
       title: [...new Set(session.exercises.filter((e) => active.some((key) => L(key).name === e.exercise)).map((e) => e.exercise))].join(" + ") + (meetWeek ? " (light)" : ""),
     }));
-    const schedule = meetWeek ? DAYS_MEET : PEAK_DAYS[days];
+    const schedule = meetWeek ? DAYS_MEET : windowDays < 7 ? Array.from({ length: sessionCount }, (_, n) => 1 + Math.floor(n * windowDays / sessionCount)) : PEAK_DAYS[days];
 
     const referenceSets = Object.values(summary.lifts).reduce((a, l) => a + l.weeklySets, 0);
     const plannedSets = filled.reduce(
@@ -483,14 +493,14 @@ export function buildPeakingWeeks(
       0,
     );
     const drop =
-      referenceSets > 0 ? Math.round((1 - plannedSets / referenceSets) * 100) : null;
+      referenceSets > 0 ? Math.round((1 - plannedSets / windowScale / referenceSets) * 100) : null;
 
     return {
       week_index: weekIndex,
-      kind: meetWeek ? ("taper" as const) : cfg.label.startsWith("Peak transition") ? ("ramp" as const) : ("peak" as const),
+      kind: meetWeek ? ("taper" as const) : ("peak" as const),
       label: cfg.label,
       notes:
-        `${cfg.notes}` +
+        `${cfg.notes}${windowDays < 7 ? ` Första perioden är ${windowDays} dagar; setbudgeten är proportionellt kortad, procenten avser sjudagarsdos.` : ""}` +
         (drop != null
           ? ` Main-lift volume this week: ${plannedSets} sets vs ~${Math.round(referenceSets)}/week (${summary.referenceLabel ?? "last 6 weeks"}) (${drop >= 0 ? "−" : "+"}${Math.abs(drop)}%).`
           : ""),

@@ -1,5 +1,8 @@
 # Roadmap
 
+## Aktuellt
+- [ ] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering, med testad volymminskning
+
 ## Klart
 - [x] Passredigering direkt från kalendern (PlannedSessionEditor) — bygge/tester OK
 - [x] STEG 1: kritiska buggfixar i generatorn (fix 1–10)

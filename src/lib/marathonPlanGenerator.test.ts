@@ -67,6 +67,17 @@ describe("marathonPlanGenerator", () => {
     expect(w1six).toBeGreaterThan(w1four);
   });
 
+  it("race week stays tapered — pre-race runs are short", () => {
+    const raceWeek = plan.sessions.filter((s) => s.weekIndex === 20 && s.type !== "race");
+    expect(raceWeek.length).toBe(3);
+    for (const s of raceWeek) {
+      const minutes = s.planned_total_seconds / 60;
+      expect(minutes).toBeLessThanOrEqual(35);
+    }
+    const totalPreRace = raceWeek.reduce((sum, s) => sum + s.planned_total_seconds, 0) / 60;
+    expect(totalPreRace).toBeLessThanOrEqual(100);
+  });
+
   it("all sessions have a valid date, type and steps array", () => {
     for (const s of plan.sessions) {
       expect(s.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);

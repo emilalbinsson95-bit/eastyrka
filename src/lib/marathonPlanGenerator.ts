@@ -325,6 +325,13 @@ export function generate20WeekMarathonPlan(opts: {
       fixedTotal += longSession.duration;
     }
 
+    // Tävlingsvecka: loppet äter största delen av veckans tid — håll passen före loppet korta.
+    if (w === 20) {
+      for (const s of weekPlan) {
+        if (s.type === "easy") s.duration = 35;
+        else if (s.type === "recovery") s.duration = 25;
+      }
+    }
     const variableSessions = weekPlan.filter(s => s.duration === undefined);
     const weights: Record<string, number> = { easy: 1.0, medium_long: 1.3, strides: 1.1, recovery: 0.7 };
     const totalWeight = variableSessions.reduce((acc, s) => acc + (weights[s.type] || 1.0), 0);

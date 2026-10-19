@@ -32,6 +32,8 @@ export type CalendarItem = {
   cancelReason?: string | null;
   /** Link to detail page (optional). */
   href?: string;
+  /** Mesocycle the session belongs to (planned sessions only). */
+  cycleId?: string;
   paymentService?: "coaching" | "overview";
 };
 

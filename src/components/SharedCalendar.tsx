@@ -453,7 +453,12 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         item={previewTarget}
         open={!!previewTarget}
         onOpenChange={(o) => !o && setPreviewTarget(null)}
-        canStartToday={!readOnly}
+        canStartToday={!readOnly && viewerRole !== "coach" && viewerRole !== "physio"}
+        editHref={
+          viewerRole === "coach" && previewTarget?.source === "planned" && previewTarget.cycleId
+            ? `/coach/athletes/${ownerId}/cycles/${previewTarget.cycleId}`
+            : undefined
+        }
       />
 
       <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>

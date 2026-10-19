@@ -209,7 +209,7 @@ export function summarizeHistory(h: HistoryInputs): HistorySummary {
 
 /** Weekly sets per category prescribed by the template (avg over non-deload weeks). */
 export function templateWeeklySets(weeks: TemplateWeek[]): Map<VolumeCategory, number> {
-  const working = weeks.filter((w) => !/deload/i.test(w.label));
+  const working = weeks.filter((w) => w.kind !== "deload" && w.kind !== "taper");
   const src = working.length ? working : weeks;
   const total = new Map<VolumeCategory, number>();
   for (const w of src) {
@@ -358,22 +358,32 @@ export function buildAdjustments(
 // ---------- baseline matching ----------
 
 function normName(s: string): string {
-  const name = s.toLowerCase().trim().replace(/\s+/g, " ");
-  if (/^(back squat|squat|comp squat|competition squat|knäböj)$/.test(name)) return "squat";
-  if (/^(bench|bench press|comp bench|competition bench|bänkpress)$/.test(name)) return "bench press";
-  if (/^(deadlift|conventional deadlift|marklyft|smal mark)$/.test(name)) return "conventional deadlift";
-  if (/^(sumo|sumo deadlift|sumomark)$/.test(name)) return "sumo deadlift";
-  return name;
+  return s.toLowerCase().trim().replace(/\s+/g, " ");
 }
+
+/**
+ * Explicit alias map from a template exercise name to the baseline name it
+ * should use. Only consulted when no exact (normalized) match exists — a
+ * variation like "Deficit deadlift" must never inherit the deadlift baseline.
+ */
+const BASELINE_ALIAS: Record<string, string> = {
+  squat: "back squat",
+  "comp squat": "back squat",
+  bench: "bench press",
+  "conventional deadlift": "deadlift",
+};
 
 export function matchBaseline(
   ex: Pick<TemplateExercise, "exercise">,
   baselines: HistBaseline[],
 ): HistBaseline | undefined {
-  const name = normName(ex.exercise);
   const valid = baselines.filter((b) => Number(b.one_rm_kg) > 0);
-  return valid.find((b) => b.exercise.trim().toLowerCase() === ex.exercise.trim().toLowerCase())
-    ?? valid.find((b) => normName(b.exercise) === name);
+  const name = normName(ex.exercise);
+  const exact = valid.find((b) => normName(b.exercise) === name);
+  if (exact) return exact;
+  const alias = BASELINE_ALIAS[name];
+  if (!alias) return undefined;
+  return valid.find((b) => normName(b.exercise) === alias);
 }
 
 function countLoadableExercises(weeks: TemplateWeek[], baselines: HistBaseline[]) {
@@ -658,7 +668,11 @@ export function applyAdjustments(
   const doLoads = adjustments.some((a) => a.kind === "loads");
 
   return weeks.map((w) => {
-    const isDeload = /deload|taper|peak|återhämt|toppning/i.test(w.label);
+    // Only true light weeks are exempt from adjustments. Peak weeks and
+    // low-volume templates (skipVolumeFloors) still get ramp-in, readiness
+    // and coach intensity tuning on their working weeks — only the
+    // MEV/minimum-set floors are skipped for those templates.
+    const isDeload = w.kind === "deload" || w.kind === "taper";
     const inRamp = ramp && !isDeload && w.week_index <= (ramp.rampWeeks ?? 1);
     const rampMult = inRamp ? (ramp?.multiplier ?? 0.8) : 1;
 
@@ -746,7 +760,7 @@ const SET_CAP_ACCESSORY = 4;
  */
 export function enforceTemplateFloors(weeks: TemplateWeek[]): TemplateWeek[] {
   return weeks.map((w) => {
-    if (/deload/i.test(w.label)) return w;
+    if (w.kind === "deload" || w.kind === "taper") return w;
 
     // Mutable copy of set counts.
     const counts = w.sessions.map((s) => s.exercises.map((e) => e.target_sets));

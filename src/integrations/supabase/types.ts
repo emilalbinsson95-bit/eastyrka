@@ -170,6 +170,7 @@ export type Database = {
           one_rm_kg: number
           recorded_at: string
           recorded_by: string | null
+          source: string
         }
         Insert: {
           athlete_id: string
@@ -179,6 +180,7 @@ export type Database = {
           one_rm_kg: number
           recorded_at?: string
           recorded_by?: string | null
+          source?: string
         }
         Update: {
           athlete_id?: string
@@ -188,6 +190,7 @@ export type Database = {
           one_rm_kg?: number
           recorded_at?: string
           recorded_by?: string | null
+          source?: string
         }
         Relationships: []
       }
@@ -306,6 +309,83 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      eak_meso_evaluations: {
+        Row: {
+          athlete_id: string
+          athlete_signal: boolean
+          coach_decision: string
+          coach_note: string | null
+          created_at: string
+          decided_at: string | null
+          dl_m: number | null
+          eak_m: number | null
+          id: string
+          l_m: number | null
+          lift: string
+          n_sessions: number
+          readiness_signal: boolean
+          slope: number | null
+          status: string
+          suggestion_text: string | null
+          te_i: number | null
+          threshold_i: number | null
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          athlete_id: string
+          athlete_signal?: boolean
+          coach_decision?: string
+          coach_note?: string | null
+          created_at?: string
+          decided_at?: string | null
+          dl_m?: number | null
+          eak_m?: number | null
+          id?: string
+          l_m?: number | null
+          lift: string
+          n_sessions?: number
+          readiness_signal?: boolean
+          slope?: number | null
+          status: string
+          suggestion_text?: string | null
+          te_i?: number | null
+          threshold_i?: number | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          athlete_id?: string
+          athlete_signal?: boolean
+          coach_decision?: string
+          coach_note?: string | null
+          created_at?: string
+          decided_at?: string | null
+          dl_m?: number | null
+          eak_m?: number | null
+          id?: string
+          l_m?: number | null
+          lift?: string
+          n_sessions?: number
+          readiness_signal?: boolean
+          slope?: number | null
+          status?: string
+          suggestion_text?: string | null
+          te_i?: number | null
+          threshold_i?: number | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eak_meso_evaluations_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       endurance_pb_history: {
         Row: {
@@ -1285,6 +1365,44 @@ export type Database = {
           work_stress?: number
         }
         Relationships: []
+      }
+      rebound_tests: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          deload_week_start: string
+          id: string
+          lift: string
+          passed: boolean
+          r_value: number | null
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          deload_week_start: string
+          id?: string
+          lift: string
+          passed?: boolean
+          r_value?: number | null
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          deload_week_start?: string
+          id?: string
+          lift?: string
+          passed?: boolean
+          r_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rebound_tests_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rehab_exercises: {
         Row: {

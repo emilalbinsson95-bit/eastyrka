@@ -14,6 +14,7 @@
 import type { TemplateExercise, TemplateSession, TemplateWeek } from "./strengthTemplates";
 import { resolveVariantExercise } from "./exerciseVariants";
 import { pctOf1RM } from "./intensity";
+import { compLiftKey, isCompLift } from "./liftIdentity";
 
 export type DeadliftStance = "keep" | "conventional" | "sumo";
 
@@ -49,11 +50,7 @@ function text(e: Pick<TemplateExercise, "exercise" | "variation">): string {
 
 /** Competition-style main lift, i.e. the barbell movement itself — not a variation. */
 export function mainLift(e: Pick<TemplateExercise, "exercise" | "variation">): MainLift | null {
-  const name = e.exercise.toLowerCase();
-  if (/^(back squat|squat|comp squat)$/.test(name)) return "squat";
-  if (/^(bench press|comp bench)$/.test(name)) return "bench";
-  if (/^(deadlift|conventional deadlift|sumo deadlift)$/.test(name)) return "deadlift";
-  return null;
+  return compLiftKey(e.exercise);
 }
 
 /** Any bench-pattern pressing work that competes for weekly bench volume. */
@@ -68,7 +65,7 @@ function isDeadliftPattern(e: TemplateExercise): boolean {
 }
 
 function isDeloadWeek(w: TemplateWeek): boolean {
-  return /deload/i.test(w.label) || /deload/i.test(w.notes ?? "");
+  return w.kind === "deload" || w.kind === "taper";
 }
 
 function mapSessions(
@@ -82,16 +79,24 @@ function appendNote(existing: string | undefined, add: string): string {
   return existing ? `${existing} ${add}` : add;
 }
 
+/** Stance/grip labels describe how the same lift is performed — they never
+ * make it a different exercise for load purposes. */
+const STANCE_GRIP_LABEL = /^(competition stance|conventional stance|sumo stance|competition grip & pause)$/i;
+const normVariation = (v?: string | null) => {
+  const t = (v ?? "").trim();
+  return STANCE_GRIP_LABEL.test(t) ? "" : t.toLowerCase();
+};
+const normExercise = (name: string) => compLiftKey(name) ?? name.trim().toLowerCase();
+
 /** Preserve an exercise's own load estimate when effort/reps change; never
  * transfer kilos to a different exercise or stance. */
 function reconcileLoad(before: TemplateExercise, after: TemplateExercise): TemplateExercise {
   const original = resolveVariantExercise(before.exercise, before.variation);
   const next = resolveVariantExercise(after.exercise, after.variation);
-  const stance = (e: TemplateExercise) => /sumo/i.test(`${e.exercise} ${e.variation ?? ""}`) ? "sumo" : "conventional";
-  const sameDeadlift = mainLift(before) === "deadlift" && mainLift(after) === "deadlift" && stance(before) === stance(after)
-    && /^(competition stance|conventional stance|sumo stance)?$/i.test(before.variation ?? "")
-    && /^(competition stance|conventional stance|sumo stance)?$/i.test(after.variation ?? "");
-  if (!sameDeadlift && (original.exercise !== next.exercise || original.variation !== next.variation)) {
+  const sameExercise =
+    normExercise(original.exercise) === normExercise(next.exercise) &&
+    normVariation(original.variation) === normVariation(next.variation);
+  if (!sameExercise) {
     return { ...after, target_weight_kg: undefined };
   }
   const effort = (e: TemplateExercise) => e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : e.target_rpe;
@@ -199,23 +204,31 @@ const WAVE: WaveStep[] = [
 
 function withWaveLoading(week: TemplateWeek, workingIndex: number, intensityOffset: number): TemplateWeek {
   const step = WAVE[workingIndex % WAVE.length];
+  // The wave's RPE is an offset relative to the template's week-1 RPE, so
+  // coach intensity tuning and ramp-in reductions are preserved instead of
+  // being overwritten with an absolute value.
+  const rpeOffset = step.rpe - WAVE[0].rpe;
   const out = mapSessions(week, (s) => ({
     ...s,
     exercises: s.exercises.map((e) => {
       const lift = mainLift(e);
       if (!lift) return e;
-      if (e.variation && !/^(competition stance|competition grip & pause|conventional stance|sumo stance)$/i.test(e.variation)) return e;
+      // Only true competition-lift entries — never pause/tempo/high-bar/
+      // touch-and-go variants or over-warm singles.
+      if (!isCompLift(e.exercise, e.variation)) return e;
       if ((e.variation ?? "") === OVER_WARM_VARIATION) return e;
       // Leave dedicated hypertrophy prescriptions (8+ reps) alone.
       if (e.target_reps > 6) return e;
       const reps = lift === "deadlift" ? step.deadliftReps : step.reps;
+      const baseRpe = e.target_rpe ?? WAVE[0].rpe;
+      const rpe = Math.max(5, Math.min(10, baseRpe + rpeOffset + intensityOffset));
       return reconcileLoad(e, {
         ...e,
         target_reps: reps,
-        target_rpe: Math.max(5, Math.min(10, step.rpe + intensityOffset)),
+        target_rpe: rpe,
         target_rir: undefined,
         intensity_metric: "rpe" as const,
-        notes: appendNote(e.notes, `Wave week ${workingIndex + 1}: ${reps} reps @ RPE ${Math.max(5, Math.min(10, step.rpe + intensityOffset))}.`),
+        notes: appendNote(e.notes, `Wave week ${workingIndex + 1}: ${reps} reps @ RPE ${rpe}.`),
       });
     }),
   }));

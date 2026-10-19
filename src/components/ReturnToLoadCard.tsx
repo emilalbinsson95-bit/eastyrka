@@ -122,8 +122,8 @@ export function ReturnToLoadCard({ athleteId, dateStr }: { athleteId: string; da
       if (res.updated.length === 0) {
         toast.info("Baselines already match your recent form.");
       } else {
-        toast.success(
-          `Updated ${res.updated.length} baseline${res.updated.length === 1 ? "" : "s"} from recent form.`,
+        toast.info(
+          `Baseline suggestion: ${res.updated.map((u) => `${u.exercise} ${u.oldBaseline}→${u.newBaseline} kg`).join(", ")} — your coach approves any change.`,
         );
       }
     } catch (e) {

@@ -22,6 +22,7 @@ function emptyHistory(over: Partial<HistoryInputs> = {}): HistoryInputs {
 function week(index: number, label: string, sets = 4): TemplateWeek {
   return {
     week_index: index,
+    kind: (/deload/i.test(label) ? "deload" : "working") as "working" | "deload",
     label,
     sessions: [
       {
@@ -259,6 +260,7 @@ describe("applyAdjustments", () => {
 describe("coach tuning + distributed rounding", () => {
   const w: TemplateWeek = {
     week_index: 1,
+    kind: "working" as const,
     label: "Week 1",
     sessions: [
       {
@@ -300,7 +302,7 @@ describe("coach tuning + distributed rounding", () => {
 
 describe("volume landmarks", () => {
   it("applies separate lift tolerance to squat, bench and deadlift sets", () => {
-    const mixed: TemplateWeek = { week_index: 1, label: "Week 1", sessions: [{ day_of_week: 1, title: "Main lifts", exercises: [
+    const mixed: TemplateWeek = { week_index: 1, kind: "working", label: "Week 1", sessions: [{ day_of_week: 1, title: "Main lifts", exercises: [
       { exercise: "Back squat", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
       { exercise: "Bench press", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
       { exercise: "Deadlift", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
@@ -316,6 +318,7 @@ describe("volume landmarks", () => {
   it("flags weekly sets above MRV", () => {
     const heavy: TemplateWeek = {
       week_index: 1,
+    kind: "working" as const,
       label: "Week 1",
       sessions: [
         {
@@ -358,5 +361,44 @@ describe("exercise classifier coverage", () => {
       expect([name, volumeCategory({ exercise: name, variation: undefined })]).toEqual([name, cat]);
       expect(isUnclassified({ exercise: name, variation: undefined })).toBe(false);
     }
+  });
+});
+
+describe("matchBaseline aliases (fix 1)", () => {
+  it("maps template names to baseline names via the explicit alias map only", () => {
+    const baselines = [
+      { exercise: "Back squat", one_rm_kg: 200 },
+      { exercise: "Bench press", one_rm_kg: 140 },
+      { exercise: "Deadlift", one_rm_kg: 240 },
+    ];
+    expect(matchBaseline({ exercise: "Squat" }, baselines)?.one_rm_kg).toBe(200);
+    expect(matchBaseline({ exercise: "Bench" }, baselines)?.one_rm_kg).toBe(140);
+    expect(matchBaseline({ exercise: "Conventional deadlift" }, baselines)?.one_rm_kg).toBe(240);
+  });
+  it("never matches a variation to the comp baseline", () => {
+    const baselines = [{ exercise: "Deadlift", one_rm_kg: 240 }];
+    expect(matchBaseline({ exercise: "Deficit deadlift" }, baselines)).toBeUndefined();
+    expect(matchBaseline({ exercise: "Romanian deadlift" }, baselines)).toBeUndefined();
+  });
+});
+
+describe("applyAdjustments on peak weeks (fix 10)", () => {
+  it("still applies coach intensity tuning on peak weeks", () => {
+    const peakWeeks: TemplateWeek[] = [
+      { ...week(1, "Peak W1"), kind: "peak" },
+      { ...week(2, "Peak W2"), kind: "peak" },
+    ];
+    const h = emptyHistory();
+    const tuning = { ...DEFAULT_TUNING, intensity: 1 };
+    const out = applyAdjustments(peakWeeks, buildAdjustments(peakWeeks, h).adjustments, h, tuning);
+    const rpes = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises.map((e) => e.target_rpe)));
+    expect(rpes).toContain(9);
+  });
+  it("leaves taper weeks alone", () => {
+    const taper: TemplateWeek[] = [{ ...week(1, "Taper"), kind: "taper" }];
+    const h = emptyHistory();
+    const tuning = { ...DEFAULT_TUNING, intensity: 1 };
+    const out = applyAdjustments(taper, buildAdjustments(taper, h).adjustments, h, tuning);
+    expect(out[0].sessions[0].exercises[0].target_rpe).toBe(8);
   });
 });

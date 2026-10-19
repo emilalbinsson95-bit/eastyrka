@@ -125,7 +125,7 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
 export function applySetProtocols(weeks: TemplateWeek[], options: SetProtocolOptions): TemplateWeek[] {
   const doubleReferences = new Map<string, TemplateExercise>();
   return weeks.map((week) => {
-    if (/deload|taper|peak|återhämt|toppning/i.test(`${week.label} ${week.notes ?? ""}`)) return week;
+    if (week.kind !== "working" && week.kind !== "ramp") return week;
     return { ...week, sessions: week.sessions.map((session, sessionIndex) => ({ ...session,
       exercises: session.exercises.map((e) => {
         const group = protocolGroup(e);

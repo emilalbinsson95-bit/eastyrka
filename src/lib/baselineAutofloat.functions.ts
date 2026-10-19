@@ -1,8 +1,9 @@
 /**
- * Auto-flytande baseline för EAk (endast den egna övningen).
- * - Mätset per pass (tung singel eller första arbetsset, RPE ≥ 7).
- * - Höjning: minst 12 av de senaste 16 mätpassen efter senaste ändringen
- *   ligger på ≥ 103 %. Ny baseline = median(topp-E1RM) × 0,98, högst +5 %.
+ * Baseline-förslag för EAk (endast den egna övningen) — FÖRESLÅR, skriver aldrig.
+ * Enligt EAk-specen får baslinjen aldrig höjas automatiskt: den höjs vid nytt
+ * tävlings-/träningsmax eller när coachen godkänner en "push"-signal.
+ * - Förslag: minst 12 av de senaste 16 mätpassen efter senaste ändringen
+ *   ligger på ≥ 103 %. Föreslagen baseline = median(topp-E1RM) × 0,98, högst +5 %.
  * - Varning nedåt: 6 av de 8 senaste mätpassen under 92 %. Sänkningar görs
  *   manuellt av coachen. Trösklarna är egna designval, inte forskningsvärden.
  */
@@ -147,12 +148,8 @@ export const autoFloatBaselines = createServerFn({ method: "POST" })
         continue;
       }
 
-      const { error: uErr } = await supabaseAdmin
-        .from("baselines")
-        .update({ one_rm_kg: proposed, updated_at: new Date().toISOString() })
-        .eq("id", b.id);
-      if (uErr) throw new Error(uErr.message);
-
+      // Ingen skrivning — baslinjen ändras bara efter coachgodkännande
+      // (push-signal) eller nytt max. Returnera förslaget.
       updated.push({
         exercise: b.exercise,
         oldBaseline: baseline,

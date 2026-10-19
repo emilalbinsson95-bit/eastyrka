@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession } from "./eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet } from "./eakoefficient";
 import { canAddExtraSet } from "./blockVolume";
 
 describe("EAk (RTS model)", () => {
@@ -54,5 +54,23 @@ describe("EAk (RTS model)", () => {
     const sets = [1, 2, 3].map((n) => ({ set_number: n, reps: 5, weight_kg: 120, rpe: 8 }));
     expect(canAddExtraSet({ plannedSets: 3, doneSets: sets, targetRpe: 8, isLightOrSingle: false }).allowed).toBe(true);
     expect(canAddExtraSet({ plannedSets: 3, doneSets: [...sets, { set_number: 4, reps: 5, weight_kg: 120, rpe: 8 }, { set_number: 5, reps: 5, weight_kg: 120, rpe: 8 }], targetRpe: 8, isLightOrSingle: false }).allowed).toBe(false);
+  });
+});
+
+describe("pickMeasurementSet (heavy singles)", () => {
+  it("uses a leading over-warm single as the measurement set", () => {
+    const sets = [
+      { set_number: 1, reps: 1, weight_kg: 140, rpe: 8 },
+      { set_number: 2, reps: 5, weight_kg: 120, rpe: 8 },
+    ];
+    expect(pickMeasurementSet(sets)?.set_number).toBe(1);
+  });
+  it("never lets a single logged after the working sets replace the first working set", () => {
+    const sets = [
+      { set_number: 1, reps: 5, weight_kg: 120, rpe: 8 },
+      { set_number: 2, reps: 5, weight_kg: 120, rpe: 8 },
+      { set_number: 3, reps: 1, weight_kg: 150, rpe: 9 },
+    ];
+    expect(pickMeasurementSet(sets)?.set_number).toBe(1);
   });
 });

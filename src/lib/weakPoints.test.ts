@@ -46,9 +46,20 @@ describe("1.5-reps", () => {
   it("counts 1.25 sets and resolves as own exercise", () => {
     expect(setVolumeWeight({ exercise: "1.5-rep squat" })).toBe(1.25);
     expect(resolveVariantExercise("Back squat", "1.5 reps").exercise).toBe("1.5-rep squat");
-    const w = [{ week_index: 1, label: "Week 1", sessions: [{ day_of_week: 1, title: "S", exercises: [
+    const w = [{ week_index: 1, kind: "working" as const, label: "Week 1", sessions: [{ day_of_week: 1, title: "S", exercises: [
       { exercise: "1.5-rep squat", target_sets: 4, target_reps: 4, target_rpe: 7, intensity_metric: "rpe" as const },
     ] }] }];
     expect(templateWeeklySets(w as never).get("squat")).toBe(5);
+  });
+});
+
+describe("light weeks", () => {
+  it("leaves peak and taper weeks exactly as the peaking block designed them", () => {
+    const base = STRENGTH_TEMPLATES.find((t) => t.id === "standard-pl")!.buildWeeks(3)[0];
+    const peakWeek = { ...base, kind: "peak" as const, label: "Peak W2" };
+    const taperWeek = { ...base, kind: "taper" as const, label: "Taper" };
+    const out = applyWeakPoints([peakWeek, taperWeek], ["squat-lockout"]);
+    expect(out[0]).toEqual(peakWeek);
+    expect(out[1]).toEqual(taperWeek);
   });
 });

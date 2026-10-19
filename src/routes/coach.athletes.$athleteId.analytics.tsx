@@ -513,8 +513,8 @@ function AnalyticsPage() {
     return { abs: last - first, pct: ((last - first) / first) * 100 };
   }, [baselineSeries]);
 
-  // Auto-flytande baseline: trögt — kräver minst 12 peak-pass (EAk ≥ 103 %)
-  // sedan senaste baseline-ändringen innan den höjs.
+  // Baseline-förslag: trögt — kräver minst 12 peak-pass (EAk ≥ 103 %)
+  // sedan senaste baseline-ändringen. Skriver aldrig automatiskt.
   const queryClient = useQueryClient();
   const autoFloat = useServerFn(autoFloatBaselines);
   const [autoFloatPending, setAutoFloatPending] = useState(false);
@@ -530,10 +530,10 @@ function AnalyticsPage() {
         queryClient.invalidateQueries({ queryKey: ["analytics-baseline-history", athleteId] }),
       ]);
       if (res.updated.length === 0) {
-        toast.info("Inga baslinjer behövde flyttas än.");
+        toast.info("Inga baslinjeförslag än.");
       } else {
         toast.success(
-          `Flyttade ${res.updated.length} baseline${res.updated.length === 1 ? "" : "s"} (${res.updated.map((u) => `${u.exercise} ${u.oldBaseline}→${u.newBaseline} kg`).join(", ")})`,
+          `Förslag: ${res.updated.map((u) => `${u.exercise} ${u.oldBaseline}→${u.newBaseline} kg`).join(", ")} — godkänn i EAk-sektionen för att ändra.`,
         );
       }
     } catch (err) {

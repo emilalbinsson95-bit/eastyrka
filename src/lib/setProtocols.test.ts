@@ -13,7 +13,7 @@ describe("coach-selected set protocols", () => {
     }
   });
   it("skips deloads, taper and explosive or 1.5-rep work", () => {
-    for (const label of ["Deload", "Taper", "Peak"]) expect(applySetProtocols([{ ...week, label }], { ...DEFAULT_SET_PROTOCOLS, squat: "ramping" })[0]).toEqual({ ...week, label });
+    for (const [label, kind] of [["Deload", "deload"], ["Taper", "taper"], ["Peak", "peak"]] as const) expect(applySetProtocols([{ ...week, label, kind }], { ...DEFAULT_SET_PROTOCOLS, squat: "ramping" })[0]).toEqual({ ...week, label, kind });
     for (const name of ["1.5-rep squat", "Power clean", "Box jump", "Snatch"]) expect(protocolGroup({ ...exercise, exercise: name })).toBeNull();
   });
   it("ramps weight with RPE and preserves first-set prescription", () => {

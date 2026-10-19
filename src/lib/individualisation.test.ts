@@ -22,7 +22,7 @@ function emptyHistory(over: Partial<HistoryInputs> = {}): HistoryInputs {
 function week(index: number, label: string, sets = 4): TemplateWeek {
   return {
     week_index: index,
-    kind: "working" as const,
+    kind: (/deload/i.test(label) ? "deload" : "working") as "working" | "deload",
     label,
     sessions: [
       {

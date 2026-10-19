@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
-import { Dumbbell, Footprints, HeartPulse, Utensils, Moon, Flame, Wind, Play } from "lucide-react";
+import { Dumbbell, Footprints, HeartPulse, Utensils, Moon, Flame, Wind, Play, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

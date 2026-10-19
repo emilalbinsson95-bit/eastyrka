@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, protocolSets, SET_PROTOCOLS, protocolGroup } from "./setProtocols";
 import { STRENGTH_TEMPLATES, type TemplateExercise, type TemplateWeek } from "./strengthTemplates";
 const exercise: TemplateExercise = { exercise: "Back squat", target_sets: 4, target_reps: 5, target_rpe: 8, target_weight_kg: 100, intensity_metric: "rpe", notes: "Brace before each rep. Last set to failure.", last_set_to_failure: true };
-const week: TemplateWeek = { week_index: 1, label: "Build", sessions: [{ day_of_week: 1, title: "Squat", exercises: [exercise] }] };
+const week: TemplateWeek = { week_index: 1, kind: "working", label: "Build", sessions: [{ day_of_week: 1, title: "Squat", exercises: [exercise] }] };
 describe("coach-selected set protocols", () => {
   it("leaves default prescriptions untouched", () => expect(applySetProtocols([week], DEFAULT_SET_PROTOCOLS)[0]?.sessions[0]?.exercises[0]).toEqual(exercise));
   it("preserves every template's exercise and set budgets at every supported frequency", () => {

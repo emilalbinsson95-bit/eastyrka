@@ -22,6 +22,7 @@ function emptyHistory(over: Partial<HistoryInputs> = {}): HistoryInputs {
 function week(index: number, label: string, sets = 4): TemplateWeek {
   return {
     week_index: index,
+    kind: "working" as const,
     label,
     sessions: [
       {
@@ -259,6 +260,7 @@ describe("applyAdjustments", () => {
 describe("coach tuning + distributed rounding", () => {
   const w: TemplateWeek = {
     week_index: 1,
+    kind: "working" as const,
     label: "Week 1",
     sessions: [
       {
@@ -300,7 +302,7 @@ describe("coach tuning + distributed rounding", () => {
 
 describe("volume landmarks", () => {
   it("applies separate lift tolerance to squat, bench and deadlift sets", () => {
-    const mixed: TemplateWeek = { week_index: 1, label: "Week 1", sessions: [{ day_of_week: 1, title: "Main lifts", exercises: [
+    const mixed: TemplateWeek = { week_index: 1, kind: "working", label: "Week 1", sessions: [{ day_of_week: 1, title: "Main lifts", exercises: [
       { exercise: "Back squat", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
       { exercise: "Bench press", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
       { exercise: "Deadlift", target_sets: 8, target_reps: 5, target_rpe: 8, intensity_metric: "rpe" },
@@ -316,6 +318,7 @@ describe("volume landmarks", () => {
   it("flags weekly sets above MRV", () => {
     const heavy: TemplateWeek = {
       week_index: 1,
+    kind: "working" as const,
       label: "Week 1",
       sessions: [
         {

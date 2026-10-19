@@ -43,6 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 import { dailyE1RM, rollingE1RMBySession, countsForEAk } from "@/lib/eakoefficient";
+import { EakMesoSection } from "@/components/EakMesoSection";
 import { autoFloatBaselines, type BaselineAutoResult } from "@/lib/baselineAutofloat.functions";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -1112,6 +1113,8 @@ function AnalyticsPage() {
           </CardContent>
         </Card>
       )}
+
+      {!isLoading && <EakMesoSection athleteId={athleteId} />}
 
       {!isLoading && (
         <Tabs

@@ -19,8 +19,8 @@
 - [ ] STEG 2: src/lib/eakSignal.ts + eakSignal.test.ts — ren TS, återanvänder dailyE1RM/pickMeasurementSet/lookupBaseline; session-nivå + mesocykel-evaluering, rebound-test, baseline med coach-godkännande, förslag istället för automatisk blockvolym
 
 ## Väntar
-- [ ] STEG 3: databastabeller eak_meso_evaluations, baseline_history, rebound_tests + RLS
-- [ ] STEG 4: coachvy — statuschips per lyft, EAk-sektion, godkänn/avvisa/justera, baseline-korrigering
+- [x] STEG 3: databastabeller eak_meso_evaluations, baseline_history, rebound_tests + RLS
+- [x] STEG 4: coachvy — statuschips per lyft, EAk-sektion, godkänn/avvisa/justera, baseline-korrigering
 - [ ] STEG 5 (valfritt): volymtak skalar med volymfaktor
 - [ ] Provköra egna säsongsblock ("Eget upplägg") som coach i appen
 - [ ] Granska maratonplanens tävlingsvecka (monitoring-fynd)

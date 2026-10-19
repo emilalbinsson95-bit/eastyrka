@@ -62,12 +62,15 @@ export function SessionPreviewDialog({
   open,
   onOpenChange,
   canStartToday = false,
+  editHref,
 }: {
   item: CalendarItem | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   /** Show "Start workout today" button (athlete viewing own calendar). */
   canStartToday?: boolean;
+  /** Link to edit the underlying program (coach viewing a planned session). */
+  editHref?: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,6 +79,7 @@ export function SessionPreviewDialog({
           <PreviewBody
             item={item}
             canStartToday={canStartToday}
+            editHref={editHref}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -87,10 +91,12 @@ export function SessionPreviewDialog({
 function PreviewBody({
   item,
   canStartToday,
+  editHref,
   onClose,
 }: {
   item: CalendarItem;
   canStartToday: boolean;
+  editHref?: string;
   onClose: () => void;
 }) {
   const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;

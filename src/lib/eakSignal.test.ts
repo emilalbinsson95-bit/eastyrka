@@ -87,7 +87,7 @@ describe("evaluateMesocycle", () => {
 
   it("RPE-bias: +1 RPE på varje set ändrar inte dL_M-baserad status", () => {
     const prevDates = ["2026-05-04", "2026-05-07", "2026-05-11", "2026-05-14"];
-    const cur = [96, 95, 94, 93, 92];
+    const cur = [91, 90, 89, 88, 87];
     const prev = [100, 100, 100, 100];
     const run = (rpe: number) => {
       const prevLogs = block(prevDates, prev, rpe);
@@ -96,8 +96,9 @@ describe("evaluateMesocycle", () => {
     };
     const a = run(10);
     const b = run(9);
-    expect(a.status).toBe("red");
-    expect(b.status).toBe("red");
+    // Relativa mått (dL_M) neutraliserar biasen — statusen är densamma.
+    expect(a.status).toBe("red_strong");
+    expect(b.status).toBe("red_strong");
     expect(b.dL_M).toBeCloseTo(a.dL_M, 5);
   });
 });

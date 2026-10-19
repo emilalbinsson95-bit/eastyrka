@@ -17,7 +17,7 @@
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Persist coach-only lift-volume preferences for shared generation baselines.
-- Build 2–4 week peaks from history with RTS estimates and no MEV floors; taper volume must stay reduced.
+- Build 2–6 week peaks from history with RTS estimates and no MEV floors; longer blocks add preparation before the final taper, frequency redistributes weekly sets, and meet week retains two early sessions.
 
 - Keep methodology on one route with running/strength/coaching tabs to preserve links.
 - Weak points (`src/lib/weakPoints.ts`): coach-only, one/lift, variation + one accessory/week; 8/7/6 exercise caps for 2/3/4+ days; replace comp > weak-point > variation > compound > isolation > core, skipping deloads for focus and realism.

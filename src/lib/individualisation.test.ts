@@ -363,3 +363,38 @@ describe("exercise classifier coverage", () => {
     }
   });
 });
+
+describe("matchBaseline aliases (fix 1)", () => {
+  it("maps template names to baseline names via the explicit alias map only", () => {
+    const baselines = [
+      { exercise: "Back squat", one_rm_kg: 200 },
+      { exercise: "Bench press", one_rm_kg: 140 },
+      { exercise: "Deadlift", one_rm_kg: 240 },
+    ];
+    expect(matchBaseline({ exercise: "Squat" }, baselines)?.one_rm_kg).toBe(200);
+    expect(matchBaseline({ exercise: "Bench" }, baselines)?.one_rm_kg).toBe(140);
+    expect(matchBaseline({ exercise: "Conventional deadlift" }, baselines)?.one_rm_kg).toBe(240);
+  });
+  it("never matches a variation to the comp baseline", () => {
+    const baselines = [{ exercise: "Deadlift", one_rm_kg: 240 }];
+    expect(matchBaseline({ exercise: "Deficit deadlift" }, baselines)).toBeUndefined();
+    expect(matchBaseline({ exercise: "Romanian deadlift" }, baselines)).toBeUndefined();
+  });
+});
+
+describe("applyAdjustments on peak weeks (fix 10)", () => {
+  it("still applies coach intensity tuning on peak weeks", () => {
+    const peakWeeks: TemplateWeek[] = [
+      { ...week(1, "Peak W1"), kind: "peak" },
+      { ...week(2, "Peak W2"), kind: "peak" },
+    ];
+    const out = applyAdjustments(peakWeeks, emptyHistory(), { ...DEFAULT_TUNING, intensity: 1 });
+    const rpes = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises.map((e) => e.target_rpe)));
+    expect(rpes).toContain(9);
+  });
+  it("leaves taper weeks alone", () => {
+    const taper: TemplateWeek[] = [{ ...week(1, "Taper"), kind: "taper" }];
+    const out = applyAdjustments(taper, emptyHistory(), { ...DEFAULT_TUNING, intensity: 1 });
+    expect(out[0].sessions[0].exercises[0].target_rpe).toBe(8);
+  });
+});

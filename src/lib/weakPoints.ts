@@ -5,6 +5,7 @@
  * targeted accessory per week (not in deload weeks).
  */
 import { isOneAndHalfRep } from "@/lib/exerciseVariants";
+import { isCompLift } from "@/lib/liftIdentity";
 import { volumeCategory, type TemplateExercise, type TemplateWeek } from "@/lib/strengthTemplates";
 
 export type WeakLift = "squat" | "bench" | "deadlift";
@@ -124,17 +125,15 @@ const LIFT_CAT: Record<WeakLift, ReturnType<typeof volumeCategory>> = {
 // A named comp lift is the comp slot unless its variation describes a true
 // variant. Stance/grip notes (e.g. "Sumo stance", "Competition grip & pause")
 // and over-warm singles still count as the competition lift.
-const VARIANT = /pause squat|tempo|pin|deficit|block|spoto|larsen|touch|close|wide|board|floor/i;
-
 function isCompSlot(e: TemplateExercise): boolean {
-  return /^(back squat|squat|bench press|deadlift|sumo deadlift|conventional deadlift)$/i.test(e.exercise) && (!e.variation || !VARIANT.test(e.variation));
+  return isCompLift(e.exercise, e.variation);
 }
 
 export function getWeakPoints(ids: string[]): WeakPoint[] {
   return ids.map((id) => WEAK_POINTS.find((w) => w.id === id)).filter((w): w is WeakPoint => Boolean(w));
 }
 
-const isDeloadWeek = (w: TemplateWeek) => /deload|taper|meet/i.test(w.label);
+const isDeloadWeek = (w: TemplateWeek) => w.kind === "deload";
 
 /** Keep at most one weak point per lift — the primary limiter. Fixing
  *  several faults in one lift at once dilutes the stimulus and makes it
@@ -187,6 +186,8 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
   const selected = getWeakPoints(normalizeWeakIds(ids));
   if (selected.length === 0) return weeks;
   return weeks.map((week) => {
+    // Peak and taper weeks are left exactly as the peaking block designed them.
+    if (week.kind === "peak" || week.kind === "taper") return week;
     const deload = isDeloadWeek(week);
     const cap = sessionCap(week.sessions.length);
     const sessions = week.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => ({ ...e })) }));

@@ -39,6 +39,13 @@ export interface TemplateSession {
 export interface TemplateWeek {
   week_index: number; // 1-based
   label: string;
+  /**
+   * What the week is for. Replaces all label/regex-based deload/peak
+   * detection: "working" weeks get floors and adjustments, "deload"/"taper"
+   * are light, "peak" weeks keep intensity but skip weak-point work,
+   * "ramp" is a transition week into a peak.
+   */
+  kind: "working" | "deload" | "peak" | "taper" | "ramp";
   notes?: string;
   sessions: TemplateSession[];
 }
@@ -484,6 +491,7 @@ function standardPowerlifting(daysPerWeek: number): TemplateWeek[] {
 
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label,
       notes: isDeload
         ? "Deload: cut volume ~50% and hold ~RPE 6 — a lighter week so your body recovers before the next block."
@@ -535,6 +543,7 @@ function squatFocus(daysPerWeek: number): TemplateWeek[] {
 
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label: isDeload ? "Deload" : `Squat block W${w}`,
       notes: isDeload
         ? "Deload week — hold RPE 6, half the working sets."
@@ -586,6 +595,7 @@ function benchFocus(daysPerWeek: number): TemplateWeek[] {
 
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label: isDeload ? "Deload" : `Bench block W${w}`,
       notes: isDeload
         ? "Deload — keep bench technique via light singles, drop volume."
@@ -637,6 +647,7 @@ function deadliftFocus(daysPerWeek: number): TemplateWeek[] {
 
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label: isDeload ? "Deload" : `Deadlift block W${w}`,
       notes: isDeload
         ? "Deload — light singles to keep the pattern, no back-offs."
@@ -683,6 +694,7 @@ function benchOnlyAccessories(daysPerWeek: number): TemplateWeek[] {
 
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label: isDeload ? "Deload" : `Bench-only W${w}`,
       notes: isDeload
         ? "Deload week."
@@ -750,6 +762,7 @@ function athleticPower(daysPerWeek: number): TemplateWeek[] {
 
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label: isDeload ? "Deload" : `Athletic block W${w}`,
       notes: isDeload
         ? "Deload — half sets, keep the explosive work crisp at low volume."
@@ -805,6 +818,7 @@ function runnerStrength(_daysPerWeek: number): TemplateWeek[] {
     ];
     return {
       week_index: w,
+      kind: isDeload ? "deload" : "working",
       label: isDeload ? "Deload" : `Löparstyrka V${w}`,
       notes: isDeload
         ? "Deload — ett set mindre per övning, samma vikter som vecka 1."
@@ -827,7 +841,7 @@ function fullBody50(_daysPerWeek: number): TemplateWeek[] {
     const mainRest = "Vila 2–3 minuter mellan arbetsset. Ta längre vila om tekniken eller mål-RPE kräver det.";
     const accessoryRest = "Vila 60–90 sekunder. Behåll 2–3 reps i reserv.";
     return {
-      week_index: w, label: deload ? "Deload" : `Helkropp V${w}`,
+      week_index: w, kind: deload ? "deload" : "working", label: deload ? "Deload" : `Helkropp V${w}`,
       notes: deload
         ? "Lättare vecka: färre set och RPE 6. Passet blir kortare."
         : "Två helkroppspass med minst två vilodagar emellan. Vecka 1–3: RPE 7, 7,5 och 8. Höj vikten med minsta möjliga steg när alla reps klaras inom mål-RPE; annars behåll eller sänk vikten. Inga set till failure.",
@@ -836,7 +850,7 @@ function fullBody50(_daysPerWeek: number): TemplateWeek[] {
           title: "Helkropp A — knäböj + bänk",
           notes: "Cirka 50 minuter inklusive 8–10 minuters uppvärmning och stegringsset, utan separat morgonflow. Knäböj och bänk görs var för sig. Växla vid behov mellan rodd och Pallof press för att spara tid, utan att korta vilan för huvudlyften. Tiden varierar med vilobehov och tillgång till utrustning.",
           exercises: [
-            exercise("Squat", 3, 5, mainRest, "Competition stance"),
+            exercise("Back squat", 3, 5, mainRest, "Competition stance"),
             exercise("Bench press", 3, 6, mainRest, "Competition grip & pause"),
             exercise("Romanian deadlift", 2, 8, "Kontrollerat ned. " + accessoryRest),
             exercise("Chest-supported row", 2, 10, accessoryRest),

@@ -531,6 +531,7 @@ export function buildPeakingWeeks(
 
     return {
       week_index: weekIndex,
+      kind: meetWeek ? ("taper" as const) : cfg.label.startsWith("Peak transition") ? ("ramp" as const) : ("peak" as const),
       label: cfg.label,
       notes:
         `${cfg.notes}` +

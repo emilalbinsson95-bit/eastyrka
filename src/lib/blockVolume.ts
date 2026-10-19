@@ -1,5 +1,6 @@
 import { volumeCategory, type TemplateWeek } from "@/lib/strengthTemplates";
-import { countsForEAk, dailyE1RM, pickMeasurementSet } from "@/lib/eakoefficient";
+import { countsForEAk, dailyE1RM, lookupBaseline, pickMeasurementSet } from "@/lib/eakoefficient";
+import { compLiftKey } from "@/lib/liftIdentity";
 
 /**
  * Volume that adapts between blocks (coach's design choice, not a research
@@ -15,13 +16,11 @@ import { countsForEAk, dailyE1RM, pickMeasurementSet } from "@/lib/eakoefficient
 export type Lift = "squat" | "bench" | "deadlift";
 export type VolumeTolerance = "low" | "normal" | "high";
 export const LIFT_CAT: Record<Lift, string> = { squat: "squat", bench: "horizontal-press", deadlift: "hinge" };
-const COMP: Record<Lift, RegExp> = {
-  squat: /^(back )?squat$/i,
-  bench: /^bench press$/i,
-  deadlift: /^((sumo|conventional) )?deadlift$/i,
-};
 export const SESSION_LIFT_LIMIT = 6;
 const MIN_SESSIONS = 4;
+
+/** Over-warm / opener singles are neural practice, never volume candidates. */
+const SINGLE_VARIATION = /^(over-warm single|opener single)$/i;
 
 export interface BlockLog { date: string; exercise: string; reps: number; weight_kg: number; rpe: number | null; set_number?: number }
 export interface LiftEvaluation { lift: Lift; delta: -1 | 0 | 1; sessions: number; source: "data" | "tolerance"; reason: string }
@@ -38,8 +37,8 @@ export function evaluateBlock(
   days = 28,
 ): LiftEvaluation[] {
   const since = new Date(new Date(today).getTime() - days * 864e5).toISOString().slice(0, 10);
-  return (Object.keys(COMP) as Lift[]).map((lift) => {
-    const rows = logs.filter((l) => l.date >= since && COMP[lift].test(l.exercise.trim()) && l.rpe != null)
+  return (["squat", "bench", "deadlift"] as Lift[]).map((lift) => {
+    const rows = logs.filter((l) => l.date >= since && compLiftKey(l.exercise.trim()) === lift && l.rpe != null)
       .map((l, i) => ({ ...l, rpe: Number(l.rpe), reps: Number(l.reps), weight_kg: Number(l.weight_kg), set_number: l.set_number ?? i + 1 }));
     const byDate = new Map<string, typeof rows>();
     for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
@@ -60,7 +59,7 @@ export function evaluateBlock(
       const s = sessions.slice(Math.max(0, i - 2), i + 1);
       return s.reduce((a, b) => a + b.e, 0) / s.length;
     });
-    const baseline = baselines[sessions[0].exercise] ?? 0;
+    const baseline = lookupBaseline(baselines, sessions[0].exercise) ?? 0;
     const lastTrendPct = baseline > 0 ? (ma[ma.length - 1] / baseline) * 100 : 100;
     const rising = ma[ma.length - 1] >= ma[Math.min(2, ma.length - 1)] * 0.99;
     const good = sessions.filter((s) => s.drop <= 4).length / sessions.length;
@@ -87,14 +86,15 @@ export function applyBlockVolume(
 ): { weeks: TemplateWeek[]; warnings: string[] } {
   const warnings = new Set<string>();
   const out = weeks.map((week) => {
-    if (/deload|taper|peak|återhämt|toppning/i.test(week.label)) return week;
+    if (week.kind !== "working" && week.kind !== "ramp") return week;
     const sessions = week.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => ({ ...e })) }));
     for (const ev of evals) {
       if (!ev.delta) continue;
       const cat = LIFT_CAT[ev.lift];
-      const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat).map((e) => ({ s, e })));
+      // Over-warm / opener singles are never volume candidates.
+      const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat && !SINGLE_VARIATION.test(e.variation ?? "")).map((e) => ({ s, e })));
       if (!items.length) continue;
-      const comp = items.filter((x) => COMP[ev.lift].test(x.e.exercise.trim()));
+      const comp = items.filter((x) => compLiftKey(x.e.exercise.trim()) === ev.lift);
       const pool = comp.length ? comp : items;
       const weekSum = items.reduce((a, x) => a + x.e.target_sets, 0);
       if (ev.delta > 0) {

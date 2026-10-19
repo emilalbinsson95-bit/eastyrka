@@ -66,6 +66,7 @@ import { useAuth } from "@/lib/auth";
 import { SessionPreviewDialog } from "@/components/SessionPreviewDialog";
 import { AddSessionDialog } from "@/components/AddSessionDialog";
 import { AdhocStrengthEditor } from "@/components/AdhocStrengthEditor";
+import { PlannedSessionEditor } from "@/components/PlannedSessionEditor";
 import { EnduranceSessionEditor } from "@/components/EnduranceSessionEditor";
 
 type Props = {
@@ -191,6 +192,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
   const [editorTarget, setEditorTarget] = useState<
     | { kind: "endurance"; sessionId: string }
     | { kind: "adhoc_strength"; date: string }
+    | { kind: "planned"; sessionId: string }
     | null
   >(null);
 
@@ -446,6 +448,15 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
               onClose={() => setEditorTarget(null)}
             />
           )}
+          {editorTarget?.kind === "planned" && (
+            <PlannedSessionEditor
+              sessionId={editorTarget.sessionId}
+              onClose={() => {
+                setEditorTarget(null);
+                qc.invalidateQueries({ queryKey: ["calendar-items", ownerId] });
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -457,6 +468,15 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
         editHref={
           viewerRole === "coach" && previewTarget?.source === "planned" && previewTarget.cycleId
             ? `/coach/athletes/${ownerId}/cycles/${previewTarget.cycleId}`
+            : undefined
+        }
+        onEditSession={
+          viewerRole === "coach" && previewTarget?.source === "planned"
+            ? () => {
+                const id = previewTarget.sourceId;
+                setPreviewTarget(null);
+                setEditorTarget({ kind: "planned", sessionId: id });
+              }
             : undefined
         }
       />

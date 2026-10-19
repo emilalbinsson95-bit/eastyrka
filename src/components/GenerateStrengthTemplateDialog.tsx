@@ -331,7 +331,10 @@ export function GenerateStrengthTemplateDialog({
   }, [historyQuery.data, volumeProfileQuery.data]);
   const blockResult = useMemo(
     () => {
-      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload, tuning.intensity), weakIds), styleQuery.data);
+      // Coach intensity tuning is already baked into target_rpe by
+      // applyAdjustments — the wave applies its RPE as a relative offset, so
+      // no extra intensityOffset is passed here.
+      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
       if (isPeaking) return { weeks: applyPeakSingles(weeks, peakOptions.singles === "yes", peakOptions.rpe, chosenOpeners, peakOptions.weeks, styleQuery.data), warnings: [] as string[] };
       if (template?.sessionSetBudget) return {
         weeks: applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),

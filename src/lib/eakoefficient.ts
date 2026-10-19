@@ -69,13 +69,20 @@ export function eaKoefficient(set: SetInput, baseline1RM: number): number {
 }
 
 /**
- * Measurement set per session: the first qualifying working set, including
- * a leading heavy single. A later single never replaces it. Same rule every
- * session so values are comparable over time.
+ * Measurement set per session. A heavy single (1 rep, RPE ≥ 7) is the
+ * measurement set only when it comes BEFORE the first working set with
+ * reps > 1 (an over-warm/opener single). A single logged after the working
+ * sets never replaces the first working set. Same rule every session so
+ * values are comparable over time.
  */
 export function pickMeasurementSet<T extends SetInput & { set_number: number }>(sets: T[]): T | null {
   const ok = sets.filter(countsForEAk).sort((a, b) => a.set_number - b.set_number);
-  return ok[0] ?? null;
+  if (ok.length === 0) return null;
+  const firstWorking = ok.find((s) => s.reps > 1);
+  const leadingSingle = ok.find(
+    (s) => s.reps === 1 && (!firstWorking || s.set_number < firstWorking.set_number),
+  );
+  return leadingSingle ?? firstWorking ?? ok[0];
 }
 
 /** Measurement-set E1RM per "date::exercise". */

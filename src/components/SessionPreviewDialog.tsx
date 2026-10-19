@@ -63,6 +63,7 @@ export function SessionPreviewDialog({
   onOpenChange,
   canStartToday = false,
   editHref,
+  onEditSession,
 }: {
   item: CalendarItem | null;
   open: boolean;
@@ -71,6 +72,8 @@ export function SessionPreviewDialog({
   canStartToday?: boolean;
   /** Link to edit the underlying program (coach viewing a planned session). */
   editHref?: string;
+  /** Opens an editor for this specific session (coach viewing a planned session). */
+  onEditSession?: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,6 +83,7 @@ export function SessionPreviewDialog({
             item={item}
             canStartToday={canStartToday}
             editHref={editHref}
+            onEditSession={onEditSession}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -92,11 +96,13 @@ function PreviewBody({
   item,
   canStartToday,
   editHref,
+  onEditSession,
   onClose,
 }: {
   item: CalendarItem;
   canStartToday: boolean;
   editHref?: string;
+  onEditSession?: () => void;
   onClose: () => void;
 }) {
   const Icon = item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
@@ -270,13 +276,20 @@ function PreviewBody({
         </div>
       )}
 
-      {editHref && (
-        <DialogFooter>
-          <Button variant="outline" asChild className="w-full sm:w-auto">
-            <Link to={editHref}>
-              <Pencil className="mr-1 h-4 w-4" /> Redigera programmet
-            </Link>
-          </Button>
+      {(onEditSession || editHref) && (
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
+          {onEditSession && (
+            <Button className="w-full sm:w-auto" onClick={onEditSession}>
+              <Pencil className="mr-1 h-4 w-4" /> Redigera passet
+            </Button>
+          )}
+          {editHref && (
+            <Button variant="outline" asChild className="w-full sm:w-auto">
+              <Link to={editHref}>
+                <Pencil className="mr-1 h-4 w-4" /> Redigera programmet
+              </Link>
+            </Button>
+          )}
         </DialogFooter>
       )}
 

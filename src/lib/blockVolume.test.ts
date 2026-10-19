@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyBlockVolume, evaluateBlock, type BlockEval } from "./blockVolume";
+import { applyBlockVolume, evaluateBlock, type LiftEvaluation } from "./blockVolume";
 import type { TemplateExercise, TemplateSession, TemplateWeek } from "./strengthTemplates";
 
 const ex = (exercise: string, sets: number, variation?: string): TemplateExercise => ({
@@ -18,8 +18,8 @@ const wk = (sessions: TemplateSession[], kind: TemplateWeek["kind"] = "working")
   sessions,
 });
 
-const upEval = (lift: BlockEval["lift"]): BlockEval => ({
-  lift, eak: 110, baselineEak: 100, sessions: 5, delta: 1,
+const upEval = (lift: LiftEvaluation["lift"]): LiftEvaluation => ({
+  lift, sessions: 5, delta: 1, source: "data", reason: "test",
 });
 
 describe("evaluateBlock baseline lookup", () => {
@@ -33,21 +33,26 @@ describe("evaluateBlock baseline lookup", () => {
       rpe: 8,
     }));
     const evals = evaluateBlock(logs, { "Back Squat": 160 }, "normal", "2026-06-10");
-    expect(evals.find((e) => e.lift === "squat")?.baselineEak).toBeGreaterThan(0);
+    // With the baseline found case-insensitively, the trend reads ~77% of
+    // baseline → data-driven -1. Without it, baseline would be 0 and the
+    // evaluation would look rising (+1).
+    const squat = evals.find((e) => e.lift === "squat")!;
+    expect(squat.source).toBe("data");
+    expect(squat.delta).toBe(-1);
   });
 });
 
 describe("applyBlockVolume", () => {
   it("never adds sets to over-warm or opener singles", () => {
     const weeks = [wk([sess([ex("Back squat", 4), ex("Back squat", 1, "Over-warm single")])])];
-    const out = applyBlockVolume(weeks, [upEval("squat")]);
+    const { weeks: out } = applyBlockVolume(weeks, [upEval("squat")]);
     const single = out[0].sessions[0].exercises.find((e) => e.variation === "Over-warm single")!;
     expect(single.target_sets).toBe(1);
   });
 
   it("adds the extra set to a regular comp lift, not the single", () => {
     const weeks = [wk([sess([ex("Back squat", 1, "Opener single"), ex("Back squat", 4)])])];
-    const out = applyBlockVolume(weeks, [upEval("squat")]);
+    const { weeks: out } = applyBlockVolume(weeks, [upEval("squat")]);
     const work = out[0].sessions[0].exercises.find((e) => !e.variation)!;
     expect(work.target_sets).toBe(5);
   });
@@ -55,7 +60,7 @@ describe("applyBlockVolume", () => {
   it("leaves deload, taper and peak weeks untouched", () => {
     for (const kind of ["deload", "taper", "peak"] as const) {
       const weeks = [wk([sess([ex("Back squat", 3)])], kind)];
-      expect(applyBlockVolume(weeks, [upEval("squat")])).toEqual(weeks);
+      expect(applyBlockVolume(weeks, [upEval("squat")]).weeks).toEqual(weeks);
     }
   });
 });

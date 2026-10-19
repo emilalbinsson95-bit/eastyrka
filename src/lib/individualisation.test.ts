@@ -388,13 +388,17 @@ describe("applyAdjustments on peak weeks (fix 10)", () => {
       { ...week(1, "Peak W1"), kind: "peak" },
       { ...week(2, "Peak W2"), kind: "peak" },
     ];
-    const out = applyAdjustments(peakWeeks, emptyHistory(), { ...DEFAULT_TUNING, intensity: 1 });
+    const h = emptyHistory();
+    const tuning = { ...DEFAULT_TUNING, intensity: 1 };
+    const out = applyAdjustments(peakWeeks, buildAdjustments(h, tuning), h, tuning);
     const rpes = out.flatMap((w) => w.sessions.flatMap((s) => s.exercises.map((e) => e.target_rpe)));
     expect(rpes).toContain(9);
   });
   it("leaves taper weeks alone", () => {
     const taper: TemplateWeek[] = [{ ...week(1, "Taper"), kind: "taper" }];
-    const out = applyAdjustments(taper, emptyHistory(), { ...DEFAULT_TUNING, intensity: 1 });
+    const h = emptyHistory();
+    const tuning = { ...DEFAULT_TUNING, intensity: 1 };
+    const out = applyAdjustments(taper, buildAdjustments(h, tuning), h, tuning);
     expect(out[0].sessions[0].exercises[0].target_rpe).toBe(8);
   });
 });

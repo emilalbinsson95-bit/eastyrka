@@ -18,7 +18,7 @@ describe("session set budget", () => {
   it("trims accessory sets first and keeps main lifts at 3+ sets", () => {
     const base = wk([sess([ex("Back squat", 5), ex("Bench press", 5), ex("Barbell row", 4)])]);
     const inflated = wk([sess([ex("Back squat", 6), ex("Bench press", 6), ex("Barbell row", 6)])]);
-    const out = applySessionSetBudget(inflated, base, 12);
+    const out = applySessionSetBudget([inflated], [base], 12);
     const e = out[0].sessions[0].exercises;
     expect(e.find((x) => x.exercise === "Back squat")?.target_sets).toBeGreaterThanOrEqual(3);
     expect(e.find((x) => x.exercise === "Bench press")?.target_sets).toBeGreaterThanOrEqual(3);
@@ -30,7 +30,7 @@ describe("session set budget", () => {
     const base = wk([sess([ex("Back squat", 5), ex("Bench press", 5)])]);
     // Weak-point insertion put a new exercise first.
     const reordered = wk([sess([ex("Leg press", 3), ex("Back squat", 6), ex("Bench press", 6)])]);
-    const out = applySessionSetBudget(reordered, base, 10);
+    const out = applySessionSetBudget([reordered], [base], 10);
     const e = out[0].sessions[0].exercises;
     // Base caps still apply to the named exercises.
     expect(e.find((x) => x.exercise === "Back squat")?.target_sets).toBeLessThanOrEqual(5);
@@ -40,7 +40,7 @@ describe("session set budget", () => {
   it("drops the lowest-priority added exercise before touching base exercises", () => {
     const base = wk([sess([ex("Back squat", 4), ex("Bench press", 4)])]);
     const withAdded = wk([sess([ex("Back squat", 4), ex("Bench press", 4), ex("Hip thrust", 3), ex("Cable fly", 3)])]);
-    const out = applySessionSetBudget(withAdded, base, 9);
+    const out = applySessionSetBudget([withAdded], [base], 9);
     const names = out[0].sessions[0].exercises.map((x) => x.exercise);
     expect(names).toContain("Back squat");
     expect(names).toContain("Bench press");

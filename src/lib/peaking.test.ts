@@ -66,6 +66,36 @@ describe("summarizePeaking", () => {
 });
 
 describe("buildPeakingWeeks", () => {
+  it("supports all 2–6 day and 2–6 week combinations without empty sessions", () => {
+    for (const days of [2, 3, 4, 5, 6]) for (const duration of [2, 3, 4, 5, 6]) {
+      const plan = buildPeakingWeeks(days, null, { weeks: duration });
+      expect(plan).toHaveLength(duration);
+      for (const week of plan) {
+        expect(week.sessions).toHaveLength(week.kind === "taper" ? 2 : days);
+        expect(new Set(week.sessions.map((s) => s.day_of_week)).size).toBe(week.sessions.length);
+        for (const session of week.sessions) {
+          expect(session.exercises.length).toBeGreaterThan(0);
+          expect(session.exercises.reduce((n, e) => n + e.target_sets, 0)).toBeLessThanOrEqual(30);
+        }
+      }
+    }
+  });
+  it("redistributes rather than increases weekly main-lift volume at higher frequency", () => {
+    const summary = summarizePeaking({ today, logs: history(), baselines: [] });
+    const sets = (days: number) => buildPeakingWeeks(days, summary, { weeks: 6 }).map((week) =>
+      week.sessions.flatMap((s) => s.exercises).filter((e) => /squat|bench|deadlift/i.test(e.exercise)).reduce((n, e) => n + e.target_sets, 0));
+    for (const days of [3, 4, 5, 6]) expect(sets(days)).toEqual(sets(2));
+    const totals = sets(6);
+    for (let i = 1; i < totals.length; i++) expect(totals[i]).toBeLessThanOrEqual(totals[i - 1]);
+    expect(totals[5]).toBeLessThan(totals[4]);
+    expect(buildPeakingWeeks(6, summary, { weeks: 6 }).at(-1)?.sessions.map((s) => s.day_of_week)).toEqual([1, 3]);
+  });
+  it("keeps six actual training days with only one historically trained lift", () => {
+    const summary = summarizePeaking({ today, logs: history().filter((l) => l.exercise === "Deadlift"), baselines: [] });
+    const plan = buildPeakingWeeks(6, summary, { weeks: 6 });
+    expect(plan[0].sessions).toHaveLength(6);
+    expect(plan[0].sessions.every((s) => s.exercises.every((e) => e.exercise === "Deadlift"))).toBe(true);
+  });
   const sum = summarizePeaking({ today, logs: history(), baselines: [] });
   const weeks = buildPeakingWeeks(3, sum);
 

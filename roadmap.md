@@ -1,5 +1,8 @@
 # Roadmap
 
+## Aktuellt
+- [x] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering; 239 tester gröna, sexveckorsutkast och sparad säsongsplan verifierade som coach för Alex Athlete
+
 ## Klart
 - [x] Passredigering direkt från kalendern (PlannedSessionEditor) — bygge/tester OK
 - [x] STEG 1: kritiska buggfixar i generatorn (fix 1–10)

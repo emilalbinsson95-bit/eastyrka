@@ -10,7 +10,7 @@ export const generatorSettingsSchema = z.object({
   setProtocols: z.object({ squat: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), bench: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), deadlift: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), accessories: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]) }).default(DEFAULT_SET_PROTOCOLS),
   volumeDeltas: z.object({ squat: z.number().int().min(-6).max(6), bench: z.number().int().min(-6).max(6), deadlift: z.number().int().min(-6).max(6) }).default({ squat: 0, bench: 0, deadlift: 0 }),
   heavySingles: z.object({ enabled: z.boolean(), rpe: z.number().min(8).max(9.5).multipleOf(.5), weeks: z.array(z.number().int().min(1).max(4)) }).default({ enabled: false, rpe: 8, weeks: [2, 3] }),
-  peak: z.object({ singles: z.enum(["unset", "yes", "no"]), rpe: z.number().min(7).max(9).multipleOf(.5), weeks: z.array(z.number().int().min(1).max(3)), openers: z.object({ squat: z.number().positive().optional(), bench: z.number().positive().optional(), deadlift: z.number().positive().optional() }) }).default({ singles: "unset", rpe: 8, weeks: [1, 2, 3], openers: {} }),
+  peak: z.object({ singles: z.enum(["unset", "yes", "no"]), rpe: z.number().min(7).max(9).multipleOf(.5), weeks: z.array(z.number().int().min(1).max(5)), openers: z.object({ squat: z.number().positive().optional(), bench: z.number().positive().optional(), deadlift: z.number().positive().optional() }) }).default({ singles: "unset", rpe: 8, weeks: [1, 2, 3], openers: {} }),
 });
 export type GeneratorSettings = z.infer<typeof generatorSettingsSchema>;
 export const seasonBlockSchema = z.object({
@@ -22,7 +22,7 @@ export const seasonBlockSchema = z.object({
   daysPerWeek: z.number().int().min(2).max(6),
   notes: z.string().max(2000).default(""),
   mesocycleId: z.string().uuid().optional(),
-  peakWeeks: z.number().int().min(2).max(4).optional(),
+  peakWeeks: z.number().int().min(2).max(6).optional(),
 });
 export type SeasonBlock = z.infer<typeof seasonBlockSchema>;
 export const seasonBlocksSchema = z.array(seasonBlockSchema).min(1).max(20);

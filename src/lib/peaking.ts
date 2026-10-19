@@ -1,4 +1,4 @@
-// Three-week peaking / taper block built from the athlete's own last 3 months
+// Flexible 2–6-week peaking / taper block built from the athlete's own last 3 months
 // of logged training — not from a fixed template.
 //
 // Evidence base:
@@ -95,7 +95,7 @@ const VOLUME_WINDOW_DAYS = 42; // recent 6 weeks set the taper reference volume
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const norm = (s: string) => s.toLowerCase().trim();
 
-/** RIR-adjusted Epley estimate — same formula the weekly review uses. */
+/** Shared RTS estimate — same table used by EAk. */
 export function peakE1rm(weight: number, reps: number, rpe: number | null): number {
   return dailyE1RM({ weight_kg: weight, reps, rpe: rpe ?? 8 });
 }
@@ -299,43 +299,20 @@ const WEEK_CFG: WeekCfg[] = [
   },
 ];
 
-function mainSetsFor(info: MainLiftInfo, cfg: WeekCfg, sessionsForLift: number): number {
-  // Reference: the athlete's own recent weekly sets for this lift; if they have
-  // no history, fall back to a conventional peak volume.
-  const reference = info.weeklySets > 0 ? info.weeklySets : 9;
-  const weekly = clamp(Math.round(reference * cfg.volFactor), 2, 20);
-  return Math.max(1, Math.round(weekly / Math.max(1, sessionsForLift)));
-}
-
 function mainExercises(
   info: MainLiftInfo,
   cfg: WeekCfg,
-  sessionsForLift: number,
+  total: number,
   opts: { technique?: boolean; opener?: boolean } = {},
 ): TemplateExercise[] {
-  const total = mainSetsFor(info, cfg, sessionsForLift);
   const out: TemplateExercise[] = [];
-
-  if (opts.opener) {
-    out.push({
-      exercise: info.name,
-      variation: "Opener single",
-      target_sets: 1,
-      target_reps: 1,
-      target_rpe: 8,
-      intensity_metric: "rpe",
-      notes:
-        "Optional confidence single at roughly opener weight (~90% of est. 1RM). " +
-        "Evidence says it changes nothing physically — keep it crisp and move on.",
-    });
-  }
 
   if (opts.technique) {
     return [
       {
         exercise: info.name,
         variation: "Competition technique",
-        target_sets: clamp(total, 2, 3),
+        target_sets: Math.min(total, 3),
         target_reps: 2,
         target_rpe: 6,
         intensity_metric: "rpe",
@@ -346,9 +323,9 @@ function mainExercises(
 
   out.push({
     exercise: info.name,
-    variation: "Competition stance & commands",
+    variation: opts.opener ? "Opener single" : "Competition stance & commands",
     target_sets: 1,
-    target_reps: cfg.topReps,
+    target_reps: opts.opener ? 1 : cfg.topReps,
     target_rpe: cfg.topRpe,
     intensity_metric: "rpe",
     notes:
@@ -394,14 +371,25 @@ function accessoryExercises(sum: PeakSummary, cfg: WeekCfg, slots: number): Temp
   })).filter((e) => e.target_sets > 0);
 }
 
-const DAYS_3 = [1, 3, 5];
-const DAYS_4 = [1, 2, 4, 6];
+const PEAK_DAYS: Record<number, number[]> = {
+  2: [1, 4], 3: [1, 3, 5], 4: [1, 2, 4, 6],
+  5: [1, 2, 3, 5, 6], 6: [1, 2, 3, 4, 5, 6],
+};
 const DAYS_MEET = [1, 3];
 
-/**
- * Build the 3-week peak. `sum` is derived from the athlete's own logs;
- * pass null for a generic preview when no history is available yet.
- */
+/** Longer blocks add preparation weeks, not extra weeks of deep taper. */
+function peakConfigs(duration: number): WeekCfg[] {
+  if (duration === 2) return WEEK_CFG.slice(1);
+  const preparation = Array.from({ length: duration - 3 }, (_, i) => ({
+    ...WEEK_CFG[0], label: `Peak transition W${i + 1}`,
+    volFactor: 1 - i * 0.05, accFactor: 1 - i * 0.05,
+    topReps: 5, topRpe: 7.5,
+    notes: "Competition preparation at reference volume or slightly below. No added work. The final two weeks reduce volume before the meet.",
+  }));
+  return [...preparation, ...WEEK_CFG];
+}
+
+/** Build 2–6 weeks; frequency redistributes a single weekly set budget. */
 export function buildPeakingWeeks(
   daysPerWeek: number,
   sum: PeakSummary | null,
@@ -428,94 +416,62 @@ export function buildPeakingWeeks(
     (k) => summary.lifts[k].trained,
   );
   const active: MainLiftKey[] = keys.length > 0 ? keys : (["squat", "bench", "deadlift"] as MainLiftKey[]);
-  const has = (k: MainLiftKey) => active.includes(k);
   const L = (k: MainLiftKey) => summary.lifts[k];
 
-  const days = clamp(Math.round(daysPerWeek), 3, 4);
+  const days = clamp(Math.round(daysPerWeek), 2, 6);
 
-  const duration = clamp(Math.round(opts.weeks ?? 3), 2, 4);
-  const configs = duration === 2 ? WEEK_CFG.slice(1) : duration === 4
-    ? [{ ...WEEK_CFG[0], label: "Peak transition", volFactor: 1, accFactor: 1, topReps: 5, topRpe: 7.5, notes: "Transition week: normal reference volume, no added work. Review recovery before the final hard week." }, ...WEEK_CFG]
-    : WEEK_CFG;
+  const duration = clamp(Math.round(opts.weeks ?? 3), 2, 6);
+  const configs = peakConfigs(duration);
   return configs.map((cfg, i) => {
     const weekIndex = i + 1;
     const meetWeek = weekIndex === configs.length;
-    const sessions: Omit<TemplateSession, "day_of_week">[] = [];
-    // Each exercise gets one weekly maintenance budget, not one per session.
-    const accessoryBudget = accessoryExercises(summary, cfg, days >= 4 ? 4 : 3);
-    const nextAccessory = () => {
-      const exercise = accessoryBudget.shift();
-      return exercise ? [exercise] : [];
-    };
-
-    if (meetWeek) {
-      // Two short sessions at reduced volume, normal moderate weights, then rest.
-      sessions.push({
-        title: "Squat + bench (light)",
-        notes: "Short and crisp — moderate weights, low set count. Full competition setup and commands.",
-        exercises: active
-          .filter((k) => k !== "deadlift")
-          .flatMap((k) => mainExercises(L(k), cfg, 2)),
-      });
-      sessions.push({
-        title: "Deadlift + technique flush",
-        notes:
-          "Last touch of the bar. Very light, fast work — everything after this is rest, food and sleep.",
-        exercises: [
-          ...(has("deadlift") ? mainExercises(L("deadlift"), cfg, 1) : []),
-          ...active
-            .filter((k) => k !== "deadlift")
-            .flatMap((k) => mainExercises(L(k), cfg, 1, { technique: true })),
-        ],
-      });
-    } else {
-      // Squat + bench day
-      if (has("squat") || has("bench")) {
-        sessions.push({
-          title: [has("squat") && "Squat", has("bench") && "Bench"].filter(Boolean).join(" + ") + " (heavy)",
-          notes: "Main platform day. Competition commands on every top set.",
-          exercises: [
-            ...(has("squat") ? mainExercises(L("squat"), cfg, 2, { opener: opts.openers }) : []),
-            ...(has("bench") ? mainExercises(L("bench"), cfg, 2, { opener: opts.openers }) : []),
-            ...nextAccessory(),
-          ],
-        });
-      }
-      // Deadlift day
-      if (has("deadlift")) {
-        sessions.push({
-          title: "Deadlift (heavy)",
-          notes: "Single pull stance for the whole block — no switching sumo/conventional now.",
-          exercises: [
-            ...mainExercises(L("deadlift"), cfg, 1, { opener: opts.openers }),
-            ...nextAccessory(),
-          ],
-        });
-      }
-      // Second squat/bench exposure
-      sessions.push({
-        title: [has("bench") && "Bench", has("squat") && "Squat"].filter(Boolean).join(" + ") + " (second exposure)",
-        notes: "Lighter exposure to keep frequency up while volume drops.",
-        exercises: [
-          ...(has("bench") ? mainExercises(L("bench"), cfg, 2) : []),
-          ...(has("squat") ? mainExercises(L("squat"), cfg, 2, { technique: true }) : []),
-          ...nextAccessory(),
-        ],
-      });
-      if (days >= 4) {
-        const acc = accessoryBudget;
-        if (acc.length > 0) {
-          sessions.push({
-            title: "Maintenance accessories",
-            notes: "Low-cost maintenance volume only. Nothing sore, nothing to failure.",
-            exercises: acc,
-          });
-        }
+    const sessionCount = meetWeek ? 2 : days;
+    const sessions: Omit<TemplateSession, "day_of_week">[] = Array.from({ length: sessionCount }, () => ({
+      title: "", notes: meetWeek ? "Short, light competition practice, then rest before the meet." : "Competition setup and commands. Stop if technique deteriorates.", exercises: [],
+    }));
+    const sessionSets = (index: number) => sessions[index].exercises.reduce((n, e) => n + e.target_sets, 0);
+    for (const key of active) {
+      const info = L(key);
+      const reference = info.weeklySets > 0 ? info.weeklySets : 9;
+      // At least one set per scheduled exposure; never multiply the historical
+      // weekly dose by the number of days. Extra days split existing work.
+      const weekly = clamp(Math.round(reference * cfg.volFactor), Math.max(2, Math.ceil(sessionCount / active.length)), 20);
+      const desired = meetWeek ? (key === "deadlift" ? 1 : 2)
+        : key === "bench" ? days : key === "squat" ? Math.min(days, 3) : days >= 5 ? 2 : 1;
+      const exposures = Math.min(weekly, desired);
+      const used = new Set<number>();
+      for (let exposure = 0; exposure < exposures; exposure++) {
+        const candidates = sessions.map((_, index) => index).filter((index) => !used.has(index));
+        const index = candidates.sort((a, b) => sessionSets(a) - sessionSets(b) || a - b)[0];
+        if (index === undefined) continue;
+        used.add(index);
+        const sets = Math.floor(weekly / exposures) + (exposure < weekly % exposures ? 1 : 0);
+        sessions[index].exercises.push(...mainExercises(info, cfg, sets, { opener: !meetWeek && exposure === 0 && opts.openers }));
       }
     }
-
-    const filled = sessions.filter((s) => s.exercises.length > 0);
-    const schedule = meetWeek ? DAYS_MEET : filled.length >= 4 ? DAYS_4 : DAYS_3;
+    // With sparse/single-lift history, move existing sets to any empty days.
+    for (const empty of sessions.filter((session) => session.exercises.length === 0)) {
+      const source = sessions.filter((session) => session.exercises.length > 1).sort((a, b) => b.exercises.length - a.exercises.length)[0];
+      if (source) {
+        const moved = source.exercises.pop();
+        if (moved) empty.exercises.push(moved);
+        continue;
+      }
+      const donor = sessions.flatMap((session) => session.exercises).filter((e) => e.target_sets > 1).sort((a, b) => b.target_sets - a.target_sets)[0];
+      if (!donor) continue;
+      donor.target_sets -= 1;
+      empty.exercises.push({ ...donor, target_sets: 1 });
+    }
+    const accessoryBudget = accessoryExercises(summary, cfg, days >= 4 ? 4 : 3);
+    for (const exercise of accessoryBudget) {
+      const index = sessions.map((_, index) => index).sort((a, b) => sessionSets(a) - sessionSets(b) || a - b)[0];
+      if (index !== undefined) sessions[index].exercises.push(exercise);
+    }
+    const filled = sessions.filter((session) => session.exercises.length > 0).map((session) => ({
+      ...session,
+      title: [...new Set(session.exercises.filter((e) => active.some((key) => L(key).name === e.exercise)).map((e) => e.exercise))].join(" + ") + (meetWeek ? " (light)" : ""),
+    }));
+    const schedule = meetWeek ? DAYS_MEET : PEAK_DAYS[days];
 
     const referenceSets = Object.values(summary.lifts).reduce((a, l) => a + l.weeklySets, 0);
     const plannedSets = filled.reduce(
@@ -538,7 +494,7 @@ export function buildPeakingWeeks(
         (drop != null
           ? ` Main-lift volume this week: ${plannedSets} sets vs ~${Math.round(referenceSets)}/week (${summary.referenceLabel ?? "last 6 weeks"}) (${drop >= 0 ? "−" : "+"}${Math.abs(drop)}%).`
           : ""),
-      sessions: filled.map((s, idx) => ({ ...s, day_of_week: schedule[idx] ?? idx + 1 })),
+      sessions: filled.map((s, idx) => ({ ...s, day_of_week: schedule?.[idx] ?? idx + 1 })),
     };
   });
 }

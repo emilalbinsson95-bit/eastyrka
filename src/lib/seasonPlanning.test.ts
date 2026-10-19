@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { blockEnd, blockWeeks, defaultSeason, generatorSettingsSchema, rescheduleFuture, seasonBlocksSchema, scheduleBlocks, validateSeason } from "./seasonPlanning";
 
 describe("coach season planning", () => {
+  it("accepts 2–6 peak weeks and 2–6 training days and rejects values outside those ranges", () => {
+    for (const weeks of [2, 3, 4, 5, 6]) for (const days of [2, 3, 4, 5, 6]) {
+      const block = { ...defaultSeason("2026-10-19")[2], startDate: "2026-10-19", peakWeeks: weeks, daysPerWeek: days };
+      expect(validateSeason([block], "")).toBeNull();
+      expect(blockWeeks(block)).toBe(weeks);
+    }
+    const block = defaultSeason("2026-10-19")[2];
+    expect(blockEnd({ ...block, startDate: "2026-10-19", peakWeeks: 6 })).toBe("2026-11-29");
+    for (const peakWeeks of [1, 7, 2.5]) expect(seasonBlocksSchema.safeParse([{ ...block, peakWeeks }]).success).toBe(false);
+    for (const daysPerWeek of [1, 7]) expect(validateSeason([{ ...block, daysPerWeek }], "")).not.toBeNull();
+  });
   it("supports own blocks of 1–24 weeks without a generator template", () => {
     const block = { ...defaultSeason("2026-10-19")[0], templateId: "manual", manualWeeks: 6, daysPerWeek: 2 };
     expect(seasonBlocksSchema.safeParse([block]).success).toBe(true);
@@ -42,7 +53,8 @@ describe("coach season planning", () => {
   });
   it("validates frequency for the selected template", () => {
     const blocks = defaultSeason("2026-10-19");
-    blocks[2].daysPerWeek = 6;
+    blocks[2].templateId = "runner-strength";
+    blocks[2].daysPerWeek = 3;
     expect(validateSeason(blocks, "")).toContain("träningsdagar");
   });
   it("rejects unsupported or unsafe saved generator settings", () => {

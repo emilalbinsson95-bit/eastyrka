@@ -53,7 +53,8 @@ describe("coach season planning", () => {
   });
   it("validates frequency for the selected template", () => {
     const blocks = defaultSeason("2026-10-19");
-    blocks[2].daysPerWeek = 6;
+    blocks[2].templateId = "runner-strength";
+    blocks[2].daysPerWeek = 3;
     expect(validateSeason(blocks, "")).toContain("träningsdagar");
   });
   it("rejects unsupported or unsafe saved generator settings", () => {

@@ -451,6 +451,12 @@ export function buildPeakingWeeks(
     }
     // With sparse/single-lift history, move existing sets to any empty days.
     for (const empty of sessions.filter((session) => session.exercises.length === 0)) {
+      const source = sessions.filter((session) => session.exercises.length > 1).sort((a, b) => b.exercises.length - a.exercises.length)[0];
+      if (source) {
+        const moved = source.exercises.pop();
+        if (moved) empty.exercises.push(moved);
+        continue;
+      }
       const donor = sessions.flatMap((session) => session.exercises).filter((e) => e.target_sets > 1).sort((a, b) => b.target_sets - a.target_sets)[0];
       if (!donor) continue;
       donor.target_sets -= 1;

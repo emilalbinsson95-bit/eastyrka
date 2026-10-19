@@ -21,7 +21,7 @@ describe("competition-anchored peaking dates", () => {
       }
     }
   });
-  it("gives concrete Saturday dates with five clear rest days after the last session", () => {
+  it("gives concrete Saturday dates with the last session five days before competition", () => {
     expect(peakStartDate("2027-01-23", 3)).toBe("2027-01-02");
     expect(peakStartDate("2027-01-23", 6)).toBe("2026-12-12");
     expect(peakFinalSessionDates("2027-01-23")).toEqual(["2027-01-16", "2027-01-18"]);

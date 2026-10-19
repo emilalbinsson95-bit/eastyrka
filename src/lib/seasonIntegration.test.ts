@@ -29,7 +29,7 @@ describe("integrated flexible season", () => {
     blocks[0].startDate = "2026-02-30";
     expect(validateSeason(blocks, "")).toContain("startdatumet");
   });
-  it.each([2,3,4])("builds %i peak weeks ending in two taper sessions", (weeks) => {
+  it.each([2,3,4,5,6])("builds %i peak weeks ending in two taper sessions", (weeks) => {
     const result = buildPeakingWeeks(4, null, { weeks });
     expect(result).toHaveLength(weeks);
     expect(result.at(-1)?.sessions).toHaveLength(2);

@@ -12,7 +12,7 @@ describe("editable peak openers", () => {
     expect(result[2].kg).toBeLessThan(230);
     expect(result[0].kg).toBeNull();
   });
-  it.each([2,3,4])("keeps taper set budget for %i weeks and respects opt-out, edited weight and weeks", (duration) => {
+  it.each([2,3,4,5,6])("keeps taper set budget for %i weeks and respects opt-out, edited weight and weeks", (duration) => {
     const base = buildPeakingWeeks(3, null, { weeks: duration });
     expect(applyPeakSingles(base, false, 8, {}, [1])).toBe(base);
     const result = applyPeakSingles(base, true, 8.5, { squat: 155 }, [1]);
@@ -28,5 +28,14 @@ describe("editable peak openers", () => {
   it("restores old settings safely and rejects invalid opener weights", () => {
     expect(generatorSettingsSchema.parse({}).peak.singles).toBe("unset");
     expect(generatorSettingsSchema.safeParse({ peak: { singles: "yes", rpe: 8, weeks: [1], openers: { squat: -5 } } }).success).toBe(false);
+  });
+  it("saves coach-selected singles in week five of a six-week peak without touching meet week", () => {
+    const peak = { singles: "yes", rpe: 8, weeks: [5], openers: {} };
+    expect(generatorSettingsSchema.safeParse({ peak }).success).toBe(true);
+    expect(generatorSettingsSchema.safeParse({ peak: { ...peak, weeks: [6] } }).success).toBe(false);
+    const base = buildPeakingWeeks(6, null, { weeks: 6 });
+    const result = applyPeakSingles(base, true, 8, {}, [5, 6]);
+    expect(result[4].sessions.flatMap((s) => s.exercises).filter((e) => e.variation === "Coachvald toppningssingel")).toHaveLength(3);
+    expect(result[5]).toEqual(base[5]);
   });
 });

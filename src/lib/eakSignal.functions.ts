@@ -83,8 +83,8 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
 
     // Blockfönster från veckoplaner (deload/peak exkluderas ur brusberäkningen).
     const blocks: BlockWindow[] = (weeks ?? [])
-      .filter((w) => w.week_start_date)
-      .map((w) => {
+      .filter((w: { week_start_date?: string | null }) => w.week_start_date)
+      .map((w: Record<string, unknown> & { week_start_date: string; is_deload?: boolean }) => {
         const text = `${(w as { mesocycles?: { label?: string } | null }).mesocycles?.label ?? ""}`;
         const kind: BlockWindow["kind"] = (w as { is_deload?: boolean }).is_deload
           ? "deload"
@@ -101,7 +101,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     const results: Array<{ lift: CompLift; status: string; stored: boolean }> = [];
 
     for (const lift of LIFTS) {
-      const baselineRow = (baselines ?? []).find((b) => compLiftKey(b.exercise) === lift);
+      const baselineRow = (baselines ?? []).find((b: { exercise: string }) => compLiftKey(b.exercise) === lift);
       const B = Number(baselineRow?.one_rm_kg ?? 0);
       if (B <= 0) continue;
 

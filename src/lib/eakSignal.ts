@@ -24,57 +24,126 @@ export interface CheckIn {
   stress?: number | null;
   daily_form?: number | null;
   sleep?: number | null;
+  /** Ömhet 1–10, högre = sämre. */
+  soreness?: number | null;
+  /** Motivation 1–10, lägre = sämre. */
+  motivation?: number | null;
 }
 
 export interface BlockWindow {
-  kind: "working" | "deload" | "peak" | "taper" | "ramp";
+  kind: "working" | "deload" | "peak" | "taper" | "ramp" | "intro";
   start: string;
   end: string;
+  /** Mesocykel som blocket hör till; saknas den räknas blocket som egen mesocykel. */
+  mesocycleId?: string;
 }
 
-export type MesoStatus = "insufficient_data" | "red_strong" | "red" | "yellow" | "push" | "green";
+/** Alla gränsvärden ligger här. Maskineriet är samma för alla atleter. */
+export interface EakStrategy {
+  fallStage1Pct: number;
+  fallStage2Pct: number;
+  pushLowPct: number;
+  pushHighPct: number;
+  readinessBelowPct: number;
+  readinessShare: number;
+  mesoMinSessions: number;
+  mesoMaxSessions: number;
+  inSessionDropStopPct: number;
+  inSessionDropOkPct: number;
+  noiseRatioFlag: number;
+  poolMesocycles: number;
+  defaultSem: number;
+  warmupRpeDrift: number;
+  subjectiveWorseDays: number;
+}
+
+export const DEFAULT_STRATEGY: EakStrategy = {
+  fallStage1Pct: 5,
+  fallStage2Pct: 10,
+  pushLowPct: 104,
+  pushHighPct: 106,
+  readinessBelowPct: 97,
+  readinessShare: 0.5,
+  mesoMinSessions: 4,
+  mesoMaxSessions: 6,
+  inSessionDropStopPct: 5,
+  inSessionDropOkPct: 4,
+  noiseRatioFlag: 1.5,
+  poolMesocycles: 6,
+  defaultSem: 2.2,
+  warmupRpeDrift: 1.0,
+  subjectiveWorseDays: 14,
+};
+
+/** Fyller tomma värden (null/undefined) med standard. */
+export function resolveStrategy(partial?: Partial<Record<keyof EakStrategy, number | null>> | null): EakStrategy {
+  const out = { ...DEFAULT_STRATEGY };
+  if (!partial) return out;
+  for (const k of Object.keys(out) as (keyof EakStrategy)[]) {
+    const v = partial[k];
+    if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
+  }
+  return out;
+}
+
+export type MesoStatus = "insufficient_data" | "red_strong" | "red" | "yellow" | "low_confidence" | "push" | "green";
+
+export interface WarmupLog {
+  date: string;
+  lift: CompLift;
+  load_kg: number;
+  rpe: number;
+}
+
+export interface SupportingSignals {
+  readiness: boolean;
+  subjective: boolean;
+  warmupDrift: boolean;
+}
 
 export interface MesoResult {
   status: MesoStatus;
   /** Svensk förklaring + förslag till coachen. */
   suggestion: string;
-  /** Antal pass i fönstret M. */
+  /** Extra varning, t.ex. ovanligt brusigt block. */
+  warning: string | null;
   n: number;
-  /** Medel av mätsets-e1RM i M (kg). */
   L_M: number;
-  /** Procentuell förändring mot föregående mesocykel (fallback: baseline). */
   dL_M: number;
-  /** 100 * L_M / B. */
   EAk_M: number;
-  /** Lutning e1RM per pass i M (minsta kvadrat). */
   b_M: number;
-  /** Individuell brusnivå i %, null om < 8 pass. */
+  /** Poolat, trendjusterat brus i % (SEM_pool); null tills två mesocykler räcker. */
   TE_i: number | null;
-  /** Individanpassad tröskel i %. */
+  semPool: number | null;
+  semCurrent: number | null;
+  /** SEM_current / SEM_pool. */
+  noiseRatio: number | null;
+  /** Ändringströskel theta i %. */
   threshold_i: number;
-  /** Minst hälften av passen i M hade EAk_d < 97. */
   readinessSignal: boolean;
-  /** Atletens incheckningar sämre än eget snitt (stödjer bara, triggar aldrig ensamt). */
   athleteSignal: boolean;
-  /** EAk_d ≥ 103 i minst 3/4 av passen. */
+  warmupDrift: boolean;
+  supportingSignals: SupportingSignals;
   sustainedPush: boolean;
+  nforFlag: boolean;
+  strategy: EakStrategy;
 }
 
 export interface MesoInput {
   logs: SetLog[];
   lift: CompLift;
-  /** Baseline B (kg). */
   baseline: number;
   checkIns?: CheckIn[];
-  /** Föregående mesocykels resultat (L_M används som L_prev). */
-  previous?: Pick<MesoResult, "L_M"> | null;
-  /** Blockfönster för att exkludera deload/peak vid TE_i-beräkning. */
+  /** Föregående mesocykel: L_M och gärna antal pass. */
+  previous?: { L_M: number; n?: number } | null;
   blocks?: BlockWindow[];
+  strategy?: Partial<Record<keyof EakStrategy, number | null>> | null;
+  warmups?: WarmupLog[];
+  /** Fast uppvärmningsvikt per lyft (kg). */
+  warmupLoads?: Partial<Record<CompLift, number>>;
+  /** Senaste rebound-test, används för NFOR-flaggan. */
+  rebound?: ReboundResult | null;
 }
-
-const MIN_SESSIONS = 4;
-const MAX_SESSIONS = 6;
-const DEFAULT_TE = 2.2;
 
 /** Mätsets-e1RM och EAk_d per pass för ett lyft, kronologiskt. */
 export function sessionPoints(logs: SetLog[], lift: CompLift, baseline: number): { date: string; e1rm: number; eak: number }[] {
@@ -110,96 +179,274 @@ function slope(ys: number[]): number {
   return den ? num / den : 0;
 }
 
-function sd(xs: number[]): number {
-  if (xs.length < 2) return 0;
-  const m = mean(xs);
-  return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1));
+function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
-/** Individuellt brus: SD av differenser mellan efterföljande pass / √2, i % av nivån. */
-export function individualNoise(
+export interface NoiseGroup {
+  key: string;
+  n: number;
+  /** Summa av kvadrerade residualer i % av mesocykelns nivå. */
+  ss: number;
+  /** SEM_k i %. */
+  sem: number;
+}
+
+export interface NoiseResult {
+  groups: NoiseGroup[];
+  semPool: number | null;
+  semCurrent: number | null;
+}
+
+/**
+ * Trendjusterat, poolat brus (Amdi). Bara arbetsveckor räknas; deload, taper,
+ * toppning, ramp och första veckan i varje mesocykel tas bort. Mesocykler med
+ * färre än tre pass slås ihop med föregående.
+ */
+export function pooledNoise(
   points: { date: string; e1rm: number }[],
   blocks?: BlockWindow[],
-): number | null {
-  const light = (d: string) => blocks?.some((b) => (b.kind === "deload" || b.kind === "peak" || b.kind === "taper") && d >= b.start && d <= b.end);
-  const usable = points.filter((p) => !light(p.date)).slice(-20);
-  if (usable.length < 8) return null;
-  const diffs: number[] = [];
-  for (let i = 1; i < usable.length; i++) diffs.push(usable[i].e1rm - usable[i - 1].e1rm);
-  const level = mean(usable.map((p) => p.e1rm));
-  if (level <= 0) return null;
-  return (sd(diffs) / Math.sqrt(2) / level) * 100;
+  strategyInput?: Partial<Record<keyof EakStrategy, number | null>> | null,
+  opts: { detrend?: boolean } = {},
+): NoiseResult {
+  const strategy = resolveStrategy(strategyInput);
+  const detrend = opts.detrend ?? true;
+  const keyOf = (b: BlockWindow) => b.mesocycleId ?? `${b.start}_${b.end}`;
+  const mesoStart = new Map<string, string>();
+  for (const b of blocks ?? []) {
+    const k = keyOf(b);
+    const cur = mesoStart.get(k);
+    if (!cur || b.start < cur) mesoStart.set(k, b.start);
+  }
+  const raw = new Map<string, { date: string; e1rm: number }[]>();
+  const order: string[] = [];
+  for (const p of points) {
+    let key = "all";
+    if (blocks?.length) {
+      const b = blocks.find((w) => p.date >= w.start && p.date <= w.end);
+      if (!b || b.kind !== "working") continue;
+      key = keyOf(b);
+      if (p.date < addDays(mesoStart.get(key)!, 7)) continue;
+    }
+    if (!raw.has(key)) {
+      raw.set(key, []);
+      order.push(key);
+    }
+    raw.get(key)!.push(p);
+  }
+  // Slå ihop små mesocykler med föregående (bara för brusskattning).
+  const merged: { key: string; pts: { date: string; e1rm: number }[] }[] = [];
+  for (const k of order) {
+    const pts = raw.get(k)!;
+    if (pts.length < 3 && merged.length) merged[merged.length - 1].pts.push(...pts);
+    else merged.push({ key: k, pts: [...pts] });
+  }
+  const groups: NoiseGroup[] = [];
+  for (const g of merged) {
+    const n = g.pts.length;
+    if (n < 3) continue;
+    const ys = g.pts.map((p) => p.e1rm);
+    const level = mean(ys);
+    if (level <= 0) continue;
+    const b = detrend ? slope(ys) : 0;
+    const a = detrend ? level - b * ((n - 1) / 2) : level;
+    const ss = ys.reduce((acc, y, t) => acc + ((100 * (y - (a + b * t))) / level) ** 2, 0);
+    const df = detrend ? n - 2 : n - 1;
+    groups.push({ key: g.key, n, ss, sem: Math.sqrt(ss / df) });
+  }
+  const pool = groups.slice(-strategy.poolMesocycles);
+  const dfSum = pool.reduce((a, g) => a + (detrend ? g.n - 2 : g.n - 1), 0);
+  const semPool = pool.length >= 2 && dfSum > 0 ? Math.sqrt(pool.reduce((a, g) => a + g.ss, 0) / dfSum) : null;
+  return { groups, semPool, semCurrent: groups.length ? groups[groups.length - 1].sem : null };
 }
 
-function athleteSignal(checkIns: CheckIn[], mStart: string): boolean {
-  const inWindow = checkIns.filter((c) => c.date >= mStart);
-  const before = checkIns.filter((c) => c.date < mStart);
-  if (inWindow.length < 2 || before.length < 2) return false;
-  const worse = (cur: (number | null | undefined)[], prev: (number | null | undefined)[], dir: 1 | -1): boolean => {
-    const c = cur.filter((x): x is number => typeof x === "number");
-    const p = prev.filter((x): x is number => typeof x === "number");
+/** Bakåtkompatibelt: poolat brus i %, null tills två mesocykler räcker. */
+export function individualNoise(points: { date: string; e1rm: number }[], blocks?: BlockWindow[]): number | null {
+  return pooledNoise(points, blocks).semPool;
+}
+
+type Metric = { key: keyof CheckIn; dir: 1 | -1 };
+const SUBJECTIVE: Metric[] = [
+  { key: "fatigue", dir: 1 },
+  { key: "stress", dir: 1 },
+  { key: "soreness", dir: 1 },
+  { key: "daily_form", dir: -1 },
+  { key: "sleep", dir: -1 },
+  { key: "motivation", dir: -1 },
+];
+
+function worseThan(cur: CheckIn[], prev: CheckIn[]): boolean {
+  return SUBJECTIVE.some(({ key, dir }) => {
+    const c = cur.map((x) => x[key]).filter((x): x is number => typeof x === "number");
+    const p = prev.map((x) => x[key]).filter((x): x is number => typeof x === "number");
     if (!c.length || !p.length) return false;
     return dir === 1 ? mean(c) - mean(p) > 1 : mean(p) - mean(c) > 1;
-  };
-  return (
-    worse(inWindow.map((c) => c.fatigue), before.map((c) => c.fatigue), 1) ||
-    worse(inWindow.map((c) => c.stress), before.map((c) => c.stress), 1) ||
-    worse(inWindow.map((c) => c.daily_form), before.map((c) => c.daily_form), -1) ||
-    worse(inWindow.map((c) => c.sleep), before.map((c) => c.sleep), -1)
-  );
+  });
 }
+
+/** Mående sämre än atletens eget snitt de 4–6 veckorna före fönstret. */
+export function subjectiveSignal(checkIns: CheckIn[], mStart: string): boolean {
+  const inWindow = checkIns.filter((c) => c.date >= mStart);
+  const before = checkIns.filter((c) => c.date < mStart && c.date >= addDays(mStart, -42));
+  if (inWindow.length < 2 || before.length < 2) return false;
+  return worseThan(inWindow, before);
+}
+
+/** Har måendet varit sämre i minst `days` dagar (räknat bakåt från senaste incheckningen)? */
+export function subjectiveWorseFor(checkIns: CheckIn[], days: number): boolean {
+  if (!checkIns.length) return false;
+  const sorted = [...checkIns].sort((a, b) => a.date.localeCompare(b.date));
+  const last = sorted[sorted.length - 1].date;
+  const start = addDays(last, -(days - 1));
+  const recent = sorted.filter((c) => c.date >= start);
+  if (recent.length < 2 || recent[0].date > addDays(start, 1)) return false;
+  const before = sorted.filter((c) => c.date < start && c.date >= addDays(start, -42));
+  if (before.length < 2) return false;
+  return worseThan(recent, before);
+}
+
+/** Uppvärmnings-RPE vid samma vikt ligger högre än atletens eget snitt 4–6 veckor tillbaka. */
+export function warmupRpeDrift(
+  warmups: WarmupLog[],
+  lift: CompLift,
+  loadKg: number | undefined,
+  mStart: string,
+  driftThreshold: number,
+): boolean {
+  if (!loadKg) return false;
+  const same = warmups.filter((w) => w.lift === lift && Math.abs(w.load_kg - loadKg) < 0.01);
+  const cur = same.filter((w) => w.date >= mStart).map((w) => w.rpe);
+  const prev = same.filter((w) => w.date < mStart && w.date >= addDays(mStart, -42)).map((w) => w.rpe);
+  if (!cur.length || !prev.length) return false;
+  return mean(cur) - mean(prev) >= driftThreshold;
+}
+
+export interface SessionLoadLog {
+  date: string;
+  sessionRpe: number;
+  durationMin: number;
+}
+
+export interface WeeklyLoad {
+  weekStart: string;
+  load: number;
+  /** Förändring i % mot snittet av de fyra föregående veckorna (null om de saknas). */
+  changePct: number | null;
+}
+
+/** Veckobelastning = summa av sRPE × minuter. Endast information, styr inga beslut. */
+export function weeklySessionLoad(sessions: SessionLoadLog[]): WeeklyLoad[] {
+  const byWeek = new Map<string, number>();
+  for (const s of sessions) {
+    if (!(s.sessionRpe > 0) || !(s.durationMin > 0)) continue;
+    const d = new Date(`${s.date}T00:00:00Z`);
+    const dow = (d.getUTCDay() + 6) % 7;
+    const wk = addDays(s.date, -dow);
+    byWeek.set(wk, (byWeek.get(wk) ?? 0) + s.sessionRpe * s.durationMin);
+  }
+  const weeks = [...byWeek.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  return weeks.map(([weekStart, load], i) => {
+    const prev = weeks.slice(Math.max(0, i - 4), i).map((w) => w[1]);
+    const m = prev.length === 4 ? mean(prev) : 0;
+    return { weekStart, load, changePct: m > 0 ? (100 * (load - m)) / m : null };
+  });
+}
+
+const NOISY_TEXT = "Ovanligt brusigt block – dra inte slutsatser för snabbt";
+const NFOR_TEXT =
+  "Prestationen återhämtar sig inte och atletens mående är sämre sedan över två veckor – utred återhämtningen (sömn, energiintag, sjukdom), inte bara programmet.";
 
 /** Mesocykelutvärdering — ger status + förslag, ändrar aldrig planen själv. */
 export function evaluateMesocycle(input: MesoInput): MesoResult {
-  const { logs, lift, baseline, checkIns = [], previous = null, blocks } = input;
+  const { logs, lift, baseline, checkIns = [], previous = null, blocks, warmups = [], warmupLoads, rebound = null } = input;
+  const strategy = resolveStrategy(input.strategy);
   const points = sessionPoints(logs, lift, baseline);
-  const window = points.slice(-MAX_SESSIONS);
+  const window = points.slice(-strategy.mesoMaxSessions);
   const n = window.length;
+  const nfor = !!rebound && rebound.R != null && rebound.R < 1 && subjectiveWorseFor(checkIns, strategy.subjectiveWorseDays);
 
   const base: Omit<MesoResult, "status" | "suggestion"> = {
+    warning: nfor ? NFOR_TEXT : null,
     n,
     L_M: 0,
     dL_M: 0,
     EAk_M: 0,
     b_M: 0,
     TE_i: null,
-    threshold_i: 5,
+    semPool: null,
+    semCurrent: null,
+    noiseRatio: null,
+    threshold_i: strategy.fallStage1Pct,
     readinessSignal: false,
     athleteSignal: false,
+    warmupDrift: false,
+    supportingSignals: { readiness: false, subjective: false, warmupDrift: false },
     sustainedPush: false,
+    nforFlag: nfor,
+    strategy,
   };
 
-  if (n < MIN_SESSIONS || baseline <= 0) {
-    return { ...base, status: "insufficient_data", suggestion: "För lite data — minst 4 pass behövs innan EAk kan föreslå något." };
+  if (n < strategy.mesoMinSessions || baseline <= 0) {
+    return {
+      ...base,
+      status: "insufficient_data",
+      suggestion: `För lite data — minst ${strategy.mesoMinSessions} pass behövs innan EAk kan föreslå något.`,
+    };
   }
 
   const L_M = mean(window.map((p) => p.e1rm));
   const L_prev = previous?.L_M && previous.L_M > 0 ? previous.L_M : baseline;
+  const nPrev = previous?.n && previous.n > 0 ? previous.n : n;
   const dL_M = (100 * (L_M - L_prev)) / L_prev;
   const EAk_M = (100 * L_M) / baseline;
   const b_M = slope(window.map((p) => p.e1rm));
-  const TE_i = individualNoise(points, blocks);
-  const te = TE_i ?? DEFAULT_TE;
-  const threshold_i = Math.max(5, 1.96 * te * Math.sqrt(2 / n));
-  const readinessSignal = window.filter((p) => p.eak < 97).length >= Math.ceil(n / 2);
-  const aSignal = athleteSignal(checkIns, window[0].date);
-  const sustainedPush = window.filter((p) => p.eak >= 103).length >= Math.ceil((3 * n) / 4);
+  const noise = pooledNoise(points, blocks, strategy);
+  const sem = noise.semPool ?? strategy.defaultSem;
+  const threshold_i = Math.max(strategy.fallStage1Pct, 1.96 * sem * Math.sqrt(1 / n + 1 / nPrev));
+  const noiseRatio = noise.semPool && noise.semCurrent != null ? noise.semCurrent / noise.semPool : null;
+  const noisy = noiseRatio != null && noiseRatio > strategy.noiseRatioFlag;
+  const readinessSignal =
+    window.filter((p) => p.eak < strategy.readinessBelowPct).length >= Math.ceil(n * strategy.readinessShare);
+  const mStart = window[0].date;
+  const aSignal = subjectiveSignal(checkIns, mStart);
+  const drift = warmupRpeDrift(warmups, lift, warmupLoads?.[lift], mStart, strategy.warmupRpeDrift);
+  const sustainedPush = window.filter((p) => p.eak >= strategy.pushLowPct - 1).length >= Math.ceil((3 * n) / 4);
+  const supporting = { readiness: readinessSignal, subjective: aSignal, warmupDrift: drift };
 
-  const numbers = { ...base, n, L_M, dL_M, EAk_M, b_M, TE_i, threshold_i, readinessSignal, athleteSignal: aSignal, sustainedPush };
+  const numbers = {
+    ...base,
+    n, L_M, dL_M, EAk_M, b_M,
+    TE_i: noise.semPool,
+    semPool: noise.semPool,
+    semCurrent: noise.semCurrent,
+    noiseRatio,
+    threshold_i,
+    readinessSignal,
+    athleteSignal: aSignal,
+    warmupDrift: drift,
+    supportingSignals: supporting,
+    sustainedPush,
+  };
+  const withNoise = (w: string | null) => [w, noisy ? NOISY_TEXT : null].filter(Boolean).join(" ") || null;
 
-  if (dL_M <= -10) {
-    return { ...numbers, status: "red_strong", suggestion: "Minska volymen eller tidigarelägg avlastning." };
+  if (dL_M <= -strategy.fallStage2Pct) {
+    return { ...numbers, warning: withNoise(numbers.warning), status: "red_strong", suggestion: "Minska volymen eller tidigarelägg avlastning." };
   }
-  if (EAk_M >= 104 && sustainedPush) {
+  if (EAk_M >= strategy.pushHighPct || (EAk_M >= strategy.pushLowPct && sustainedPush)) {
     return { ...numbers, status: "push", suggestion: "Atleten ligger före planen: tyngre vikter, mer volym eller uppdatera baseline." };
   }
-  if (dL_M <= -threshold_i && b_M <= 0 && (readinessSignal || aSignal)) {
-    return { ...numbers, status: "red", suggestion: "Minska volymen nästa block." };
+  const anySupport = readinessSignal || aSignal || drift;
+  let status: MesoStatus = "green";
+  if (dL_M <= -threshold_i && b_M <= 0 && anySupport) status = "red";
+  else if (dL_M <= -threshold_i || (b_M < 0 && dL_M < 0)) status = "yellow";
+  if (noisy && (status === "red" || status === "yellow")) {
+    return { ...numbers, status: "low_confidence", suggestion: NOISY_TEXT };
   }
-  if (dL_M <= -threshold_i || (b_M < 0 && dL_M < 0)) {
-    return { ...numbers, status: "yellow", suggestion: "Behåll planerad progression, bevaka nästa mesocykel." };
-  }
-  return { ...numbers, status: "green", suggestion: "Planerad progression fortsätter." };
+  if (status === "red") return { ...numbers, status, suggestion: "Minska volymen nästa block." };
+  if (status === "yellow") return { ...numbers, status, suggestion: "Behåll planerad progression, bevaka nästa mesocykel." };
+  return { ...numbers, status, suggestion: "Planerad progression fortsätter." };
 }
 
 export interface ReboundResult {

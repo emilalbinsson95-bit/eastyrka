@@ -16,6 +16,7 @@ export interface SetLog {
   reps: number;
   weight_kg: number;
   rpe: number | null;
+  is_warmup_reference?: boolean;
 }
 
 export interface CheckIn {
@@ -55,6 +56,10 @@ export interface EakStrategy {
   defaultSem: number;
   warmupRpeDrift: number;
   subjectiveWorseDays: number;
+  subjectiveWorsePoints: number;
+  historyDays: number;
+  pushSessionBelowPct: number;
+  pushShare: number;
 }
 
 export const DEFAULT_STRATEGY: EakStrategy = {
@@ -73,6 +78,10 @@ export const DEFAULT_STRATEGY: EakStrategy = {
   defaultSem: 2.2,
   warmupRpeDrift: 1.0,
   subjectiveWorseDays: 14,
+  subjectiveWorsePoints: 1,
+  historyDays: 42,
+  pushSessionBelowPct: 103,
+  pushShare: 0.75,
 };
 
 /** Fyller tomma värden (null/undefined) med standard. */
@@ -127,6 +136,7 @@ export interface MesoResult {
   sustainedPush: boolean;
   nforFlag: boolean;
   strategy: EakStrategy;
+  weeklyLoad: WeeklyLoad[];
 }
 
 export interface MesoInput {
@@ -143,11 +153,12 @@ export interface MesoInput {
   warmupLoads?: Partial<Record<CompLift, number>>;
   /** Senaste rebound-test, används för NFOR-flaggan. */
   rebound?: ReboundResult | null;
+  sessionLoads?: SessionLoadLog[];
 }
 
 /** Mätsets-e1RM och EAk_d per pass för ett lyft, kronologiskt. */
 export function sessionPoints(logs: SetLog[], lift: CompLift, baseline: number): { date: string; e1rm: number; eak: number }[] {
-  const rows = logs.filter((l) => compLiftKey(l.exercise.trim()) === lift && l.rpe != null);
+  const rows = logs.filter((l) => !l.is_warmup_reference && compLiftKey(l.exercise.trim()) === lift && l.rpe != null);
   const byDate = new Map<string, SetLog[]>();
   for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
   return [...byDate.entries()]
@@ -222,24 +233,26 @@ export function pooledNoise(
   }
   const raw = new Map<string, { date: string; e1rm: number }[]>();
   const order: string[] = [];
-  for (const p of points) {
+  for (const p of [...points].sort((a, b) => a.date.localeCompare(b.date))) {
     let key = "all";
     if (blocks?.length) {
       const b = blocks.find((w) => p.date >= w.start && p.date <= w.end);
       if (!b || b.kind !== "working") continue;
       key = keyOf(b);
-      if (p.date < addDays(mesoStart.get(key)!, 7)) continue;
+      const start = mesoStart.get(key);
+      if (!start || p.date < addDays(start, 7)) continue;
     }
     if (!raw.has(key)) {
       raw.set(key, []);
       order.push(key);
     }
-    raw.get(key)!.push(p);
+    raw.get(key)?.push(p);
   }
   // Slå ihop små mesocykler med föregående (bara för brusskattning).
   const merged: { key: string; pts: { date: string; e1rm: number }[] }[] = [];
   for (const k of order) {
-    const pts = raw.get(k)!;
+    const pts = raw.get(k);
+    if (!pts) continue;
     if (pts.length < 3 && merged.length) merged[merged.length - 1].pts.push(...pts);
     else merged.push({ key: k, pts: [...pts] });
   }
@@ -277,34 +290,37 @@ const SUBJECTIVE: Metric[] = [
   { key: "motivation", dir: -1 },
 ];
 
-function worseThan(cur: CheckIn[], prev: CheckIn[]): boolean {
+function worseThan(cur: CheckIn[], prev: CheckIn[], threshold: number): boolean {
   return SUBJECTIVE.some(({ key, dir }) => {
     const c = cur.map((x) => x[key]).filter((x): x is number => typeof x === "number");
     const p = prev.map((x) => x[key]).filter((x): x is number => typeof x === "number");
     if (!c.length || !p.length) return false;
-    return dir === 1 ? mean(c) - mean(p) > 1 : mean(p) - mean(c) > 1;
+    return dir === 1 ? mean(c) - mean(p) > threshold : mean(p) - mean(c) > threshold;
   });
 }
 
 /** Mående sämre än atletens eget snitt de 4–6 veckorna före fönstret. */
-export function subjectiveSignal(checkIns: CheckIn[], mStart: string): boolean {
+export function subjectiveSignal(checkIns: CheckIn[], mStart: string, strategyInput?: Partial<EakStrategy>): boolean {
+  const strategy = resolveStrategy(strategyInput);
   const inWindow = checkIns.filter((c) => c.date >= mStart);
-  const before = checkIns.filter((c) => c.date < mStart && c.date >= addDays(mStart, -42));
+  const before = checkIns.filter((c) => c.date < mStart && c.date >= addDays(mStart, -strategy.historyDays));
   if (inWindow.length < 2 || before.length < 2) return false;
-  return worseThan(inWindow, before);
+  return worseThan(inWindow, before, strategy.subjectiveWorsePoints);
 }
 
 /** Har måendet varit sämre i minst `days` dagar (räknat bakåt från senaste incheckningen)? */
-export function subjectiveWorseFor(checkIns: CheckIn[], days: number): boolean {
+export function subjectiveWorseFor(checkIns: CheckIn[], days: number, strategyInput?: Partial<EakStrategy>): boolean {
+  const strategy = resolveStrategy(strategyInput);
   if (!checkIns.length) return false;
   const sorted = [...checkIns].sort((a, b) => a.date.localeCompare(b.date));
   const last = sorted[sorted.length - 1].date;
   const start = addDays(last, -(days - 1));
   const recent = sorted.filter((c) => c.date >= start);
-  if (recent.length < 2 || recent[0].date > addDays(start, 1)) return false;
-  const before = sorted.filter((c) => c.date < start && c.date >= addDays(start, -42));
+  // Kräver dokumenterade sämre dagar; två glest placerade värden bevisar inte varaktighet.
+  if (new Set(recent.map((c) => c.date)).size < days) return false;
+  const before = sorted.filter((c) => c.date < start && c.date >= addDays(start, -strategy.historyDays));
   if (before.length < 2) return false;
-  return worseThan(recent, before);
+  return recent.every((c) => worseThan([c], before, strategy.subjectiveWorsePoints));
 }
 
 /** Uppvärmnings-RPE vid samma vikt ligger högre än atletens eget snitt 4–6 veckor tillbaka. */
@@ -314,11 +330,12 @@ export function warmupRpeDrift(
   loadKg: number | undefined,
   mStart: string,
   driftThreshold: number,
+  historyDays = DEFAULT_STRATEGY.historyDays,
 ): boolean {
   if (!loadKg) return false;
-  const same = warmups.filter((w) => w.lift === lift && Math.abs(w.load_kg - loadKg) < 0.01);
+  const same = warmups.filter((w) => w.lift === lift && w.load_kg === loadKg && Number.isFinite(w.rpe));
   const cur = same.filter((w) => w.date >= mStart).map((w) => w.rpe);
-  const prev = same.filter((w) => w.date < mStart && w.date >= addDays(mStart, -42)).map((w) => w.rpe);
+  const prev = same.filter((w) => w.date < mStart && w.date >= addDays(mStart, -historyDays)).map((w) => w.rpe);
   if (!cur.length || !prev.length) return false;
   return mean(cur) - mean(prev) >= driftThreshold;
 }
@@ -327,6 +344,8 @@ export interface SessionLoadLog {
   date: string;
   sessionRpe: number;
   durationMin: number;
+  /** Kondition ingår aldrig i styrkans träningsstatus. */
+  sport?: "strength" | "endurance";
 }
 
 export interface WeeklyLoad {
@@ -340,13 +359,18 @@ export interface WeeklyLoad {
 export function weeklySessionLoad(sessions: SessionLoadLog[]): WeeklyLoad[] {
   const byWeek = new Map<string, number>();
   for (const s of sessions) {
-    if (!(s.sessionRpe > 0) || !(s.durationMin > 0)) continue;
+    if (s.sport === "endurance" || !Number.isFinite(s.sessionRpe) || s.sessionRpe < 1 || s.sessionRpe > 10 || !Number.isFinite(s.durationMin) || !(s.durationMin > 0)) continue;
     const d = new Date(`${s.date}T00:00:00Z`);
     const dow = (d.getUTCDay() + 6) % 7;
     const wk = addDays(s.date, -dow);
     byWeek.set(wk, (byWeek.get(wk) ?? 0) + s.sessionRpe * s.durationMin);
   }
-  const weeks = [...byWeek.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const keys = [...byWeek.keys()].sort();
+  const first = keys[0];
+  const last = keys.at(-1);
+  if (!first || !last) return [];
+  const weeks: Array<[string, number]> = [];
+  for (let date = first; date <= last; date = addDays(date, 7)) weeks.push([date, byWeek.get(date) ?? 0]);
   return weeks.map(([weekStart, load], i) => {
     const prev = weeks.slice(Math.max(0, i - 4), i).map((w) => w[1]);
     const m = prev.length === 4 ? mean(prev) : 0;
@@ -365,7 +389,7 @@ export function evaluateMesocycle(input: MesoInput): MesoResult {
   const points = sessionPoints(logs, lift, baseline);
   const window = points.slice(-strategy.mesoMaxSessions);
   const n = window.length;
-  const nfor = !!rebound && rebound.R != null && rebound.R < 1 && subjectiveWorseFor(checkIns, strategy.subjectiveWorseDays);
+  const nfor = !!rebound && rebound.R != null && rebound.R < 1 && subjectiveWorseFor(checkIns, strategy.subjectiveWorseDays, strategy);
 
   const base: Omit<MesoResult, "status" | "suggestion"> = {
     warning: nfor ? NFOR_TEXT : null,
@@ -386,6 +410,7 @@ export function evaluateMesocycle(input: MesoInput): MesoResult {
     sustainedPush: false,
     nforFlag: nfor,
     strategy,
+    weeklyLoad: weeklySessionLoad(input.sessionLoads ?? []),
   };
 
   if (n < strategy.mesoMinSessions || baseline <= 0) {
@@ -410,9 +435,9 @@ export function evaluateMesocycle(input: MesoInput): MesoResult {
   const readinessSignal =
     window.filter((p) => p.eak < strategy.readinessBelowPct).length >= Math.ceil(n * strategy.readinessShare);
   const mStart = window[0].date;
-  const aSignal = subjectiveSignal(checkIns, mStart);
-  const drift = warmupRpeDrift(warmups, lift, warmupLoads?.[lift], mStart, strategy.warmupRpeDrift);
-  const sustainedPush = window.filter((p) => p.eak >= strategy.pushLowPct - 1).length >= Math.ceil((3 * n) / 4);
+  const aSignal = subjectiveSignal(checkIns, mStart, strategy);
+  const drift = warmupRpeDrift(warmups, lift, warmupLoads?.[lift], mStart, strategy.warmupRpeDrift, strategy.historyDays);
+  const sustainedPush = window.filter((p) => p.eak >= strategy.pushSessionBelowPct).length >= Math.ceil(n * strategy.pushShare);
   const supporting = { readiness: readinessSignal, subjective: aSignal, warmupDrift: drift };
 
   const numbers = {

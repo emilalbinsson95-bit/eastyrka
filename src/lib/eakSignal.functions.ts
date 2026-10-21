@@ -146,7 +146,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         threshold_i: r.threshold_i,
         readiness_signal: r.readinessSignal,
         athlete_signal: r.athleteSignal,
-        status: r.status,
+        status: storedStatus,
         suggestion_text: r.suggestion,
         coach_decision: "pending",
       });

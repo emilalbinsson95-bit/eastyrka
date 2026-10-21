@@ -129,6 +129,9 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       const previous = existing?.l_m ? { L_M: Number(existing.l_m) } : null;
       const r = evaluateMesocycle({ logs: allLogs, lift, baseline: B, checkIns, previous, blocks });
 
+      // DB-statuslistan saknar low_confidence tills steg B — spara som yellow.
+      const storedStatus = r.status === "low_confidence" ? "yellow" : r.status;
+
       const { error } = await (await admin()).from("eak_meso_evaluations").insert({
         athlete_id: athleteId,
         lift,
@@ -143,7 +146,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         threshold_i: r.threshold_i,
         readiness_signal: r.readinessSignal,
         athlete_signal: r.athleteSignal,
-        status: r.status,
+        status: storedStatus,
         suggestion_text: r.suggestion,
         coach_decision: "pending",
       });

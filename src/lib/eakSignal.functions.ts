@@ -67,7 +67,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         .limit(500),
       supabaseAdmin
         .from("week_plans")
-        .select("week_index, week_start_date, status, is_deload, mesocycles(label, status)")
+        .select("week_index, week_start_date, mesocycle_id, status, is_deload, mesocycles(label, status)")
         .eq("athlete_id", athleteId)
         .limit(200),
     ]);
@@ -95,7 +95,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
               : "working";
         const start = w.week_start_date as string;
         const end = new Date(new Date(start).getTime() + 6 * 864e5).toISOString().slice(0, 10);
-        return { kind, start, end };
+        return { kind, start, end, mesocycleId: typeof w.mesocycle_id === "string" ? w.mesocycle_id : undefined };
       });
 
     const results: Array<{ lift: CompLift; status: string; stored: boolean }> = [];
@@ -115,7 +115,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       // Hoppa över om fönstret redan är utvärderat.
       const { data: existing } = await (await admin())
         .from("eak_meso_evaluations")
-        .select("id, window_end, l_m")
+        .select("id, window_end, l_m, n_sessions")
         .eq("athlete_id", athleteId)
         .eq("lift", lift)
         .order("created_at", { ascending: false })
@@ -126,7 +126,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         continue;
       }
 
-      const previous = existing?.l_m ? { L_M: Number(existing.l_m) } : null;
+      const previous = existing?.l_m ? { L_M: Number(existing.l_m), n: Number(existing.n_sessions) } : null;
       const r = evaluateMesocycle({ logs: allLogs, lift, baseline: B, checkIns, previous, blocks });
 
       // DB-statuslistan saknar low_confidence tills steg B — spara som yellow.

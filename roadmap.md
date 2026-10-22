@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] EAk steg B: atletstrategi, ömhet/motivation, pass-RPE/tid, referensuppvärmning och utökad beslutslogg; verifiera med Alex. Steg C lämnas orört.
 - [x] EAk steg A: trendjusterat poolat brus, strategi som parameter, stödsignaler och NFOR-flagga; 34 EAk-tester och totalt 264 tester gröna, coachens analys för Alex verifierad utan fel. Veckor grupperas efter mesocykel och föregående antal pass används i tröskeln. Steg B–C är inte påbörjade.
 - [ ] Toppning: gradvis volymnedtrappning från tre föregående arbetsveckor, valbara start/slutdatum och kontrollerat forskningsunderlag; verifiera med Alex Athlete.
 - [x] Tävlingsankrad toppning rättad; 243 tester gröna, Alex sexveckorsutkast sparat och återläst inför lördagstävling.

@@ -287,6 +287,9 @@ function ReadinessSurveyForm({
   const [sleepQuality, setSleepQuality] = useState(5);
   const [nutrition, setNutrition] = useState(5);
   const [stiffness, setStiffness] = useState(5);
+  // Ömhet/motivation används bara i EAk:s stödsignaler, inte i formpoängen (historiken bevaras).
+  const [soreness, setSoreness] = useState(5);
+  const [motivation, setMotivation] = useState(5);
   const [notes, setNotes] = useState("");
 
   // Auto-derive a daily_form score so the coach gets a single index.
@@ -333,6 +336,8 @@ function ReadinessSurveyForm({
         sleep_quality: parsed.sleep_quality,
         nutrition: parsed.nutrition,
         stiffness: parsed.stiffness,
+        soreness,
+        motivation,
         notes: parsed.notes ?? null,
         daily_form: parsed.daily_form,
       });
@@ -440,6 +445,21 @@ function ReadinessSurveyForm({
           value={stiffness}
           onChange={setStiffness}
         />
+        <Slider10
+          label={t("readiness.soreness")}
+          help={t("readiness.sorenessHelp")}
+          scaleKey="soreness"
+          value={soreness}
+          onChange={setSoreness}
+        />
+        <Slider10
+          label={t("readiness.motivation")}
+          help={t("readiness.motivationHelp")}
+          scaleKey="motivation"
+          value={motivation}
+          onChange={setMotivation}
+        />
+
 
         <div className="space-y-1">
           <Label htmlFor="notes">{t("readiness.notes")}</Label>

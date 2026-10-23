@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_eak_strategy: {
+        Row: {
+          athlete_id: string
+          default_sem: number | null
+          fall_stage1_pct: number | null
+          fall_stage2_pct: number | null
+          history_days: number | null
+          in_session_drop_ok_pct: number | null
+          in_session_drop_stop_pct: number | null
+          meso_max_sessions: number | null
+          meso_min_sessions: number | null
+          noise_ratio_flag: number | null
+          pool_mesocycles: number | null
+          push_high_pct: number | null
+          push_low_pct: number | null
+          push_session_below_pct: number | null
+          push_share: number | null
+          readiness_below_pct: number | null
+          readiness_share: number | null
+          subjective_worse_days: number | null
+          subjective_worse_points: number | null
+          updated_at: string
+          updated_by: string | null
+          warmup_rpe_drift: number | null
+        }
+        Insert: {
+          athlete_id: string
+          default_sem?: number | null
+          fall_stage1_pct?: number | null
+          fall_stage2_pct?: number | null
+          history_days?: number | null
+          in_session_drop_ok_pct?: number | null
+          in_session_drop_stop_pct?: number | null
+          meso_max_sessions?: number | null
+          meso_min_sessions?: number | null
+          noise_ratio_flag?: number | null
+          pool_mesocycles?: number | null
+          push_high_pct?: number | null
+          push_low_pct?: number | null
+          push_session_below_pct?: number | null
+          push_share?: number | null
+          readiness_below_pct?: number | null
+          readiness_share?: number | null
+          subjective_worse_days?: number | null
+          subjective_worse_points?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          warmup_rpe_drift?: number | null
+        }
+        Update: {
+          athlete_id?: string
+          default_sem?: number | null
+          fall_stage1_pct?: number | null
+          fall_stage2_pct?: number | null
+          history_days?: number | null
+          in_session_drop_ok_pct?: number | null
+          in_session_drop_stop_pct?: number | null
+          meso_max_sessions?: number | null
+          meso_min_sessions?: number | null
+          noise_ratio_flag?: number | null
+          pool_mesocycles?: number | null
+          push_high_pct?: number | null
+          push_low_pct?: number | null
+          push_session_below_pct?: number | null
+          push_share?: number | null
+          readiness_below_pct?: number | null
+          readiness_share?: number | null
+          subjective_worse_days?: number | null
+          subjective_worse_points?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          warmup_rpe_drift?: number | null
+        }
+        Relationships: []
+      }
       athlete_generator_preferences: {
         Row: {
           athlete_id: string
@@ -139,6 +214,27 @@ export type Database = {
           notes?: string | null
           reason?: Database["public"]["Enums"]["unavailability_reason"]
           start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      athlete_warmup_loads: {
+        Row: {
+          athlete_id: string
+          lift: string
+          load_kg: number
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          lift: string
+          load_kg: number
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          lift?: string
+          load_kg?: number
           updated_at?: string
         }
         Relationships: []
@@ -324,10 +420,19 @@ export type Database = {
           l_m: number | null
           lift: string
           n_sessions: number
+          nfor_flag: boolean
+          noise_ratio: number | null
+          outcome_dl_next: number | null
+          outcome_status_next: string | null
+          plan_changed: boolean | null
           readiness_signal: boolean
+          sem_current: number | null
+          sem_pool: number | null
           slope: number | null
           status: string
+          strategy_snapshot: Json | null
           suggestion_text: string | null
+          supporting_signals: Json | null
           te_i: number | null
           threshold_i: number | null
           window_end: string | null
@@ -346,10 +451,19 @@ export type Database = {
           l_m?: number | null
           lift: string
           n_sessions?: number
+          nfor_flag?: boolean
+          noise_ratio?: number | null
+          outcome_dl_next?: number | null
+          outcome_status_next?: string | null
+          plan_changed?: boolean | null
           readiness_signal?: boolean
+          sem_current?: number | null
+          sem_pool?: number | null
           slope?: number | null
           status: string
+          strategy_snapshot?: Json | null
           suggestion_text?: string | null
+          supporting_signals?: Json | null
           te_i?: number | null
           threshold_i?: number | null
           window_end?: string | null
@@ -368,10 +482,19 @@ export type Database = {
           l_m?: number | null
           lift?: string
           n_sessions?: number
+          nfor_flag?: boolean
+          noise_ratio?: number | null
+          outcome_dl_next?: number | null
+          outcome_status_next?: string | null
+          plan_changed?: boolean | null
           readiness_signal?: boolean
+          sem_current?: number | null
+          sem_pool?: number | null
           slope?: number | null
           status?: string
+          strategy_snapshot?: Json | null
           suggestion_text?: string | null
+          supporting_signals?: Json | null
           te_i?: number | null
           threshold_i?: number | null
           window_end?: string | null
@@ -1322,10 +1445,12 @@ export type Database = {
           fatigue: number
           id: string
           life_stress: number
+          motivation: number | null
           notes: string | null
           nutrition: number | null
           sleep_hours: number | null
           sleep_quality: number | null
+          soreness: number | null
           stiffness: number | null
           updated_at: string
           work_stress: number
@@ -1339,10 +1464,12 @@ export type Database = {
           fatigue: number
           id?: string
           life_stress: number
+          motivation?: number | null
           notes?: string | null
           nutrition?: number | null
           sleep_hours?: number | null
           sleep_quality?: number | null
+          soreness?: number | null
           stiffness?: number | null
           updated_at?: string
           work_stress: number
@@ -1356,10 +1483,12 @@ export type Database = {
           fatigue?: number
           id?: string
           life_stress?: number
+          motivation?: number | null
           notes?: string | null
           nutrition?: number | null
           sleep_hours?: number | null
           sleep_quality?: number | null
+          soreness?: number | null
           stiffness?: number | null
           updated_at?: string
           work_stress?: number
@@ -1807,6 +1936,36 @@ export type Database = {
         }
         Relationships: []
       }
+      strength_session_feedback: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          date: string
+          duration_min: number | null
+          id: string
+          session_rpe: number | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          date: string
+          duration_min?: number | null
+          id?: string
+          session_rpe?: number | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          date?: string
+          duration_min?: number | null
+          id?: string
+          session_rpe?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           athlete_id: string
@@ -1817,6 +1976,7 @@ export type Database = {
           exercise: string
           form_score: number | null
           id: string
+          is_warmup_reference: boolean
           lengthened_partials: boolean
           original_reps: number | null
           original_rpe: number | null
@@ -1838,6 +1998,7 @@ export type Database = {
           exercise: string
           form_score?: number | null
           id?: string
+          is_warmup_reference?: boolean
           lengthened_partials?: boolean
           original_reps?: number | null
           original_rpe?: number | null
@@ -1859,6 +2020,7 @@ export type Database = {
           exercise?: string
           form_score?: number | null
           id?: string
+          is_warmup_reference?: boolean
           lengthened_partials?: boolean
           original_reps?: number | null
           original_rpe?: number | null

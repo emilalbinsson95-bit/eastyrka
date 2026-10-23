@@ -204,6 +204,13 @@
       "when": 1792390324172,
       "tag": "0028_eak_signal_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792750645359,
+      "tag": "0029_eak_step_b",
+      "breakpoints": true
     }
   ]
 }

@@ -438,12 +438,40 @@
         "Väldigt stel. Du ändrar tydligt dina rörelser för att komma runt begränsningen.",
         "Kraftig stelhet eller ömhet. Vanliga rörelser är svåra.",
         "Extrem stelhet eller ömhet. Du är mycket begränsad i vanliga rörelser."
+      ],
+      "soreness": [
+        "Ingen ömhet alls.",
+        "Knappt märkbar ömhet.",
+        "Lätt ömhet som inte stör.",
+        "Lätt ömhet i några muskler.",
+        "Märkbar ömhet, rörelser känns ändå normala.",
+        "Tydlig ömhet i flera muskler.",
+        "Ömt nog att uppvärmningen känns tyngre.",
+        "Ömheten påverkar hur rörelserna känns.",
+        "Mycket öm, svårt att röra sig obehindrat.",
+        "Kraftig ömhet, rörelser gör ont."
+      ],
+      "motivation": [
+        "Ingen lust att träna alls.",
+        "Mycket låg lust.",
+        "Låg lust, får tvinga mig.",
+        "Något under det vanliga.",
+        "Lite under det vanliga.",
+        "Som vanligt.",
+        "Lite sugen.",
+        "Sugen på att träna.",
+        "Mycket sugen.",
+        "Kan knappt vänta på passet."
       ]
     },
     "gradesTitle": "Vad betyder siffrorna?",
     "gradesNote": "Beskrivningarna är exempel som hjälper dig välja, inte medicinska gränsvärden. Välj närmast och använd skalan på samma sätt från dag till dag.",
     "stiffnessNote": "Bedöm stelhet och muskelömhet, inte skarp smärta. Skriv smärta och var den sitter i anteckningen.",
     "sleepQNote": "Bedöm hur du sov och hur utvilad du vaknade. Antal timmar fyller du i separat.",
-    "nutritionNote": "Bedöm om du fått tillräckligt med mat och vätska för din dag, inte om maten var ”perfekt”."
+    "nutritionNote": "Bedöm om du fått tillräckligt med mat och vätska för din dag, inte om maten var ”perfekt”.",
+    "soreness": "Muskelömhet",
+    "sorenessHelp": "1 ingen ömhet · 5 märkbar · 10 mycket öm",
+    "motivation": "Motivation att träna",
+    "motivationHelp": "1 ingen lust · 5 neutral · 10 mycket sugen"
   }
 }

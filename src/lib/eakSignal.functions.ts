@@ -10,10 +10,53 @@ async function admin() {
   return supabaseAdmin;
 }
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { evaluateMesocycle, reboundTest, sessionPoints, type BlockWindow, type CheckIn, type SetLog } from "./eakSignal";
+import {
+  evaluateMesocycle,
+  reboundTest,
+  sessionPoints,
+  type BlockWindow,
+  type CheckIn,
+  type EakStrategy,
+  type SessionLoadLog,
+  type SetLog,
+  type WarmupLog,
+} from "./eakSignal";
 import { compLiftKey, COMP_NAME, type CompLift } from "./liftIdentity";
 
 const LIFTS: CompLift[] = ["squat", "bench", "deadlift"];
+
+/** DB-kolumn (snake_case) → strateginyckel. Null = standardvärde. */
+const STRATEGY_COLUMNS: Record<keyof EakStrategy, string> = {
+  fallStage1Pct: "fall_stage1_pct",
+  fallStage2Pct: "fall_stage2_pct",
+  pushLowPct: "push_low_pct",
+  pushHighPct: "push_high_pct",
+  readinessBelowPct: "readiness_below_pct",
+  readinessShare: "readiness_share",
+  mesoMinSessions: "meso_min_sessions",
+  mesoMaxSessions: "meso_max_sessions",
+  inSessionDropStopPct: "in_session_drop_stop_pct",
+  inSessionDropOkPct: "in_session_drop_ok_pct",
+  noiseRatioFlag: "noise_ratio_flag",
+  poolMesocycles: "pool_mesocycles",
+  defaultSem: "default_sem",
+  warmupRpeDrift: "warmup_rpe_drift",
+  subjectiveWorseDays: "subjective_worse_days",
+  subjectiveWorsePoints: "subjective_worse_points",
+  historyDays: "history_days",
+  pushSessionBelowPct: "push_session_below_pct",
+  pushShare: "push_share",
+};
+
+function strategyFromRow(row: Record<string, unknown> | null): Partial<Record<keyof EakStrategy, number | null>> | null {
+  if (!row) return null;
+  const out: Partial<Record<keyof EakStrategy, number | null>> = {};
+  for (const [key, col] of Object.entries(STRATEGY_COLUMNS) as [keyof EakStrategy, string][]) {
+    const v = row[col];
+    out[key] = v == null ? null : Number(v);
+  }
+  return out;
+}
 
 async function assertCoachOrSelf(userId: string, athleteId: string) {
   if (userId === athleteId) return;
@@ -51,17 +94,25 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     await assertCoachOrSelf(context.userId, athleteId);
     const supabaseAdmin = await admin();
 
-    const [{ data: logs }, { data: baselines }, { data: surveys }, { data: weeks }] = await Promise.all([
+    const [
+      { data: logs },
+      { data: baselines },
+      { data: surveys },
+      { data: weeks },
+      { data: strategyRow },
+      { data: warmupRows },
+      { data: feedbackRows },
+    ] = await Promise.all([
       supabaseAdmin
         .from("training_logs")
-        .select("date, exercise, set_number, reps, weight_kg, rpe")
+        .select("date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: true })
         .limit(5000),
       supabaseAdmin.from("baselines").select("exercise, one_rm_kg").eq("athlete_id", athleteId),
       supabaseAdmin
         .from("readiness_surveys")
-        .select("date, fatigue, work_stress, life_stress, daily_form, sleep_quality")
+        .select("date, fatigue, work_stress, life_stress, daily_form, sleep_quality, soreness, motivation")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: true })
         .limit(500),
@@ -70,15 +121,34 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         .select("week_index, week_start_date, mesocycle_id, status, is_deload, mesocycles(label, status)")
         .eq("athlete_id", athleteId)
         .limit(200),
+      supabaseAdmin.from("athlete_eak_strategy").select("*").eq("athlete_id", athleteId).maybeSingle(),
+      supabaseAdmin.from("athlete_warmup_loads").select("lift, load_kg").eq("athlete_id", athleteId),
+      supabaseAdmin
+        .from("strength_session_feedback")
+        .select("date, session_rpe, duration_min")
+        .eq("athlete_id", athleteId)
+        .limit(500),
     ]);
 
     const allLogs = (logs ?? []) as SetLog[];
+    const strategy = strategyFromRow(strategyRow as Record<string, unknown> | null);
+    const warmupLoads: Partial<Record<CompLift, number>> = {};
+    for (const w of warmupRows ?? []) warmupLoads[w.lift as CompLift] = Number(w.load_kg);
+    const warmups: WarmupLog[] = allLogs
+      .filter((l) => l.is_warmup_reference && l.rpe != null)
+      .map((l) => ({ date: l.date, lift: compLiftKey(l.exercise.trim()) as CompLift, load_kg: Number(l.weight_kg), rpe: Number(l.rpe) }))
+      .filter((w) => LIFTS.includes(w.lift));
+    const sessionLoads: SessionLoadLog[] = (feedbackRows ?? [])
+      .filter((f) => f.session_rpe != null && f.duration_min != null)
+      .map((f) => ({ date: f.date, sessionRpe: Number(f.session_rpe), durationMin: Number(f.duration_min), sport: "strength" }));
     const checkIns: CheckIn[] = (surveys ?? []).map((s) => ({
       date: s.date,
       fatigue: s.fatigue,
       stress: Math.max(Number(s.work_stress ?? 0), Number(s.life_stress ?? 0)) || null,
       daily_form: s.daily_form,
       sleep: s.sleep_quality,
+      soreness: s.soreness,
+      motivation: s.motivation,
     }));
 
     // Blockfönster från veckoplaner (deload/peak exkluderas ur brusberäkningen).
@@ -127,10 +197,26 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       }
 
       const previous = existing?.l_m ? { L_M: Number(existing.l_m), n: Number(existing.n_sessions) } : null;
-      const r = evaluateMesocycle({ logs: allLogs, lift, baseline: B, checkIns, previous, blocks });
+      const r = evaluateMesocycle({
+        logs: allLogs,
+        lift,
+        baseline: B,
+        checkIns,
+        previous,
+        blocks,
+        strategy,
+        warmups,
+        warmupLoads,
+        sessionLoads,
+      });
 
-      // DB-statuslistan saknar low_confidence tills steg B — spara som yellow.
-      const storedStatus = r.status === "low_confidence" ? "yellow" : r.status;
+      // Fyll utfallet på föregående utvärdering för samma lyft.
+      if (existing?.id) {
+        await (await admin())
+          .from("eak_meso_evaluations")
+          .update({ outcome_dl_next: r.dL_M, outcome_status_next: r.status })
+          .eq("id", existing.id);
+      }
 
       const { error } = await (await admin()).from("eak_meso_evaluations").insert({
         athlete_id: athleteId,
@@ -146,9 +232,15 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         threshold_i: r.threshold_i,
         readiness_signal: r.readinessSignal,
         athlete_signal: r.athleteSignal,
-        status: storedStatus,
+        status: r.status,
         suggestion_text: r.suggestion,
         coach_decision: "pending",
+        strategy_snapshot: JSON.parse(JSON.stringify(r.strategy)),
+        sem_pool: r.semPool,
+        sem_current: r.semCurrent,
+        noise_ratio: r.noiseRatio,
+        supporting_signals: JSON.parse(JSON.stringify(r.supportingSignals)),
+        nfor_flag: r.nforFlag,
       });
       if (error) throw new Error(error.message);
       results.push({ lift, status: r.status, stored: true });

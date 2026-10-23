@@ -438,12 +438,40 @@
         "Extremely stiff. You clearly change movements to work around the restriction.",
         "Severe stiffness or soreness. Everyday movements are difficult.",
         "Extreme stiffness or soreness. Everyday movement is very restricted."
+      ],
+      "soreness": [
+        "No soreness.",
+        "Barely noticeable.",
+        "Mild, not bothering.",
+        "Mild in a few muscles.",
+        "Noticeable, movement still normal.",
+        "Clear soreness in several muscles.",
+        "Sore enough that warm-up feels heavier.",
+        "Soreness affects how movement feels.",
+        "Very sore, hard to move freely.",
+        "Severe, movement hurts."
+      ],
+      "motivation": [
+        "No drive to train.",
+        "Very low.",
+        "Low, have to push myself.",
+        "Somewhat below usual.",
+        "Slightly below usual.",
+        "As usual.",
+        "A bit eager.",
+        "Eager to train.",
+        "Very eager.",
+        "Can hardly wait."
       ]
     },
     "gradesTitle": "What do the numbers mean?",
     "gradesNote": "These descriptions are examples to help you choose, not medical thresholds. Pick the closest and use the scale consistently from day to day.",
     "stiffnessNote": "Rate stiffness and muscle soreness, not sharp pain. Describe pain and its location in the note.",
     "sleepQNote": "Rate how you slept and how rested you felt on waking. Enter sleep hours separately.",
-    "nutritionNote": "Rate whether you had enough food and fluids for your day, not whether the food was “perfect”."
+    "nutritionNote": "Rate whether you had enough food and fluids for your day, not whether the food was “perfect”.",
+    "soreness": "Muscle soreness",
+    "sorenessHelp": "1 none · 5 noticeable · 10 very sore",
+    "motivation": "Motivation to train",
+    "motivationHelp": "1 no drive · 5 neutral · 10 very eager"
   }
 }

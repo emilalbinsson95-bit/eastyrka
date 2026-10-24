@@ -1,3 +1,4 @@
+import { SessionFeedbackRow } from "@/components/SessionFeedbackRow";
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { canAddExtraSet } from "@/lib/blockVolume";
@@ -634,6 +635,7 @@ function PlannedSessionCard({
             );
           })}
         <AddExtraExerciseInline athleteId={athleteId} dateStr={dateStr} />
+        {allDone && <SessionFeedbackRow athleteId={athleteId} dateStr={dateStr} />}
         {inProgress && <PauseSessionRow sessionId={session.id} athleteId={athleteId} />}
       </CardContent>
     </Card>

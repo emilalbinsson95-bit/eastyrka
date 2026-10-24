@@ -283,6 +283,7 @@ export const decideEakEvaluation = createServerFn({ method: "POST" })
         evaluationId: z.string().uuid(),
         decision: z.enum(["approved", "rejected", "modified"]),
         note: z.string().max(1000).optional(),
+        planChanged: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -297,7 +298,7 @@ export const decideEakEvaluation = createServerFn({ method: "POST" })
 
     const { error } = await (await admin())
       .from("eak_meso_evaluations")
-      .update({ coach_decision: data.decision, coach_note: data.note ?? null, decided_at: new Date().toISOString() })
+      .update({ coach_decision: data.decision, coach_note: data.note ?? null, plan_changed: data.planChanged ?? null, decided_at: new Date().toISOString() })
       .eq("id", data.evaluationId);
     if (error) throw new Error(error.message);
     return { ok: true };

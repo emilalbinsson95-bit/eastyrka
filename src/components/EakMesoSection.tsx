@@ -71,6 +71,7 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
   const applyBaseline = useServerFn(applyBaselineChange);
   const [note, setNote] = useState<Record<string, string>>({});
   const [correctKg, setCorrectKg] = useState<Record<string, string>>({});
+  const [planChanged, setPlanChanged] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
 
   // Kör utvärderingen en gång per visning — lagrar nya fönster som pending.
@@ -127,7 +128,7 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
   async function handleDecision(ev: EvalRow, decision: "approved" | "rejected" | "modified") {
     setBusy(ev.id);
     try {
-      await decide({ data: { evaluationId: ev.id, decision, note: note[ev.id]?.trim() || undefined } });
+      await decide({ data: { evaluationId: ev.id, decision, note: note[ev.id]?.trim() || undefined, planChanged: planChanged[ev.id] ?? false } });
       toast.success(
         decision === "approved" ? "Förslaget godkänt." : decision === "rejected" ? "Förslaget avvisat." : "Beslut sparat med justering.",
       );
@@ -251,6 +252,14 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
                     onChange={(e) => setNote((s) => ({ ...s, [ev.id]: e.target.value }))}
                     className="h-8 w-48 text-xs"
                   />
+                  <label className="flex items-center gap-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={planChanged[ev.id] ?? false}
+                      onChange={(e) => setPlanChanged((s) => ({ ...s, [ev.id]: e.target.checked }))}
+                    />
+                    Jag ändrade planen
+                  </label>
                   {ev.status === "push" && ev.l_m != null && (
                     <Button size="sm" variant="secondary" disabled={busy === ev.id} onClick={() => handlePushBaseline(ev)}>
                       Uppdatera baseline till {(Math.round(ev.l_m / 2.5) * 2.5).toFixed(1)} kg

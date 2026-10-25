@@ -43,7 +43,7 @@
 - Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
 - Compare first measurement sets across six matching exercise/variant/reps/RPE sessions, because isolated peaks distort trends.
 
-- Flag reference warmups separately; exclude them from EAk measurements and work progress, so fatigue input cannot distort strength.
+- Exclude flagged reference warmups from EAk/work progress to avoid distorted strength.
 
 <!-- LOVABLE:BEGIN -->
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.

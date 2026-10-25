@@ -1,3 +1,6 @@
+import { useWarmupLoads } from "@/components/WarmupLoadsCard";
+import { WarmupReferenceFields } from "@/components/WarmupReferenceFields";
+import { matchesWarmupLoad } from "@/lib/warmupReference";
 import { SessionFeedbackRow } from "@/components/SessionFeedbackRow";
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
@@ -120,6 +123,7 @@ interface LogRow {
   comment: string | null;
   form_score: number | null;
   planned_exercise_id: string | null;
+  is_warmup_reference?: boolean;
   original_reps?: number | null;
   original_rpe?: number | null;
 }
@@ -304,6 +308,7 @@ function TodayPage() {
       const { data, error } = await supabase
         .from("training_logs")
         .select("planned_exercise_id")
+        .eq("is_warmup_reference", false)
         .eq("athlete_id", userId)
         .in("planned_exercise_id", weekPlannedExerciseIds);
       if (error) throw error;
@@ -418,6 +423,7 @@ function TodayPage() {
           date: l.date,
           exercise: l.exercise,
           variation: l.variation,
+          is_warmup_reference: l.is_warmup_reference,
           set_number: l.set_number,
           reps: l.reps,
           weight_kg: Number(l.weight_kg),
@@ -503,6 +509,10 @@ function TodayPage() {
 
       {!isLoading && <EnduranceTodayCard athleteId={userId} dateStr={todayStr} />}
 
+      {logs.some((l) => l.is_warmup_reference) && <div className="space-y-1 rounded-md border border-border p-3">
+        <p className="text-sm font-medium">Uppvärmningsset</p>
+        {logs.filter((l) => l.is_warmup_reference).map((l) => <p key={l.id} className="text-xs text-muted-foreground">{l.exercise} · {l.reps}×{l.weight_kg} kg · RPE {l.rpe}</p>)}
+      </div>}
       {/* Always show today's logged sets */}
       {processed.length > 0 && (
         <Card>
@@ -579,7 +589,7 @@ function PlannedSessionCard({
           (l) => l.planned_exercise_id == null && l.exercise === ex.exercise,
         )
       : [];
-    return [...linked, ...unlinked];
+    return [...linked, ...unlinked].filter((l) => !l.is_warmup_reference);
   };
 
   // Session progress: count exercises that have at least one logged set today.
@@ -931,9 +941,14 @@ function LogSetButton({
   );
   const [comment, setComment] = useState("");
   const queryClient = useQueryClient();
+  const warmupLoads = useWarmupLoads(athleteId);
+  const [warmup, setWarmup] = useState(false);
+  const [warmupRpe, setWarmupRpe] = useState<number | null>(null);
 
+  const matchesWarmup = matchesWarmupLoad(ex.exercise, ex.variation, weight, warmupLoads.data ?? {});
+  const isWarmup = matchesWarmup && warmup;
   const usingRir = ex.intensity_metric === "rir";
-  const effectiveRpe = usingRir ? rirToRpe(rir) : rpe;
+  const effectiveRpe = isWarmup ? warmupRpe ?? 6 : usingRir ? rirToRpe(rir) : rpe;
 
   const livePreview = useMemo(() => {
     const e1rm = dailyE1RM({ weight_kg: weight, reps, rpe: effectiveRpe });
@@ -947,6 +962,7 @@ function LogSetButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (isWarmup && warmupRpe === null) throw new Error("Välj uppvärmnings-RPE.");
       const parsed = setSchema.parse({
         weight_kg: weight,
         reps,
@@ -962,20 +978,23 @@ function LogSetButton({
         reps: parsed.reps,
         weight_kg: parsed.weight_kg,
         rpe: parsed.rpe,
-        rir: usingRir ? rir : null,
-        lengthened_partials: partials,
-        to_failure: toFailure,
+        is_warmup_reference: isWarmup,
+        rir: !isWarmup && usingRir ? rir : null,
+        lengthened_partials: !isWarmup && partials,
+        to_failure: !isWarmup && toFailure,
         comment: parsed.comment ?? null,
         planned_exercise_id: ex.id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(`Set ${nextSet} logged`);
+      toast.success(isWarmup ? "Uppvärmningsset sparat." : `Set ${nextSet} logged`);
       queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
       queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
       setOpen(false);
       setComment("");
+      setWarmup(false);
+      setWarmupRpe(null);
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -1009,11 +1028,12 @@ function LogSetButton({
         <div className="space-y-4 px-4 py-4">
           <NumField label="Weight (kg)" step={2.5} value={weight} onChange={setWeight} />
           <NumField label="Reps" step={1} value={reps} onChange={setReps} />
-          {usingRir ? (
+          {matchesWarmup && <WarmupReferenceFields checked={warmup} rpe={warmupRpe} onChecked={setWarmup} onRpe={setWarmupRpe} />}
+          {!isWarmup && (usingRir ? (
             <NumField label="RIR (reps in reserve)" step={1} min={0} max={10} value={rir} onChange={setRir} />
           ) : (
             <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
-          )}
+          ))}
 
           <div className="flex flex-wrap gap-4 rounded-md border border-border p-3">
             <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -1043,7 +1063,7 @@ function LogSetButton({
             />
           </div>
 
-          <div className="rounded-lg border border-border bg-readiness-tint p-3">
+          {!isWarmup && <div className="rounded-lg border border-border bg-readiness-tint p-3">
             <div className="text-xs font-medium text-muted-foreground">
               Live E1RM preview
             </div>
@@ -1065,14 +1085,14 @@ function LogSetButton({
                 <span className="text-xs text-muted-foreground">{readinessAction(livePreview.status)}</span>
               )}
             </div>
-          </div>
+          </div>}
         </div>
         <SheetFooter className="px-4 pb-4">
           <Button
             className="w-full"
             size="lg"
             onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || warmupLoads.isLoading || warmupLoads.isError || (isWarmup && warmupRpe === null)}
           >
             <Save className="mr-1 h-4 w-4" />
             {mutation.isPending ? "Saving…" : "Save set"}
@@ -1098,18 +1118,26 @@ function FreestyleQuickLog({
   const [rpe, setRpe] = useState(7);
   const [setNumber, setSetNumber] = useState(1);
   const queryClient = useQueryClient();
+  const warmupLoads = useWarmupLoads(athleteId);
+  const [warmup, setWarmup] = useState(false);
+  const [warmupRpe, setWarmupRpe] = useState<number | null>(null);
 
+  const matchesWarmup = matchesWarmupLoad(exercise, null, weight, warmupLoads.data ?? {});
+  const isWarmup = matchesWarmup && warmup;
   const mutation = useMutation({
     mutationFn: async () => {
+      if (isWarmup && warmupRpe === null) throw new Error("Välj uppvärmnings-RPE.");
+      const parsed = setSchema.parse({ weight_kg: weight, reps, rpe: isWarmup ? warmupRpe : rpe });
       const { error } = await supabase.from("training_logs").insert({
         athlete_id: athleteId,
         date: dateStr,
         exercise,
         variation: null,
         set_number: setNumber,
-        reps,
-        weight_kg: weight,
-        rpe,
+        reps: parsed.reps,
+        weight_kg: parsed.weight_kg,
+        rpe: parsed.rpe,
+        is_warmup_reference: isWarmup,
         comment: null,
       });
       if (error) throw error;
@@ -1118,7 +1146,9 @@ function FreestyleQuickLog({
       toast.success("Set logged");
       queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
       queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
-      setSetNumber((n) => n + 1);
+      if (!isWarmup) setSetNumber((n) => n + 1);
+      setWarmup(false);
+      setWarmupRpe(null);
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -1143,11 +1173,12 @@ function FreestyleQuickLog({
         <NumField label="Set" step={1} value={setNumber} onChange={setSetNumber} />
         <NumField label="Weight (kg)" step={2.5} value={weight} onChange={setWeight} />
         <NumField label="Reps" step={1} value={reps} onChange={setReps} />
-        <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
+        {!isWarmup && <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />}
       </div>
+      {matchesWarmup && <WarmupReferenceFields checked={warmup} rpe={warmupRpe} onChecked={setWarmup} onRpe={setWarmupRpe} />}
       <Button
         onClick={() => mutation.mutate()}
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || warmupLoads.isLoading || warmupLoads.isError || (isWarmup && warmupRpe === null)}
         className="w-full"
       >
         <Save className="mr-1 h-4 w-4" /> Log set

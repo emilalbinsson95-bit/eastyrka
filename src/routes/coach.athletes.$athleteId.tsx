@@ -1,3 +1,4 @@
+import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { RoutineScore } from "@/components/RoutinePlayer";
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
@@ -61,6 +62,10 @@ export const Route = createFileRoute("/coach/athletes/$athleteId")({
     meta: [
       { title: "Athlete dashboard — SETPOINT Coach" },
       { name: "description", content: "EAkoefficient analytics and programming for one athlete." },
+      { property: "og:title", content: "Athlete dashboard — SETPOINT Coach" },
+      { property: "og:description", content: "EAkoefficient analytics and programming for one athlete." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AthleteDetailPage,
@@ -192,6 +197,7 @@ function AthleteDetailPage() {
 
         <TabsContent value="baselines">
           <div className="mb-4"><StrengthVolumeProfileCard athleteId={athleteId} /></div>
+          <div className="mb-4"><WarmupLoadsCard athleteId={athleteId} /></div>
           <BaselinesEditor athleteId={athleteId} />
         </TabsContent>
       </Tabs>

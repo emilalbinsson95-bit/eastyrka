@@ -2,7 +2,8 @@
 
 ## Aktuellt
 - [x] EAk steg B del 1: databas (strategi per atlet, ömhet/motivation, pass-RPE/tid, uppvärmningsvikter, utökad beslutslogg med utfall), motorn läser allt, readiness frågar ömhet/motivation.
-- [ ] EAk steg B del 2: KLART pass-RPE/tid + coachval 'ändrade planen'. KVAR: uppvärmningsvikt i inställningar + RPE-fråga vid den vikten, coachval 'ändrade planen'; verifiera med Alex.
+- [x] EAk steg B del 2: uppvärmningsvikter i atlet-/coachinställningar, exakt viktmatchning och RPE 6–10 i halvsteg i båda loggflödena; referensset undantas från arbetsset och EAk. Alex sparade/återläste 60 kg och loggade/återläste RPE 7,5; 48 relevanta tester och bygge gröna.
+- [ ] Steg B slutkontroll: pass-RPE/tid efter planerat pass och coachens 'ändrade planen' återstår att provköra med Alex; inget planerat pass finns idag. Steg C lämnas orört.
 - [x] EAk steg A: trendjusterat poolat brus, strategi som parameter, stödsignaler och NFOR-flagga; 34 EAk-tester och totalt 264 tester gröna, coachens analys för Alex verifierad utan fel. Veckor grupperas efter mesocykel och föregående antal pass används i tröskeln. Steg B–C är inte påbörjade.
 - [ ] Toppning: gradvis volymnedtrappning från tre föregående arbetsveckor, valbara start/slutdatum och kontrollerat forskningsunderlag; verifiera med Alex Athlete.
 - [x] Tävlingsankrad toppning rättad; 243 tester gröna, Alex sexveckorsutkast sparat och återläst inför lördagstävling.

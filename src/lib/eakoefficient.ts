@@ -41,6 +41,7 @@ export interface SetInput {
   reps: number;
   weight_kg: number;
   rpe: number;
+  is_warmup_reference?: boolean;
 }
 
 /** Sets below this RPE are too far from failure to estimate strength. */
@@ -49,7 +50,7 @@ export const EAK_MIN_RPE = 7;
 export const EAK_PEAK_PCT = 103;
 
 export function countsForEAk(set: SetInput): boolean {
-  return set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
+  return !set.is_warmup_reference && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
 }
 
 /**
@@ -318,7 +319,7 @@ export function processLogs<T extends RawLog>(
   }
   const rolling = rollingE1RMBySession(logs);
 
-  return logs.map((log) => {
+  return logs.filter((log) => !log.is_warmup_reference).map((log) => {
     const key = `${log.date}::${log.exercise}`;
     const baseline = lookupBaseline(baselines, log.exercise) ?? 0;
     const e1rm = dailyE1RM(log);

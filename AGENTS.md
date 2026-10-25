@@ -27,7 +27,7 @@
 
 - Clip document-level horizontal overflow (no nested scroll container) and wrap role headers; wide tables/calendars keep local scrolling.
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
-- EAk/E1RM use shared RTS and first qualifying sets; baselines match exact names/comp aliases only. Pool detrended EAk noise by mesocycle ID with parameterized thresholds; map low_confidence to stored yellow until schema support, preserving history.
+- EAk/E1RM use shared RTS and first qualifying sets; baselines match exact names/comp aliases only. Pool detrended EAk noise by mesocycle ID with parameterized thresholds; store supported statuses, preserving history.
 - Coach roster EAk uses the latest session's measurement per eligible lift; preserve full athlete/exercise composite keys in trend grouping so athletes and lifts never mix.
 - Block-to-block volume adaptation and fatigue-stop extra sets live in src/lib/blockVolume.ts and run before volume guards, because data-driven volume must still respect realism caps.
 - Keep routine steps in src/lib/routines.ts matching Learn; persist stars per athlete in routine_completions (athlete insert, coach/admin read).
@@ -42,6 +42,8 @@
 - Keep season outlines separate; shift only unprepared blocks, allow gaps and detach without deleting programs. Version-check writes and resolve cycle links to prevent stale edits.
 - Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
 - Compare first measurement sets across six matching exercise/variant/reps/RPE sessions, because isolated peaks distort trends.
+
+- Exclude flagged reference warmups from EAk/work progress to avoid distorted strength.
 
 <!-- LOVABLE:BEGIN -->
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.

@@ -1032,7 +1032,7 @@ function LogSetButton({
           {!isWarmup && (usingRir ? (
             <NumField label="RIR (reps in reserve)" step={1} min={0} max={10} value={rir} onChange={setRir} />
           ) : (
-            {!isWarmup && <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />}
+            <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
           ))}
 
           <div className="flex flex-wrap gap-4 rounded-md border border-border p-3">

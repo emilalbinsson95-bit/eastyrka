@@ -1,3 +1,4 @@
+import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,6 +27,10 @@ export const Route = createFileRoute("/_app/me")({
     meta: [
       { title: "My Profile — SETPOINT" },
       { name: "description", content: "Your profile and current 1RM baselines." },
+      { property: "og:title", content: "My Profile — SETPOINT" },
+      { property: "og:description", content: "Your profile and current 1RM baselines." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: MePage,
@@ -125,6 +130,7 @@ function MePage() {
         </CardContent>
       </Card>
 
+      <WarmupLoadsCard athleteId={userId} />
       <ConnectionsCard />
       <EmailPreferences userId={userId} />
 

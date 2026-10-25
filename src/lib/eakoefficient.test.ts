@@ -74,3 +74,13 @@ describe("pickMeasurementSet (heavy singles)", () => {
     expect(pickMeasurementSet(sets)?.set_number).toBe(1);
   });
 });
+
+ it("reference warmups never become EAk measurements or work sets", () => {
+  const logs = [
+    { id: "warm", date: "2026-10-25", exercise: "Back squat", variation: null, set_number: 1, reps: 1, weight_kg: 60, rpe: 9, is_warmup_reference: true },
+    { id: "work", date: "2026-10-25", exercise: "Back squat", variation: null, set_number: 1, reps: 5, weight_kg: 120, rpe: 8, is_warmup_reference: false },
+  ];
+  expect(pickMeasurementSet(logs)?.id).toBe("work");
+  expect(processLogs(logs, { "Back squat": 150 }).map((p) => p.source.id)).toEqual(["work"]);
+  expect(countsForEAk(logs[0])).toBe(false);
+});

@@ -14,6 +14,7 @@ import {
   evaluateMesocycle,
   reboundTest,
   sessionPoints,
+  resolveStrategy,
   type BlockWindow,
   type CheckIn,
   type EakStrategy,
@@ -22,41 +23,9 @@ import {
   type WarmupLog,
 } from "./eakSignal";
 import { compLiftKey, COMP_NAME, type CompLift } from "./liftIdentity";
+import { eakDecisionSchema, strategyFromRow } from "./eakStrategy";
 
 const LIFTS: CompLift[] = ["squat", "bench", "deadlift"];
-
-/** DB-kolumn (snake_case) → strateginyckel. Null = standardvärde. */
-const STRATEGY_COLUMNS: Record<keyof EakStrategy, string> = {
-  fallStage1Pct: "fall_stage1_pct",
-  fallStage2Pct: "fall_stage2_pct",
-  pushLowPct: "push_low_pct",
-  pushHighPct: "push_high_pct",
-  readinessBelowPct: "readiness_below_pct",
-  readinessShare: "readiness_share",
-  mesoMinSessions: "meso_min_sessions",
-  mesoMaxSessions: "meso_max_sessions",
-  inSessionDropStopPct: "in_session_drop_stop_pct",
-  inSessionDropOkPct: "in_session_drop_ok_pct",
-  noiseRatioFlag: "noise_ratio_flag",
-  poolMesocycles: "pool_mesocycles",
-  defaultSem: "default_sem",
-  warmupRpeDrift: "warmup_rpe_drift",
-  subjectiveWorseDays: "subjective_worse_days",
-  subjectiveWorsePoints: "subjective_worse_points",
-  historyDays: "history_days",
-  pushSessionBelowPct: "push_session_below_pct",
-  pushShare: "push_share",
-};
-
-function strategyFromRow(row: Record<string, unknown> | null): Partial<Record<keyof EakStrategy, number | null>> | null {
-  if (!row) return null;
-  const out: Partial<Record<keyof EakStrategy, number | null>> = {};
-  for (const [key, col] of Object.entries(STRATEGY_COLUMNS) as [keyof EakStrategy, string][]) {
-    const v = row[col];
-    out[key] = v == null ? null : Number(v);
-  }
-  return out;
-}
 
 async function assertCoachOrSelf(userId: string, athleteId: string) {
   if (userId === athleteId) return;
@@ -118,7 +87,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         .limit(500),
       supabaseAdmin
         .from("week_plans")
-        .select("week_index, week_start_date, mesocycle_id, status, is_deload, mesocycles(label, status)")
+        .select("week_index, week_start_date, mesocycle_id, status, is_deload, mesocycles(name, status)")
         .eq("athlete_id", athleteId)
         .limit(200),
       supabaseAdmin.from("athlete_eak_strategy").select("*").eq("athlete_id", athleteId).maybeSingle(),
@@ -131,7 +100,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     ]);
 
     const allLogs = (logs ?? []) as SetLog[];
-    const strategy = strategyFromRow(strategyRow as Record<string, unknown> | null);
+    const strategy = resolveStrategy(strategyFromRow(strategyRow as Record<string, unknown> | null));
     const warmupLoads: Partial<Record<CompLift, number>> = {};
     for (const w of warmupRows ?? []) warmupLoads[w.lift as CompLift] = Number(w.load_kg);
     const warmups: WarmupLog[] = allLogs
@@ -155,7 +124,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     const blocks: BlockWindow[] = (weeks ?? [])
       .filter((w: { week_start_date?: string | null }) => w.week_start_date)
       .map((w: Record<string, unknown> & { week_start_date: string; is_deload?: boolean }) => {
-        const text = `${(w as { mesocycles?: { label?: string } | null }).mesocycles?.label ?? ""}`;
+        const text = `${(w as { mesocycles?: { name?: string } | null }).mesocycles?.name ?? ""}`;
         const kind: BlockWindow["kind"] = (w as { is_deload?: boolean }).is_deload
           ? "deload"
           : /taper/i.test(text)
@@ -176,9 +145,10 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
       if (B <= 0) continue;
 
       const points = sessionPoints(allLogs, lift, B);
-      if (points.length < 4) continue;
+      if (points.length < strategy.mesoMinSessions) continue;
 
-      const window = points.slice(-6);
+      const window = points.slice(-strategy.mesoMaxSessions);
+      if (!window.length) continue;
       const windowStart = window[0].date;
       const windowEnd = window[window.length - 1].date;
 
@@ -208,6 +178,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         warmups,
         warmupLoads,
         sessionLoads,
+        rebound: reboundTest(points, blocks),
       });
 
       // Fyll utfallet på föregående utvärdering för samma lyft.
@@ -277,16 +248,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
 /** Coachen godkänner, avvisar eller justerar ett EAk-förslag. */
 export const decideEakEvaluation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        evaluationId: z.string().uuid(),
-        decision: z.enum(["approved", "rejected", "modified"]),
-        note: z.string().max(1000).optional(),
-        planChanged: z.boolean().optional(),
-      })
-      .parse(input),
-  )
+  .inputValidator((input) => eakDecisionSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { data: row } = await (await admin())
       .from("eak_meso_evaluations")

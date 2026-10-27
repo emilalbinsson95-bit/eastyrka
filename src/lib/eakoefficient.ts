@@ -42,6 +42,7 @@ export interface SetInput {
   weight_kg: number;
   rpe: number;
   is_warmup_reference?: boolean;
+  is_technique?: boolean;
 }
 
 /** Sets below this RPE are too far from failure to estimate strength. */
@@ -50,7 +51,7 @@ export const EAK_MIN_RPE = 7;
 export const EAK_PEAK_PCT = 103;
 
 export function countsForEAk(set: SetInput): boolean {
-  return !set.is_warmup_reference && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
+  return !set.is_warmup_reference && !set.is_technique && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
 }
 
 /**

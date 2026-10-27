@@ -104,6 +104,10 @@ export const Route = createFileRoute(
         content:
           "Plan each microcycle and publish 1–2 weeks at a time to the athlete.",
       },
+      {property:"og:title",content:"Programredigering — SETPOINT Coach"},
+      {property:"og:description",content:"Granska veckor, kontrollpunkter och pass innan publicering."},
+      {property:"og:type",content:"website"},
+      {name:"twitter:card",content:"summary_large_image"},
     ],
   }),
   component: CycleDetailPage,
@@ -409,6 +413,11 @@ function CycleDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const checkpointMutation=useMutation({mutationFn:async(weekId:string)=>{
+    const {error}=await supabase.rpc("postpone_deload_checkpoint",{_week_id:weekId});
+    if(error) throw error;
+  },onSuccess:()=>{qc.invalidateQueries();toast.success("Arbetsveckan är ett utkast. Avlastningen ligger nästa vecka; datumen är oförändrade.");},onError:(e:Error)=>toast.error(e.message)});
+
   if (cycleQuery.isLoading || !cycleQuery.data) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
@@ -506,6 +515,7 @@ function CycleDetailPage() {
           exerciseLib={exerciseLibQuery.data ?? []}
           baselines={baselinesQuery.data ?? {}}
           athleteId={athleteId}
+          onPostponeDeload={()=>{if(confirm("Ersätt vecka fyra med vecka tres arbete och flytta avlastningen till vecka fem? Båda blir utkast. Loggade veckor och tävlingsförberedelse kan inte skrivas över.")) checkpointMutation.mutate(currentWeek.id);}}
           onTogglePublish={(publish) =>
             togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
@@ -538,6 +548,7 @@ function WeekEditor({
   athleteId,
   onTogglePublish,
   onCopyFromWeek,
+  onPostponeDeload,
 }: {
   week: WeekPlanRow;
   weekIndex: number;
@@ -548,6 +559,7 @@ function WeekEditor({
   athleteId: string;
   onTogglePublish: (publish: boolean) => void;
   onCopyFromWeek: (fromWeekId: string, fromIndex: number) => void;
+  onPostponeDeload:()=>void;
 }) {
 
   const qc = useQueryClient();
@@ -754,6 +766,8 @@ function WeekEditor({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {weekIndex===3&&week.is_deload&&<Button size="sm" variant="outline" onClick={onPostponeDeload}>Kontrollpunkt: fortsätt en arbetsvecka</Button>}
+          {weekIndex>=7&&!allWeeks.slice(Math.max(0,weekIndex-7),weekIndex+1).some(w=>w.is_deload)&&<p className="text-xs text-destructive">Åtta planerade veckor utan avlastning. Granska återhämtning och genomförda pass.</p>}
           <Button
             size="sm"
             variant={week.is_deload ? "secondary" : "outline"}

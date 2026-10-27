@@ -136,7 +136,7 @@ export function GenerateStrengthTemplateDialog({
       const [logs, readiness, baselines, unavail, deloads] = await Promise.all([
         supabase
           .from("training_logs")
-          .select("date, exercise, variation, reps, weight_kg, rpe, set_number, is_warmup_reference")
+          .select("date, exercise, variation, reps, weight_kg, rpe, set_number, is_warmup_reference, is_technique")
           .eq("athlete_id", athleteId)
           .gte("date", since92),
         supabase
@@ -451,6 +451,8 @@ export function GenerateStrengthTemplateDialog({
         week_index: w.week_index,
         week_start_date: isPeaking ? peakWeekStarts[w.week_index - 1] : format(addDays(parseISO(effectiveStartDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
         status: "draft" as const,
+        is_deload:w.kind==="deload",
+        training_phase:isPeaking ? w.sessions[0]?.notes?.match(/Fas: ([^.]+)/)?.[1]??"peak" : w.kind,
         notes: w.notes ?? null,
       }));
       // Weeks may overlap with other plans/templates on the same dates — that's allowed.
@@ -517,6 +519,7 @@ export function GenerateStrengthTemplateDialog({
             intensity_metric: e.intensity_metric,
             lengthened_partials: e.lengthened_partials ?? false,
             last_set_to_failure: e.last_set_to_failure ?? false,
+            is_technique:e.variation==="Teknikpass – ej EAk",
             notes: e.notes ?? null,
             order_index: idx,
           }));

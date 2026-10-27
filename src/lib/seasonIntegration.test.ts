@@ -8,6 +8,8 @@ import { compareStrength } from "./strengthComparison";
 describe("integrated flexible season", () => {
   it("permits pauses and moves future blocks without changing prepared programs", () => {
     const blocks = defaultSeason("2026-10-19");
+    blocks.splice(1,0,{...blocks[0],id:"strength",startDate:"2026-11-16"});
+    blocks[2]={...blocks[2],startDate:"2026-12-14",peakWeeks:3};
     blocks[0].mesocycleId = "22222222-2222-2222-2222-222222222222";
     const shifted = rescheduleFuture(blocks, "strength", { startDate: "2026-11-23" });
     expect(shifted[0]).toEqual(blocks[0]);
@@ -17,6 +19,8 @@ describe("integrated flexible season", () => {
   });
   it("does not silently move a prepared later block", () => {
     const blocks = defaultSeason("2026-10-19");
+    blocks.splice(1,0,{...blocks[0],id:"strength",startDate:"2026-11-16"});
+    blocks[2]={...blocks[2],startDate:"2026-12-14",peakWeeks:3};
     blocks[2].mesocycleId = "22222222-2222-2222-2222-222222222222";
     const shifted = rescheduleFuture(blocks, "strength", { startDate: "2026-11-23" });
     expect(shifted[2]).toEqual(blocks[2]);
@@ -24,6 +28,8 @@ describe("integrated flexible season", () => {
   });
   it("validates real dates and honors peak duration", () => {
     const blocks = defaultSeason("2026-10-19");
+    blocks.splice(1,0,{...blocks[0],id:"strength",startDate:"2026-11-16"});
+    blocks[2]={...blocks[2],startDate:"2026-12-14",peakWeeks:3};
     blocks[2].peakWeeks = 2;
     expect(blockEnd(blocks[2])).toBe("2026-12-27");
     blocks[0].startDate = "2026-02-30";

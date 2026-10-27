@@ -1,6 +1,6 @@
 import type { TemplateExercise, TemplateWeek } from "./strengthTemplates";
 import { volumeCategory } from "./strengthTemplates";
-import { isReadinessLift } from "./eakoefficient";
+import { isBig3Lift } from "./eakoefficient";
 import { isOneAndHalfRep } from "./exerciseVariants";
 import { pctOf1RM } from "./intensity";
 
@@ -40,7 +40,7 @@ export function protocolGroup(e: TemplateExercise): ProtocolGroup | null {
       /over-warm|opener/i.test(e.variation ?? "") ||
       /clean|snatch|jerk|jump|throw|ryck|stöt|vändning|hopp|kast/i.test(e.exercise)) return null;
   const category = volumeCategory(e);
-  if (isReadinessLift(e.exercise)) {
+  if (isBig3Lift(e.exercise)) {
     if (category === "squat") return "squat";
     if (category === "horizontal-press") return "bench";
     if (category === "hinge") return "deadlift";

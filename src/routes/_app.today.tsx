@@ -970,12 +970,12 @@ function LogSetButton({
   const livePreview = useMemo(() => {
     const e1rm = dailyE1RM({ weight_kg: weight, reps, rpe: effectiveRpe });
     const eak =
-      baseline > 0 && isReadinessLift(ex.exercise)
-        ? eaKoefficient({ weight_kg: weight, reps, rpe: effectiveRpe }, baseline)
+      baseline > 0 && isReadinessLift(ex.exercise, ex.variation)
+        ? eaKoefficient({ weight_kg: weight, reps, rpe: effectiveRpe, is_warmup_reference: isWarmup, is_technique: ex.is_technique }, baseline)
         : 0;
     const status = readinessFromEAk(eak);
     return { e1rm, eak, status };
-  }, [weight, reps, effectiveRpe, baseline]);
+  }, [weight, reps, effectiveRpe, baseline, ex.exercise, ex.variation, ex.is_technique, isWarmup]);
 
   const mutation = useMutation({
     mutationFn: async () => {

@@ -28,6 +28,7 @@ export interface HistLog {
   weight_kg: number;
   rpe: number | null;
   set_number?: number;
+  is_warmup_reference?: boolean;
 }
 
 export interface HistReadiness {
@@ -56,6 +57,7 @@ export interface HistoryInputs {
   readiness: HistReadiness[];
   baselines: HistBaseline[];
   unavailability: HistUnavailability[];
+  deloadWeekStarts?: string[];
 }
 
 // ---------- adjustments ----------
@@ -131,8 +133,16 @@ const LOOKBACK_DAYS = 28;
 export function summarizeHistory(h: HistoryInputs): HistorySummary {
   const recent = h.logs.filter((l) => {
     const d = daysAgo(h.today, l.date);
-    return d >= 0 && d < LOOKBACK_DAYS;
+    return !l.is_warmup_reference && d >= 0 && d < 92;
   });
+  const windows = Array.from({ length: 13 }, (_, i) => i).filter(i => {
+    const rows = recent.filter(l => Math.floor(daysAgo(h.today, l.date) / 7) === i);
+    return rows.length > 0 && !(h.deloadWeekStarts ?? []).some(start => rows.some(l => {
+      const offset = differenceInCalendarDays(parseISO(l.date), parseISO(start));
+      return offset >= 0 && offset < 7;
+    }));
+  }).slice(0, 3);
+  const workLogs = recent.filter(l => windows.includes(Math.floor(daysAgo(h.today, l.date) / 7)));
 
   const dates = new Set(recent.map((l) => l.date));
   const spanDays = recent.length
@@ -142,10 +152,10 @@ export function summarizeHistory(h: HistoryInputs): HistorySummary {
         LOOKBACK_DAYS,
       )
     : 0;
-  const weeksCovered = spanDays ? spanDays / 7 : 0;
+  const weeksCovered = windows.length;
 
   const setsByCat = new Map<VolumeCategory, number>();
-  for (const l of recent) {
+  for (const l of workLogs) {
     const cat = volumeCategory({ exercise: l.exercise, variation: l.variation ?? undefined });
     setsByCat.set(cat, (setsByCat.get(cat) ?? 0) + 1);
   }
@@ -229,6 +239,32 @@ export function templateWeeklySets(weeks: TemplateWeek[]): Map<VolumeCategory, n
 
 export const MIN_LOG_DAYS = 6;
 
+/** Continuous history target; any residual >30% increase requires a coach warning. */
+export function historyVolumeFactor(template: number, history: number): { factor: number; warning: boolean } {
+  if (template <= 0 || history <= 0) return { factor: 1, warning: false };
+  const target = clamp(template, history * 0.85, history * 1.3);
+  const factor = clamp(target / template, 0.6, 1.35);
+  return { factor, warning: template * factor > history * 1.3 + 1e-9 };
+}
+
+export function personalReadinessFactor(rows: HistReadiness[], today: string): number {
+  const history = rows.filter(r => { const d = daysAgo(today, r.date); return d >= 7 && d < 63; });
+  const weeks = new Set(history.map(r => Math.floor(daysAgo(today, r.date) / 7)));
+  const median = (values: Array<number | null>, fallback: number) => {
+    const xs = values.filter((v): v is number => v != null && Number.isFinite(v)).sort((a,b) => a-b);
+    const m = Math.floor(xs.length / 2);
+    return xs.length ? xs.length % 2 ? xs[m] : (xs[m-1] + xs[m])/2 : fallback;
+  };
+  const current = rows.filter(r => { const d = daysAgo(today, r.date); return d >= 0 && d < 7; });
+  if (!current.length) return 1;
+  const reference = weeks.size >= 4 ? history : [];
+  const fatigue = median(current.map(r=>r.fatigue),5) - median(reference.map(r=>r.fatigue),5);
+  const stress = median(current.map(r=>r.work_stress),5) - median(reference.map(r=>r.work_stress),5);
+  const life = median(current.map(r=>r.life_stress),5) - median(reference.map(r=>r.life_stress),5);
+  const form = median(reference.map(r=>r.daily_form),6) - median(current.map(r=>r.daily_form),6);
+  return clamp(Number((1 - fatigue*.05 - (stress+life)*.015 - form*.04).toFixed(2)),.75,1.12);
+}
+
 export interface SuggestionResult {
   summary: HistorySummary;
   adjustments: Adjustment[];
@@ -250,9 +286,7 @@ export function buildAdjustments(
     const fatigue = summary.avgFatigue ?? 5;
     const stress = summary.avgStress ?? 5;
     const form = summary.avgForm ?? 6;
-    // load index: high fatigue/stress and low form pull the multiplier down.
-    const strain = (fatigue - 5) * 0.05 + (stress - 5) * 0.03 + (6 - form) * 0.04;
-    const mult = clamp(Number((1 - strain).toFixed(2)), 0.75, 1.12);
+    const mult = personalReadinessFactor(h.readiness, h.today);
     if (Math.abs(mult - 1) >= 0.04) {
       readinessMult = mult;
       const down = mult < 1;
@@ -261,7 +295,7 @@ export function buildAdjustments(
         kind: "global-volume",
         multiplier: mult,
         title: down ? "Reduce total volume (fatigue)" : "Increase total volume (fresh)",
-        effect: `${pct(mult)} sets, all sessions`,
+        effect: `${pct(mult)} sets, first week only`,
         reason: `Last 14 days: fatigue ${fatigue.toFixed(1)}/10, stress ${stress.toFixed(1)}/10, daily form ${form.toFixed(1)}/10 across ${summary.readinessCount} check-ins.`,
         severity: down ? "warn" : "boost",
         defaultOn: true,
@@ -276,10 +310,10 @@ export function buildAdjustments(
       if (tplSets < 2) continue;
       const actual = summary.weeklySetsByCategory.get(cat) ?? 0;
       if (actual < 1) continue; // never trained → keep template intent
-      const ratio = tplSets / actual;
-      if (ratio > 1.4) {
+      const result = historyVolumeFactor(tplSets, actual);
+      if (result.factor < 1) {
         // Template jumps far above what they've been doing → cap the jump at +30%.
-        const mult = clamp(Number(((actual * 1.3) / tplSets).toFixed(2)), 0.6, 0.97);
+        const mult = result.factor;
         adjustments.push({
           id: `cat-down-${cat}`,
           kind: "category-volume",
@@ -287,14 +321,14 @@ export function buildAdjustments(
           multiplier: mult,
           title: `Ease in ${categoryLabel(cat)}`,
           effect: `${pct(mult)} sets (${tplSets.toFixed(0)} → ${(tplSets * mult).toFixed(0)}/week)`,
-          reason: `Logged ~${actual.toFixed(0)} sets/week over the last 4 weeks; the template prescribes ${tplSets.toFixed(0)}. Capped at a +30% jump.`,
+          reason: `Tre senaste arbetsveckorna: ~${actual.toFixed(0)} set/vecka; mallen ${tplSets.toFixed(0)}.${result.warning ? " Varning: faktorgolvet gör att ökningen överstiger 30 %." : " Högst 30 % ökning före slutvakter."}`,
           severity: "warn",
           defaultOn: true,
         });
-      } else if (ratio < 0.7) {
+      } else if (result.factor > 1) {
         // Never add volume on top of a fatigue signal — the readiness cut wins.
         if (readinessMult < 1) continue;
-        const mult = clamp(Number(((actual * 0.85) / tplSets).toFixed(2)), 1.03, 1.35);
+        const mult = result.factor;
         adjustments.push({
           id: `cat-up-${cat}`,
           kind: "category-volume",
@@ -313,7 +347,7 @@ export function buildAdjustments(
 
   // 3. Time off / long gap → ramp-in on the first weeks
   const gap = summary.daysSinceLastLog;
-  const bigGap = gap != null && gap >= 10;
+  const bigGap = gap != null && gap >= 21;
   if (summary.offDaysLast28 >= 4 || bigGap) {
     const severityDays = Math.max(summary.offDaysLast28, bigGap ? (gap ?? 0) : 0);
     const rampWeeks = severityDays >= 14 ? 2 : 1;
@@ -687,7 +721,9 @@ export function applyAdjustments(
           (isMainCategory(cat) ? tuning.mainLifts : 1) *
           (isAccessoryCategory(cat) ? tuning.accessory : 1) *
           volumeFactorForCategory(cat, profile);
-        const raw = isDeload ? manual : global * catMult * rampMult * manual;
+        const readinessMult = w.week_index === 1 ? global : 1;
+        const recoveryMult = readinessMult < 1 && rampMult < 1 ? Math.min(readinessMult, rampMult) : readinessMult * rampMult;
+        const raw = isDeload ? manual : recoveryMult * catMult * manual;
         // Stacked cuts can multiply into junk volume — clamp the combined effect.
         const mult = isDeload
           ? raw

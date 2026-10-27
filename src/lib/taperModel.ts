@@ -218,7 +218,11 @@ export function buildTaperPlan(input: {
     return session;
   };
 
-  const pctFor = (base: number) => (s.intensity === "raise" ? Math.min(0.975, base + 0.025) : base);
+  // Bibehållen intensitet = minst 85 % av 1RM på de tunga seten; sänkt 25–30 %
+  // (Bell 2025) används när återhämtningen går före.
+  const pctFor = (base: number) =>
+    s.intensity === "raise" ? Math.min(0.975, base + 0.025) : s.intensity === "lower" ? base * 0.72 : base;
+  const taperWorkPct = s.intensity === "raise" ? 0.875 : s.intensity === "lower" ? 0.7 : 0.85;
   const kgFor = (k: TaperLiftKey, pct: number): number | null => {
     const e = lift(k).e1rm;
     return e != null && e > 0 ? round25(e * pct) : null;
@@ -274,8 +278,8 @@ export function buildTaperPlan(input: {
         exercise: info.name,
         sets,
         reps: 2,
-        pctOfE1rm: 0.8,
-        kg: kgFor(k, 0.8),
+        pctOfE1rm: taperWorkPct,
+        kg: kgFor(k, taperWorkPct),
         notes: "Taper: volymen nere, intensiteten kvar. Korta, snabba set.",
       });
     }

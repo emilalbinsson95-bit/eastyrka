@@ -175,4 +175,29 @@ describe("buildPeakingWeeks", () => {
     expect(w4[0].sessions.length).toBeGreaterThanOrEqual(weeks[0].sessions.length);
     expect(w4[2].sessions.length).toBe(2);
   });
+
+  it("keeps at least two sets per session for a lift trained once a week", () => {
+    // Vincent-like history: squat and deadlift once a week (3–4 sets),
+    // bench three times a week. The taper must cut sets inside the session,
+    // never shrink the lift to a single set mid-peak.
+    const logs: PeakLog[] = [];
+    for (let w = 0; w < 6; w++) {
+      const base = w * 7;
+      for (let s = 0; s < 3; s++) logs.push(log(base + 2, "Squat", 3, 180, 7));
+      for (let s = 0; s < 4; s++) logs.push(log(base + 3, "Conventional Deadlift", 3, 250, 7.5));
+      for (const d of [1, 3, 5]) for (let s = 0; s < 3; s++) logs.push(log(base + d, "Bench Press", 6, 120, 7));
+    }
+    const summary = summarizePeaking({ today, logs, baselines: [] });
+    expect(summary.lifts.squat.exposuresPerWeek).toBeLessThanOrEqual(1.5);
+    const plan = buildPeakingWeeks(4, summary, { weeks: 3 });
+    const liftSets = (wi: number, name: RegExp) =>
+      plan[wi].sessions.flatMap((s) => s.exercises).filter((e) => name.test(e.exercise)).reduce((n, e) => n + e.target_sets, 0);
+    // Weeks 1–2: at least two working sets per lift; meet week may go to one.
+    for (const wi of [0, 1]) {
+      expect(liftSets(wi, /^squat$/i)).toBeGreaterThanOrEqual(2);
+      expect(liftSets(wi, /deadlift/i)).toBeGreaterThanOrEqual(2);
+    }
+    expect(liftSets(0, /^squat$/i)).toBeGreaterThanOrEqual(3);
+    expect(liftSets(2, /^squat$/i)).toBeGreaterThanOrEqual(1);
+  });
 });

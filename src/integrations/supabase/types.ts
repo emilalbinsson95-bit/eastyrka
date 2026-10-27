@@ -1441,6 +1441,7 @@ export type Database = {
           id: string
           max_hr: number | null
           resting_hr: number | null
+          scoring_sex: string | null
           ten_k_pb_seconds: number | null
           updated_at: string
           weight_class: string | null
@@ -1456,6 +1457,7 @@ export type Database = {
           id: string
           max_hr?: number | null
           resting_hr?: number | null
+          scoring_sex?: string | null
           ten_k_pb_seconds?: number | null
           updated_at?: string
           weight_class?: string | null
@@ -1471,6 +1473,7 @@ export type Database = {
           id?: string
           max_hr?: number | null
           resting_hr?: number | null
+          scoring_sex?: string | null
           ten_k_pb_seconds?: number | null
           updated_at?: string
           weight_class?: string | null
@@ -1570,6 +1573,38 @@ export type Database = {
             foreignKeyName: "rebound_tests_athlete_id_fkey"
             columns: ["athlete_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rehab_chart_preferences: {
+        Row: {
+          injured_side: string | null
+          pain_limit: number | null
+          patient_id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          injured_side?: string | null
+          pain_limit?: number | null
+          patient_id: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          injured_side?: string | null
+          pain_limit?: number | null
+          patient_id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehab_chart_preferences_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2007,6 +2042,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      taper_followups: {
+        Row: {
+          athlete_id: string
+          attempts: Json
+          competition_date: string
+          flags: Json
+          frozen_at: string | null
+          frozen_baselines: Json | null
+          mesocycle_id: string
+          openers: Json
+          settings: Json
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          athlete_id: string
+          attempts?: Json
+          competition_date: string
+          flags?: Json
+          frozen_at?: string | null
+          frozen_baselines?: Json | null
+          mesocycle_id: string
+          openers?: Json
+          settings?: Json
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          athlete_id?: string
+          attempts?: Json
+          competition_date?: string
+          flags?: Json
+          frozen_at?: string | null
+          frozen_baselines?: Json | null
+          mesocycle_id?: string
+          openers?: Json
+          settings?: Json
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taper_followups_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "taper_followups_mesocycle_id_fkey"
+            columns: ["mesocycle_id"]
+            isOneToOne: true
+            referencedRelation: "mesocycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_logs: {
         Row: {

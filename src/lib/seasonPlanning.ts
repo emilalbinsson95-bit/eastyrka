@@ -85,7 +85,6 @@ export function rescheduleFuture(blocks: SeasonBlock[], changedId: string, patch
 export function defaultSeason(startDate: string): SeasonBlock[] {
   return scheduleBlocks([
     { id: "volume", name: "Volymblock", focus: "volume", templateId: "standard-pl", startDate, daysPerWeek: 4, notes: "" },
-    { id: "strength", name: "Styrkeblock", focus: "strength", templateId: "standard-pl", startDate, daysPerWeek: 4, notes: "" },
-    { id: "competition", name: "Toppning", focus: "competition", templateId: "peak-3w", startDate, daysPerWeek: 3, notes: "" },
+    { id: "competition", name: "Tävlingsförberedelse D0", focus: "competition", templateId: "peak-3w", peakWeeks:6, startDate, daysPerWeek: 4, notes: "Ingen automatisk deload mellan D−42 och tävlingen. Coachen kan ändra vid behov." },
   ], startDate);
 }

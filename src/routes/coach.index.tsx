@@ -20,7 +20,7 @@ import {
   readinessLabel,
   countsForEAk,
   dailyE1RM,
-  measurementE1RMBySession,
+  rollingE1RMBySession,
   readinessFromEAk,
 } from "@/lib/eakoefficient";
 
@@ -105,7 +105,7 @@ function CoachRosterPage() {
 
       const { data: recentLogs, error: logsError } = await supabase
         .from("training_logs")
-        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe")
+        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference")
         .in("athlete_id", athleteIds)
         .gte("date", sinceIso)
         .order("date", { ascending: false })
@@ -129,7 +129,7 @@ function CoachRosterPage() {
       const e1rmPool = new Map<string, number[]>();
       for (const log of recentLogs ?? []) {
         if (Number(log.set_number) !== 1) continue;
-        if (!countsForEAk({ reps: Number(log.reps), weight_kg: Number(log.weight_kg), rpe: Number(log.rpe) })) continue;
+        if (!countsForEAk({ reps: Number(log.reps), weight_kg: Number(log.weight_kg), rpe: Number(log.rpe),is_warmup_reference:log.is_warmup_reference })) continue;
         const e1rm = dailyE1RM({
           reps: Number(log.reps),
           weight_kg: Number(log.weight_kg),
@@ -155,8 +155,8 @@ function CoachRosterPage() {
         derived.get(`${athleteId}::${exercise}`) ??
         0;
 
-      // Current session uses its measurement set, not the 3-session trend.
-      const measurementMap = measurementE1RMBySession(
+      // Three comparable session measurements, isolated by athlete/exercise.
+      const measurementMap = rollingE1RMBySession(
         (recentLogs ?? []).map((l) => ({
           date: l.date as string,
           exercise: `${l.athlete_id}::${l.exercise}`,
@@ -164,6 +164,7 @@ function CoachRosterPage() {
           weight_kg: Number(l.weight_kg),
           rpe: Number(l.rpe),
           set_number: Number(l.set_number),
+          is_warmup_reference:l.is_warmup_reference,
         })),
       );
       // Latest session per athlete: one measurement per eligible lift.

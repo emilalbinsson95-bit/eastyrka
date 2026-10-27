@@ -148,13 +148,13 @@ export function readinessFromEAk(eak: number): ReadinessStatus {
 export function readinessLabel(status: ReadinessStatus): string {
   switch (status) {
     case "exhausted":
-      return "Trött";
+      return "Långt under baslinjen";
     case "undertrained":
-      return "Under baseline";
+      return "Under baslinjen";
     case "adapting":
-      return "Normal";
+      return "Vid baslinjen";
     case "peaking":
-      return "Topp";
+      return "Över baslinjen";
     default:
       return "—";
   }
@@ -331,8 +331,7 @@ export function processLogs<T extends RawLog>(
     const roll = rolling.get(key) ?? 0;
     const eakTrend = readiness && roll > 0 ? (roll / baseline) * 100 : 0;
     const planned = plannedLightDates?.has(log.date) ?? false;
-    let status = readinessFromEAk(eak);
-    if (planned && status === "exhausted") status = "adapting";
+    const status = readinessFromEAk(eakTrend || eak);
 
     const isMeasurement = meas === log;
     let volume: VolumeQuality;

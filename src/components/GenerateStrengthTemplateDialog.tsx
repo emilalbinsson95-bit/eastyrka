@@ -297,7 +297,7 @@ export function GenerateStrengthTemplateDialog({
 
   const finalWeeks = useMemo(
     () =>
-      baseWeeks.length === 0
+      isPeaking ? baseWeeks : baseWeeks.length === 0
         ? []
         : applyAdjustments(
             baseWeeks,
@@ -376,7 +376,7 @@ export function GenerateStrengthTemplateDialog({
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
       const guarded = applyVolumeGuards(adapted.weeks, volumeProfile);
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
-      return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
+      return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? guarded.flatMap((w,wi)=>w.sessions.flatMap((session,si)=>session.exercises.flatMap((e,ei)=>{const before=adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets;return before!=null&&before!==e.target_sets?[`${e.exercise}: ${before} → ${e.target_sets} set (slutvakt: pass/vecka).`]:[]}))) : [])] };
     },
     [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
   );

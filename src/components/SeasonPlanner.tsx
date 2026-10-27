@@ -120,7 +120,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
   return <section className="space-y-3 border-t border-border pt-4" aria-label="Säsongsplanering">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="text-lg font-semibold">Säsongsplanering</h2>
-      <Button variant="outline" onClick={() => { setEditId(null); setEditVersion(null); setName("Säsongsplan"); setNotes(""); const start = format(new Date(), "yyyy-MM-dd"); setBlocks(defaultSeason(start)); setCompetitionDate(format(addDays(new Date(), 77), "yyyy-MM-dd")); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Ny säsongsplan</Button>
+      <Button variant="outline" onClick={() => { setEditId(null); setEditVersion(null); setName("Säsongsplan"); setNotes(""); const start = format(new Date(), "yyyy-MM-dd"); setBlocks(defaultSeason(start)); setCompetitionDate(format(addDays(new Date(), 70), "yyyy-MM-dd")); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Ny säsongsplan</Button>
     </div>
     {plans.isLoading && <p className="text-sm text-muted-foreground">Hämtar säsongsplaner…</p>}
     {plans.isError && <p className="text-sm text-destructive">Kunde inte hämta säsongsplanerna. <Button variant="link" onClick={() => plans.refetch()}>Försök igen</Button></p>}

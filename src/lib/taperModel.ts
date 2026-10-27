@@ -110,12 +110,14 @@ export interface TaperLiftInput {
 
 export interface TaperAccessoryInput {
   exercise: string;
+  variation?: string;
   weeklySets: number;
   reps: number;
 }
 
 export interface TaperExercise {
   exercise: string;
+  variation?: string;
   sets: number;
   reps: number;
   /** Andel av e1RM när lasten är procentstyrd. */
@@ -126,6 +128,35 @@ export interface TaperExercise {
   kg?: number | null;
   notes?: string;
 }
+
+/**
+ * Träningsdagar räknade bakåt från D0 (dagar före tävling, modulo 7), så att
+ * regeldagarna (mark D−7, bänk D−5/D−3 m.fl.) hamnar på riktiga träningsdagar
+ * oavsett vilken veckodag tävlingen är. D−1/D−2 är alltid vila.
+ */
+const D0_PATTERNS: Record<number, number[]> = {
+  2: [0, 3],
+  3: [0, 3, 5],
+  4: [0, 1, 3, 5],
+  5: [0, 1, 2, 3, 5],
+  6: [0, 1, 2, 3, 4, 5],
+};
+export function d0TrainingWeekdays(competitionDate: string, daysPerWeek: number): number[] {
+  const offsets = D0_PATTERNS[daysPerWeek] ?? D0_PATTERNS[4];
+  return [...new Set(offsets.map((m) => {
+    const d = addDays(parseISO(competitionDate), -(m === 0 ? 7 : m)).getDay();
+    return d === 0 ? 7 : d;
+  }))].sort((a, b) => a - b);
+}
+
+/** Variationer av tävlingslyften (smalgrepp, touch-and-go, paus …). */
+const VARIANT_RE = /squat|bench|deadlift|knäböj|bänk|marklyft/i;
+/** Tung underkroppsassistans — tas bort från assistansdagen. */
+const HEAVY_LOWER_RE = /nordic|leg curl|hamstring|lunge|split|leg press|rdl|romanian|good ?morning|hip thrust|step.?up|hack/i;
+/** Lätta övningar med låg trötthet som kan ligga kvar längre in i toppningen. */
+const LOW_FATIGUE_RE = /face ?pull|rear.?delt|row|curl|pushdown|tricep|skull|lateral|fly|plank|pallof|core|ab |abs|crunch|calf|band|pull.?apart|back extension|dead ?bug|bird ?dog/i;
+const isVariant = (a: TaperAccessoryInput) => VARIANT_RE.test(a.exercise) && !HEAVY_LOWER_RE.test(a.exercise);
+const isLowFatigue = (a: TaperAccessoryInput) => !VARIANT_RE.test(a.exercise) && !HEAVY_LOWER_RE.test(a.exercise) && LOW_FATIGUE_RE.test(a.exercise);
 
 export type TaperPhase = "volymtopp" | "intensifiering" | "overbelastning" | "taper" | "vila" | "tavling";
 

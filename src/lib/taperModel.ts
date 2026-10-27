@@ -47,7 +47,7 @@ export const DEFAULT_TAPER_SETTINGS: TaperSettings = {
   intensity: "keep",
   heavyDay: { squat: 8, bench: 5, deadlift: 9 },
   heavyLoadPct: 0.9125,
-  lastDay: { squat: 4, bench: 3, deadlift: 6 },
+  lastDay: { squat: 4, bench: 3, deadlift: 7 },
   restDays: 2,
   accessoriesOutDay: 14,
   finalWeekFreq: "half",
@@ -55,8 +55,8 @@ export const DEFAULT_TAPER_SETTINGS: TaperSettings = {
 
 /** Konstruktionsgränser kring det studierna rapporterar. */
 export const TAPER_RANGES = {
-  taperDays: { min: 7, max: 10 },
-  volumeCut: { min: 0.4, max: 0.6 },
+  taperDays: { min: 7, max: 14 },
+  volumeCut: { min: 0.3, max: 0.6 },
   heavyLoadPct: { min: 0.875, max: 0.95 },
   restDays: { min: 2, max: 3 },
   accessoriesOutDay: { min: 10, max: 21 },

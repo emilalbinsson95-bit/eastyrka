@@ -11,7 +11,8 @@ export function StrengthHistoryCharts({ logs, baselines, history, since }: { log
   return <div className="space-y-4">{keys.map(key=>{
     const points=measurements.filter(p=>p.key===key);const first=points[0];if(!first)return null;
     const changes=history.filter(h=>h.exercise.trim().toLowerCase()===first.exercise.trim().toLowerCase()).sort((a,b)=>a.recorded_at.localeCompare(b.recorded_at));
-    const dates=[...new Set([...points.map(p=>p.date),...changes.map(h=>h.recorded_at.slice(0,10))])].sort().filter(d=>d>=since && d<=new Date().toISOString().slice(0,10));
+    const today=new Date().toISOString().slice(0,10);
+    const dates=[...new Set([since,today,...points.map(p=>p.date),...changes.map(h=>h.recorded_at.slice(0,10))])].sort().filter(d=>d>=since && d<=today);
     const data=dates.map(date=>{
       const measurement=points.find(p=>p.date===date);const prior=points.filter(p=>p.date<=date).at(-1);
       const baselineChange=changes.find(h=>h.recorded_at.slice(0,10)===date);

@@ -4,6 +4,7 @@ import { readinessFromEAk } from "./eakoefficient";
 import { setVolumeWeight } from "./exerciseVariants";
 import { VOLUME_LANDMARKS } from "./individualisation";
 import { sessionLoad } from "./enduranceLoad";
+import { compareStrength } from "./strengthComparison";
 
 const log = (date: string, weight: number, extra = {}) => ({ date, exercise: "Bench press", variation: null, set_number: 1, reps: 1, weight_kg: weight, rpe: 10, ...extra });
 describe("Emil's chart rules", () => {
@@ -21,6 +22,15 @@ describe("Emil's chart rules", () => {
     expect(chartStrengthSeries(logs, { "Bench press": 100 }).filter(p => p.date >= "2026-10-03")[0].rolling).toBe(95);
   });
   it("matches 1–3, 4–6 and 7+ reps", () => expect([1, 3, 4, 6, 7, 12].map(repInterval)).toEqual(["1–3", "1–3", "4–6", "4–6", "7+", "7+"]));
+  it("compares different reps and RPE only within the same rep interval and variation", () => {
+    const rows=compareStrength([
+      log("2026-10-01",100,{reps:4,rpe:7}),log("2026-10-02",100,{reps:6,rpe:8}),
+      log("2026-10-03",100,{reps:5,rpe:9}),log("2026-10-04",100,{reps:3,rpe:8}),
+      log("2026-10-05",100,{reps:5,rpe:8,variation:"pause"}),
+    ],"2026-10-27");
+    expect(rows.find(r=>r.variation===""&&r.reps==="4–6")?.count).toBe(3);
+    expect(rows).toHaveLength(3);
+  });
   it("separates actual rep records from estimated measurement records", () => {
     const records = personalRecords([log("2026-10-01", 100), log("2026-10-02", 105), log("2026-10-02", 120, { set_number: 2 })]);
     expect(records.filter(p => p.kind === "actual").map(p => p.value)).toEqual([120, 105]);

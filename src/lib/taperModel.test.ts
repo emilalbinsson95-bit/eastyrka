@@ -121,12 +121,14 @@ describe("taperModel", () => {
   it("håller minst 85 % på taperpassens arbetsset, och stödjer sänkt intensitet (Bell 2025)", () => {
     const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS });
     const taperWork = plan.sessions
-      .filter((s) => s.phase === "taper" && s.title === "Taperpass")
-      .flatMap((s) => s.exercises);
+      .filter((s) => s.phase === "taper")
+      .flatMap((s) => s.exercises)
+      .filter((e) => e.notes?.startsWith("Taper:"));
     expect(taperWork.length).toBeGreaterThan(0);
     expect(taperWork.every((e) => (e.pctOfE1rm ?? 0) >= 0.85)).toBe(true);
     const lower = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS, settings: { intensity: "lower" } });
-    const lowered = lower.sessions.filter((s) => s.phase === "taper" && s.title === "Taperpass").flatMap((s) => s.exercises);
+    const lowered = lower.sessions.filter((s) => s.phase === "taper").flatMap((s) => s.exercises).filter((e) => e.notes?.startsWith("Taper:"));
+    expect(lowered.length).toBeGreaterThan(0);
     expect(lowered.every((e) => e.pctOfE1rm === 0.7)).toBe(true);
     const heavyLowered = lower.sessions.find((s) => s.date === "2027-01-14")?.exercises.find((e) => e.exercise === "Deadlift");
     expect(heavyLowered?.pctOfE1rm).toBeCloseTo(0.9125 * 0.72, 4);

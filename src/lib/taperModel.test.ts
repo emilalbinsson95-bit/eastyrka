@@ -63,11 +63,28 @@ describe("taperModel", () => {
     const taperSets = plan.sessions
       .filter((s) => s.phase === "taper")
       .flatMap((s) => s.exercises)
-      .filter((e) => e.exercise === "Back squat")
+      .filter((e) => e.exercise === "Back squat" && !e.isTechnique)
       .reduce((n, e) => n + e.sets, 0);
     // Referens 12 set/vecka × 0,5 kvar × 9/7 dagar ≈ 7–8 set totalt i tapern.
     expect(taperSets).toBeGreaterThanOrEqual(6);
     expect(taperSets).toBeLessThanOrEqual(9);
+  });
+
+  it("fyller ut tunna taperpass så att inget pass blir bara några enkla set", () => {
+    const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS });
+    // Pass före de sista teknikdagarna (D-4) ska ha minst 4 set totalt.
+    const thin = plan.sessions.filter(
+      (s) => s.phase === "taper" && s.date < "2027-01-19" && s.exercises.reduce((n, e) => n + e.sets, 0) < 4,
+    );
+    expect(thin).toEqual([]);
+    // Teknikfyllnaden tränar aldrig ett lyft efter dess sista exponering.
+    for (const ses of plan.sessions.filter((s) => s.phase === "taper")) {
+      for (const e of ses.exercises) {
+        if (e.exercise === "Deadlift") expect(ses.date <= "2027-01-16").toBe(true);
+        if (e.exercise === "Back squat") expect(ses.date <= "2027-01-19").toBe(true);
+        if (e.exercise === "Bench press") expect(ses.date <= "2027-01-20").toBe(true);
+      }
+    }
   });
 
   it("tar bort assistansen från D-14", () => {

@@ -39,6 +39,10 @@ export interface MainLiftInfo {
   e1rm: number | null;
   /** Average working sets per week over the recent reference window. */
   weeklySets: number;
+  /** Median working sets per day the lift was trained (reference window). */
+  setsPerExposure: number;
+  /** How many days per week the lift was trained (reference window). */
+  exposuresPerWeek: number;
   /** Heaviest single logged in the window (kg). */
   bestSingleKg: number | null;
 }
@@ -205,6 +209,16 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
     const weeklySets =
       reference === "work3" ? (workWindows.length ? hits.filter((l) => workLogs.includes(l)).length / workWindows.length : 0) : reference === "recent" ? meanRecent : reference === "median" ? med : Math.max(meanRecent, med);
 
+    // Exposure shape: how the lift is actually trained within a week. A lift
+    // done once a week must keep its session and lose sets inside it — not
+    // shrink to a single set because the weekly average is low.
+    const refHits = reference === "work3" ? hits.filter((l) => workLogs.includes(l)) : recentHits;
+    const refWeeks = reference === "work3" ? Math.max(1, workWindows.length) : weeksCovered;
+    const byDay = new Map<string, number>();
+    for (const l of refHits) byDay.set(l.date, (byDay.get(l.date) ?? 0) + 1);
+    const setsPerExposure = byDay.size ? median([...byDay.values()]) : 0;
+    const exposuresPerWeek = refWeeks > 0 ? byDay.size / refWeeks : 0;
+
     const singles = hits.filter((l) => l.reps === 1).map((l) => l.weight_kg);
 
     lifts[key] = {
@@ -214,6 +228,8 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
       trained: hits.length > 0 || base != null,
       e1rm: e1rm ? Math.round(e1rm * 10) / 10 : null,
       weeklySets,
+      setsPerExposure,
+      exposuresPerWeek,
       bestSingleKg: singles.length ? Math.max(...singles) : null,
     };
   }
@@ -413,9 +429,9 @@ export function buildPeakingWeeks(
       referenceLabel: PEAK_REFERENCE_LABEL.recent,
       accessories: [],
       lifts: {
-        squat: { key: "squat", name: "Back squat", trained: true, e1rm: null, weeklySets: 0, bestSingleKg: null },
-        bench: { key: "bench", name: "Bench press", trained: true, e1rm: null, weeklySets: 0, bestSingleKg: null },
-        deadlift: { key: "deadlift", name: "Deadlift", trained: true, e1rm: null, weeklySets: 0, bestSingleKg: null },
+        squat: { key: "squat", name: "Back squat", trained: true, e1rm: null, weeklySets: 0, setsPerExposure: 0, exposuresPerWeek: 0, bestSingleKg: null },
+        bench: { key: "bench", name: "Bench press", trained: true, e1rm: null, weeklySets: 0, setsPerExposure: 0, exposuresPerWeek: 0, bestSingleKg: null },
+        deadlift: { key: "deadlift", name: "Deadlift", trained: true, e1rm: null, weeklySets: 0, setsPerExposure: 0, exposuresPerWeek: 0, bestSingleKg: null },
       },
     } satisfies PeakSummary);
 
@@ -442,20 +458,31 @@ export function buildPeakingWeeks(
     const sessionSets = (index: number) => sessions[index].exercises.reduce((n, e) => n + e.target_sets, 0);
     for (const key of active) {
       const info = L(key);
-      const reference = info.weeklySets > 0 ? info.weeklySets : 9;
-      // At least one set per scheduled exposure; never multiply the historical
-      // weekly dose by the number of days. Extra days split existing work.
-      const weekly = clamp(Math.round(reference * cfg.volFactor * windowScale), Math.max(2, Math.ceil(sessionCount / active.length)), 20);
+      // Taper by cutting sets inside the athlete's own sessions, keeping how
+      // often each lift is trained. A once-a-week lift keeps its session with
+      // fewer sets — it never shrinks to a single set mid-peak.
+      const perExposure = info.setsPerExposure > 0 ? info.setsPerExposure : 3;
+      const freq = info.exposuresPerWeek > 0 ? info.exposuresPerWeek : info.weeklySets > 0 ? info.weeklySets / perExposure : 1;
       const desired = meetWeek ? (key === "deadlift" ? 1 : 2)
         : key === "bench" ? days : key === "squat" ? Math.min(days, 3) : days >= 5 ? 2 : 1;
-      const exposures = Math.min(weekly, desired);
+      // With only one trained lift, spread it over the requested days so no
+      // scheduled day is left empty; with several lifts, keep the athlete's
+      // own frequency per lift.
+      const exposures = active.length === 1
+        ? Math.min(desired, sessionCount)
+        : clamp(Math.round(freq * windowScale) || 1, 1, Math.min(desired, sessionCount));
+      const total = clamp(
+        Math.round(perExposure * cfg.volFactor * windowScale * exposures),
+        meetWeek ? exposures : exposures * 2,
+        20,
+      );
       const used = new Set<number>();
       for (let exposure = 0; exposure < exposures; exposure++) {
         const candidates = sessions.map((_, index) => index).filter((index) => !used.has(index));
         const index = candidates.sort((a, b) => sessionSets(a) - sessionSets(b) || a - b)[0];
         if (index === undefined) continue;
         used.add(index);
-        const sets = Math.floor(weekly / exposures) + (exposure < weekly % exposures ? 1 : 0);
+        const sets = Math.floor(total / exposures) + (exposure < total % exposures ? 1 : 0);
         sessions[index].exercises.push(...mainExercises(info, cfg, sets, { opener: !meetWeek && exposure === 0 && opts.openers }));
       }
     }

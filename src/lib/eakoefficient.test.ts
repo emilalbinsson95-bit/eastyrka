@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, baselineExerciseKey } from "./eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, baselineExerciseKey, isReadinessLift } from "./eakoefficient";
 import { canAddExtraSet } from "./blockVolume";
 
 describe("EAk (RTS model)", () => {

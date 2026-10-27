@@ -34,6 +34,7 @@ function CoachAthleteCalendarPage() {
           {t("calendar.coachDescription")}
         </p>
       </div>
+      <Button asChild variant="outline"><Link to="/coach/athletes/$athleteId/peaking" params={{athleteId}}>Toppningsuppföljning</Link></Button>
       <SharedCalendar ownerId={athleteId} viewerRole="coach" />
     </div>
   );

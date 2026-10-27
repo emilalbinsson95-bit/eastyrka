@@ -5,7 +5,11 @@ import { ProgressionDashboard } from "@/components/ProgressionDashboard";
 export const Route = createFileRoute("/patient/progression")({
   head: () => ({
     meta: [
-      { title: "My progression — EA" },
+      { title: "Min rehabprogression — SETPOINT" },
+      { property: "og:title", content: "Min rehabprogression — SETPOINT" },
+      { property: "og:description", content: "Belastning, smärta och funktionstester över tid." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:
@@ -18,5 +22,6 @@ export const Route = createFileRoute("/patient/progression")({
 
 function PatientProgressionPage() {
   const { user } = useAuth();
-  return <ProgressionDashboard patientId={user!.id} canEdit={false} />;
+  if (!user) return null;
+  return <ProgressionDashboard patientId={user.id} canEdit={false} />;
 }

@@ -34,7 +34,7 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
     queryFn: async (): Promise<LogRow[]> => {
       const { data, error } = await supabase
         .from("training_logs")
-        .select("date, exercise, variation, set_number, reps, weight_kg, rpe")
+        .select("date, exercise, variation, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: false })
         .limit(2000);
@@ -47,6 +47,8 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
         rpe: Number(l.rpe),
         set_number: l.set_number,
         variation: l.variation,
+        is_warmup_reference: l.is_warmup_reference,
+        is_technique: l.is_technique,
       }));
     },
   });
@@ -65,7 +67,7 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
           <Trophy className="h-4 w-4 text-primary" /> Styrkeutveckling — jämförbara pass
         </CardTitle>
         <CardDescription className="text-xs">
-          Uppskattat max från mätsetet. Samma övning, variant, reps och RPE; tre senaste pass jämförs med tre föregående.
+          Uppskattat max från mätsetet. Samma övning, variant och repintervall; RTS räknar om RPE. Tre senaste pass jämförs med tre föregående.
         </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
@@ -99,7 +101,7 @@ export function E1rmPrCard({ athleteId }: { athleteId: string }) {
                 >
                   <td className="px-4 py-2">
                     <div className="font-medium">{r.exercise}</div>
-                    <div className="text-xs text-muted-foreground">{r.variation ? `${r.variation} · ` : ""}{r.reps} reps @ {r.rpe} · {r.count} pass</div>
+                    <div className="text-xs text-muted-foreground">{r.variation ? `${r.variation} · ` : ""}{r.reps} reps · {r.count} pass</div>
                     {r.pbDate && (
                       <div className="text-[10px] text-muted-foreground">
                         PB {r.pbDate}

@@ -238,18 +238,19 @@ volym   ▁▂▃▄       │ ▄▅▆▆▆▇            │▇▆▆▅▅ 
 Set med RPE < 7 räknas inte
 EAk % = (mätsetets E1RM ÷ baseline 1RM) × 100`}
         </Formula>
-        <p><b>Mätset:</b> den tunga singeln om tillägget "tung singel" är aktivt, annars första arbetssetet med RPE ≥ 7. Samma regel varje pass, så värdena går att jämföra.</p>
+        <p><b>Mätset:</b> första kvalificerade setet med RPE ≥ 7. En tung singel räknas bara när den ligger före första arbetssetet. Referensuppvärmning och teknikset undantas. Jämförelser mellan pass matchar övning, variant och repintervall 1–3, 4–6 eller 7+; RTS räknar om RPE.</p>
         <p>Statusband och åtgärd idag:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><b>&lt; 92 %</b> Trött — sänk vikten 5–10 % eller ta bort ett set</li>
-          <li><b>92–97 %</b> Under baseline — kör som planerat, ingen extra volym</li>
-          <li><b>97–103 %</b> Normal — kör som planerat</li>
-          <li><b>&gt; 103 %</b> Topp — möjligt att gå tyngre eller testa, kräver två pass i rad</li>
+          <li><b>&lt; 92 %</b> Långt under baslinjen</li>
+          <li><b>92–under 97 %</b> Under baslinjen</li>
+          <li><b>97–103 %</b> Vid baslinjen</li>
+          <li><b>&gt; 103 %</b> Över baslinjen</li>
         </ul>
         <p>Ett värde under baseline betyder inte att atleten har tränat för lite.</p>
         <p><b>Dag och trend skiljs åt:</b> det enskilda passet styr dagens justering. Ett glidande medel över 3 pass styr coachbeslut, eftersom ett RPE-fel på ±0,5–1 motsvarar 2–4 % i E1RM.</p>
-        <p><b>Volymkvalitet:</b> set efter mätsetet (bara RPE ≥ 7) jämförs mot mätsetets E1RM. ≤ 4 % tapp = bra, 4–5 % = godtagbart, ≥ 5 % = trötthetsgräns.</p>
-        <p className="mt-2"><b>Auto-flytande baseline:</b> höjs när minst 12 av de senaste 16 mätpassen ligger på ≥ 103 %. Ny baseline = median(topp-E1RM) × 0,98, högst +5 % per höjning. Om 6 av de 8 senaste passen ligger under 92 % får coachen en varning. Höjningar sker automatiskt, sänkningar manuellt. Baseline gäller bara den egna övningen.</p>
+        <p><b>Volymkvalitet:</b> set efter mätsetet (bara RPE ≥ 7) jämförs mot mätsetets E1RM. Under 4 % tapp = bra, 4–under 5 % = godtagbart, minst 5 % = trötthetsgräns. Detta är ett annat mått än EAk mot baslinjen.</p>
+        <p className="mt-2"><b>Coachstyrd baslinje:</b> både höjningar och sänkningar kräver coachens beslut. Appen kan föreslå en ändring men skriver aldrig om baslinjen automatiskt. Atletkort och coachlista visar samma rullande snitt av tre mätpass per lyft.</p>
+        <p><b>Belastning:</b> statistikens CTL/ATL/TSB räknas från sRPE × minuter för styrka och kondition. Det är en belastningsmodell, inte ett besked om styrkeform. EAk och generatorns styrkestatus förblir rena styrkemått.</p>
         <p>Trösklarna (92/97/103 %, 12 av 16, +5 %) är mina egna designval, inte värden från forskningen.</p>
       </Section>
 
@@ -271,9 +272,9 @@ EAk % = (mätsetets E1RM ÷ baseline 1RM) × 100`}
         <Formula>
 {`RTS-%(5 reps, RPE 8) = 81,1 %
 E1RM = 130 ÷ 0,811 = 160,3 kg
-EAk  = 160,3 / 150 × 100 = 106,9 %  → Topp
+EAk  = 160,3 / 150 × 100 = 106,9 %  → Över baslinjen
 
-Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Normal)`}
+Kontroll: 150 × 1 @ RPE 10 = 150 kg → 100 % (Vid baslinjen)`}
         </Formula>
         <p>Tolkning: dagsformen är 6,9 % över baseline. Gå tyngre eller testa bara om det håller två pass i rad.</p>
       </Section>

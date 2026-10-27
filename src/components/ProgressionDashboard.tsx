@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { limbSymmetryIndex } from "@/lib/chartMetrics";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LineChart,
@@ -8,6 +10,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
+  Legend,
 } from "recharts";
 import {
   Activity,
@@ -69,7 +73,7 @@ export function ProgressionDashboard({
         </p>
       </div>
 
-      <ExerciseProgressionCard patientId={patientId} />
+      <ExerciseProgressionCard patientId={patientId} canEdit={canEdit} />
       <StiffnessTrendCard patientId={patientId} />
       <FunctionTestsCard patientId={patientId} canEdit={canEdit} />
       <AdherenceCard patientId={patientId} />
@@ -81,7 +85,8 @@ export function ProgressionDashboard({
 /* Card 1: per-exercise progression                    */
 /* -------------------------------------------------- */
 
-function ExerciseProgressionCard({ patientId }: { patientId: string }) {
+function ExerciseProgressionCard({ patientId, canEdit }: { patientId: string; canEdit: boolean }) {
+  const preferences = useRehabChartPreferences(patientId);
   const query = useQuery({
     queryKey: ["progression-exercises", patientId],
     queryFn: async () => {
@@ -93,11 +98,12 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
       if (sErr) throw sErr;
       const ids = (sessions ?? []).map((s) => s.id);
       if (ids.length === 0) return [];
-      const dateById = new Map(sessions!.map((s) => [s.id, s.session_date]));
+      const dateById = new Map((sessions ?? []).map((s) => [s.id, s.session_date]));
+      const {data:feedback,error:feedbackError}=await supabase.from("patient_session_feedback").select("session_id,pain_after").in("session_id",ids);if(feedbackError)throw feedbackError;
       const { data: exs, error: eErr } = await supabase
         .from("rehab_exercises")
         .select(
-          "session_id, name, sets, reps, load_kg, band_min_kg, band_max_kg",
+          "session_id, name, sets, reps, load_kg, band_min_kg, band_max_kg, pain_rating",
         )
         .in("session_id", ids);
       if (eErr) throw eErr;
@@ -105,6 +111,8 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
       type Entry = {
         date: string;
         load: number | null;
+        band: number | null;
+        pain: number | null;
         reps: number | null;
         sets: number | null;
       };
@@ -117,12 +125,14 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
           e.band_min_kg != null && e.band_max_kg != null
             ? (Number(e.band_min_kg) + Number(e.band_max_kg)) / 2
             : null;
-        const load = e.load_kg != null ? Number(e.load_kg) : bandMid;
+        const load = e.load_kg != null ? Number(e.load_kg) : null;
         if (!grouped.has(key))
           grouped.set(key, { display: e.name, entries: [] });
-        grouped.get(key)!.entries.push({
+        grouped.get(key)?.entries.push({
           date,
           load,
+          band: bandMid,
+          pain: feedback?.find(f=>f.session_id===e.session_id)?.pain_after ?? e.pain_rating,
           reps: e.reps,
           sets: e.sets,
         });
@@ -130,18 +140,19 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
       return Array.from(grouped.entries())
         .map(([key, { display, entries }]) => {
           entries.sort((a, b) => a.date.localeCompare(b.date));
-          // Max load per day
-          const byDay = new Map<string, number>();
-          for (const e of entries) {
-            if (e.load == null) continue;
-            byDay.set(e.date, Math.max(byDay.get(e.date) ?? 0, e.load));
+          const byDay = new Map<string, { date: string; load: number | null; band: number | null; pain: number | null }>();
+          for(const e of entries) {
+            const day=byDay.get(e.date)??{date:e.date,load:null,band:null,pain:null};
+            if(e.load!=null)day.load=Math.max(day.load??0,e.load);
+            if(e.band!=null && e.load==null)day.band=Math.max(day.band??0,e.band);
+            if(e.pain!=null)day.pain=Math.max(day.pain??0,e.pain);
+            byDay.set(e.date,day);
           }
-          const chart = Array.from(byDay.entries())
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([date, load]) => ({ date, load }));
-          const first = chart[0]?.load ?? null;
-          const last = chart[chart.length - 1]?.load ?? null;
-          const delta = first != null && last != null ? last - first : null;
+          const chart=[...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date));
+          const lastPoint=chart.at(-1);const last=lastPoint?.load??lastPoint?.band??null;
+          const type=lastPoint?.load!=null?"load":"band";
+          const first=chart.find(point=>point[type]!=null)?.[type]??null;
+          const delta=first!=null && last!=null?last-first:null;
           const lastEntry = entries[entries.length - 1];
           return {
             key,
@@ -167,11 +178,12 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
           <TrendingUp className="h-5 w-5 text-primary" /> Exercise progression
         </CardTitle>
         <CardDescription>
-          Max load per day per exercise (band kg used when no free-weight load
-          is logged).
+          Maxbelastning per dag. Band och fria vikter är olika serier; belastningstyperna jämförs aldrig med varandra.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {canEdit && <div className="flex flex-wrap items-end gap-2"><div><Label htmlFor="rehab-pain-limit">Smärtgräns (0–10)</Label><Input id="rehab-pain-limit" className="w-28" type="number" min={0} max={10} step={.5} value={preferences.pain} onChange={e=>preferences.setPain(e.target.value)}/></div><Button size="sm" disabled={preferences.save.isPending} onClick={()=>preferences.save.mutate()}>Spara gräns</Button></div>}
+        {preferences.query.isError && <p role="alert" className="text-sm text-destructive">Kunde inte läsa smärtgränsen.</p>}
         {query.isLoading && (
           <p className="text-sm text-muted-foreground">Loading…</p>
         )}
@@ -192,7 +204,7 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
               </div>
               <DeltaPill current={ex.current} delta={ex.delta} unit="kg" />
             </div>
-            {ex.chart.length >= 2 && (
+            {ex.chart.length > 0 && (
               <div className="mt-3 h-28 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
@@ -224,10 +236,14 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
                       labelFormatter={(d) =>
                         new Date(d).toLocaleDateString()
                       }
-                      formatter={(v: number) => [`${v} kg`, "Load"]}
+                      formatter={(v: number, name: string) => [`${v} kg`, name]}
                     />
+                    <Legend wrapperStyle={{fontSize:10}}/>
+                    <Line dataKey="band" name="Band (kg, angivet motstånd)" stroke="var(--chart-2)" connectNulls={false} dot={{r:3}}/>
                     <Line
-                      type="monotone"
+                      name="Fria vikter (kg)"
+                      connectNulls={false}
+                      type="linear"
                       dataKey="load"
                       stroke="var(--primary)"
                       strokeWidth={2}
@@ -237,6 +253,7 @@ function ExerciseProgressionCard({ patientId }: { patientId: string }) {
                 </ResponsiveContainer>
               </div>
             )}
+            {ex.chart.some(p=>p.pain!=null) && <div className="mt-6 space-y-1"><p className="text-xs font-medium">Smärta efter passet (0–10) · övningssmärta när passvärdet saknas</p><div className="h-28"><ResponsiveContainer><LineChart data={ex.chart} margin={{top:4,right:8,left:-20,bottom:0}}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="date" fontSize={10}/><YAxis domain={[0,10]} fontSize={10}/><Tooltip/>{preferences.query.data?.pain_limit!=null&&<ReferenceLine y={Number(preferences.query.data.pain_limit)} stroke="var(--destructive)" label={`Gräns ${preferences.query.data.pain_limit}`}/>}<Line dataKey="pain" name="Smärta" stroke="var(--chart-3)" connectNulls={false} dot={{r:3}}/></LineChart></ResponsiveContainer></div></div>}
           </div>
         ))}
       </CardContent>
@@ -361,6 +378,7 @@ function FunctionTestsCard({
   canEdit: boolean;
 }) {
   const { user } = useAuth();
+  const preferences = useRehabChartPreferences(patientId);
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: ["progression-function-tests", patientId],
@@ -387,9 +405,10 @@ function FunctionTestsCard({
   const add = useMutation({
     mutationFn: async () => {
       if (value === "") throw new Error("Value required");
+      if (!user) throw new Error("Du behöver vara inloggad");
       const { error } = await supabase.from("function_tests").insert({
         patient_id: patientId,
-        recorded_by: user!.id,
+        recorded_by: user.id,
         test_type: testType,
         unit,
         value_numeric: Number(value),
@@ -425,7 +444,7 @@ function FunctionTestsCard({
       { type: string; side: Side; unit: string; entries: typeof rows }
     >();
     for (const r of rows) {
-      const key = `${r.test_type}__${r.side}`;
+      const key = `${r.test_type}__${r.side}__${r.unit}`;
       if (!map.has(key))
         map.set(key, {
           type: r.test_type,
@@ -433,11 +452,20 @@ function FunctionTestsCard({
           unit: r.unit,
           entries: [],
         });
-      map.get(key)!.entries.push(r);
+      map.get(key)?.entries.push(r);
     }
     return Array.from(map.values());
   }, [rows]);
 
+  const symmetry = useMemo(()=>{
+    const pairs=new Map<string,{type:string;unit:string;date:string;left:number|null;right:number|null}>();
+    for(const row of rows){if(row.side!=="left"&&row.side!=="right")continue;const key=`${row.test_type}::${row.unit}::${row.tested_at.slice(0,10)}`;const pair=pairs.get(key)??{type:row.test_type,unit:row.unit,date:row.tested_at.slice(0,10),left:null,right:null};pair[row.side]=Number(row.value_numeric);pairs.set(key,pair);}
+    const injured=preferences.query.data?.injured_side;
+    const byTest=new Map<string,Array<{date:string;lsi:number}>>();
+    if(injured!=="left"&&injured!=="right")return byTest;
+    for(const pair of pairs.values()){const lsi=limbSymmetryIndex(pair[injured],pair[injured==="left"?"right":"left"]);if(lsi==null)continue;const key=`${pair.type} (${pair.unit})`;byTest.set(key,[...(byTest.get(key)??[]),{date:pair.date,lsi}]);}
+    return byTest;
+  },[rows,preferences.query.data?.injured_side]);
   return (
     <Card>
       <CardHeader>
@@ -449,6 +477,9 @@ function FunctionTestsCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {canEdit && <div className="flex flex-wrap items-end gap-2"><div><Label>Skadad sida för LSI</Label><Select value={preferences.side} onValueChange={preferences.setSide}><SelectTrigger className="w-44" aria-label="Skadad sida för LSI"><SelectValue placeholder="Välj sida"/></SelectTrigger><SelectContent><SelectItem value="left">Vänster</SelectItem><SelectItem value="right">Höger</SelectItem></SelectContent></Select></div><Button size="sm" disabled={!preferences.side||preferences.save.isPending} onClick={()=>preferences.save.mutate()}>Spara sida</Button></div>}
+        {!preferences.query.data?.injured_side && <p className="text-xs text-muted-foreground">LSI saknar underlag tills fysioterapeuten anger skadad sida.</p>}
+        {[...symmetry].map(([name,points])=><div key={name}><h3 className="text-sm font-medium">{name} · LSI (skadad/frisk × 100)</h3><p className="text-xs text-muted-foreground">90 % är en referens, inte ett automatiskt klartecken för återgång. ROM och balans kräver egen klinisk bedömning.</p><div className="h-40"><ResponsiveContainer><LineChart data={points}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="date" fontSize={10}/><YAxis domain={[0,(max:number)=>Math.max(110,max)]} unit=" %" fontSize={10}/><Tooltip/><ReferenceLine y={90} stroke="var(--chart-3)" strokeDasharray="3 3"/><Line dataKey="lsi" name="LSI %" stroke="var(--chart-1)" dot={{r:3}}/></LineChart></ResponsiveContainer></div></div>)}
         {grouped.length === 0 && (
           <p className="text-sm text-muted-foreground">
             No tests recorded yet.
@@ -717,4 +748,12 @@ function DeltaPill({
       )}
     </span>
   );
+}
+
+function useRehabChartPreferences(patientId: string) {
+  const {user}=useAuth();const qc=useQueryClient();const [pain,setPain]=useState("");const [side,setSide]=useState("");
+  const query=useQuery({queryKey:["rehab-chart-preferences",patientId],queryFn:async()=>{const {data,error}=await supabase.from("rehab_chart_preferences").select("*").eq("patient_id",patientId).maybeSingle();if(error)throw error;return data;}});
+  useEffect(()=>{setPain(query.data?.pain_limit==null?"":String(query.data.pain_limit));setSide(query.data?.injured_side??"");},[query.data]);
+  const save=useMutation({mutationFn:async()=>{if(!user)throw new Error("Du behöver vara inloggad");const value=pain===""?null:Number(pain);if(value!=null&&(!Number.isFinite(value)||value<0||value>10))throw new Error("Smärtgränsen ska vara 0–10");const {error}=await supabase.from("rehab_chart_preferences").upsert({patient_id:patientId,pain_limit:value,injured_side:side||null,updated_by:user.id,updated_at:new Date().toISOString()});if(error)throw error;},onSuccess:()=>{qc.invalidateQueries({queryKey:["rehab-chart-preferences",patientId]});toast.success("Gräns och sida sparade");},onError:(e:Error)=>toast.error(e.message)});
+  return {query,pain,setPain,side,setSide,save};
 }

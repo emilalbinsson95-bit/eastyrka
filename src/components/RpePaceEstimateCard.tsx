@@ -1,3 +1,4 @@
+import { paceRange } from "@/lib/chartMetrics";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -15,10 +16,11 @@ interface Bucket {
   sec: number;
   m: number;
   samples: number;
+  observations: Array<{sessionId: string; sec: number; m: number}>;
 }
 
 function emptyBucket(): Bucket {
-  return { sec: 0, m: 0, samples: 0 };
+  return { sec: 0, m: 0, samples: 0, observations: [] };
 }
 
 function fmtPace(secPerKm: number | null): string {
@@ -78,7 +80,7 @@ export function RpePaceEstimateCard({
 
       // Interval samples (preferred)
       const sessionsWithSteps = new Set<string>();
-      const samples: Array<{ sec: number; m: number; rpe: number }> = [];
+      const samples: Array<{ sessionId: string; sec: number; m: number; rpe: number }> = [];
       for (const st of steps) {
         if ((st.discipline ?? "run") !== "run") continue;
         const sec = Number(st.actual_duration_seconds ?? 0);
@@ -86,7 +88,7 @@ export function RpePaceEstimateCard({
         const rpe = st.actual_avg_rpe != null ? Number(st.actual_avg_rpe) : null;
         if (sec <= 0 || m <= 0 || rpe == null) continue;
         sessionsWithSteps.add(st.session_id);
-        samples.push({ sec, m, rpe });
+        samples.push({ sessionId: st.session_id, sec, m, rpe });
       }
 
       // Whole-session fallback for sessions with no interval RPE samples
@@ -96,7 +98,7 @@ export function RpePaceEstimateCard({
         const m = Number(s.actual_distance_m ?? 0);
         const rpe = s.overall_rpe ?? s.peak_rpe;
         if (sec <= 0 || m <= 0 || rpe == null) continue;
-        samples.push({ sec, m, rpe: Number(rpe) });
+        samples.push({ sessionId: s.id, sec, m, rpe: Number(rpe) });
       }
 
       const buckets: Record<number, Bucket> = {};
@@ -106,6 +108,7 @@ export function RpePaceEstimateCard({
         buckets[r].sec += s.sec;
         buckets[r].m += s.m;
         buckets[r].samples += 1;
+        buckets[r].observations.push(s);
       }
 
       const rows = Array.from({ length: 10 }, (_, i) => {
@@ -115,7 +118,7 @@ export function RpePaceEstimateCard({
         return {
           rpe: r,
           paceSec,
-          paceLabel: fmtPace(paceSec),
+          paceLabel: (() => { const range = paceRange(b.observations); return range ? `${fmtPace(range.lower)}–${fmtPace(range.upper)}` : "För lite data"; })(),
           samples: b.samples,
           km: b.m / 1000,
         };
@@ -125,13 +128,14 @@ export function RpePaceEstimateCard({
         rows,
         sampledFromSteps: sessionsWithSteps.size > 0,
         totalSamples: samples.length,
+        totalRuns: new Set(samples.map(s => s.sessionId)).size,
       };
     },
   });
 
   const data = query.data;
   const hasAny = useMemo(
-    () => !!data && data.rows.some((r) => r.samples > 0),
+    () => !!data && data.totalRuns >= 10 && data.rows.some((r) => r.samples > 0),
     [data],
   );
 
@@ -140,7 +144,7 @@ export function RpePaceEstimateCard({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Gauge className="h-4 w-4 text-primary" />
-          Estimated run pace by RPE
+          Löptempo per RPE · intervall
         </CardTitle>
         <CardDescription>
           {data?.sampledFromSteps
@@ -153,12 +157,11 @@ export function RpePaceEstimateCard({
           <p className="py-4 text-center text-sm text-muted-foreground">Loading…</p>
         ) : !hasAny ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
-            Not enough logged runs with RPE yet — estimates will appear here as the
-            athlete logs more sessions.
+            Minst tio löppass med tid, distans och RPE krävs. Varje RPE-intervall kräver tio olika pass; intervallet visar 10:e–90:e percentilen.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {data!.rows.map((r) => {
+            {data?.rows.map((r) => {
               const muted = r.samples === 0;
               return (
                 <div
@@ -171,7 +174,7 @@ export function RpePaceEstimateCard({
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                     RPE {r.rpe}
                   </div>
-                  <div className="text-base font-semibold tabular-nums">
+                  <div className="text-sm font-semibold tabular-nums break-words">
                     {r.paceLabel}
                   </div>
                   <div className="text-[10px] text-muted-foreground">

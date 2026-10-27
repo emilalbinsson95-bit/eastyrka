@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Aktuellt
+- [x] Grafer/tabeller 1–22: gemensamma mätset och EAk-gränser; samlade väntande beslut; historiska baslinjeband; setvolym/readiness; samlad belastning/PR/DOTS/vikt; tempointervall/rehab; separat toppningsuppföljning. 314 tester gröna och bygge OK. Alex återläste toppningsdatum, flagga, öppning och försök samt rehabgräns/sida; sparade träningsprogram och riktiga atletloggar orörda.
+- [ ] Rehabdiagram slutprov med sparade band-/friviktsmätningar och tvåsidiga tester för Alex: aktuella fysioterapeuten saknar accepterad patientkoppling till Alex, och befintlig åtkomstkontroll stoppar testskrivning. Beräkningar testade och preferenser återlästa; patientåtkomst har inte vidgats.
 - [ ] Genomför granskade generatorändringar 1–22 med skydd: gemensam beräkning (1–3, 14, 18–19, 21–22), tak/coachval (4–5, 11, 17), en D0-toppning (6–8, 15–16), coachbeslut/uppföljning (9–10, 12–13, 20). Verifiera med Alex Athlete; ändra aldrig loggar eller sparade program utan coachens bekräftelse.
 - [x] Granska alla 22 förslag i Ändringar i SETPOINTs autogenerator: rapport klar med kodjämförelse, forskningsbegränsningar, rättad volymmatematik och konflikter kring D0/coachstyrning; 105 befintliga tester gröna. Ingen träningsregel eller sparat program ändrat.
 - [x] EAk steg B del 1: databas (strategi per atlet, ömhet/motivation, pass-RPE/tid, uppvärmningsvikter, utökad beslutslogg med utfall), motorn läser allt, readiness frågar ömhet/motivation.

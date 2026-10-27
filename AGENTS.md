@@ -30,7 +30,7 @@
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
 - EAk/E1RM use shared RTS and first qualifying sets; baselines match exact names/comp aliases only. Pool detrended EAk noise by mesocycle ID; thresholds come from athlete_eak_strategy (coach-set, default fallback), preserving history.
 - EAk decisions require a plan_changed yes/no before saving and record next-window outcomes, so the coach overview can describe whether signals helped without claiming causation.
-- Coach roster EAk uses the latest session's measurement per eligible lift; preserve full athlete/exercise composite keys in trend grouping so athletes and lifts never mix.
+- Roster and statistics share chartMetrics, history windows and stored baselines per exercise/variant; three measurements agree across views without mixed athletes or derived baselines.
 - Block-to-block volume adaptation and fatigue-stop extra sets live in src/lib/blockVolume.ts and run before volume guards, because data-driven volume must still respect realism caps.
 - Keep routine steps in src/lib/routines.ts matching Learn; persist stars per athlete in routine_completions (athlete insert, coach/admin read).
 - Admins pass `is_coach_of` for every athlete so they can open any athlete's coach pages to inspect and fix data; skipped routines are stored as `routine='skipped'` rows in routine_completions (thumbs down), because stars and thumbs must share one auditable history.
@@ -43,7 +43,7 @@
 
 - Keep season outlines separate; shift only unprepared blocks, allow gaps and detach without deleting programs. Version-check writes and resolve cycle links to prevent stale edits.
 - Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
-- Compare first measurement sets across six matching exercise/variant/reps/RPE sessions, because isolated peaks distort trends.
+- Compare six first measurements by exercise/variant/rep interval; RTS normalizes RPE without fragmenting trends.
 
 - Exclude flagged reference warmups from EAk/work progress to avoid distorted strength.
 

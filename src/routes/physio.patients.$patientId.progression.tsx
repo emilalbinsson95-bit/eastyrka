@@ -8,12 +8,12 @@ import { ProgressionDashboard } from "@/components/ProgressionDashboard";
 export const Route = createFileRoute("/physio/patients/$patientId/progression")({
   head: () => ({
     meta: [
-      { title: "Patient progression — EA Physio" },
-      {
-        name: "description",
-        content:
-          "Per-exercise progression, stiffness trend, function tests and adherence.",
-      },
+      {title: "Rehabprogression — SETPOINT"},
+      {name: "description", content: "Separata belastningsserier, smärtgräns och sidsymmetri i rehabuppföljningen."},
+      {property: "og:title", content: "Rehabprogression — SETPOINT"},
+      {property: "og:description", content: "Separata belastningsserier, smärtgräns och sidsymmetri i rehabuppföljningen."},
+      {property: "og:type", content: "website"},
+      {name: "twitter:card", content: "summary"},
     ],
   }),
   component: PhysioPatientProgressionPage,

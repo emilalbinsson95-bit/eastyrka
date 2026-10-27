@@ -1,3 +1,5 @@
+import { PendingCoachDecisions } from "@/components/PendingCoachDecisions";
+import { latestChartStrength, chartMeasurements } from "@/lib/chartMetrics";
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -54,6 +56,7 @@ interface AthleteRow {
   last_log_date: string | null;
   last_eak: number | null;
   last_form: number | null;
+  lift_eaks: ReturnType<typeof latestChartStrength>;
   eak_signals: Map<string, { status: string; pending: boolean }> | null;
 }
 
@@ -100,17 +103,17 @@ function CoachRosterPage() {
 
       // 3. Recent logs (120d) to compute latest EAkoefficient per athlete
       const since = new Date();
-      since.setDate(since.getDate() - 120);
+      since.setDate(since.getDate() - 730);
       const sinceIso = since.toISOString().slice(0, 10);
 
       const { data: recentLogs, error: logsError } = await supabase
         .from("training_logs")
-        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
+        .select("athlete_id, date, exercise, variation, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
         .in("athlete_id", athleteIds)
         .gte("date", sinceIso)
         .order("date", { ascending: false })
         .order("set_number", { ascending: true })
-        .limit(3000);
+        .limit(10000);
       if (logsError) throw logsError;
 
       const { data: baselines, error: baselineError } = await supabase
@@ -125,66 +128,11 @@ function CoachRosterPage() {
         baselineMap.set(b.athlete_id, m);
       }
 
-      // Derive per-athlete/exercise baselines from set-1 logs (median of top 5 × 0.98)
-      const e1rmPool = new Map<string, number[]>();
-      for (const log of recentLogs ?? []) {
-        if (Number(log.set_number) !== 1) continue;
-        if (!countsForEAk({ reps: Number(log.reps), weight_kg: Number(log.weight_kg), rpe: Number(log.rpe),is_warmup_reference:log.is_warmup_reference,is_technique:log.is_technique })) continue;
-        const e1rm = dailyE1RM({
-          reps: Number(log.reps),
-          weight_kg: Number(log.weight_kg),
-          rpe: Number(log.rpe),
-        });
-        if (!isFinite(e1rm) || e1rm <= 0) continue;
-        const key = `${log.athlete_id}::${log.exercise}`;
-        const arr = e1rmPool.get(key) ?? [];
-        arr.push(e1rm);
-        e1rmPool.set(key, arr);
-      }
-      const derived = new Map<string, number>();
-      for (const [key, arr] of e1rmPool) {
-        arr.sort((a, b) => b - a);
-        const top = arr.slice(0, Math.min(5, arr.length)).sort((a, b) => a - b);
-        const mid = Math.floor(top.length / 2);
-        const median = top.length % 2 ? top[mid] : (top[mid - 1] + top[mid]) / 2;
-        derived.set(key, Math.round(median * 0.98 * 2) / 2);
-      }
-
-      const baselineFor = (athleteId: string, exercise: string) =>
-        lookupBaseline(baselineMap.get(athleteId), exercise) ??
-        derived.get(`${athleteId}::${exercise}`) ??
-        0;
-
-      // Three comparable session measurements, isolated by athlete/exercise.
-      const measurementMap = rollingE1RMBySession(
-        (recentLogs ?? []).map((l) => ({
-          date: l.date as string,
-          exercise: `${l.athlete_id}::${l.exercise}`,
-          reps: Number(l.reps),
-          weight_kg: Number(l.weight_kg),
-          rpe: Number(l.rpe),
-          set_number: Number(l.set_number),
-          is_warmup_reference:l.is_warmup_reference,
-          is_technique:l.is_technique,
-        })),
-      );
-      // Latest session per athlete: one measurement per eligible lift.
-      const latestByAthlete = new Map<string, { date: string; byEx: Map<string, number> }>();
-      for (const log of recentLogs ?? []) {
-        const current = latestByAthlete.get(log.athlete_id);
-        if (current && current.date !== log.date) continue;
-        const baseline = baselineFor(log.athlete_id, log.exercise as string);
-        if (baseline <= 0 || !isReadinessLift(log.exercise as string)) {
-          if (!current) latestByAthlete.set(log.athlete_id, { date: log.date, byEx: new Map() });
-          continue;
-        }
-        const measurement = measurementMap.get(`${log.date}::${log.athlete_id}::${log.exercise}`) ?? 0;
-        if (measurement <= 0) continue;
-        const eak = (measurement / baseline) * 100;
-        const entry = current ?? { date: log.date, byEx: new Map<string, number>() };
-        const exKey = log.exercise as string;
-        entry.byEx.set(exKey, Math.max(entry.byEx.get(exKey) ?? 0, eak));
-        latestByAthlete.set(log.athlete_id, entry);
+      const latestByAthlete = new Map<string, { date: string | null; points: ReturnType<typeof latestChartStrength> }>();
+      for (const id of athleteIds) {
+        const logs = (recentLogs ?? []).filter(l => l.athlete_id === id).map(l => ({ ...l, weight_kg: Number(l.weight_kg), rpe: Number(l.rpe) }));
+        const points = latestChartStrength(logs, baselineMap.get(id) ?? {}).filter(p => isReadinessLift(p.exercise));
+        latestByAthlete.set(id, { date: logs.map(l => l.date).sort().at(-1) ?? null, points });
       }
 
       // 4. Latest daily form from readiness surveys
@@ -223,7 +171,7 @@ function CoachRosterPage() {
 
       return athleteIds.map((id) => {
         const latest = latestByAthlete.get(id);
-        const eaks = latest ? Array.from(latest.byEx.values()) : [];
+        const eaks = (latest?.points ?? []).flatMap(p => p.eak == null ? [] : [p.eak]);
         return {
           athlete_id: id,
           full_name: profileMap.get(id) ?? null,
@@ -233,6 +181,7 @@ function CoachRosterPage() {
             ? eaks.reduce((a, b) => a + b, 0) / eaks.length
             : null,
           last_form: formMap.get(id) ?? null,
+          lift_eaks: latest?.points ?? [],
           eak_signals: signalMap.get(id) ?? null,
         };
       });
@@ -364,6 +313,7 @@ function CoachRosterPage() {
           />
         ))}
       </div>
+      <PendingCoachDecisions athletes={athletes} />
       <EakDecisionPanel athletes={athletes} />
     </div>
   );
@@ -490,22 +440,11 @@ function AthleteCard({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              EAk
-            </span>
-            {athlete.last_eak && athlete.last_eak > 0 ? (
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px]",
-                  readinessClasses(status),
-                )}
-              >
-                {athlete.last_eak.toFixed(0)}% · {readinessLabel(status)}
-              </span>
-            ) : (
-              <span className="font-mono text-xs text-muted-foreground">—</span>
-            )}
+          <div className="space-y-2" aria-label="EAk per lyft">
+            {athlete.lift_eaks.length === 0 ? <p className="text-xs text-muted-foreground">Mätpass saknas</p> : athlete.lift_eaks.map(p => <div key={p.key} className="flex flex-wrap justify-between gap-1 text-xs">
+              <span>{p.exercise}{p.variation ? ` · ${p.variation}` : ""}</span>
+              <span className={cn("rounded-md px-2 py-1", readinessClasses(p.status))}>{p.eak == null ? "Baslinje saknas" : `${p.eak.toFixed(1)} % · ${readinessLabel(p.status)}`}</span>
+            </div>)}
           </div>
           {athlete.eak_signals && athlete.eak_signals.size > 0 && (
             <div className="flex flex-wrap gap-1 pt-1">

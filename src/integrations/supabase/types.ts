@@ -2203,6 +2203,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      decide_baseline_max: {
+        Args: { _approve: boolean; _log_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -8,6 +8,23 @@ import { compareStrength } from "./strengthComparison";
 
 const log = (date: string, weight: number, extra = {}) => ({ date, exercise: "Bench press", variation: null, set_number: 1, reps: 1, weight_kg: weight, rpe: 10, ...extra });
 describe("Emil's chart rules", () => {
+  it("merges Squat Over warm single and Squat competition stance without mutating history", () => {
+    const logs = [log("2026-10-01",100,{exercise:"Squat Over warm single"}),log("2026-10-02",110,{exercise:"Squat competition stance"}),log("2026-10-03",120,{exercise:"Back squat",variation:"over-warm single"})];
+    const points=latestChartStrength(logs,{"Back squat":110});
+    expect(points).toHaveLength(1);
+    expect(points[0].exercise).toBe("Back squat");
+    expect(points[0].rolling).toBe(110);
+    expect(points[0].eak).toBe(100);
+    expect(logs[0].exercise).toBe("Squat Over warm single");
+    expect(compareStrength(logs,"2026-10-27")[0].count).toBe(3);
+  });
+  it("does not merge real squat variants or include flagged reference warmups", () => {
+    const logs=[log("2026-10-01",100,{exercise:"Squat",variation:"competition stance"}),log("2026-10-01",200,{exercise:"Squat",variation:"Over warm single",is_warmup_reference:true}),log("2026-10-02",80,{exercise:"Squat",variation:"pause"})];
+    const points=latestChartStrength(logs,{"Back squat":100});
+    expect(points).toHaveLength(2);
+    expect(points.find(p=>p.variation==="")?.rolling).toBe(100);
+    expect(points.find(p=>p.variation==="pause")?.rolling).toBe(80);
+  });
   it("uses the 92, 97 and 103 percent boundaries, not within-session fatigue", () => {
     expect([91.99, 92, 96.99, 97, 103, 103.01].map(readinessFromEAk)).toEqual(["exhausted", "undertrained", "undertrained", "adapting", "adapting", "peaking"]);
   });
@@ -17,7 +34,7 @@ describe("Emil's chart rules", () => {
   });
   it("isolates variants and retains each lift's latest three sessions", () => {
     const logs = [log("2026-10-01", 90), log("2026-10-02", 95), log("2026-10-03", 100), log("2026-10-04", 102), log("2026-10-04", 200, { variation: "close grip" }), log("2026-10-05", 180, { exercise: "Back squat" })];
-    const bench = latestChartStrength(logs, { "Bench press": 100 }).find(p => p.variation == null && p.exercise === "Bench press");
+    const bench = latestChartStrength(logs, { "Bench press": 100 }).find(p => !p.variation && p.exercise === "Bench press");
     expect(bench?.eak).toBe(99);
     expect(chartStrengthSeries(logs, { "Bench press": 100 }).filter(p => p.date >= "2026-10-03")[0].rolling).toBe(95);
   });

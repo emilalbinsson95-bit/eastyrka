@@ -25,6 +25,8 @@ export const seasonBlockSchema = z.object({
   daysPerWeek: z.number().int().min(2).max(6),
   notes: z.string().max(2000).default(""),
   mesocycleId: z.string().uuid().optional(),
+  inactive:z.boolean().optional(),
+  previousMesocycleId:z.string().uuid().optional(),
   endDate: z.string().optional(),
   peakWeeks: z.number().int().min(2).max(6).optional(),
 });

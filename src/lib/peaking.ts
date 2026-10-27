@@ -465,7 +465,12 @@ export function buildPeakingWeeks(
       const freq = info.exposuresPerWeek > 0 ? info.exposuresPerWeek : info.weeklySets > 0 ? info.weeklySets / perExposure : 1;
       const desired = meetWeek ? (key === "deadlift" ? 1 : 2)
         : key === "bench" ? days : key === "squat" ? Math.min(days, 3) : days >= 5 ? 2 : 1;
-      const exposures = clamp(Math.round(freq * windowScale) || 1, 1, Math.min(desired, sessionCount));
+      // With only one trained lift, spread it over the requested days so no
+      // scheduled day is left empty; with several lifts, keep the athlete's
+      // own frequency per lift.
+      const exposures = active.length === 1
+        ? Math.min(desired, sessionCount)
+        : clamp(Math.round(freq * windowScale) || 1, 1, Math.min(desired, sessionCount));
       const total = clamp(
         Math.round(perExposure * cfg.volFactor * windowScale * exposures),
         meetWeek ? exposures : exposures * 2,

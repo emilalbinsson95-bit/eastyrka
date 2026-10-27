@@ -269,8 +269,11 @@ export function buildTaperPlan(input: {
       .filter((e) => e.exercise === info.name)
       .reduce((n, e) => n + e.sets, 0);
     let remaining = Math.max(0, taperSetBudget - placed);
+    // Helst egna taperdagar; finns inga lediga läggs fyllnadsseten på
+    // regeldagarnas pass så att volymsänkningen ändå blir rätt.
     const openSlots = taperSlots.filter((d) => !ruleDays.has(d));
-    for (const d of openSlots) {
+    const slots = openSlots.length > 0 ? openSlots : taperSlots;
+    for (const d of slots) {
       if (remaining <= 0) break;
       const sets = Math.min(remaining, Math.max(2, Math.round(info.setsPerExposure * (1 - s.volumeCut))));
       remaining -= sets;

@@ -17,7 +17,8 @@
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Persist coach-only lift-volume preferences for shared generation baselines.
-- Build peaks from RTS history without MEV floors; preparation precedes taper. Taper cuts sets inside the athlete's own sessions (setsPerExposure × curve), keeping each lift's weekly frequency — a once-a-week lift never shrinks to one set mid-peak. Use peakingDates.ts to anchor seven-day windows before competition; final sessions at −7/−5 days ensure rest. Never move saved programs.
+- Build peaks from RTS history without MEV floors; preparation precedes taper. Taper cuts sets inside the athlete's own sessions (setsPerExposure × curve), keeping each lift's weekly frequency — a once-a-week lift never shrinks to one set mid-peak. Use peakingDates.ts to anchor seven-day windows before competition; empty leading windows are dropped. Never move saved programs.
+- D0 peaks pick training weekdays by counting back from competition (`d0TrainingWeekdays`) so lift rule days land on sessions; peak history uses `isCompLift` (variants become accessories, robust six-session RTS median e1RM) and every pre-final session is filled with technique/variants/low-fatigue accessories, because variant sets inflated loads and left near-empty days.
 
 - Keep methodology on one route with running/strength/coaching tabs to preserve links.
 - Weak points (`src/lib/weakPoints.ts`): coach-only, one/lift, variation + one accessory/week; 8/7/6 exercise caps for 2/3/4+ days; replace comp > weak-point > variation > compound > isolation > core, skipping deloads for focus and realism.

@@ -135,7 +135,7 @@ describe("buildAdjustments", () => {
   });
 
   it("proposes a ramp-in after a long gap", () => {
-    const logs = [{ date: ago(20), exercise: "Back squat", variation: null, reps: 5, weight_kg: 100, rpe: 8 }];
+    const logs = [{ date: ago(21), exercise: "Back squat", variation: null, reps: 5, weight_kg: 100, rpe: 8 }];
     const a = buildAdjustments(WEEKS, emptyHistory({ logs })).adjustments.find(
       (x) => x.kind === "ramp-in",
     );

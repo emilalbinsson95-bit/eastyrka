@@ -4,6 +4,7 @@
 // (Travis 2021, Pritchard 2016/2019, Grgic & Mikulic 2017, Burke 2023,
 // Seppänen & Häkkinen 2022, Winwood 2026), inte facit.
 import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
+import { pctOf1RMInterp } from "./intensity";
 
 export type TaperLiftKey = "squat" | "bench" | "deadlift";
 export const TAPER_LIFTS: TaperLiftKey[] = ["squat", "bench", "deadlift"];
@@ -29,6 +30,8 @@ export interface TaperSettings {
   heavyDay: Record<TaperLiftKey, number>;
   /** Last på sista tunga passet som andel av e1RM (standard 0.9125, intervall 0.875–0.95). */
   heavyLoadPct: number;
+  heavyRpe: number;
+  backoffRpe: number;
   /** Sista passet per lyft, dagar före D0 (standard mark 7, böj 4, bänk 3; ±1). Lyftspecifika uppehåll enligt Bell 2025: mark 7–10, böj 4–7, bänk 2–4 (högst 3 för bänk enligt Travis 2022). */
   lastDay: Record<TaperLiftKey, number>;
   /** Totalt träningsuppehåll före D0 (standard 2, intervall 2–3). */
@@ -47,6 +50,8 @@ export const DEFAULT_TAPER_SETTINGS: TaperSettings = {
   intensity: "keep",
   heavyDay: { squat: 8, bench: 5, deadlift: 9 },
   heavyLoadPct: 0.9125,
+  heavyRpe: 8,
+  backoffRpe: 7.5,
   lastDay: { squat: 4, bench: 3, deadlift: 7 },
   restDays: 2,
   accessoriesOutDay: 14,
@@ -58,6 +63,7 @@ export const TAPER_RANGES = {
   taperDays: { min: 7, max: 14 },
   volumeCut: { min: 0.3, max: 0.6 },
   heavyLoadPct: { min: 0.875, max: 0.95 },
+  heavyRpe: { min: 7, max: 8.5 },
   restDays: { min: 2, max: 3 },
   accessoriesOutDay: { min: 10, max: 21 },
   heavyDay: { min: -1, max: 1 }, // avvikelse från standard, per lyft
@@ -81,6 +87,8 @@ export function taperSettingsOutOfRange(s: TaperSettings): string[] {
   if (s.taperDays < R.taperDays.min || s.taperDays > R.taperDays.max) out.push("taperDays");
   if (s.volumeCut < R.volumeCut.min || s.volumeCut > R.volumeCut.max) out.push("volumeCut");
   if (s.heavyLoadPct < R.heavyLoadPct.min || s.heavyLoadPct > R.heavyLoadPct.max) out.push("heavyLoadPct");
+  if (s.heavyRpe < 7 || s.heavyRpe > 8.5) out.push("heavyRpe");
+  if (s.backoffRpe < 7 || s.backoffRpe > 8.5) out.push("backoffRpe");
   if (s.restDays < R.restDays.min || s.restDays > R.restDays.max) out.push("restDays");
   if (s.accessoriesOutDay < R.accessoriesOutDay.min || s.accessoriesOutDay > R.accessoriesOutDay.max) out.push("accessoriesOutDay");
   for (const k of TAPER_LIFTS) {
@@ -112,6 +120,8 @@ export interface TaperExercise {
   reps: number;
   /** Andel av e1RM när lasten är procentstyrd. */
   pctOfE1rm?: number;
+  rpe?: number;
+  isTechnique?: boolean;
   /** Last i kg, avrundad till 2,5 kg. Null utan e1RM-underlag. */
   kg?: number | null;
   notes?: string;
@@ -178,6 +188,9 @@ export function buildTaperPlan(input: {
   lifts: Record<TaperLiftKey, TaperLiftInput>;
   accessories?: TaperAccessoryInput[];
   settings?: Partial<TaperSettings>;
+  startDate?: string;
+  endDate?: string;
+  singlesEnabled?: boolean;
 }): TaperPlan {
   const s = resolveTaperSettings(input.settings);
   const d0 = input.competitionDate;
@@ -206,7 +219,7 @@ export function buildTaperPlan(input: {
   const trainingDates: string[] = [];
   for (let n = 42; n >= 1; n--) {
     const date = daysBefore(d0, n);
-    if (weekdays.includes(weekday(date))) trainingDates.push(date);
+    if ((!input.startDate || date >= input.startDate) && (!input.endDate || date <= input.endDate) && weekdays.includes(weekday(date))) trainingDates.push(date);
   }
 
   const byDate = new Map<string, TaperSession>();
@@ -235,11 +248,19 @@ export function buildTaperPlan(input: {
     const last = snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays);
     ruleDays.add(heavy);
     ruleDays.add(last);
-    const heavyPct = pctFor(s.heavyLoadPct);
+    if (!trainingDates.includes(heavy) || !trainingDates.includes(last)) continue;
+    const heavyRpe = clamp(s.heavyRpe, 7, 8.5);
+    const backoffRpe = clamp(s.backoffRpe, 7, 8.5);
+    const heavyPct = pctOf1RMInterp(k === "deadlift" ? heavyRpe : backoffRpe, HEAVY_SCHEME[k].reps) / 100;
+    if (input.singlesEnabled && k !== "deadlift") {
+      const pct = pctOf1RMInterp(heavyRpe, 1) / 100;
+      sessionAt(heavy, `Sista tunga passet — ${TAPER_LIFT_LABEL[k]}`).exercises.push({ exercise: lift(k).name, sets: 1, reps: 1, rpe: heavyRpe, pctOfE1rm: pct, kg: kgFor(k, pct), notes: "Coachvald singel, ersätter ett arbetsset." });
+    }
     sessionAt(heavy, `Sista tunga passet — ${TAPER_LIFT_LABEL[k]}`).exercises.push({
       exercise: lift(k).name,
-      sets: HEAVY_SCHEME[k].sets,
+      sets: Math.max(2, Math.min(HEAVY_SCHEME[k].sets, Math.round(lift(k).setsPerExposure)) - (input.singlesEnabled && k !== "deadlift" ? 1 : 0)),
       reps: HEAVY_SCHEME[k].reps,
+      rpe: k === "deadlift" ? heavyRpe : backoffRpe,
       pctOfE1rm: heavyPct,
       kg: kgFor(k, heavyPct),
       notes: `Sista tunga ${TAPER_LIFT_LABEL[k].toLowerCase()}et före tävlingen, ${Math.round(heavyPct * 1000) / 10} % av e1RM.`,
@@ -249,6 +270,7 @@ export function buildTaperPlan(input: {
       sets: 2,
       reps: 2,
       pctOfE1rm: LIGHT_PCT[k],
+      isTechnique: true,
       kg: kgFor(k, LIGHT_PCT[k]),
       notes: "Lätt rörelsekänsla — samma uppställning och kommandon som på plattformen.",
     });
@@ -272,7 +294,7 @@ export function buildTaperPlan(input: {
     // Helst egna taperdagar; finns inga lediga läggs fyllnadsseten på
     // regeldagarnas pass så att volymsänkningen ändå blir rätt.
     const openSlots = taperSlots.filter((d) => !ruleDays.has(d));
-    const slots = openSlots.length > 0 ? openSlots : taperSlots;
+    const slots = (openSlots.length > 0 ? openSlots : taperSlots).filter(d => d < snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays));
     for (const d of slots) {
       if (remaining <= 0) break;
       const sets = Math.min(remaining, Math.max(2, Math.round(info.setsPerExposure * (1 - s.volumeCut))));
@@ -301,6 +323,7 @@ export function buildTaperPlan(input: {
     if (isOverload) ses.phase = "overbelastning";
     for (const k of active) {
       const info = lift(k);
+      if (d >= snapToTrainingDay(daysBefore(d0, s.heavyDay[k]), weekdays)) continue;
       const freq = Math.max(1, Math.round(info.exposuresPerWeek));
       const everyNth = Math.max(1, Math.round(weekdays.length / freq));
       if (preDates.indexOf(d) % everyNth !== 0) continue;

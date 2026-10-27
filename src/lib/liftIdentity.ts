@@ -8,9 +8,9 @@
 export type CompLift = "squat" | "bench" | "deadlift";
 
 const COMP_RE: Record<CompLift, RegExp> = {
-  squat: /^(back squat|squat)$/i,
-  bench: /^bench press$/i,
-  deadlift: /^(deadlift|sumo deadlift|conventional deadlift)$/i,
+  squat: /^(back squat|squat|knäböj|knaboj|böj)$/i,
+  bench: /^(bench press|bench|bänkpress|bänk)$/i,
+  deadlift: /^(deadlift|sumo deadlift|conventional deadlift|marklyft|sumomarklyft|sumomark|konventionell marklyft|konventionellt marklyft)$/i,
 };
 
 /** Canonical exercise name per competition lift (matches baselines table). */
@@ -26,7 +26,7 @@ const TRUE_VARIANT =
 
 /** Labels that describe HOW the comp lift is performed — still the comp lift. */
 const NON_VARIANT =
-  /^(competition stance|competition grip & pause|conventional stance|sumo stance|over-warm single|opener single)$/i;
+  /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i;
 
 /** Which competition lift an exercise name belongs to, regardless of variation. */
 export function compLiftKey(exercise: string): CompLift | null {

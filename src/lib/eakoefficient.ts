@@ -388,5 +388,11 @@ export function lookupBaseline(
   for (const [k, v] of Object.entries(baselines)) {
     if (baselineExerciseKey(k) === alias) return v;
   }
+  // A stance-named comp deadlift may use the athlete's generic deadlift baseline (never the other stance's).
+  if (alias === "sumo deadlift" || alias === "conventional deadlift") {
+    for (const [k, v] of Object.entries(baselines)) {
+      if (baselineExerciseKey(k) === "deadlift") return v;
+    }
+  }
   return undefined;
 }

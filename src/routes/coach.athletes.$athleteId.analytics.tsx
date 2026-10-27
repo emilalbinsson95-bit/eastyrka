@@ -1,3 +1,9 @@
+import { chartMeasurements, chartExerciseKey, adverseReadinessDeviation } from "@/lib/chartMetrics";
+import { volumeCategory } from "@/lib/strengthTemplates";
+import { VOLUME_LANDMARKS, categoryLabel, personalReadinessFactor } from "@/lib/individualisation";
+import { volumeProfileFromRow, volumeFactorForCategory } from "@/lib/strengthVolumeProfile";
+import { setVolumeWeight } from "@/lib/exerciseVariants";
+import { StrengthHistoryCharts } from "@/components/StrengthHistoryCharts";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +28,7 @@ import {
   Scatter,
   ZAxis,
   ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -81,6 +88,8 @@ interface LogRow {
   reps: number;
   weight_kg: number;
   rpe: number;
+  is_warmup_reference?: boolean;
+  is_technique?: boolean;
 }
 
 const CATEGORY_COLORS = [
@@ -130,16 +139,16 @@ function AnalyticsPage() {
     queryKey: ["analytics-logs", athleteId, days],
     queryFn: async (): Promise<LogRow[]> => {
       const since = new Date();
-      since.setDate(since.getDate() - days);
+      since.setDate(since.getDate() - 730);
       const { data, error } = await supabase
         .from("training_logs")
         .select(
-          "id, date, exercise, variation, set_number, reps, weight_kg, rpe",
+          "id, date, exercise, variation, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique",
         )
         .eq("athlete_id", athleteId)
         .gte("date", format(since, "yyyy-MM-dd"))
         .order("date", { ascending: true })
-        .limit(1000);
+        .limit(10000);
       if (error) throw error;
       return (data ?? []).map((l) => ({
         ...l,
@@ -351,7 +360,7 @@ function AnalyticsPage() {
           (sessions ?? []).filter((candidate) => candidate.week_plan_id === s.week_plan_id),
         );
         const sessionDate = parseISO(dateStr);
-        if (sessionDate >= since && sessionDate <= today) {
+        if (sessionDate >= since && sessionDate <= today && targets.some(t=>t.planned_session_id===s.id)) {
           plannedDays.push(dateStr);
           const sessTargets = targets.filter(
             (t) => t.planned_session_id === s.id,
@@ -365,7 +374,11 @@ function AnalyticsPage() {
     },
   });
 
-  const allLogs = logsQuery.data ?? [];
+  const volumeProfileQuery = useQuery({queryKey:["analytics-volume-profile",athleteId],queryFn:async()=>{const {data,error}=await supabase.from("athlete_strength_volume_profiles").select("squat_factor,bench_factor,deadlift_factor").eq("athlete_id",athleteId).maybeSingle();if(error)throw error;return volumeProfileFromRow(data);}});
+  const competitionsQuery = useQuery({queryKey:["analytics-competitions",athleteId],queryFn:async()=>{const {data,error}=await supabase.from("competitions").select("comp_date").eq("athlete_id",athleteId);if(error)throw error;return data??[];}});
+  const cutoff = format(addDays(new Date(),-days),"yyyy-MM-dd");
+  const fullLogs = (logsQuery.data ?? []).filter(l=>!l.is_warmup_reference && !l.is_technique);
+  const allLogs = fullLogs.filter(l=>l.date>=cutoff && l.date<=format(new Date(),"yyyy-MM-dd"));
   const baselines = baselinesQuery.data ?? {};
   const exerciseLib = exerciseLibQuery.data ?? new Map<string, string>();
 
@@ -438,20 +451,23 @@ function AnalyticsPage() {
       cur.rpeSum += l.rpe;
       byDate.set(l.date, cur);
     }
-    const rolling = rollingE1RMBySession(filtered);
+    const history = fullLogs.filter(l=>l.exercise===exercise);
+    const measurements = chartMeasurements(history);
+    const rolling = rollingE1RMBySession(history.map(l=>({...l,exercise:chartExerciseKey(l.exercise,l.variation)})));
     let cumQual = 0;
     return Array.from(byDate.values())
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((s) => {
-        const baseline = baselineAt(exercise!, s.date);
-        const roll = rolling.get(`${s.date}::${exercise}`) ?? 0;
+        const baseline = exercise ? baselineAt(exercise, s.date) : 0;
+        const m = measurements.find(l=>l.date===s.date);
+        const roll = m ? rolling.get(`${s.date}::${chartExerciseKey(m.exercise,m.variation)}`) ?? 0 : 0;
         cumQual += s.qualifying;
         return {
         date: s.date,
         label: format(parseISO(s.date), "MMM d", { locale: sv }),
         volume: Math.round(s.volume),
         maxWeight: Number(s.maxWeight.toFixed(1)),
-        bestE1RM: Number(s.bestE1RM.toFixed(1)),
+        bestE1RM: m ? Number(dailyE1RM(m).toFixed(1)) : 0,
         baseline: baseline > 0 ? baseline : null,
         qualifying: s.qualifying,
         eaKoefficient:
@@ -565,64 +581,37 @@ function AnalyticsPage() {
 
   // ---- Volume by category, weekly ----
   const volumeByCategory = useMemo(() => {
-    // Map: weekStart(yyyy-MM-dd) -> { category -> tonnage }
     const weeks = new Map<string, Record<string, number>>();
-    const categories = new Set<string>();
-    for (const l of allLogs) {
-      const cat = exerciseLib.get(l.exercise.toLowerCase()) ?? "Uncategorized";
-      categories.add(cat);
-      const wk = format(startOfWeek(parseISO(l.date), { weekStartsOn: 1 }), "yyyy-MM-dd");
-      const row = weeks.get(wk) ?? {};
-      if (countsForEAk(l)) row[cat] = (row[cat] ?? 0) + 1;
-      weeks.set(wk, row);
+    const categories = new Set<ReturnType<typeof volumeCategory>>();
+    for(const log of allLogs) {
+      if(log.weight_kg<=0 || log.reps<=0) continue;
+      const category = volumeCategory({exercise:log.exercise,variation:log.variation ?? undefined});
+      categories.add(category);
+      const week = format(startOfWeek(parseISO(log.date),{weekStartsOn:1}),"yyyy-MM-dd");
+      const row=weeks.get(week)??{};
+      row[category]=(row[category]??0)+setVolumeWeight(log);
+      weeks.set(week,row);
     }
-    const data = Array.from(weeks.entries())
-      .map(([wk, row]) => ({
-        week: wk,
-        label: format(parseISO(wk), "MMM d", { locale: sv }),
-        ...Object.fromEntries(
-          Object.entries(row).map(([k, v]) => [k, v]),
-        ),
-      }))
-      .sort((a, b) => a.week.localeCompare(b.week));
-    return { data, categories: Array.from(categories).sort() };
-  }, [allLogs, exerciseLib]);
-
-  // ---- Multi-lift e1RM overlay (top 4 by frequency) ----
+    const data=[...weeks].sort((a,b)=>a[0].localeCompare(b[0])).map(([week,row])=>({week,label:format(parseISO(week),"MMM d",{locale:sv}),...row}));
+    return {data,categories:[...categories]};
+  },[allLogs]);
   const multiLiftSeries = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const l of allLogs) counts.set(l.exercise, (counts.get(l.exercise) ?? 0) + 1);
-    const top = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([name]) => name);
-
-    // Build date -> { exercise: bestE1RM }
-    const byDate = new Map<string, Record<string, number>>();
-    for (const l of allLogs) {
-      if (!top.includes(l.exercise)) continue;
-      const e1 = dailyE1RM(l);
-      const row = byDate.get(l.date) ?? {};
-      row[l.exercise] = Math.max(row[l.exercise] ?? 0, e1);
-      byDate.set(l.date, row);
+    const byDate=new Map<string,Record<string,number>>(); const names=new Set<string>();
+    const histories=new Map<string,number[]>();
+    for(const log of chartMeasurements(fullLogs)) {
+      const base=baselineAt(log.exercise,log.date); if(base<=0) continue;
+      const key=chartExerciseKey(log.exercise,log.variation);
+      const history=[...(histories.get(key)??[]),dailyE1RM(log)].slice(-3);histories.set(key,history);
+      const name=log.variation?`${log.exercise} (${log.variation})`:log.exercise;
+      names.add(name);const row=byDate.get(log.date)??{};row[name]=history.reduce((sum,v)=>sum+v,0)/history.length/base*100;byDate.set(log.date,row);
     }
-    const sorted = Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    const first: Record<string, number> = {};
-    for (const [, row] of sorted)
-      for (const [k, v] of Object.entries(row)) if (first[k] == null) first[k] = v;
-    const data = sorted.map(([date, row]) => ({
-      date,
-      label: format(parseISO(date), "MMM d", { locale: sv }),
-      ...Object.fromEntries(
-        Object.entries(row).map(([k, v]) => [k, Number(((v / first[k]) * 100).toFixed(1))]),
-      ),
-    }));
-    return { data, lifts: top };
-  }, [allLogs]);
+    return {lifts:[...names],data:[...byDate].filter(([date])=>date>=cutoff).sort((a,b)=>a[0].localeCompare(b[0])).map(([date,row])=>({date,label:format(parseISO(date),"MMM d",{locale:sv}),...row}))};
+  },[fullLogs,baselines,baselineHistoryQuery.data,cutoff]);
 
   // ---- Adherence ----
   const adherence = useMemo(() => {
-    const planned = plannedQuery.data?.plannedDays ?? [];
+    const restDates = new Set((competitionsQuery.data??[]).flatMap(c=>[format(addDays(parseISO(c.comp_date),-2),"yyyy-MM-dd"),format(addDays(parseISO(c.comp_date),-1),"yyyy-MM-dd")]));
+    const planned = [...new Set(plannedQuery.data?.plannedDays ?? [])].filter(date=>!restDates.has(date) && date<format(new Date(),"yyyy-MM-dd"));
     const plannedTargets = plannedQuery.data?.plannedTargets ?? [];
     const completedDays = new Set(allLogs.map((l) => l.date));
     const plannedSet = new Set(planned);
@@ -744,11 +733,7 @@ function AnalyticsPage() {
     // Same-day EAk (not the rolling average — that would lag behind the
     // check-in): best qualifying E1RM per lift that day ÷ baseline in force.
     const bestByDayEx = new Map<string, number>();
-    for (const l of allLogs) {
-      if (!countsForEAk(l)) continue;
-      const k = `${l.date}::${l.exercise}`;
-      bestByDayEx.set(k, Math.max(bestByDayEx.get(k) ?? 0, dailyE1RM(l)));
-    }
+    for(const l of chartMeasurements(allLogs)) bestByDayEx.set(`${l.date}::${l.exercise}`,dailyE1RM(l));
     const eakByDate = new Map<string, { sum: number; count: number }>();
     for (const [k, e1] of bestByDayEx) {
       const [date, ex] = k.split("::");
@@ -1171,39 +1156,10 @@ function AnalyticsPage() {
                   <KpiCard icon={<Gauge className="h-4 w-4" />} label="Högsta EAk" value={totals.peakEAk > 0 ? `${totals.peakEAk.toFixed(0)}%` : "—"} hint={lookupBaseline(exercise) ? `Baslinje: ${lookupBaseline(exercise)} kg` : "Ingen baslinje"} />
                 </div>
 
-                <ChartCard
-                  title="E1RM & EAk över tid"
-                  description={lookupBaseline(exercise) ? "Bästa dags-E1RM, baslinjen som gällde (steglinje) och EAk % (snitt 3 pass). Streckade lodlinjer = baslinjebyte." : "Bästa dags-E1RM. Sätt en baslinje för att se EAk %."}
-                >
-                  {coverage && (
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      Datatäckning: {coverage.sets} kvalificerande set (RPE ≥ 7) över {coverage.sessions} pass
-                      {coverage.spanDays > 0 ? ` · ${coverage.spanDays} dagar` : ""}
-                      {coverage.spanDays > 14 ? " — snittet släpar efter" : ""}
-                    </p>
-                  )}
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={dailyStats}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis yAxisId="left" domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 5)), (dataMax: number) => Math.ceil(dataMax + 5)]} stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis yAxisId="right" orientation="right" domain={["auto", "auto"]} stroke="var(--muted-foreground)" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
-                      <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="bestE1RM" name="Bästa E1RM (kg)" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
-                      <Line yAxisId="left" type="stepAfter" dataKey="baseline" name="Baslinje (kg)" stroke="var(--chart-3)" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />
-                      {baselineChangeDates.map((lbl) => (
-                        <ReferenceLine key={lbl} yAxisId="left" x={lbl} stroke="var(--chart-3)" strokeDasharray="2 4" label={{ value: "Ny baslinje", fontSize: 10, fill: "var(--muted-foreground)", position: "insideTop" }} />
-                      ))}
-                      {lookupBaseline(exercise) > 0 && (
-                        <Line yAxisId="right" type="monotone" dataKey="eaKoefficient" name="EAkoeff % (3 pass)" stroke="var(--accent-foreground)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                      )}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartCard>
+                <StrengthHistoryCharts logs={fullLogs.filter(l=>l.exercise===exercise)} baselines={baselines} history={baselineHistoryQuery.data??[]} since={cutoff} />
 
                 <ChartCard
-                  title="Baslinje"
+                  title="Baslinjebeslut"
                   description={
                     baselineSeries.length === 0
                       ? "Inga baslinjebyten registrerade för lyftet än. Uppdatera baslinjen på atletsidan för att följa utvecklingen."
@@ -1214,8 +1170,8 @@ function AnalyticsPage() {
                 >
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">Automatisk baslinje</p>
-                      <p>Höjer baseline när minst 12 av de senaste 16 mätpassen ligger på EAk ≥ 103 %, högst +5 % per gång. Varnar om 6 av de 8 senaste ligger under 92 % — sänkningar gör du själv.</p>
+                      <p className="font-medium text-foreground">Förslag om baslinje</p>
+                      <p>Beräknar förslag från mätpassen. Baslinjen ändras aldrig automatiskt; varje ändring kräver coachbeslut.</p>
                     </div>
                     <Button
                       size="sm"
@@ -1228,7 +1184,7 @@ function AnalyticsPage() {
                       ) : (
                         <Wand2 className="mr-2 h-3.5 w-3.5" />
                       )}
-                      Kör auto-uppdatering
+                      Beräkna förslag
                     </Button>
                   </div>
                   {autoFloatResult && (
@@ -1263,7 +1219,7 @@ function AnalyticsPage() {
                   )}
                 </ChartCard>
 
-                <ChartCard title="Volym per pass" description="Total tonnage (reps × vikt) per träningsdag.">
+                <ChartCard title="Tonnage per träningsdag" description="Total tonnage (reps × vikt) per träningsdag.">
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={dailyStats}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -1276,7 +1232,7 @@ function AnalyticsPage() {
                 </ChartCard>
 
                 {multiLiftSeries.lifts.length > 1 && (
-                  <ChartCard title="Topplyften — utveckling i takt" description="Bästa dags-E1RM som index (första passet i perioden = 100), så lyften kan jämföras oavsett vikt.">
+                  <ChartCard title="EAk per lyft" description="Tre mätpass mot baslinjen som gällde vid varje datum. Periodvalet ändrar bara utsnittet.">
                     <ResponsiveContainer width="100%" height={260}>
                       <LineChart data={multiLiftSeries.data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -1306,62 +1262,12 @@ function AnalyticsPage() {
 
           {/* === VOLUME TAB === */}
           <TabsContent value="volume" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Hårda set per vecka och kategori</CardTitle>
-                <CardDescription>
-                  Antal set med RPE ≥ 7 per vecka, grupperat per övningskategori. Samma tröskel som EAk — rättvist mellan tunga och lätta lyft.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {volumeByCategory.data.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">Ingen data i perioden.</div>
-                ) : (
-                  <WeekWindow data={volumeByCategory.data}>
-                    {(slice) => (
-                      <ResponsiveContainer width="100%" height={320}>
-                        <BarChart data={slice}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                          <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                          <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-                          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
-                          <Legend />
-                          {volumeByCategory.categories.map((cat, i) => (
-                            <Bar
-                              key={cat}
-                              dataKey={cat}
-                              stackId="vol"
-                              fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
-                              name={cat}
-                            />
-                          ))}
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </WeekWindow>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              {volumeByCategory.categories.slice(0, 6).map((cat, i) => {
-                const total = volumeByCategory.data.reduce(
-                  (acc, w) => acc + ((w as Record<string, unknown>)[cat] as number ?? 0),
-                  0,
-                );
-                return (
-                  <Card key={cat}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 text-xs font-medium">
-                        <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }} />
-                        <span className="text-muted-foreground">{cat}</span>
-                      </div>
-                      <div className="mt-1 text-2xl font-bold">{total} set</div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            <p className="text-sm text-muted-foreground">Arbetsset per kategori mot generatorns coachstyrda MEV–MRV. 1,5-reps räknas som 1,25 set. Toppning och avlastning kan avsiktligt ligga under MEV.</p>
+            <div className="grid gap-4 md:grid-cols-2">{volumeByCategory.categories.map(cat=>{
+              const factor=volumeFactorForCategory(cat,volumeProfileQuery.data??volumeProfileFromRow(null));
+              const [baseMev,baseMrv]=VOLUME_LANDMARKS[cat];const mev=Math.max(1,Math.round(baseMev*factor));const mrv=Math.max(mev,Math.round(baseMrv*factor));
+              return <ChartCard key={cat} title={categoryLabel(cat)} description={`MEV ${mev} · MRV ${mrv} set/vecka`}><div className="h-48"><ResponsiveContainer><BarChart data={volumeByCategory.data}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="label" fontSize={10}/><YAxis domain={[0,(max:number)=>Math.max(max,mrv+2)]} fontSize={10}/><Tooltip/><ReferenceArea y1={mev} y2={mrv} fill="var(--chart-2)" fillOpacity={.12}/><ReferenceLine y={mev} stroke="var(--chart-2)" strokeDasharray="3 3"/><ReferenceLine y={mrv} stroke="var(--chart-3)" strokeDasharray="3 3"/><Bar dataKey={cat} name="Arbetsset" fill="var(--chart-1)"/></BarChart></ResponsiveContainer></div></ChartCard>;
+            })}</div>
           </TabsContent>
 
           {/* === ENDURANCE TAB === */}
@@ -1390,18 +1296,18 @@ function AnalyticsPage() {
                   />
                 </div>
 
-                <ChartCard title="Veckodistans per gren" description="Totalt antal km per vecka, uppdelat på löpning / cykel / simning.">
+                <ChartCard title="Veckominuter per gren" description="Träningstid per vecka; grenarnas minuter kan summeras. Distans visas separat per gren.">
                   <WeekWindow data={enduranceStats.weekly}>
                     {(slice) => (
                       <ResponsiveContainer width="100%" height={280}>
                         <BarChart data={slice}>
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                           <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                          <YAxis stroke="var(--muted-foreground)" fontSize={11} unit=" km" />
+                          <YAxis stroke="var(--muted-foreground)" fontSize={11} unit=" min" />
                           <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
                           <Legend />
                           {enduranceStats.disciplines.map((d, i) => (
-                            <Bar key={d} dataKey={`km_${d}`} stackId="km" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                            <Bar key={d} dataKey={`min_${d}`} stackId="min" name={d} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
                           ))}
                         </BarChart>
                       </ResponsiveContainer>
@@ -1746,21 +1652,21 @@ function AnalyticsPage() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Incheckning dag för dag</CardTitle>
-                  <CardDescription>Färgade celler markerar låga värden — snabb överblick över dagarna.</CardDescription>
+                  <CardDescription>Färg betyder alltid sämre än atletens eget normalläge. Generatorns faktor använder samma jämförelse som nästa block; * markerar ingående svar.</CardDescription>
                 </CardHeader>
                 <CardContent className="overflow-x-auto p-0">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 text-left">Datum</th>
-                        <th className="px-2 py-2 text-center">Dagsform</th>
+                        <th className="px-2 py-2 text-center">Generator ×</th><th className="px-2 py-2 text-center">Dagsform *</th>
                         <th className="px-2 py-2 text-center">Sömnkval.</th>
                         <th className="px-2 py-2 text-center">Sömn h</th>
                         <th className="px-2 py-2 text-center">Kost</th>
                         <th className="px-2 py-2 text-center">Stelhet</th>
-                        <th className="px-2 py-2 text-center">Trötthet</th>
-                        <th className="px-2 py-2 text-center">Jobb</th>
-                        <th className="px-2 py-2 text-center">Livet</th>
+                        <th className="px-2 py-2 text-center">Trötthet *</th>
+                        <th className="px-2 py-2 text-center">Jobb *</th>
+                        <th className="px-2 py-2 text-center">Livet *</th>
                         <th className="px-2 py-2 text-center">Kroppsvikt kg</th>
                         <th className="px-3 py-2 text-left">Anteckningar</th>
                       </tr>
@@ -1769,14 +1675,15 @@ function AnalyticsPage() {
                       {[...formSeries].reverse().map((s) => (
                         <tr key={s.date} className="border-t border-border">
                           <td className="px-3 py-2 font-medium">{format(parseISO(s.date), "EEE MMM d", { locale: sv })}</td>
-                          <ScoreCell value={s.daily_form} highIsGood />
-                          <ScoreCell value={s.sleep_quality} highIsGood />
+                          <td className="px-2 py-2 text-center font-mono">{personalReadinessFactor(surveysQuery.data??[],s.date).toFixed(2)}</td>
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.daily_form).filter((v): v is number=>v!=null)} value={s.daily_form} highIsGood />
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.sleep_quality).filter((v): v is number=>v!=null)} value={s.sleep_quality} highIsGood />
                           <td className="px-2 py-2 text-center text-muted-foreground">{s.sleep_hours ?? "—"}</td>
-                          <ScoreCell value={s.nutrition} highIsGood />
-                          <ScoreCell value={s.stiffness} highIsGood={false} />
-                          <ScoreCell value={s.fatigue} highIsGood={false} />
-                          <ScoreCell value={s.work_stress} highIsGood={false} muted />
-                          <ScoreCell value={s.life_stress} highIsGood={false} muted />
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.nutrition).filter((v): v is number=>v!=null)} value={s.nutrition} highIsGood />
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.stiffness).filter((v): v is number=>v!=null)} value={s.stiffness} highIsGood={false} />
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.fatigue).filter((v): v is number=>v!=null)} value={s.fatigue} highIsGood={false} />
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.work_stress).filter((v): v is number=>v!=null)} value={s.work_stress} highIsGood={false} muted />
+                          <ScoreCell history={formSeries.filter(r=>r.date<s.date).map(r=>r.life_stress).filter((v): v is number=>v!=null)} value={s.life_stress} highIsGood={false} muted />
                           <td className="px-2 py-2 text-center text-muted-foreground">{s.bodyweight ?? "—"}</td>
                           <td className="max-w-[260px] px-3 py-2 text-xs text-muted-foreground">{s.notes ?? ""}</td>
                         </tr>
@@ -1822,22 +1729,16 @@ function ScoreCell({
   value,
   highIsGood,
   muted,
+  history,
 }: {
+  history: number[];
   value: number | null;
   highIsGood: boolean;
   muted?: boolean;
 }) {
   if (value == null) return <td className="px-2 py-2 text-center text-muted-foreground">—</td>;
-  // Normalize so higher = "better" for tone
-  const good = highIsGood ? value >= 7 : value <= 4;
-  const bad = highIsGood ? value <= 4 : value >= 7;
-  const tone = bad
-    ? "bg-status-exhausted/25 text-status-exhausted-foreground font-semibold"
-    : good
-      ? "bg-status-peaking/25 text-status-peaking-foreground font-semibold"
-      : muted
-        ? "text-muted-foreground"
-        : "";
+  const deviation=adverseReadinessDeviation(value,history,highIsGood);
+  const tone=deviation>0 ? "bg-status-exhausted/25 text-status-exhausted-foreground font-semibold" : "text-muted-foreground";
   return <td className={cn("px-2 py-2 text-center", tone)}>{value}</td>;
 }
 

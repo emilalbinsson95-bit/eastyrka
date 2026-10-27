@@ -274,12 +274,16 @@ export function buildTaperPlan(input: {
 
   // --- Regeldagar: sista tunga passet och sista passet per lyft ---
   const ruleDays = new Set<string>();
+  const heavyAt = new Map<string, TaperLiftKey[]>();
+  const lastAt = new Map<string, TaperLiftKey[]>();
   for (const k of active) {
     const heavy = snapToTrainingDay(daysBefore(d0, s.heavyDay[k]), weekdays);
     const last = snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays);
     ruleDays.add(heavy);
     ruleDays.add(last);
     if (!trainingDates.includes(heavy) || !trainingDates.includes(last)) continue;
+    heavyAt.set(heavy, [...(heavyAt.get(heavy) ?? []), k]);
+    lastAt.set(last, [...(lastAt.get(last) ?? []), k]);
     const heavyRpe = clamp(s.heavyRpe, 7, 8.5);
     const backoffRpe = clamp(s.backoffRpe, 7, 8.5);
     const heavyReps=k==="deadlift"&&!input.singlesEnabled?2:HEAVY_SCHEME[k].reps;

@@ -39,6 +39,10 @@ export interface MainLiftInfo {
   e1rm: number | null;
   /** Average working sets per week over the recent reference window. */
   weeklySets: number;
+  /** Median working sets per day the lift was trained (reference window). */
+  setsPerExposure: number;
+  /** How many days per week the lift was trained (reference window). */
+  exposuresPerWeek: number;
   /** Heaviest single logged in the window (kg). */
   bestSingleKg: number | null;
 }
@@ -205,6 +209,16 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
     const weeklySets =
       reference === "work3" ? (workWindows.length ? hits.filter((l) => workLogs.includes(l)).length / workWindows.length : 0) : reference === "recent" ? meanRecent : reference === "median" ? med : Math.max(meanRecent, med);
 
+    // Exposure shape: how the lift is actually trained within a week. A lift
+    // done once a week must keep its session and lose sets inside it — not
+    // shrink to a single set because the weekly average is low.
+    const refHits = reference === "work3" ? hits.filter((l) => workLogs.includes(l)) : recentHits;
+    const refWeeks = reference === "work3" ? Math.max(1, workWindows.length) : weeksCovered;
+    const byDay = new Map<string, number>();
+    for (const l of refHits) byDay.set(l.date, (byDay.get(l.date) ?? 0) + 1);
+    const setsPerExposure = byDay.size ? median([...byDay.values()]) : 0;
+    const exposuresPerWeek = refWeeks > 0 ? byDay.size / refWeeks : 0;
+
     const singles = hits.filter((l) => l.reps === 1).map((l) => l.weight_kg);
 
     lifts[key] = {
@@ -214,6 +228,8 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
       trained: hits.length > 0 || base != null,
       e1rm: e1rm ? Math.round(e1rm * 10) / 10 : null,
       weeklySets,
+      setsPerExposure,
+      exposuresPerWeek,
       bestSingleKg: singles.length ? Math.max(...singles) : null,
     };
   }

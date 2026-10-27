@@ -52,6 +52,7 @@ import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVol
 import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
 import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
 import { buildD0Weeks } from "@/lib/taperAdapter";
+import { DEFAULT_TAPER_SETTINGS } from "@/lib/taperModel";
 import { SetProtocolPicker } from "@/components/SetProtocolPicker";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
 import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPlanning";
@@ -219,6 +220,7 @@ export function GenerateStrengthTemplateDialog({
     );
 
   const [peakReference, setPeakReference] = useState<PeakReference>("work3");
+  const [taperSettings,setTaperSettings]=useState(DEFAULT_TAPER_SETTINGS);
   const peakSummary = useMemo(() => {
     if (!template?.buildFromHistory || !historyQuery.data) return null;
     return summarizePeaking({
@@ -238,12 +240,12 @@ export function GenerateStrengthTemplateDialog({
     if (!template) return [];
     if (template.buildFromHistory) {
       if(peakDateError) return [];
-      return buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes"}).weeks;
+      return buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes",settings:{...taperSettings,heavyRpe:Math.min(8.5,peakOptions.rpe)}}).weeks;
     }
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, peakSummary, peakWeeks, peakDays, styleQuery.data,peakStart,peakEndDate,competitionDate,peakDateError,peakOptions.singles]);
+  }, [template, daysPerWeek, peakSummary, peakWeeks, peakDays, styleQuery.data,peakStart,peakEndDate,competitionDate,peakDateError,peakOptions.singles,peakOptions.rpe,taperSettings]);
 
 
   const suggestion = useMemo(() => {
@@ -682,11 +684,11 @@ export function GenerateStrengthTemplateDialog({
                   </div>
                   {peakOptions.singles === "unset" && <p className="text-xs text-muted-foreground">Coachen behöver välja ja eller nej före generering.</p>}
                   {peakOptions.singles === "yes" && <>
-                    <div><Label htmlFor="peak-single-rpe">Singelns högsta RPE</Label><Input id="peak-single-rpe" type="number" min={7} max={9} step={.5} value={peakOptions.rpe} onChange={(e) => setPeakOptions((p) => ({ ...p, rpe: Math.round(Math.max(7, Math.min(9, Number(e.target.value) || 8)) * 2) / 2 }))} /></div>
-                    <div className="flex flex-wrap gap-4">{Array.from({ length: peakWeeks - 1 }, (_, i) => i + 1).map((n) => <label key={n} className="flex items-center gap-2"><Checkbox checked={peakOptions.weeks.includes(n)} onCheckedChange={(v) => setPeakOptions((p) => ({ ...p, weeks: v === true ? [...p.weeks, n] : p.weeks.filter((w) => w !== n) }))} />Vecka {n}</label>)}</div>
-                    <p className="text-xs text-muted-foreground">En singel per tävlingslyft och vald vecka ersätter toppsetet. Inga tunga singlar på tävlingsveckan.</p>
+                    <div><Label htmlFor="peak-single-rpe">Sista tunga passets högsta RPE</Label><Input id="peak-single-rpe" type="number" min={7} max={8.5} step={.5} value={peakOptions.rpe} onChange={(e) => setPeakOptions((p) => ({ ...p, rpe: Math.round(Math.max(7, Math.min(8.5, Number(e.target.value) || 8)) * 2) / 2 }))} /></div>
+                    <p className="text-xs text-muted-foreground">Singlar placeras på lyftets sista tunga pass och ersätter arbete. Aldrig över RPE 8,5.</p>
                   </>}
                 </fieldset>
+                <div className="grid gap-3 sm:grid-cols-2"><div><Label htmlFor="taper-days">Taper, dagar</Label><Input id="taper-days" type="number" min={7} max={14} value={taperSettings.taperDays} onChange={e=>setTaperSettings(s=>({...s,taperDays:Math.max(7,Math.min(14,Number(e.target.value)||9))}))}/></div><div><Label htmlFor="taper-cut">Volymsänkning, procent</Label><Input id="taper-cut" type="number" min={30} max={60} value={Math.round(taperSettings.volumeCut*100)} onChange={e=>setTaperSettings(s=>({...s,volumeCut:Math.max(30,Math.min(60,Number(e.target.value)||50))/100}))}/></div></div>
                 <fieldset className="space-y-3 border-t border-border pt-3">
                   <legend className="text-sm font-medium">Preliminära öppningsvikter</legend>
                   <p className="text-xs text-muted-foreground">RTS-tabellens singel @ RPE 8 från medianen av upp till tre senaste mätset inom 42 dagar, avrundat nedåt till 2,5 kg. Ett beräknat förslag, inte ett officiellt RTS-recept eller en garanti.</p>

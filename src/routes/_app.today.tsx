@@ -91,6 +91,7 @@ interface PlannedExercise {
   last_set_to_failure: boolean;
   notes: string | null;
   order_index: number;
+  is_technique?:boolean;
 }
 
 interface PlannedSession {
@@ -163,7 +164,7 @@ function TodayPage() {
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
                target_weight_kg, lengthened_partials, last_set_to_failure,
-               notes, order_index
+               notes, order_index, is_technique
              )
            )`;
       // Prefer the current (or most recent past) published week.
@@ -424,6 +425,7 @@ function TodayPage() {
           exercise: l.exercise,
           variation: l.variation,
           is_warmup_reference: l.is_warmup_reference,
+          is_technique:l.is_technique,
           set_number: l.set_number,
           reps: l.reps,
           weight_kg: Number(l.weight_kg),
@@ -993,6 +995,7 @@ function LogSetButton({
         weight_kg: parsed.weight_kg,
         rpe: parsed.rpe,
         is_warmup_reference: isWarmup,
+        is_technique:ex.is_technique===true,
         rir: !isWarmup && usingRir ? rir : null,
         lengthened_partials: !isWarmup && partials,
         to_failure: !isWarmup && toFailure,

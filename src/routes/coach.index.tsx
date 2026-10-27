@@ -103,7 +103,7 @@ function CoachRosterPage() {
 
       // 3. Recent logs (120d) to compute latest EAkoefficient per athlete
       const since = new Date();
-      since.setDate(since.getDate() - 120);
+      since.setDate(since.getDate() - 730);
       const sinceIso = since.toISOString().slice(0, 10);
 
       const { data: recentLogs, error: logsError } = await supabase
@@ -113,7 +113,7 @@ function CoachRosterPage() {
         .gte("date", sinceIso)
         .order("date", { ascending: false })
         .order("set_number", { ascending: true })
-        .limit(3000);
+        .limit(10000);
       if (logsError) throw logsError;
 
       const { data: baselines, error: baselineError } = await supabase

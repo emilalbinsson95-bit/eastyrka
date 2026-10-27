@@ -203,7 +203,7 @@ function AnalyticsPage() {
     queryKey: ["analytics-surveys", athleteId, days],
     queryFn: async () => {
       const since = new Date();
-      since.setDate(since.getDate() - days);
+      since.setDate(since.getDate() - Math.max(63,days));
       const { data, error } = await supabase
         .from("readiness_surveys")
         .select("date, daily_form, fatigue, work_stress, life_stress, sleep_quality, nutrition, stiffness, sleep_hours, bodyweight_kg, notes")
@@ -397,7 +397,7 @@ function AnalyticsPage() {
       (r) => r.exercise.trim().toLowerCase() === name.trim().toLowerCase(),
     );
     if (rows.length === 0) return lookupBaseline(name);
-    let val = rows[0].one_rm_kg;
+    let val = 0;
     for (const r of rows) if (r.recorded_at.slice(0, 10) <= date) val = r.one_rm_kg;
     return val;
   };
@@ -732,17 +732,10 @@ function AnalyticsPage() {
     }
     // Same-day EAk (not the rolling average — that would lag behind the
     // check-in): best qualifying E1RM per lift that day ÷ baseline in force.
-    const bestByDayEx = new Map<string, number>();
-    for(const l of chartMeasurements(allLogs)) bestByDayEx.set(`${l.date}::${l.exercise}`,dailyE1RM(l));
     const eakByDate = new Map<string, { sum: number; count: number }>();
-    for (const [k, e1] of bestByDayEx) {
-      const [date, ex] = k.split("::");
-      const baseline = baselineAt(ex, date);
-      if (!baseline || baseline <= 0) continue;
-      const cur = eakByDate.get(date) ?? { sum: 0, count: 0 };
-      cur.sum += (e1 / baseline) * 100;
-      cur.count += 1;
-      eakByDate.set(date, cur);
+    for(const measurement of chartMeasurements(allLogs)) {
+      const baseline=baselineAt(measurement.exercise,measurement.date);if(baseline<=0)continue;
+      const current=eakByDate.get(measurement.date)??{sum:0,count:0};current.sum+=dailyE1RM(measurement)/baseline*100;current.count+=1;eakByDate.set(measurement.date,current);
     }
     const points: Array<{ form: number; eak: number; date: string; fatigue: number }> = [];
     for (const [date, eak] of eakByDate.entries()) {

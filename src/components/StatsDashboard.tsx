@@ -171,7 +171,7 @@ export function StatsDashboard({
     queryKey: ["stats-logs", athleteId],
     queryFn: async () => {
       const since = new Date();
-      since.setDate(since.getDate() - 365);
+      since.setDate(since.getDate() - 730);
       const { data, error } = await supabase
         .from("training_logs")
         .select(
@@ -179,9 +179,9 @@ export function StatsDashboard({
         )
         .eq("athlete_id", athleteId)
         .gte("date", since.toISOString().slice(0, 10))
-        .order("date", { ascending: true });
+        .order("date", { ascending: true }).limit(10000);
       if (error) throw error;
-      return (data ?? []) as LogRow[];
+      return (data ?? []).map(l=>({...l,weight_kg:Number(l.weight_kg),rpe:Number(l.rpe)})) as LogRow[];
     },
   });
 
@@ -451,7 +451,7 @@ function TrainingStatusCard({ logs, endurance, feedback }: { logs: LogRow[]; end
           Belastning
         </CardTitle>
         <CardDescription>
-          Belastning: sRPE × minuter från styrka och kondition. CTL (42 dagar), ATL (7 dagar), TSB = CTL − ATL. Saknad styrkepasstid uppskattas till tre minuter per arbetsset; saknad konditionstid eller pass-RPE räknas inte.
+          Belastning: sRPE × minuter från styrka och kondition. CTL (42 dagar), ATL (7 dagar), TSB = CTL − ATL. Styrkan summeras per träningsdag; saknad tid uppskattas till tre minuter per arbetsset. Kondition utan tid eller pass-RPE räknas inte.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -499,17 +499,17 @@ function TrainingStatusCard({ logs, endurance, feedback }: { logs: LogRow[]; end
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="label"
                 fontSize={11}
-                tick={{ fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fill: "var(--muted-foreground)" }}
                 minTickGap={20}
               />
               <YAxis
                 fontSize={11}
-                tick={{ fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fill: "var(--muted-foreground)" }}
                 width={40}
               />
               <Tooltip
@@ -521,25 +521,25 @@ function TrainingStatusCard({ logs, endurance, feedback }: { logs: LogRow[]; end
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="2 4" />
+              <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeDasharray="2 4" />
               <Line
                 type="monotone"
                 dataKey="Fitness"
-                stroke="hsl(var(--primary))"
+                stroke="var(--primary)"
                 strokeWidth={2}
                 dot={false}
               />
               <Line
                 type="monotone"
                 dataKey="Fatigue"
-                stroke="hsl(0 80% 60%)"
+                stroke="var(--chart-3)"
                 strokeWidth={2}
                 dot={false}
               />
               <Line
                 type="monotone"
                 dataKey="Form"
-                stroke="hsl(160 70% 45%)"
+                stroke="var(--chart-2)"
                 strokeWidth={2}
                 dot={false}
               />

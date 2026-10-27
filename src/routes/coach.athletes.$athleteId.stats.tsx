@@ -8,12 +8,12 @@ import { StatsDashboard } from "@/components/StatsDashboard";
 export const Route = createFileRoute("/coach/athletes/$athleteId/stats")({
   head: () => ({
     meta: [
-      { title: "Athlete stats — SETPOINT Coach" },
-      {
-        name: "description",
-        content:
-          "Athlete training dashboard: load status, mesocycle summary, PRs and bodyweight vs strength.",
-      },
+      {title: "Atletstatistik — SETPOINT Coach"},
+      {name: "description", content: "Atletens EAk, samlade belastning, personbästa, DOTS och kroppsvikt."},
+      {property: "og:title", content: "Atletstatistik — SETPOINT Coach"},
+      {property: "og:description", content: "Atletens EAk, samlade belastning, personbästa, DOTS och kroppsvikt."},
+      {property: "og:type", content: "website"},
+      {name: "twitter:card", content: "summary"},
     ],
   }),
   component: AthleteStatsPage,

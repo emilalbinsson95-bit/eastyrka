@@ -15,21 +15,21 @@ export const TAPER_LIFT_LABEL: Record<TaperLiftKey, string> = {
 
 /** Coachens elva reglage. Inom intervallet ändras värdet fritt; utanför krävs aktiv bekräftelse. */
 export interface TaperSettings {
-  /** Taperlängd i dagar (standard 9, intervall 7–10). */
+  /** Taperlängd i dagar (standard 9, intervall 7–14). */
   taperDays: number;
-  /** Volymsänkning i tapern som andel (standard 0.5, intervall 0.4–0.6). */
+  /** Volymsänkning i tapern som andel (standard 0.5, intervall 0.3–0.6). */
   volumeCut: number;
   /** Stegtaper (standard) eller snabb exponentiell — aldrig gradvis linjär. */
   taperModel: "step" | "exp";
   /** Överbelastningsvecka direkt före taperstart (standard på). */
   overloadWeek: boolean;
-  /** Intensitet i tapern: bibehållen (standard) eller något höjd. */
-  intensity: "keep" | "raise";
+  /** Intensitet i tapern: bibehållen (standard, minst 85 % på tunga set), något höjd, eller sänkt 25–30 % när återhämtningen går före (Bell 2025). */
+  intensity: "keep" | "raise" | "lower";
   /** Sista tunga passet, dagar före D0 per lyft (standard mark 9, böj 8, bänk 5; ±1). */
   heavyDay: Record<TaperLiftKey, number>;
   /** Last på sista tunga passet som andel av e1RM (standard 0.9125, intervall 0.875–0.95). */
   heavyLoadPct: number;
-  /** Sista passet per lyft, dagar före D0 (standard mark 6, böj 4, bänk 3; ±1). */
+  /** Sista passet per lyft, dagar före D0 (standard mark 7, böj 4, bänk 3; ±1). Lyftspecifika uppehåll enligt Bell 2025: mark 7–10, böj 4–7, bänk 2–4 (högst 3 för bänk enligt Travis 2022). */
   lastDay: Record<TaperLiftKey, number>;
   /** Totalt träningsuppehåll före D0 (standard 2, intervall 2–3). */
   restDays: number;
@@ -47,7 +47,7 @@ export const DEFAULT_TAPER_SETTINGS: TaperSettings = {
   intensity: "keep",
   heavyDay: { squat: 8, bench: 5, deadlift: 9 },
   heavyLoadPct: 0.9125,
-  lastDay: { squat: 4, bench: 3, deadlift: 6 },
+  lastDay: { squat: 4, bench: 3, deadlift: 7 },
   restDays: 2,
   accessoriesOutDay: 14,
   finalWeekFreq: "half",
@@ -55,8 +55,8 @@ export const DEFAULT_TAPER_SETTINGS: TaperSettings = {
 
 /** Konstruktionsgränser kring det studierna rapporterar. */
 export const TAPER_RANGES = {
-  taperDays: { min: 7, max: 10 },
-  volumeCut: { min: 0.4, max: 0.6 },
+  taperDays: { min: 7, max: 14 },
+  volumeCut: { min: 0.3, max: 0.6 },
   heavyLoadPct: { min: 0.875, max: 0.95 },
   restDays: { min: 2, max: 3 },
   accessoriesOutDay: { min: 10, max: 21 },
@@ -218,7 +218,11 @@ export function buildTaperPlan(input: {
     return session;
   };
 
-  const pctFor = (base: number) => (s.intensity === "raise" ? Math.min(0.975, base + 0.025) : base);
+  // Bibehållen intensitet = minst 85 % av 1RM på de tunga seten; sänkt 25–30 %
+  // (Bell 2025) används när återhämtningen går före.
+  const pctFor = (base: number) =>
+    s.intensity === "raise" ? Math.min(0.975, base + 0.025) : s.intensity === "lower" ? base * 0.72 : base;
+  const taperWorkPct = s.intensity === "raise" ? 0.875 : s.intensity === "lower" ? 0.7 : 0.85;
   const kgFor = (k: TaperLiftKey, pct: number): number | null => {
     const e = lift(k).e1rm;
     return e != null && e > 0 ? round25(e * pct) : null;
@@ -265,8 +269,11 @@ export function buildTaperPlan(input: {
       .filter((e) => e.exercise === info.name)
       .reduce((n, e) => n + e.sets, 0);
     let remaining = Math.max(0, taperSetBudget - placed);
+    // Helst egna taperdagar; finns inga lediga läggs fyllnadsseten på
+    // regeldagarnas pass så att volymsänkningen ändå blir rätt.
     const openSlots = taperSlots.filter((d) => !ruleDays.has(d));
-    for (const d of openSlots) {
+    const slots = openSlots.length > 0 ? openSlots : taperSlots;
+    for (const d of slots) {
       if (remaining <= 0) break;
       const sets = Math.min(remaining, Math.max(2, Math.round(info.setsPerExposure * (1 - s.volumeCut))));
       remaining -= sets;
@@ -274,8 +281,8 @@ export function buildTaperPlan(input: {
         exercise: info.name,
         sets,
         reps: 2,
-        pctOfE1rm: 0.8,
-        kg: kgFor(k, 0.8),
+        pctOfE1rm: taperWorkPct,
+        kg: kgFor(k, taperWorkPct),
         notes: "Taper: volymen nere, intensiteten kvar. Korta, snabba set.",
       });
     }

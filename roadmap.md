@@ -34,7 +34,7 @@
 - [ ] Granska maratonplanens tävlingsvecka (monitoring-fynd)
 
 ## Toppningsmodul (från Emils konceptdokument 2026-10-27)
-- [x] Fas 1, del 1: src/lib/taperModel.ts — D0-förankrad grundplan (volymtopp D-42→D-22, intensifiering D-21→D-10, stegtaper D-9→D-3, vila D-2→D-1), lyftspecifika regeldagar (mark D-9/D-6, böj D-8/D-4, bänk D-5/D-3), laster från e1RM avrundade till 2,5 kg, elva coachreglage med intervall, tre hårda varningar, snapping till närmaste träningsdag FÖRE, krockar slås ihop. 16 logikkontroller gröna (bun); vitest hängde i sandlådan — kör sviten nästa pass
+- [x] Fas 1, del 1: src/lib/taperModel.ts — D0-förankrad grundplan (volymtopp D-42→D-22, intensifiering D-21→D-10, stegtaper D-9→D-3, vila D-2→D-1), lyftspecifika regeldagar (mark D-9/D-7, böj D-8/D-4, bänk D-5/D-3), laster från e1RM avrundade till 2,5 kg, elva coachreglage med intervall, tre hårda varningar, snapping till närmaste träningsdag FÖRE, krockar slås ihop. uppdaterad 08:16-versionen: taperlängd 7–14 d, volymsänkning 30–60 %, intensitetsläge 'sänkt 25–30 %' (Bell 2025), minst 85 % på tunga set; 284 tester gröna
 - [ ] Fas 1, del 2: tabell taper_plans (reglage + fryst EAk-baslinje vid D-21) med RLS
 - [ ] Fas 1, del 3: koppla in i genereringsdialogen (reglagepanel + varningar) och lyftarvy (nedräkning till D0)
 - [ ] Fas 2: flaggor/beslut, kontextstress, öppningsförslag + tävlingskort

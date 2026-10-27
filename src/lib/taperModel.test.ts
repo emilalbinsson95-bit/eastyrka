@@ -29,8 +29,8 @@ describe("taperModel", () => {
     expect(at("2027-01-14")?.exercises.some((e) => e.exercise === "Deadlift" && e.sets === 3 && e.reps === 1)).toBe(true);
     expect(at("2027-01-15")?.exercises.some((e) => e.exercise === "Back squat" && e.sets === 3 && e.reps === 2)).toBe(true);
     expect(at("2027-01-18")?.exercises.some((e) => e.exercise === "Bench press" && e.sets === 3 && e.reps === 3)).toBe(true);
-    // Sista lätta: mark D-6, böj D-4, bänk D-3
-    expect(at("2027-01-17")?.exercises.some((e) => e.exercise === "Deadlift" && e.pctOfE1rm === 0.725)).toBe(true);
+    // Sista lätta: mark D-7, böj D-4, bänk D-3
+    expect(at("2027-01-16")?.exercises.some((e) => e.exercise === "Deadlift" && e.pctOfE1rm === 0.725)).toBe(true);
     expect(at("2027-01-19")?.exercises.some((e) => e.exercise === "Back squat" && e.pctOfE1rm === 0.775)).toBe(true);
     expect(at("2027-01-20")?.exercises.some((e) => e.exercise === "Bench press" && e.pctOfE1rm === 0.775)).toBe(true);
   });
@@ -102,7 +102,9 @@ describe("taperModel", () => {
 
   it("flaggar reglage utanför intervallet för aktiv bekräftelse", () => {
     expect(taperSettingsOutOfRange(resolveTaperSettings())).toEqual([]);
-    expect(taperSettingsOutOfRange(resolveTaperSettings({ taperDays: 12 }))).toContain("taperDays");
+    expect(taperSettingsOutOfRange(resolveTaperSettings({ taperDays: 12 }))).toEqual([]); // 7–14 är inom intervallet
+    expect(taperSettingsOutOfRange(resolveTaperSettings({ taperDays: 15 }))).toContain("taperDays");
+    expect(taperSettingsOutOfRange(resolveTaperSettings({ volumeCut: 0.35 }))).toEqual([]); // 30–60 % är inom intervallet
     expect(taperSettingsOutOfRange(resolveTaperSettings({ volumeCut: 0.7 }))).toContain("volumeCut");
     expect(taperSettingsOutOfRange(resolveTaperSettings({ heavyDay: { ...DEFAULT_TAPER_SETTINGS.heavyDay, squat: 5 } }))).toContain("heavyDay.squat");
   });
@@ -114,5 +116,21 @@ describe("taperModel", () => {
     const names = merged?.exercises.map((e) => e.exercise) ?? [];
     expect(names).toContain("Deadlift");
     expect(names).toContain("Back squat");
+  });
+
+  it("håller minst 85 % på taperpassens arbetsset, och stödjer sänkt intensitet (Bell 2025)", () => {
+    const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS });
+    const taperWork = plan.sessions
+      .filter((s) => s.phase === "taper")
+      .flatMap((s) => s.exercises)
+      .filter((e) => e.notes?.startsWith("Taper:"));
+    expect(taperWork.length).toBeGreaterThan(0);
+    expect(taperWork.every((e) => (e.pctOfE1rm ?? 0) >= 0.85)).toBe(true);
+    const lower = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS, settings: { intensity: "lower" } });
+    const lowered = lower.sessions.filter((s) => s.phase === "taper").flatMap((s) => s.exercises).filter((e) => e.notes?.startsWith("Taper:"));
+    expect(lowered.length).toBeGreaterThan(0);
+    expect(lowered.every((e) => e.pctOfE1rm === 0.7)).toBe(true);
+    const heavyLowered = lower.sessions.find((s) => s.date === "2027-01-14")?.exercises.find((e) => e.exercise === "Deadlift");
+    expect(heavyLowered?.pctOfE1rm).toBeCloseTo(0.9125 * 0.72, 4);
   });
 });

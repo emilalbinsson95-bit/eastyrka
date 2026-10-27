@@ -1,0 +1,12 @@
+import { readFileSync } from "fs";
+import { summarizePeaking } from "./peaking";
+import { buildD0Weeks } from "./taperAdapter";
+const logs = JSON.parse(readFileSync("/tmp/sim/vincent_logs.json","utf8"));
+const baselines = JSON.parse(readFileSync("/tmp/sim/vincent_base.json","utf8"));
+const start = process.argv[2] ?? "2026-10-30", days = Number(process.argv[3] ?? 4);
+const summary = summarizePeaking({ today: "2026-10-27", startDate: start, logs, baselines }, "work3");
+console.log(JSON.stringify(summary.lifts, null, 0));
+console.log("acc:", summary.accessories.map(a=>`${a.exercise}${a.variation?"/"+a.variation:""} ${a.weeklySets.toFixed(1)}x${a.reps}`).join("; "));
+const r = buildD0Weeks({ start, end: "2026-11-13", competition: "2026-11-14", days, summary, singles: true, settings: { heavyRpe: 8.5 } });
+console.log("warnings:", r.warnings);
+r.weeks.forEach((w,i)=>{ console.log(`\nVecka ${w.week_index} start ${r.weekStarts[i]}`); for (const s of w.sessions) { const date=(s.notes??"").match(/Datum: (\S+)/)?.[1]; console.log(`  ${date} D-${Math.round((Date.parse("2026-11-14")-Date.parse(date!))/864e5)} [${s.title}] ${s.exercises.reduce((n,e)=>n+e.target_sets,0)} set`); for (const e of s.exercises) console.log(`     ${e.exercise}${e.variation?" ("+e.variation+")":""} ${e.target_sets}x${e.target_reps}${e.target_rpe?" @"+e.target_rpe:""}${e.target_weight_kg?" "+e.target_weight_kg+"kg":""}`); } });

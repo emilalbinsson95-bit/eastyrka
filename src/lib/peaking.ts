@@ -2,6 +2,7 @@
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { compSetCap } from "@/lib/volumeGuards";
 import { dailyE1RM } from "@/lib/eakoefficient";
+import { compLiftKey, isCompLift } from "@/lib/liftIdentity";
 import {
   volumeCategory,
   type TemplateExercise,
@@ -97,27 +98,12 @@ export function peakE1rm(weight: number, reps: number, rpe: number | null): numb
   return dailyE1RM({ weight_kg: weight, reps, rpe: rpe ?? 8 });
 }
 
-function isCompetitionSquat(name: string): boolean {
-  const n = norm(name);
-  if (!n.includes("squat")) return false;
-  return !/(split|bulgarian|hack|goblet|jump|pistol|zercher|belt|sissy|leg press|box)/.test(n);
-}
-function isCompetitionBench(name: string): boolean {
-  const n = norm(name);
-  if (!n.includes("bench")) return false;
-  return !/(dumbbell|db |incline|decline|floor|spoto|board|pin)/.test(n);
-}
-function isCompetitionDeadlift(name: string): boolean {
-  const n = norm(name);
-  if (!n.includes("deadlift")) return false;
-  return !/(romanian|rdl|stiff|trap bar|hex|snatch|single|dumbbell|good ?morning)/.test(n);
-}
-
-const MATCHER: Record<MainLiftKey, (name: string) => boolean> = {
-  squat: isCompetitionSquat,
-  bench: isCompetitionBench,
-  deadlift: isCompetitionDeadlift,
-};
+// Shared competition-lift identity: close-grip, touch-and-go, pause etc. are
+// variations and must never inflate the comp lift's e1RM or exposure count.
+const isCompEntry = (key: MainLiftKey, exercise: string, variation?: string | null) =>
+  compLiftKey(exercise) === key && isCompLift(exercise, variation);
+const isAnyCompEntry = (exercise: string, variation?: string | null) =>
+  compLiftKey(exercise) != null && isCompLift(exercise, variation);
 
 const FALLBACK_NAME: Record<MainLiftKey, string> = {
   squat: "Back squat",

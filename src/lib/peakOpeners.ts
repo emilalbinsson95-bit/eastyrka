@@ -19,7 +19,7 @@ export function suggestOpeners(history: PeakHistoryInput, style?: string | null)
     const ordered = [...history.logs].sort((a, b) => ((a as typeof a & { set_number?: number }).set_number ?? 0) - ((b as typeof b & { set_number?: number }).set_number ?? 0));
     for (const log of ordered) {
       const age = differenceInCalendarDays(parseISO(history.today), parseISO(log.date));
-      if (age < 0 || age > 42 || peakLift(log.exercise, style) !== key || days.has(log.date) ||
+      if (log.is_warmup_reference || age < 0 || age > 42 || peakLift(log.exercise, style) !== key || days.has(log.date) ||
         (log.variation && !/^(competition stance & commands|competition technique|competition pause|paused|pause)$/i.test(log.variation.trim())) ||
         log.rpe == null || log.rpe < 7 || log.rpe > 10 || log.reps < 1 || log.reps > 5 || log.weight_kg <= 0) continue;
       days.set(log.date, dailyE1RM({ weight_kg: log.weight_kg, reps: log.reps, rpe: log.rpe }));
@@ -28,7 +28,7 @@ export function suggestOpeners(history: PeakHistoryInput, style?: string | null)
     const sorted = recent.map(([, value]) => value).sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     const estimate = sorted.length ? sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2 : null;
-    return { key, count: recent.length, latest: recent[0]?.[0], estimate,
+    return { key, count: recent.length, latest: recent[0]?.[0], sources:recent.map(([date,e1rm])=>({date,e1rm})), estimate,
       kg: estimate == null ? null : Math.floor(estimate * pctOf1RMInterp(8, 1) / 100 / 2.5) * 2.5 };
   });
 }

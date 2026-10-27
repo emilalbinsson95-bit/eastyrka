@@ -16,6 +16,7 @@ export interface PeakLog {
   reps: number;
   weight_kg: number;
   rpe: number | null;
+  is_warmup_reference?: boolean;
 }
 
 export interface PeakHistoryInput {
@@ -140,7 +141,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const ago = (d: string) => differenceInCalendarDays(parseISO(h.today), parseISO(d));
   const logs = h.logs.filter((l) => {
     const d = ago(l.date);
-    return d >= 0 && d < HISTORY_DAYS && l.weight_kg > 0 && l.reps > 0;
+    return !l.is_warmup_reference && d >= 0 && d < HISTORY_DAYS && l.weight_kg > 0 && l.reps > 0;
   });
   const cutoff = h.startDate && h.startDate <= h.today ? h.startDate : h.today;
   const volumeAgo = (d: string) => differenceInCalendarDays(parseISO(cutoff), parseISO(d));

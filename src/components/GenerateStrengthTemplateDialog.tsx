@@ -50,7 +50,8 @@ import { compLiftKey } from "@/lib/liftIdentity";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
-import { buildPeakingWeeks, summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
+import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
+import { buildD0Weeks } from "@/lib/taperAdapter";
 import { SetProtocolPicker } from "@/components/SetProtocolPicker";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
 import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPlanning";
@@ -110,7 +111,7 @@ export function GenerateStrengthTemplateDialog({
   const peakDays = peakPeriodDays(peakStart, peakEndDate);
   const peakWeeks = Math.ceil(peakDays / 7) || 3;
   const peakDateError = template?.buildFromHistory
-    ? !peakDays ? "Välj en toppning på 14–42 dagar." : competitionDate && (!validPeakDate(competitionDate) || peakEndDate !== format(addDays(parseISO(competitionDate), -1), "yyyy-MM-dd")) ? "Slutdatum ska vara dagen före tävlingen. Sista passen placeras 7 och 5 dagar före tävlingen." : null
+    ? !peakDays ? "Välj en toppning på 14–42 dagar." : !validPeakDate(competitionDate) || peakEndDate !== format(addDays(parseISO(competitionDate), -1), "yyyy-MM-dd") ? "Ange tävlingsdatum och slutdatum dagen före tävlingen." : null
     : null;
   const peakWeekStarts = peakWeekStartDates(peakStart, peakEndDate);
   const historyAnchor = template?.buildFromHistory && peakStart < format(new Date(), "yyyy-MM-dd") ? peakStart : format(new Date(), "yyyy-MM-dd");
@@ -235,12 +236,13 @@ export function GenerateStrengthTemplateDialog({
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory) {
-      return buildPeakingWeeks(daysPerWeek, peakSummary, { openers: false, weeks: peakWeeks, days: peakDays });
+      if(peakDateError) return [];
+      return buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes"}).weeks;
     }
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, peakSummary, peakWeeks, peakDays, styleQuery.data]);
+  }, [template, daysPerWeek, peakSummary, peakWeeks, peakDays, styleQuery.data,peakStart,peakEndDate,competitionDate,peakDateError,peakOptions.singles]);
 
 
   const suggestion = useMemo(() => {
@@ -356,7 +358,7 @@ export function GenerateStrengthTemplateDialog({
       // applyAdjustments — the wave applies its RPE as a relative offset, so
       // no extra intensityOffset is passed here.
       const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
-      if (isPeaking) return { weeks: applyVolumeGuards(applyPeakSingles(weeks, peakOptions.singles === "yes", peakOptions.rpe, chosenOpeners, peakOptions.weeks, styleQuery.data), volumeProfile), warnings: [] as string[] };
+      if (isPeaking) return { weeks: applyVolumeGuards(weeks, volumeProfile), warnings: buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes"}).warnings };
       if (template?.sessionSetBudget) return {
         weeks: applyVolumeGuards(applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),volumeProfile),
         warnings: [] as string[],
@@ -657,7 +659,7 @@ export function GenerateStrengthTemplateDialog({
               <div className="space-y-3 p-3">
                 <div><Label htmlFor="peak-end">Slutdatum</Label><Input id="peak-end" type="date" disabled={Boolean(blockName)} value={peakEndDate} onChange={(e) => setPeakEndDate(e.target.value)} /></div>
                 <div><Label htmlFor="peak-meet">Tävlingsdatum</Label><Input id="peak-meet" type="date" disabled={Boolean(blockName)} value={competitionDate} onChange={(e) => { setCompetitionDate(e.target.value); if (validPeakDate(e.target.value)) setPeakEndDate(format(addDays(parseISO(e.target.value), -1), "yyyy-MM-dd")); }} /></div>
-                {validPeakDate(competitionDate) && <p className="text-xs text-muted-foreground">Sista lätta passen: {peakFinalSessionDates(competitionDate).join(" och ")}. Därefter vila till tävlingen {competitionDate}.</p>}
+                {validPeakDate(competitionDate) && <p className="text-xs text-muted-foreground">Sista lätta pass före anpassning till träningsdagar: mark D−7, böj D−4, bänk D−3. Vila D−2 och D−1.</p>}
                 {peakDateError && <p className="text-sm text-destructive">{peakDateError}</p>}
                 <p className="text-sm">{peakDays || "–"} dagar · {peakWeeks} träningsperioder</p>
                 <div>
@@ -831,10 +833,11 @@ export function GenerateStrengthTemplateDialog({
                 {historyQuery.isLoading && <p>Reading training history…</p>}
                 {peakSummary?.thin && (
                   <p className="text-destructive">
-                    Ofullständigt underlag: {peakSummary.referenceWeeks?.length ?? 0} arbetsveckor. Lyft utan loggade arbetsset får en schablon på 9 set/vecka före nedtrappning. Kontrollera passen före publicering.
+                    Ofullständigt underlag: {peakSummary.referenceWeeks?.length ?? 0} arbetsveckor. Kontrollera volym och vikter före publicering.
                   </p>
                 )}
                 {peakSummary && peakingBasis(peakSummary).map((line) => <p key={line}>{line}</p>)}
+                {blockResult.warnings.map(w=><p key={w} className="text-destructive">{w}</p>)}
                 <div className="overflow-x-auto"><table className="w-full text-left"><caption className="text-left font-medium text-foreground">Planerade arbetsset per lyft</caption><thead><tr><th>Period</th><th>Böj</th><th>Bänk</th><th>Mark</th></tr></thead><tbody>{plannedWeeks.map((w, i) => <tr key={w.week_index}><td>{peakWeekStarts[i]} · {i === 0 && peakDays % 7 ? `${peakDays % 7} dagar` : "7 dagar"}</td>{(["squat", "bench", "deadlift"] as const).map((key) => <td key={key}>{w.sessions.flatMap((session) => session.exercises).filter((e) => compLiftKey(e.exercise) === key).reduce((n, e) => n + e.target_sets, 0)}</td>)}</tr>)}</tbody></table></div>
                 <p>Kurvan är ett coachförslag. Styrkeforskningen stödjer minskad volym, men inte dessa exakta veckoprocent. Set, reps och tonnage är inte samma volymmått.</p>
                 <p><a className="text-primary underline" href="https://doi.org/10.1519/SSC.0000000000000125" target="_blank" rel="noreferrer">Pritchard m.fl. 2015: maximal styrka och toppning</a> · <a className="text-primary underline" href="https://pubmed.ncbi.nlm.nih.gov/34846328/" target="_blank" rel="noreferrer">Enkät om styrkelyftares toppning</a>. RTS-tabellen används för viktskattning, inte som forskningsstöd för kurvan.</p>

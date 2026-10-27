@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { adverseReadinessDeviation, chartMeasurements, chartStrengthSeries, latestChartStrength, repInterval, personalRecords, paceRange, dotsScore, limbSymmetryIndex } from "./chartMetrics";
 import { readinessFromEAk } from "./eakoefficient";
+import { setVolumeWeight } from "./exerciseVariants";
+import { VOLUME_LANDMARKS } from "./individualisation";
+import { sessionLoad } from "./enduranceLoad";
 
 const log = (date: string, weight: number, extra = {}) => ({ date, exercise: "Bench press", variation: null, set_number: 1, reps: 1, weight_kg: weight, rpe: 10, ...extra });
 describe("Emil's chart rules", () => {
@@ -39,5 +42,13 @@ describe("Emil's chart rules", () => {
   it("calculates injured/healthy symmetry without division by zero", () => {
     expect(limbSymmetryIndex(90, 100)).toBe(90);
     expect(limbSymmetryIndex(100, 0)).toBeNull();
+  });
+  it("uses the generator's weekly set landmarks and 1.25 weight for 1.5-reps", () => {
+    expect(VOLUME_LANDMARKS.squat).toEqual([6,20]);
+    expect(4*setVolumeWeight({exercise:"1.5-rep squat"})).toBe(5);
+    expect(4*setVolumeWeight({exercise:"Back squat"})).toBe(4);
+  });
+  it("adds a long run using session RPE times actual minutes", () => {
+    expect(sessionLoad({date:"2026-10-27",discipline:"run",actual_total_seconds:5400,planned_total_seconds:null,overall_rpe:7,peak_rpe:10,planned_avg_rpe:null})).toBe(630);
   });
 });

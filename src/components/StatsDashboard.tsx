@@ -331,10 +331,10 @@ const STATUS_META: Record<
     help: "Stable training load with signs of recovery.",
   },
   peaking: {
-    label: "Peaking",
+    label: "Lägre korttidsbelastning",
     color:
       "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
-    help: "Lower fatigue relative to recent training load.",
+    help: "Korttidsbelastningen är lägre än långtidsbelastningen. Detta säger inget om EAk eller tävlingsform.",
   },
   detraining: {
     label: "Detraining",

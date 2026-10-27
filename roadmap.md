@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [x] Granska alla 22 förslag i Ändringar i SETPOINTs autogenerator: rapport klar med kodjämförelse, forskningsbegränsningar, rättad volymmatematik och konflikter kring D0/coachstyrning; 105 befintliga tester gröna. Ingen träningsregel eller sparat program ändrat.
 - [x] EAk steg B del 1: databas (strategi per atlet, ömhet/motivation, pass-RPE/tid, uppvärmningsvikter, utökad beslutslogg med utfall), motorn läser allt, readiness frågar ömhet/motivation.
 - [x] EAk steg B del 2: uppvärmningsvikter i atlet-/coachinställningar, exakt viktmatchning och RPE 6–10 i halvsteg i båda loggflödena; referensset undantas från arbetsset och EAk. Alex sparade/återläste 60 kg och loggade/återläste RPE 7,5; 48 relevanta tester och bygge gröna.
 - [x] Steg B slutkontroll: Alex loggade ett separat publicerat kontrollpass och återläste RPE 7,5 / 45 minuter; coachbeslut återläst med plan_changed=true och föregående bänkutvärdering har sparat utfall −8,06 % / yellow.

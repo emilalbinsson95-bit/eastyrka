@@ -55,3 +55,15 @@ describe("D0 peak for a bench-variant-heavy lifter (Vincent case)",()=>{
   expect(r.warnings).toEqual([]);
  });
 });
+describe("D0 day placement",()=>{
+ it("stores zero-based days within 0–6 that map back to the planned dates",()=>{
+  const r=buildD0Weeks({start:"2026-10-30",end:"2026-11-13",competition:"2026-11-14",days:4,summary,singles:false});
+  r.weeks.forEach((w,i)=>{
+   expect(w.sessions[0].day_of_week).toBe(0);
+   for(const s of w.sessions){
+    expect(s.day_of_week).toBeGreaterThanOrEqual(0);expect(s.day_of_week).toBeLessThanOrEqual(6);
+    expect(format(addDays(parseISO(r.weekStarts[i]),s.day_of_week),"yyyy-MM-dd")).toBe((s.notes??"").match(/Datum: (\S+)/)![1]);
+   }
+  });
+ });
+});

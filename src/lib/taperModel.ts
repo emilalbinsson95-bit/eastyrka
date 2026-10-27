@@ -428,6 +428,8 @@ export function buildTaperPlan(input: {
       for (const k of active) {
         if (total >= target) break;
         if (presentLifts.has(lift(k).name)) continue;
+        // Mark efter sista tunga marken tränas bara på sin egen sista dag.
+        if (k === "deadlift" && ses.date >= snapToTrainingDay(daysBefore(d0, s.heavyDay.deadlift), weekdays)) continue;
         if (ses.date >= snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays)) continue;
         ses.exercises.push({
           exercise: lift(k).name,
@@ -480,7 +482,20 @@ export function buildTaperPlan(input: {
   const rank = (e: TaperExercise) => (liftNames.has(e.exercise) && !e.variation ? (e.isTechnique ? 1 : 0) : 2);
   const sessions = [...byDate.values()]
     .filter((ses) => ses.exercises.length > 0)
-    .map((ses) => ({ ...ses, exercises: [...ses.exercises].sort((a, b) => rank(a) - rank(b)) }))
+    .map((ses) => {
+      const heavy = heavyAt.get(ses.date) ?? [];
+      const last = lastAt.get(ses.date) ?? [];
+      const names = (ks: TaperLiftKey[]) => ks.map((k) => TAPER_LIFT_LABEL[k].toLowerCase()).join(" och ");
+      const hasMainWork = ses.exercises.some((e) => liftNames.has(e.exercise) && !e.isTechnique && !e.variation);
+      const title = heavy.length
+        ? `Sista tunga passet — ${names(heavy)}${last.length ? ` (sista ${names(last)})` : ""}`
+        : last.length
+          ? `Sista passet — ${names(last)}`
+          : hasMainWork
+            ? ses.title
+            : "Teknik och assistans";
+      return { ...ses, title: title.replace(/— (\p{Ll})/u, (_, c: string) => `— ${c.toUpperCase()}`), exercises: [...ses.exercises].sort((a, b) => rank(a) - rank(b)) };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // --- Hårda varningar, alltid aktiva ---

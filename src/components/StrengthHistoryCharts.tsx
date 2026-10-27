@@ -1,6 +1,6 @@
 import { chartStrengthSeries } from "@/lib/chartMetrics";
 import type { ChartLog } from "@/lib/chartMetrics";
-import { lookupBaseline, isReadinessLift } from "@/lib/eakoefficient";
+import { lookupBaseline, isReadinessLift, baselineExerciseKey } from "@/lib/eakoefficient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Area, ComposedChart, Line, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -10,7 +10,7 @@ export function StrengthHistoryCharts({ logs, baselines, history, since }: { log
   const keys = [...new Set(measurements.map(p=>p.key))];
   return <div className="space-y-4">{keys.map(key=>{
     const points=measurements.filter(p=>p.key===key);const first=points[0];if(!first)return null;
-    const changes=history.filter(h=>h.exercise.trim().toLowerCase()===first.exercise.trim().toLowerCase()).sort((a,b)=>a.recorded_at.localeCompare(b.recorded_at));
+    const changes=history.filter(h=>baselineExerciseKey(h.exercise)===baselineExerciseKey(first.exercise)).sort((a,b)=>a.recorded_at.localeCompare(b.recorded_at));
     const today=new Date().toISOString().slice(0,10);
     const dates=[...new Set([since,today,...points.map(p=>p.date),...changes.map(h=>h.recorded_at.slice(0,10))])].sort().filter(d=>d>=since && d<=today);
     const data=dates.map(date=>{

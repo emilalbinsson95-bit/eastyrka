@@ -49,7 +49,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
-import { dailyE1RM, rollingE1RMBySession, countsForEAk, isReadinessLift } from "@/lib/eakoefficient";
+import { dailyE1RM, rollingE1RMBySession, countsForEAk, isReadinessLift, lookupBaseline as resolveBaseline, baselineExerciseKey } from "@/lib/eakoefficient";
 import { EakMesoSection } from "@/components/EakMesoSection";
 import { autoFloatBaselines, type BaselineAutoResult } from "@/lib/baselineAutofloat.functions";
 import { z } from "zod";
@@ -386,15 +386,14 @@ function AnalyticsPage() {
   // "bench press " resolve to the same baseline.
   const lookupBaseline = (name: string | undefined | null): number => {
     if (!name) return 0;
-    const key = name.trim();
-    return baselines[key] ?? baselines[key.toLowerCase()] ?? 0;
+    return resolveBaseline(baselines, name) ?? 0;
   };
 
   // Baseline that was in force on a given date (from baseline_history),
   // so a baseline raise shows as a step instead of an unexplained EAk dip.
   const baselineAt = (name: string, date: string): number => {
     const rows = (baselineHistoryQuery.data ?? []).filter(
-      (r) => r.exercise.trim().toLowerCase() === name.trim().toLowerCase(),
+      (r) => baselineExerciseKey(r.exercise) === baselineExerciseKey(name),
     );
     if (rows.length === 0) return lookupBaseline(name);
     let val = 0;

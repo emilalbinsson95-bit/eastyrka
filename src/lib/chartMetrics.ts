@@ -1,4 +1,5 @@
 import { dailyE1RM, lookupBaseline, pickMeasurementSet, readinessFromEAk, type SetInput } from "./eakoefficient";
+import { COMP_NAME, compLiftKey } from "./liftIdentity";
 
 export interface ChartLog extends SetInput {
   date: string;
@@ -7,8 +8,19 @@ export interface ChartLog extends SetInput {
   set_number: number;
 }
 export const repInterval = (reps: number) => reps <= 3 ? "1–3" : reps <= 6 ? "4–6" : "7+";
-export const chartExerciseKey = (exercise: string, variation?: string | null) =>
-  JSON.stringify([exercise.trim().toLowerCase(), (variation ?? "").trim().toLowerCase()]);
+/** Prescription notes are not separate exercises; real variants and deadlift stances remain distinct. */
+export function chartLiftIdentity(exercise: string, variation?: string | null) {
+  const descriptor = /^(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i;
+  const embedded = exercise.trim().match(/^(back squat|squat|bench press|deadlift)\s+(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i);
+  const name = embedded?.[1] ?? exercise.trim();
+  const lift = compLiftKey(name);
+  const note = (variation ?? "").trim();
+  return { exercise: lift && !/^(sumo|conventional) deadlift$/i.test(name) ? COMP_NAME[lift] : name, variation: descriptor.test(note) ? "" : note };
+}
+export const chartExerciseKey = (exercise: string, variation?: string | null) => {
+  const identity = chartLiftIdentity(exercise, variation);
+  return JSON.stringify([identity.exercise.toLowerCase(), identity.variation.toLowerCase()]);
+};
 
 /** One shared measurement per exercise/variant/session, selected before plotting any period. */
 export function chartMeasurements<T extends ChartLog>(logs: T[]): T[] {
@@ -31,9 +43,10 @@ export function chartStrengthSeries(logs: ChartLog[], baselines: Record<string, 
     const history = [...(values.get(key) ?? []), e1rm].slice(-3);
     values.set(key, history);
     const rolling = history.reduce((sum, value) => sum + value, 0) / history.length;
-    const baseline = lookupBaseline(baselines, log.exercise) ?? 0;
+    const identity = chartLiftIdentity(log.exercise, log.variation);
+    const baseline = lookupBaseline(baselines, identity.exercise) ?? 0;
     const eak = baseline > 0 ? rolling / baseline * 100 : null;
-    return { ...log, key, e1rm, rolling, baseline, eak, samples: history.length, status: readinessFromEAk(eak ?? 0) };
+    return { ...log, ...identity, key, e1rm, rolling, baseline, eak, samples: history.length, status: readinessFromEAk(eak ?? 0) };
   });
 }
 

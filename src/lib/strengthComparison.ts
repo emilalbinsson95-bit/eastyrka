@@ -1,12 +1,12 @@
 import { dailyE1RM, pickMeasurementSet } from "@/lib/eakoefficient";
-import { repInterval } from "@/lib/chartMetrics";
+import { repInterval, chartExerciseKey, chartLiftIdentity } from "@/lib/chartMetrics";
 
 export interface ComparisonLog { date: string; exercise: string; variation?: string | null; set_number: number; reps: number; weight_kg: number; rpe: number; is_warmup_reference?: boolean; is_technique?: boolean }
 export function compareStrength(logs: ComparisonLog[], today: string) {
   const groups = new Map<string, ComparisonLog[]>();
   for (const l of logs) {
     if (l.date > today || !Number.isFinite(l.rpe)) continue;
-    const key = JSON.stringify([l.date, l.exercise, l.variation ?? ""]);
+    const key = JSON.stringify([l.date, chartExerciseKey(l.exercise, l.variation)]);
     groups.set(key, [...(groups.get(key) ?? []), l]);
   }
   const series = new Map<string, Array<{ date: string; value: number }>>();
@@ -14,7 +14,8 @@ export function compareStrength(logs: ComparisonLog[], today: string) {
     const m = pickMeasurementSet(g);
     if (!m) continue;
     // RTS normalizes RPE; comparisons retain exercise, variant and rep interval.
-    const key = JSON.stringify([m.exercise, m.variation ?? "", repInterval(m.reps)]);
+    const identity = chartLiftIdentity(m.exercise, m.variation);
+    const key = JSON.stringify([identity.exercise, identity.variation, repInterval(m.reps)]);
     series.set(key, [...(series.get(key) ?? []), { date: m.date, value: dailyE1RM(m) }]);
   }
   return [...series.entries()].map(([key, values]) => {

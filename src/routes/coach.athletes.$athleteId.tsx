@@ -164,6 +164,7 @@ function AthleteDetailPage() {
               <Calendar className="mr-1 h-4 w-4" /> Calendar
             </Link>
           </Button>
+          <Button asChild variant="outline"><Link to="/coach/athletes/$athleteId/peaking" params={{athleteId}}>Toppning</Link></Button>
           <Button asChild>
             <Link
               to="/coach/athletes/$athleteId/cycles"

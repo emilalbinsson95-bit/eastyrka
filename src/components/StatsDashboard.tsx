@@ -767,7 +767,7 @@ function MesoSummaryCard({
     const byExFirst = new Map<string, number>();
     const byExRecent = new Map<string, number>();
 
-    for (const l of inMeso) {
+    for (const l of chartMeasurements(inMeso)) {
       const key = exerciseKey(l.exercise, l.variation);
       const e1rm = dailyE1RM({
         weight_kg: Number(l.weight_kg),

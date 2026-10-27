@@ -99,6 +99,7 @@ function ExerciseProgressionCard({ patientId, canEdit }: { patientId: string; ca
       const ids = (sessions ?? []).map((s) => s.id);
       if (ids.length === 0) return [];
       const dateById = new Map((sessions ?? []).map((s) => [s.id, s.session_date]));
+      const {data:feedback,error:feedbackError}=await supabase.from("patient_session_feedback").select("session_id,pain_after").in("session_id",ids);if(feedbackError)throw feedbackError;
       const { data: exs, error: eErr } = await supabase
         .from("rehab_exercises")
         .select(
@@ -131,7 +132,7 @@ function ExerciseProgressionCard({ patientId, canEdit }: { patientId: string; ca
           date,
           load,
           band: bandMid,
-          pain: e.pain_rating,
+          pain: feedback?.find(f=>f.session_id===e.session_id)?.pain_after ?? e.pain_rating,
           reps: e.reps,
           sets: e.sets,
         });
@@ -252,7 +253,7 @@ function ExerciseProgressionCard({ patientId, canEdit }: { patientId: string; ca
                 </ResponsiveContainer>
               </div>
             )}
-            {ex.chart.some(p=>p.pain!=null) && <div className="mt-6 space-y-1"><p className="text-xs font-medium">Smärta efter övningen (0–10)</p><div className="h-28"><ResponsiveContainer><LineChart data={ex.chart} margin={{top:4,right:8,left:-20,bottom:0}}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="date" fontSize={10}/><YAxis domain={[0,10]} fontSize={10}/><Tooltip/>{preferences.query.data?.pain_limit!=null&&<ReferenceLine y={Number(preferences.query.data.pain_limit)} stroke="var(--destructive)" label={`Gräns ${preferences.query.data.pain_limit}`}/>}<Line dataKey="pain" name="Smärta" stroke="var(--chart-3)" connectNulls={false} dot={{r:3}}/></LineChart></ResponsiveContainer></div></div>}
+            {ex.chart.some(p=>p.pain!=null) && <div className="mt-6 space-y-1"><p className="text-xs font-medium">Smärta efter passet (0–10) · övningssmärta när passvärdet saknas</p><div className="h-28"><ResponsiveContainer><LineChart data={ex.chart} margin={{top:4,right:8,left:-20,bottom:0}}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="date" fontSize={10}/><YAxis domain={[0,10]} fontSize={10}/><Tooltip/>{preferences.query.data?.pain_limit!=null&&<ReferenceLine y={Number(preferences.query.data.pain_limit)} stroke="var(--destructive)" label={`Gräns ${preferences.query.data.pain_limit}`}/>}<Line dataKey="pain" name="Smärta" stroke="var(--chart-3)" connectNulls={false} dot={{r:3}}/></LineChart></ResponsiveContainer></div></div>}
           </div>
         ))}
       </CardContent>

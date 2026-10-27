@@ -1,3 +1,4 @@
+import { dMinus21, frozenPeakBaseline } from "@/lib/taperFollowup";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -534,6 +535,14 @@ export function GenerateStrengthTemplateDialog({
         }
       }
 
+      if (isPeaking) {
+        const {data: baselineHistory,error:historyError}=await supabase.from("baseline_history").select("exercise,one_rm_kg,recorded_at").eq("athlete_id",athleteId);
+        const target=dMinus21(competitionDate);
+        const frozen=target<=format(new Date(),"yyyy-MM-dd")&&!historyError?frozenPeakBaseline(competitionDate,Object.fromEntries((historyQuery.data?.baselines??[]).map(b=>[b.exercise,Number(b.one_rm_kg)])),baselineHistory??[]):null;
+        const {error:trackingError}=await supabase.from("taper_followups").insert({mesocycle_id:meso.id,athlete_id:athleteId,competition_date:competitionDate,settings:{...taperSettings,heavyRpe:Math.min(8.5,peakOptions.rpe)} as unknown as Json,openers:Object.fromEntries(Object.entries(chosenOpeners).filter(([,value])=>value!=null)) as Json,flags:(d0Plan?.warnings??[]).map(message=>({id:crypto.randomUUID(),message,decision:"pending"})) as Json,updated_by:coachId,...(frozen&&Object.keys(frozen).length?{frozen_at:target,frozen_baselines:frozen as Json}:{})});
+        if(trackingError)toast.error("Passen är skapade, men toppningsuppföljningen kunde inte sparas. Öppna Toppning och spara där.");
+        qc.invalidateQueries({queryKey:["peaking-followup",athleteId]});
+      }
       const { error: settingsError } = await supabase.from("athlete_generator_preferences").upsert({ athlete_id: athleteId, settings: generatorSettingsSchema.parse(settings) as unknown as Json, updated_by: coachId, updated_at: new Date().toISOString() });
       if (settingsError) toast.error("Programmet skapades, men coachvalen kunde inte sparas för nästa block.");
       return meso.id;

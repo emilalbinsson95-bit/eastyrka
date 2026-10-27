@@ -362,7 +362,7 @@ export function GenerateStrengthTemplateDialog({
       // applyAdjustments — the wave applies its RPE as a relative offset, so
       // no extra intensityOffset is passed here.
       const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
-      if (isPeaking) return { weeks: applyVolumeGuards(weeks, volumeProfile), warnings: buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes"}).warnings };
+      if (isPeaking) return { weeks: applyVolumeGuards(weeks, volumeProfile), warnings: d0Plan?.warnings ?? [] };
       if (template?.sessionSetBudget) return {
         weeks: applyVolumeGuards(applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),volumeProfile),
         warnings: [] as string[],
@@ -453,7 +453,7 @@ export function GenerateStrengthTemplateDialog({
         athlete_id: athleteId,
         mesocycle_id: meso.id,
         week_index: w.week_index,
-        week_start_date: isPeaking ? peakWeekStarts[w.week_index - 1] : format(addDays(parseISO(effectiveStartDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
+        week_start_date: isPeaking ? (d0Plan?.weekStarts[w.week_index - 1] ?? peakWeekStarts[w.week_index - 1]) : format(addDays(parseISO(effectiveStartDate), (w.week_index - 1) * 7), "yyyy-MM-dd"),
         status: "draft" as const,
         is_deload:w.kind==="deload",
         training_phase:isPeaking ? w.sessions[0]?.notes?.match(/Fas: ([^.]+)/)?.[1]??"peak" : w.kind,
@@ -845,7 +845,7 @@ export function GenerateStrengthTemplateDialog({
                 )}
                 {peakSummary && peakingBasis(peakSummary).map((line) => <p key={line}>{line}</p>)}
                 {blockResult.warnings.map(w=><p key={w} className="text-destructive">{w}</p>)}
-                <div className="overflow-x-auto"><table className="w-full text-left"><caption className="text-left font-medium text-foreground">Planerade arbetsset per lyft</caption><thead><tr><th>Period</th><th>Böj</th><th>Bänk</th><th>Mark</th></tr></thead><tbody>{plannedWeeks.map((w, i) => <tr key={w.week_index}><td>{peakWeekStarts[i]} · {i === 0 && peakDays % 7 ? `${peakDays % 7} dagar` : "7 dagar"}</td>{(["squat", "bench", "deadlift"] as const).map((key) => <td key={key}>{w.sessions.flatMap((session) => session.exercises).filter((e) => compLiftKey(e.exercise) === key).reduce((n, e) => n + e.target_sets, 0)}</td>)}</tr>)}</tbody></table></div>
+                <div className="overflow-x-auto"><table className="w-full text-left"><caption className="text-left font-medium text-foreground">Planerade arbetsset per lyft</caption><thead><tr><th>Period</th><th>Böj</th><th>Bänk</th><th>Mark</th></tr></thead><tbody>{plannedWeeks.map((w, i) => <tr key={w.week_index}><td>{d0Plan?.weekStarts[i] ?? peakWeekStarts[i]}</td>{(["squat", "bench", "deadlift"] as const).map((key) => <td key={key}>{w.sessions.flatMap((session) => session.exercises).filter((e) => compLiftKey(e.exercise) === key).reduce((n, e) => n + e.target_sets, 0)}</td>)}</tr>)}</tbody></table></div>
                 <p>Kurvan är ett coachförslag. Styrkeforskningen stödjer minskad volym, men inte dessa exakta veckoprocent. Set, reps och tonnage är inte samma volymmått.</p>
                 <p><a className="text-primary underline" href="https://doi.org/10.1519/SSC.0000000000000125" target="_blank" rel="noreferrer">Pritchard m.fl. 2015: maximal styrka och toppning</a> · <a className="text-primary underline" href="https://pubmed.ncbi.nlm.nih.gov/34846328/" target="_blank" rel="noreferrer">Enkät om styrkelyftares toppning</a>. RTS-tabellen används för viktskattning, inte som forskningsstöd för kurvan.</p>
               </div>

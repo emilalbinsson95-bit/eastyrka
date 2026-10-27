@@ -233,12 +233,12 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
 
   // Accessories: everything that is not one of the three competition lifts,
   // ranked by how much the athlete actually does of it.
-  const accMap = new Map<string, { exercise: string; sets: number; reps: number[] }>();
+  const accMap = new Map<string, { exercise: string; variation?: string; sets: number; reps: number[] }>();
   for (const l of reference === "work3" ? workLogs : recent) {
-    if (isCompetitionSquat(l.exercise) || isCompetitionBench(l.exercise) || isCompetitionDeadlift(l.exercise))
-      continue;
-    const key = norm(l.exercise);
-    const entry = accMap.get(key) ?? { exercise: l.exercise, sets: 0, reps: [] };
+    if (isAnyCompEntry(l.exercise, l.variation)) continue;
+    const variation = compLiftKey(l.exercise) ? l.variation?.trim() || undefined : undefined;
+    const key = `${norm(l.exercise)}|${norm(variation ?? "")}`;
+    const entry = accMap.get(key) ?? { exercise: l.exercise, variation, sets: 0, reps: [] };
     entry.sets += 1;
     entry.reps.push(l.reps);
     accMap.set(key, entry);
@@ -246,6 +246,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const accessories: PeakAccessory[] = [...accMap.values()]
     .map((a) => ({
       exercise: a.exercise,
+      ...(a.variation ? { variation: a.variation } : {}),
       weeklySets: reference === "work3" ? a.sets / Math.max(1, workWindows.length) : weeksCovered > 0 ? a.sets / weeksCovered : 0,
       reps: clamp(Math.round(median(a.reps)) || 10, 5, 15),
     }))

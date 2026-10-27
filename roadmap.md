@@ -6,7 +6,7 @@
 - [x] Steg B slutkontroll: Alex loggade ett separat publicerat kontrollpass och återläste RPE 7,5 / 45 minuter; coachbeslut återläst med plan_changed=true och föregående bänkutvärdering har sparat utfall −8,06 % / yellow.
 - [x] EAk steg C: strategikort per atlet (sparad/återläst som coach), signalbrus/stödsignaler/belastningskurva/NFOR i analysvyn, obligatoriskt ja/nej före beslut och beskrivande beslutsöversikt (12 mån) i coachöversikten — allt provkört som coach för Alex; 272 tester gröna.
 - [x] EAk steg A: trendjusterat poolat brus, strategi som parameter, stödsignaler och NFOR-flagga; 34 EAk-tester och totalt 264 tester gröna, coachens analys för Alex verifierad utan fel. Veckor grupperas efter mesocykel och föregående antal pass används i tröskeln. Steg B–C är inte påbörjade.
-- [ ] Toppning: gradvis volymnedtrappning från tre föregående arbetsveckor, valbara start/slutdatum och kontrollerat forskningsunderlag; verifiera med Alex Athlete.
+- [x] Toppning: volymnedtrappning sker nu inne i atletens egna pass (set per pass × kurva) med oförändrad frekvens per lyft — Vincent-fallet (böj/mark 1 ggr/vecka) ger 4/3/2 respektive 3/2/1 set istället för 1 set; verifierat mot hans riktiga loggar, 273 tester gröna.
 - [x] Tävlingsankrad toppning rättad; 243 tester gröna, Alex sexveckorsutkast sparat och återläst inför lördagstävling.
 - [x] Toppning: 2–6 dagar och 2–6 veckor i generator och säsongsplanering; 239 tester gröna, sexveckorsutkast och sparad säsongsplan verifierade som coach för Alex Athlete
 

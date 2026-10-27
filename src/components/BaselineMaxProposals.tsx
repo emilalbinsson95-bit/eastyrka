@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lookupBaseline } from "@/lib/eakoefficient";
 import { Button } from "@/components/ui/button";
 
-export function BaselineMaxProposals({athleteId,coachId}:{athleteId:string;coachId:string}) {
+export function BaselineMaxProposals({athleteId}:{athleteId:string}) {
   const qc=useQueryClient();
   const proposals=useQuery({queryKey:["baseline-max-proposals",athleteId],queryFn:async()=>{
     const [baselines,logs,decisions]=await Promise.all([
@@ -18,6 +18,9 @@ export function BaselineMaxProposals({athleteId,coachId}:{athleteId:string;coach
     return (logs.data??[]).filter(l=>!seen.has(l.id)&&!l.variation&&Number(l.weight_kg)>(lookupBaseline(map,l.exercise)??Infinity)).map(l=>({...l,baseline:lookupBaseline(map,l.exercise)??0}));
   }});
   const decide=useMutation({mutationFn:async({log,approve}:{log:NonNullable<typeof proposals.data>[number];approve:boolean})=>{
+    const {data:auth,error:authError}=await supabase.auth.getUser();
+    if(authError||!auth.user) throw new Error("Logga in igen.");
+    const coachId=auth.user.id;
     const {error}=await supabase.from("baseline_max_decisions").insert({athlete_id:athleteId,training_log_id:log.id,decision:approve?"approved":"rejected",decided_by:coachId});
     if(error) throw error;
     if(approve){const r=await supabase.from("baselines").update({one_rm_kg:Number(log.weight_kg)}).eq("athlete_id",athleteId).eq("exercise",log.exercise);if(r.error) throw r.error;}

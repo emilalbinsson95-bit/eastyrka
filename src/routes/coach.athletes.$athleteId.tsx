@@ -1,4 +1,5 @@
 import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
+import { BaselineMaxProposals } from "@/components/BaselineMaxProposals";
 import { EakStrategyCard } from "@/components/EakStrategyCard";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { RoutineScore } from "@/components/RoutinePlayer";
@@ -200,7 +201,7 @@ function AthleteDetailPage() {
           <div className="mb-4"><StrengthVolumeProfileCard athleteId={athleteId} /></div>
           <div className="mb-4"><WarmupLoadsCard athleteId={athleteId} /></div>
           <div className="mb-4"><EakStrategyCard athleteId={athleteId} /></div>
-          <BaselineMaxProposals athleteId={athleteId} coachId={user!.id} />
+          <BaselineMaxProposals athleteId={athleteId} />
           <BaselinesEditor athleteId={athleteId} />
         </TabsContent>
       </Tabs>

@@ -31,7 +31,7 @@ export const PROTOCOL_DESCRIPTION: Record<SetProtocol, string> = {
   "rep-drops": "Samma vikt som första setet. Anpassa därefter antalet reps till en lägre RPE, utan att gå till failure. Inte för arbete över cirka 85 % av 1RM.",
   ramping: "Samma reps, successivt högre RPE och vikt inom passet. Uppvärmningen är separat.",
   descending: "Färre reps för varje set, med högre vikt men bibehållen RPE. Aldrig färre än två reps.",
-  metabolic: "Ett topp-set följt av högst fem reps per backoff-set, på högst 70 % av övningens uppskattade 1RM och högst 90 % av toppvikten. Två minuters vila för assistans; 3–5 minuter för huvudlyft. Extra backoff-set är tillåtna enligt trötthetsregeln, inom vikt- och RPE-taken.",
+  metabolic: "Ett toppset följt av högst fem reps per backoff-set på mål-RPE 6–7. Vikten räknas från toppsetets uppskattade etta och RTS-tabellen. Extra set kräver coachens godkännande.",
   double: "Öka reps inom ett intervall. När alla set når övre gränsen inom mål-RPE, höj vikten nästa gång och börja på nedre gränsen.",
 };
 
@@ -74,15 +74,10 @@ export function protocolSets(e: TemplateExercise, protocol: SetProtocol): Protoc
     let setRpe = rpe;
     if (protocol === "ramping") setRpe = Math.max(6, rpe - Math.min(2, (count - 1 - i) * 0.5));
     if (protocol === "descending") setReps = Math.max(2, reps - i);
-    if (protocol === "rep-drops" && i > 0) { setReps = Math.max(1, reps - 1); setRpe = Math.max(6, rpe - 1); }
+    if (protocol === "rep-drops" && i > 0) { setReps = Math.max(2, reps - i); setRpe = Math.max(6, rpe - i); }
     if (protocol === "metabolic" && i > 0) { setRpe = 6; setReps = Math.min(5, reps); }
     let weight = adjustedWeight(e, setReps, setRpe);
     if (protocol === "rep-drops") weight = adjustedWeight(e, reps, rpe);
-    if (protocol === "metabolic" && i > 0) {
-      const oldRpe = e.intensity_metric === "rir" ? 10 - (e.target_rir ?? 3) : (e.target_rpe ?? 7);
-      const originalPct = pctOf1RM(oldRpe, reps);
-      weight = e.target_weight_kg && originalPct && reps <= 12 ? Math.floor(Math.min(e.target_weight_kg * 70 / originalPct, e.target_weight_kg * 0.9) / 2.5) * 2.5 : undefined;
-    }
     return { reps: setReps, rpe: setRpe, weight };
   });
 }
@@ -100,11 +95,11 @@ function applyProtocol(e: TemplateExercise, protocol: SetProtocol): TemplateExer
   const name = SET_PROTOCOLS.find((p) => p.id === protocol)?.label ?? "";
   const lines = sets.map((s, i) => `Set ${i + 1}: ${s.reps} reps @ RPE ${numberText(s.rpe)}${s.weight == null ? "" : ` · ${numberText(s.weight)} kg`}.`);
   if (protocol === "rep-drops") {
-    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: samma vikt som set 1, gör så många rena reps som ryms vid RPE ${numberText(sets[i]?.rpe ?? 6)} (inte till failure).`;
+    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: samma vikt som set 1, ${sets[i]?.reps ?? 2} reps · mål RPE ${numberText(sets[i]?.rpe ?? 6)}. Sänk reps vid trötthet, inte till failure.`;
   }
   if (protocol === "metabolic") {
     const rest = protocolGroup(e) === "accessories" ? "2 minuter" : "3–5 minuter, längre vid behov";
-    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " på högst 70 % av uppskattat 1RM för just denna övning och högst 90 % av toppvikten" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · mål RPE 6, högst RPE 7 · vila ${rest}. Sänk vikten om RPE-gränsen överskrids.`;
+    for (let i = 1; i < lines.length; i++) lines[i] = `Set ${i + 1}: ${sets[i]?.reps ?? 5} reps${sets[i]?.weight == null ? " · vikt från toppsetets e1RM och RTS" : ` · ${numberText(sets[i]?.weight ?? 0)} kg`} · mål RPE 6, högst RPE 7 · vila ${rest}. Sänk vikten om RPE-gränsen överskrids.`;
   }
   if (protocol === "double") {
     const hi = e.target_reps + 4;

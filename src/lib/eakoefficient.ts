@@ -200,8 +200,8 @@ export function readinessClasses(status: ReadinessStatus): string {
 /**
  * Volume quality based on E1RM drop from set 1 of the same day & exercise.
  *  - Set 1 itself is the baseline reference (no drop yet).
- *  - drop ≤ 4%   → Optimal
- *  - 4% < drop < 5% → Acceptable
+ *  - drop < 4%   → Optimal
+ *  - 4% <= drop < 5% → Acceptable
  *  - drop ≥ 5%   → Fatigue limit reached
  */
 export function volumeQualityFromDrop(
@@ -210,7 +210,7 @@ export function volumeQualityFromDrop(
 ): VolumeQuality {
   if (setNumber <= 1) return "baseline";
   if (dropPercent < -SANDBAG_SET1_THRESHOLD_PCT) return "sandbag";
-  if (dropPercent <= 4) return "optimal";
+  if (dropPercent < 4) return "optimal";
   if (dropPercent >= 5) return "fatigue_limit";
   return "acceptable";
 }

@@ -1,4 +1,5 @@
 import { pctOf1RMInterp } from "@/lib/intensity";
+import { compLiftKey } from "./liftIdentity";
 /**
  * EAkoefficient — autoregulation engine.
  *
@@ -279,12 +280,12 @@ export interface RawLog extends SetInput {
   set_number: number;
 }
 
-const READINESS_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b|clean|snatch|jerk|ryck|st[öo]t|v[äa]ndning/i;
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;
-/** EAk/readiness uses the big 3 (squat, bench, deadlift), their barbell
- *  variations and Olympic lifts — accessory margins distort readiness. */
-export function isReadinessLift(exercise: string): boolean {
-  return READINESS_LIFT.test(exercise) && !NOT_READINESS_LIFT.test(exercise);
+/** Only competition lifts contribute EAk; prescription descriptors are not variants. */
+export function isReadinessLift(exercise: string, variation?: string | null): boolean {
+  const name = exercise.trim().replace(/\s+(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i, "");
+  const note = (variation ?? "").trim();
+  return compLiftKey(name) !== null && (!note || /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i.test(note));
 }
 
 const BIG3_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b/i;
@@ -326,7 +327,7 @@ export function processLogs<T extends RawLog>(
     const e1rm = dailyE1RM(log);
     const meas = measurement.get(key);
     const measE1 = meas ? dailyE1RM(meas) : 0;
-    const readiness = baseline > 0 && isReadinessLift(log.exercise);
+    const readiness = baseline > 0 && isReadinessLift(log.exercise, log.variation);
     // Day decision: today's measurement set. Trend: 3-session average.
     const eak = readiness && measE1 > 0 ? (measE1 / baseline) * 100 : 0;
     const roll = rolling.get(key) ?? 0;

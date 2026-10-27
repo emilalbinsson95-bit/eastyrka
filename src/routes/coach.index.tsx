@@ -131,7 +131,7 @@ function CoachRosterPage() {
       const latestByAthlete = new Map<string, { date: string | null; points: ReturnType<typeof latestChartStrength> }>();
       for (const id of athleteIds) {
         const logs = (recentLogs ?? []).filter(l => l.athlete_id === id).map(l => ({ ...l, weight_kg: Number(l.weight_kg), rpe: Number(l.rpe) }));
-        const points = latestChartStrength(logs, baselineMap.get(id) ?? {}).filter(p => isReadinessLift(p.exercise));
+        const points = latestChartStrength(logs, baselineMap.get(id) ?? {}).filter(p => isReadinessLift(p.exercise, p.variation));
         latestByAthlete.set(id, { date: logs.map(l => l.date).sort().at(-1) ?? null, points });
       }
 

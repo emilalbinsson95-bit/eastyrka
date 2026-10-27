@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { adverseReadinessDeviation, chartMeasurements, chartStrengthSeries, latestChartStrength, repInterval, personalRecords, paceRange, dotsScore, limbSymmetryIndex } from "./chartMetrics";
-import { readinessFromEAk } from "./eakoefficient";
+import { readinessFromEAk, isReadinessLift, processLogs } from "./eakoefficient";
 import { setVolumeWeight } from "./exerciseVariants";
 import { VOLUME_LANDMARKS } from "./individualisation";
 import { sessionLoad } from "./enduranceLoad";
@@ -8,6 +8,17 @@ import { compareStrength } from "./strengthComparison";
 
 const log = (date: string, weight: number, extra = {}) => ({ date, exercise: "Bench press", variation: null, set_number: 1, reps: 1, weight_kg: weight, rpe: 10, ...extra });
 describe("Emil's chart rules", () => {
+  it("gives EAk only to competition lifts, never variants or Olympic lifts", () => {
+    const logs=[log("2026-10-01",100),log("2026-10-02",80,{variation:"close grip"}),log("2026-10-03",90,{exercise:"Snatch"}),log("2026-10-04",120,{exercise:"Squat",variation:"pause"}),log("2026-10-05",160,{exercise:"Deadlift"})];
+    const points=latestChartStrength(logs,{"Bench press":100,Snatch:90,"Back squat":120,Deadlift:160});
+    expect(points.filter(p=>p.eak!=null).map(p=>p.exercise)).toEqual(["Bench press","Deadlift"]);
+    expect(points.find(p=>p.variation==="close grip")?.eak).toBeNull();
+    expect(points.find(p=>p.variation==="close grip")?.e1rm).toBe(80);
+    expect(isReadinessLift("Back squat","competition stance")).toBe(true);
+    expect(isReadinessLift("Bench press","competition grip & pause")).toBe(true);
+    expect(isReadinessLift("Back squat","pause")).toBe(false);
+    expect(processLogs([{...logs[1],id:"variant",variation:"close grip"}],{"Bench press":100})[0].eaKoefficient).toBe(0);
+  });
   it("merges Squat Over warm single and Squat competition stance without mutating history", () => {
     const logs = [log("2026-10-01",100,{exercise:"Squat Over warm single"}),log("2026-10-02",110,{exercise:"Squat competition stance"}),log("2026-10-03",120,{exercise:"Back squat",variation:"over-warm single"})];
     const points=latestChartStrength(logs,{"Back squat":110});

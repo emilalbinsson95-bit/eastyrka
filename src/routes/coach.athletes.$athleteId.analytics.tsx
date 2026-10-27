@@ -1,4 +1,4 @@
-import { chartMeasurements, chartExerciseKey, adverseReadinessDeviation } from "@/lib/chartMetrics";
+import { chartMeasurements, chartExerciseKey, chartLiftIdentity, adverseReadinessDeviation } from "@/lib/chartMetrics";
 import { volumeCategory } from "@/lib/strengthTemplates";
 import { VOLUME_LANDMARKS, categoryLabel, personalReadinessFactor } from "@/lib/individualisation";
 import { volumeProfileFromRow, volumeFactorForCategory } from "@/lib/strengthVolumeProfile";
@@ -49,7 +49,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
-import { dailyE1RM, rollingE1RMBySession, countsForEAk } from "@/lib/eakoefficient";
+import { dailyE1RM, rollingE1RMBySession, countsForEAk, isReadinessLift } from "@/lib/eakoefficient";
 import { EakMesoSection } from "@/components/EakMesoSection";
 import { autoFloatBaselines, type BaselineAutoResult } from "@/lib/baselineAutofloat.functions";
 import { z } from "zod";
@@ -471,7 +471,7 @@ function AnalyticsPage() {
         baseline: baseline > 0 ? baseline : null,
         qualifying: s.qualifying,
         eaKoefficient:
-          baseline > 0 && roll > 0 ? Number(((roll / baseline) * 100).toFixed(1)) : null,
+          m && isReadinessLift(m.exercise,m.variation) && baseline > 0 && roll > 0 ? Number(((roll / baseline) * 100).toFixed(1)) : null,
         avgRPE: Number((s.rpeSum / s.sets).toFixed(2)),
         intensity:
           baseline > 0
@@ -598,7 +598,9 @@ function AnalyticsPage() {
   const multiLiftSeries = useMemo(() => {
     const byDate=new Map<string,Record<string,number>>(); const names=new Set<string>();
     const histories=new Map<string,number[]>();
-    for(const log of chartMeasurements(fullLogs)) {
+    for(const raw of chartMeasurements(fullLogs)) {
+      if(!isReadinessLift(raw.exercise,raw.variation)) continue;
+      const log={...raw,...chartLiftIdentity(raw.exercise,raw.variation)};
       const base=baselineAt(log.exercise,log.date); if(base<=0) continue;
       const key=chartExerciseKey(log.exercise,log.variation);
       const history=[...(histories.get(key)??[]),dailyE1RM(log)].slice(-3);histories.set(key,history);
@@ -686,7 +688,7 @@ function AnalyticsPage() {
     // 1) EAk < 95 % two sessions in a row on any lift with a baseline
     const byEx = new Map<string, typeof allLogs>();
     for (const l of allLogs) {
-      if (!lookupBaseline(l.exercise)) continue;
+      if (!isReadinessLift(l.exercise,l.variation) || !lookupBaseline(l.exercise)) continue;
       const arr = byEx.get(l.exercise) ?? [];
       arr.push(l);
       byEx.set(l.exercise, arr);
@@ -733,7 +735,9 @@ function AnalyticsPage() {
     // Same-day EAk (not the rolling average — that would lag behind the
     // check-in): best qualifying E1RM per lift that day ÷ baseline in force.
     const eakByDate = new Map<string, { sum: number; count: number }>();
-    for(const measurement of chartMeasurements(allLogs)) {
+    for(const raw of chartMeasurements(allLogs)) {
+      if(!isReadinessLift(raw.exercise,raw.variation)) continue;
+      const measurement={...raw,...chartLiftIdentity(raw.exercise,raw.variation)};
       const baseline=baselineAt(measurement.exercise,measurement.date);if(baseline<=0)continue;
       const current=eakByDate.get(measurement.date)??{sum:0,count:0};current.sum+=dailyE1RM(measurement)/baseline*100;current.count+=1;eakByDate.set(measurement.date,current);
     }

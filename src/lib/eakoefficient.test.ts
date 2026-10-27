@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, baselineExerciseKey } from "./eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, baselineExerciseKey, isReadinessLift } from "./eakoefficient";
 import { canAddExtraSet } from "./blockVolume";
 
 describe("EAk (RTS model)", () => {
@@ -95,4 +95,18 @@ describe("pickMeasurementSet (heavy singles)", () => {
   expect(pickMeasurementSet(logs)?.id).toBe("work");
   expect(processLogs(logs, { "Back squat": 150 }).map((p) => p.source.id)).toEqual(["work"]);
   expect(countsForEAk(logs[0])).toBe(false);
+});
+
+describe("comp-lift capture for EAk", () => {
+  it("counts stance/grip notes and Swedish names as comp lifts", () => {
+    expect(isReadinessLift("Squat", "Competition stance")).toBe(true);
+    expect(isReadinessLift("Sumo Deadlift", "Over-warm single")).toBe(true);
+    expect(isReadinessLift("Bench Press", "Competition grip & pause")).toBe(true);
+    expect(isReadinessLift("Knäböj")).toBe(true);
+    expect(isReadinessLift("Pause Squat")).toBe(false);
+  });
+  it("stance deadlift falls back to generic deadlift baseline only", () => {
+    expect(lookupBaseline({ Deadlift: 250 }, "Sumo Deadlift")).toBe(250);
+    expect(lookupBaseline({ "Sumo deadlift": 240 }, "Conventional Deadlift")).toBeUndefined();
+  });
 });

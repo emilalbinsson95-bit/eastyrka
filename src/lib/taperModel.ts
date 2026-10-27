@@ -204,7 +204,7 @@ export function buildTaperPlan(input: {
 
   // Alla träningsdagar i fönstret D-42 … D-1.
   const trainingDates: string[] = [];
-  for (let n = 42; n >= 1; n++) {
+  for (let n = 42; n >= 1; n--) {
     const date = daysBefore(d0, n);
     if (weekdays.includes(weekday(date))) trainingDates.push(date);
   }

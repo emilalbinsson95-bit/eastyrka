@@ -470,8 +470,12 @@ export function buildTaperPlan(input: {
     if (!isTaper) techniqueFill();
   }
 
+  // Tävlingslyften först, sedan teknik, sist variationer/assistans (stabil sortering).
+  const liftNames = new Set(active.map((k) => lift(k).name));
+  const rank = (e: TaperExercise) => (liftNames.has(e.exercise) && !e.variation ? (e.isTechnique ? 1 : 0) : 2);
   const sessions = [...byDate.values()]
     .filter((ses) => ses.exercises.length > 0)
+    .map((ses) => ({ ...ses, exercises: [...ses.exercises].sort((a, b) => rank(a) - rank(b)) }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // --- Hårda varningar, alltid aktiva ---

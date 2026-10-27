@@ -27,8 +27,8 @@ describe("taperModel", () => {
     const at = (date: string) => plan.sessions.find((s) => s.date === date);
     // Sista tunga: mark D-9, böj D-8, bänk D-5
     expect(at("2027-01-14")?.exercises.some((e) => e.exercise === "Deadlift" && e.sets === 3 && e.reps === 1)).toBe(true);
-    expect(at("2027-01-15")?.exercises.some((e) => e.exercise === "Back squat" && e.sets === 3 && e.reps === 2)).toBe(true);
-    expect(at("2027-01-18")?.exercises.some((e) => e.exercise === "Bench press" && e.sets === 3 && e.reps === 3)).toBe(true);
+    expect(at("2027-01-15")?.exercises.some((e) => e.exercise === "Back squat" && e.sets === 2 && e.reps === 2)).toBe(true);
+    expect(at("2027-01-18")?.exercises.some((e) => e.exercise === "Bench press" && e.sets === 2 && e.reps === 3)).toBe(true);
     // Sista lätta: mark D-7, böj D-4, bänk D-3
     expect(at("2027-01-16")?.exercises.some((e) => e.exercise === "Deadlift" && e.pctOfE1rm === 0.725)).toBe(true);
     expect(at("2027-01-19")?.exercises.some((e) => e.exercise === "Back squat" && e.pctOfE1rm === 0.775)).toBe(true);

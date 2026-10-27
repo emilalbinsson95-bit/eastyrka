@@ -74,7 +74,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     ] = await Promise.all([
       supabaseAdmin
         .from("training_logs")
-        .select("date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference")
+        .select("date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: true })
         .limit(5000),
@@ -99,7 +99,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         .limit(500),
     ]);
 
-    const allLogs = (logs ?? []) as SetLog[];
+    const allLogs = (logs ?? []).filter(l=>!l.is_technique) as SetLog[];
     const strategy = resolveStrategy(strategyFromRow(strategyRow as Record<string, unknown> | null));
     const warmupLoads: Partial<Record<CompLift, number>> = {};
     for (const w of warmupRows ?? []) warmupLoads[w.lift as CompLift] = Number(w.load_kg);

@@ -18,12 +18,8 @@ export function BaselineMaxProposals({athleteId}:{athleteId:string}) {
     return (logs.data??[]).filter(l=>!seen.has(l.id)&&!l.variation&&Number(l.weight_kg)>(lookupBaseline(map,l.exercise)??Infinity)).map(l=>({...l,baseline:lookupBaseline(map,l.exercise)??0}));
   }});
   const decide=useMutation({mutationFn:async({log,approve}:{log:NonNullable<typeof proposals.data>[number];approve:boolean})=>{
-    const {data:auth,error:authError}=await supabase.auth.getUser();
-    if(authError||!auth.user) throw new Error("Logga in igen.");
-    const coachId=auth.user.id;
-    const {error}=await supabase.from("baseline_max_decisions").insert({athlete_id:athleteId,training_log_id:log.id,decision:approve?"approved":"rejected",decided_by:coachId});
+    const {error}=await supabase.rpc("decide_baseline_max",{_log_id:log.id,_approve:approve});
     if(error) throw error;
-    if(approve){const r=await supabase.from("baselines").update({one_rm_kg:Number(log.weight_kg)}).eq("athlete_id",athleteId).eq("exercise",log.exercise);if(r.error) throw r.error;}
   },onSuccess:(_,v)=>{qc.invalidateQueries({queryKey:["baseline-max-proposals",athleteId]});qc.invalidateQueries({queryKey:["athlete-baselines",athleteId]});qc.invalidateQueries({queryKey:["athlete-baselines-list",athleteId]});toast.success(v.approve?"Baslinjen är uppdaterad":"Förslaget är avvisat");},onError:(e:Error)=>toast.error(e.message)});
   if(!proposals.data?.length) return null;
   return <section className="space-y-2 border-b border-border pb-4" aria-label="Förslag om ny baslinje"><h3 className="font-medium">Nytt max – välj om baslinjen ska ändras</h3>{proposals.data.map(log=><div key={log.id} className="flex flex-wrap items-center justify-between gap-2 text-sm"><p>{log.exercise}: {log.weight_kg} kg × 1 @ RPE {log.rpe}, {log.date}. Nu {log.baseline} kg.</p><div className="flex gap-2"><Button size="sm" disabled={decide.isPending} onClick={()=>decide.mutate({log,approve:true})}>Godkänn</Button><Button size="sm" variant="outline" disabled={decide.isPending} onClick={()=>decide.mutate({log,approve:false})}>Avvisa</Button></div></div>)}</section>;

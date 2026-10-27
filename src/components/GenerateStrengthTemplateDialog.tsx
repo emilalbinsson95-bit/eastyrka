@@ -132,7 +132,7 @@ export function GenerateStrengthTemplateDialog({
   const historyQuery = useQuery({
     queryKey: ["individualisation-history", athleteId, since92, historyAnchor],
     enabled: open,
-    queryFn: async (): Promise<HistoryInputs & { deloadWeekStarts: string[] }> => {
+    queryFn: async (): Promise<HistoryInputs & { deloadWeekStarts: string[];overloadDates:string[] }> => {
       const [logs, readiness, baselines, unavail, deloads] = await Promise.all([
         supabase
           .from("training_logs")
@@ -150,7 +150,7 @@ export function GenerateStrengthTemplateDialog({
           .select("start_date, end_date, reason")
           .eq("athlete_id", athleteId)
           .gte("end_date", since28),
-        supabase.from("week_plans").select("week_start_date").eq("athlete_id", athleteId).eq("is_deload", true).gte("week_start_date", since92),
+        supabase.from("week_plans").select("week_start_date, is_deload, training_phase").eq("athlete_id", athleteId).gte("week_start_date", since92),
       ]);
       if (deloads.error) throw deloads.error;
       if (logs.error) throw logs.error;
@@ -169,7 +169,8 @@ export function GenerateStrengthTemplateDialog({
       }
       return {
         today: historyAnchor,
-        deloadWeekStarts: (deloads.data ?? []).map((w) => w.week_start_date),
+        deloadWeekStarts: (deloads.data ?? []).filter(w=>w.is_deload).map((w) => w.week_start_date),
+        overloadDates:(deloads.data??[]).filter(w=>w.training_phase==="overbelastning").flatMap(w=>Array.from({length:7},(_,i)=>format(addDays(parseISO(w.week_start_date),i),"yyyy-MM-dd"))),
         logs: (logs.data ?? []) as HistoryInputs["logs"],
         readiness: (readiness.data ?? []) as HistoryInputs["readiness"],
         baselines: [...merged].map(([exercise, one_rm_kg]) => ({ exercise, one_rm_kg })),
@@ -692,7 +693,7 @@ export function GenerateStrengthTemplateDialog({
                   <div className="grid gap-3 sm:grid-cols-3">{openerSuggestions.map((s) => <div key={s.key}>
                     <Label htmlFor={`opener-${s.key}`}>{OPENER_LABELS[s.key]} (kg)</Label>
                     <Input id={`opener-${s.key}`} type="number" min={2.5} step={2.5} value={chosenOpeners[s.key] ?? ""} placeholder="Coachens vikt" onChange={(e) => setPeakOptions((p) => ({ ...p, openers: { ...p.openers, [s.key]: e.target.value === "" ? undefined : Math.max(2.5, Number(e.target.value) || 2.5) } }))} />
-                    <p className="mt-1 text-xs text-muted-foreground">{s.kg ? `Förslag ${s.kg} kg · ${s.count} mätset · senast ${s.latest}${s.count < 3 ? " · begränsat underlag" : ""}` : "Inget aktuellt mätset med RPE 7–10 och 1–5 reps. Ange vikten själv."}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{s.kg ? `Förslag ${s.kg} kg · ${s.count} mätset · datum ${s.sources.map(source=>source.date).join(", ")}${s.count < 3 ? " · begränsat underlag" : ""}` : "Inget aktuellt mätset med RPE 7–10 och 1–5 reps. Ange vikten själv."}</p>
                   </div>)}</div>
                   <Button type="button" size="sm" variant="outline" onClick={() => setPeakOptions((p) => ({ ...p, openers: {} }))}>Återställ historikförslagen</Button>
                 </fieldset>

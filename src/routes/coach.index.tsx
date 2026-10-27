@@ -105,7 +105,7 @@ function CoachRosterPage() {
 
       const { data: recentLogs, error: logsError } = await supabase
         .from("training_logs")
-        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference")
+        .select("athlete_id, date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
         .in("athlete_id", athleteIds)
         .gte("date", sinceIso)
         .order("date", { ascending: false })
@@ -129,7 +129,7 @@ function CoachRosterPage() {
       const e1rmPool = new Map<string, number[]>();
       for (const log of recentLogs ?? []) {
         if (Number(log.set_number) !== 1) continue;
-        if (!countsForEAk({ reps: Number(log.reps), weight_kg: Number(log.weight_kg), rpe: Number(log.rpe),is_warmup_reference:log.is_warmup_reference })) continue;
+        if (!countsForEAk({ reps: Number(log.reps), weight_kg: Number(log.weight_kg), rpe: Number(log.rpe),is_warmup_reference:log.is_warmup_reference,is_technique:log.is_technique })) continue;
         const e1rm = dailyE1RM({
           reps: Number(log.reps),
           weight_kg: Number(log.weight_kg),
@@ -165,6 +165,7 @@ function CoachRosterPage() {
           rpe: Number(l.rpe),
           set_number: Number(l.set_number),
           is_warmup_reference:l.is_warmup_reference,
+          is_technique:l.is_technique,
         })),
       );
       // Latest session per athlete: one measurement per eligible lift.

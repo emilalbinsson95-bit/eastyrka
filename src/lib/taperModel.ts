@@ -330,6 +330,7 @@ export function buildTaperPlan(input: {
     const slots = (openSlots.length > 0 ? openSlots : taperSlots).filter(d => d < snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays));
     for (const d of slots) {
       if (remaining <= 0) break;
+      if (remaining < 2) break;
       const sets = Math.min(remaining, Math.max(2, Math.round(info.setsPerExposure * (1 - s.volumeCut))));
       remaining -= sets;
       sessionAt(d, "Taperpass").exercises.push({

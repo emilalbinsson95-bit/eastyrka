@@ -236,16 +236,17 @@ export function GenerateStrengthTemplateDialog({
   const openerSuggestions = useMemo(() => historyQuery.data ? suggestOpeners(historyQuery.data, styleQuery.data) : [], [historyQuery.data, styleQuery.data]);
   const chosenOpeners = Object.fromEntries(openerSuggestions.map((s) => [s.key, peakOptions.openers[s.key] ?? s.kg ?? undefined]));
 
+  const d0Plan = useMemo(() => {
+    if (!template?.buildFromHistory || peakDateError) return null;
+    return buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes",settings:{...taperSettings,heavyRpe:Math.min(8.5,peakOptions.rpe)}});
+  }, [template, peakDateError, peakStart, peakEndDate, competitionDate, daysPerWeek, peakSummary, peakOptions.singles, peakOptions.rpe, taperSettings]);
   const baseWeeks = useMemo(() => {
     if (!template) return [];
-    if (template.buildFromHistory) {
-      if(peakDateError) return [];
-      return buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes",settings:{...taperSettings,heavyRpe:Math.min(8.5,peakOptions.rpe)}}).weeks;
-    }
+    if (template.buildFromHistory) return d0Plan?.weeks ?? [];
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, peakSummary, peakWeeks, peakDays, styleQuery.data,peakStart,peakEndDate,competitionDate,peakDateError,peakOptions.singles,peakOptions.rpe,taperSettings]);
+  }, [template, daysPerWeek, styleQuery.data, d0Plan]);
 
 
   const suggestion = useMemo(() => {

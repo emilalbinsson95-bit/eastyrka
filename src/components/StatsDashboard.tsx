@@ -1,6 +1,12 @@
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { latestChartStrength, personalRecords, chartMeasurements, chartStrengthSeries, dotsScore } from "@/lib/chartMetrics";
+import { compLiftKey, isCompLift } from "@/lib/liftIdentity";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   startOfWeek,
   endOfWeek,
@@ -67,6 +73,8 @@ interface LogRow {
   reps: number;
   weight_kg: number;
   rpe: number;
+  is_warmup_reference?: boolean;
+  is_technique?: boolean;
 }
 
 interface EnduranceRow {
@@ -167,7 +175,7 @@ export function StatsDashboard({
       const { data, error } = await supabase
         .from("training_logs")
         .select(
-          "id, date, exercise, variation, set_number, reps, weight_kg, rpe",
+          "id, date, exercise, variation, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique",
         )
         .eq("athlete_id", athleteId)
         .gte("date", since.toISOString().slice(0, 10))
@@ -239,7 +247,13 @@ export function StatsDashboard({
     },
   });
 
-  const logs = logsQuery.data ?? [];
+  const feedbackQuery = useQuery({ queryKey: ["stats-session-feedback", athleteId], queryFn: async () => {
+    const { data, error } = await supabase.from("strength_session_feedback").select("date, session_rpe, duration_min").eq("athlete_id", athleteId); if(error) throw error; return data ?? [];
+  }});
+  const profileQuery = useQuery({ queryKey: ["stats-scoring-profile", athleteId], queryFn: async () => {
+    const { data, error } = await supabase.from("profiles").select("scoring_sex, weight_class").eq("id", athleteId).maybeSingle(); if(error) throw error; return data;
+  }});
+  const logs = (logsQuery.data ?? []).filter(l => !l.is_warmup_reference && !l.is_technique);
   const endurance = enduranceQuery.data ?? [];
   const readiness = readinessQuery.data ?? [];
   const mesocycles = mesoQuery.data ?? [];
@@ -259,249 +273,25 @@ export function StatsDashboard({
         </p>
       </div>
 
-      <TrainingStatusCard logs={logs} />
+      <TrainingStatusCard logs={logs} endurance={endurance} feedback={feedbackQuery.data ?? []} />
       <EAkoefficientCard logs={logs} baselines={baselines} readiness={readiness} />
       <WeekInNumbersCard logs={logs} endurance={endurance} />
       <MesoSummaryCard logs={logs} mesocycles={mesocycles} />
       <PRFeedCard logs={logs} />
-      <BodyweightCard readiness={readiness} logs={logs} />
+      <BodyweightCard readiness={readiness} logs={logs} profile={profileQuery.data ?? null} athleteId={athleteId} />
     </div>
   );
 }
 
 // ============= EAkoefficient (strength-only) vs stiffness =============
-function EAkoefficientCard({
-  logs,
-  baselines,
-  readiness,
-}: {
-  logs: LogRow[];
-  baselines: Record<string, number>;
-  readiness: ReadinessRow[];
-}) {
-  const data = useMemo(() => {
-    // Per-day EAk: average top-set eak across exercises that have a baseline.
-    const byDate = new Map<string, Map<string, number>>(); // date -> exercise -> max eak
-    const rolling = rollingE1RMBySession(
-      logs.map((l) => ({
-        date: l.date,
-        exercise: l.exercise,
-        reps: l.reps,
-        weight_kg: Number(l.weight_kg),
-        rpe: Number(l.rpe),
-      })),
-    );
-    for (const l of logs) {
-      const base = lookupBaseline(baselines, l.exercise);
-      if (!base || base <= 0 || !isReadinessLift(l.exercise)) continue;
-      const roll = rolling.get(`${l.date}::${l.exercise}`) ?? 0;
-      const eak = roll > 0 ? (roll / base) * 100 : 0;
-      if (!isFinite(eak) || eak <= 0) continue;
-      const inner = byDate.get(l.date) ?? new Map<string, number>();
-      inner.set(l.exercise, Math.max(inner.get(l.exercise) ?? 0, eak));
-      byDate.set(l.date, inner);
-    }
-    const stiffByDate = new Map<string, number>();
-    for (const r of readiness) {
-      if (r.stiffness != null) stiffByDate.set(r.date, Number(r.stiffness));
-    }
-
-    const dates = Array.from(
-      new Set<string>([...byDate.keys(), ...stiffByDate.keys()]),
-    ).sort();
-
-    const series = dates.map((d) => {
-      const inner = byDate.get(d);
-      let eak: number | null = null;
-      if (inner && inner.size > 0) {
-        const vals = Array.from(inner.values());
-        eak = vals.reduce((s, n) => s + n, 0) / vals.length;
-      }
-      return {
-        date: d,
-        label: format(parseISO(d), "MMM d"),
-        EAk: eak,
-        Stiffness: stiffByDate.get(d) ?? null,
-      };
-    });
-
-    // Last 84 days window
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 84);
-    const recent = series.filter((p) => parseISO(p.date) >= cutoff);
-
-    // Latest EAk and stiffness
-    const lastEak = [...recent].reverse().find((p) => p.EAk != null)?.EAk ?? null;
-    const lastStiff =
-      [...recent].reverse().find((p) => p.Stiffness != null)?.Stiffness ?? null;
-
-    // Pearson correlation between EAk and stiffness on days where both exist
-    const paired = recent.filter(
-      (p) => p.EAk != null && p.Stiffness != null,
-    ) as { EAk: number; Stiffness: number }[];
-    let corr: number | null = null;
-    if (paired.length >= 5) {
-      const n = paired.length;
-      const mx = paired.reduce((s, p) => s + p.EAk, 0) / n;
-      const my = paired.reduce((s, p) => s + p.Stiffness, 0) / n;
-      let num = 0,
-        dx = 0,
-        dy = 0;
-      for (const p of paired) {
-        num += (p.EAk - mx) * (p.Stiffness - my);
-        dx += (p.EAk - mx) ** 2;
-        dy += (p.Stiffness - my) ** 2;
-      }
-      const denom = Math.sqrt(dx * dy);
-      corr = denom > 0 ? num / denom : null;
-    }
-
-    return { recent, lastEak, lastStiff, corr, pairedCount: paired.length };
-  }, [logs, baselines, readiness]);
-
-  const status = data.lastEak != null ? readinessFromEAk(data.lastEak) : "unknown";
-  const hasAny =
-    data.recent.some((p) => p.EAk != null) ||
-    data.recent.some((p) => p.Stiffness != null);
-
-  const corrLabel =
-    data.corr == null
-      ? null
-      : data.corr <= -0.4
-        ? "Strong inverse — more stiffness, weaker output"
-        : data.corr <= -0.15
-          ? "Mild inverse — stiffness slightly drags performance"
-          : data.corr >= 0.4
-            ? "Positive — stiffness coincides with stronger output (unusual)"
-            : data.corr >= 0.15
-              ? "Weak positive link"
-              : "No clear link between stiffness and output";
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Gauge className="h-5 w-5 text-primary" />
-          EAkoefficient (strength)
-        </CardTitle>
-        <CardDescription>
-          Today's lift performance vs your 1RM baseline — strength only, no
-          running. Plotted against self-reported stiffness from the daily
-          readiness survey.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!hasAny ? (
-          <p className="text-sm text-muted-foreground">
-            Log some strength sets (with a 1RM baseline set) and a few daily
-            readiness surveys to see your EAkoefficient trend.
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-3">
-              <span
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold",
-                  readinessClasses(status),
-                )}
-              >
-                {data.lastEak != null
-                  ? `${fmtNum(data.lastEak, 0)}% · ${readinessLabel(status)}`
-                  : "No recent lifts"}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                Latest stiffness:{" "}
-                <span className="font-medium text-foreground">
-                  {data.lastStiff != null ? `${data.lastStiff}/10` : "—"}
-                </span>
-              </span>
-              {data.corr != null && (
-                <span className="text-sm text-muted-foreground">
-                  Correlation (n={data.pairedCount}):{" "}
-                  <span className="font-medium text-foreground">
-                    r = {fmtNum(data.corr, 2)}
-                  </span>
-                </span>
-              )}
-            </div>
-            {corrLabel && (
-              <p className="text-xs text-muted-foreground">{corrLabel}</p>
-            )}
-
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={data.recent}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="label"
-                    fontSize={11}
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    minTickGap={20}
-                  />
-                  <YAxis
-                    yAxisId="eak"
-                    fontSize={11}
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    width={40}
-                    domain={[80, 110]}
-                  />
-                  <YAxis
-                    yAxisId="stiff"
-                    orientation="right"
-                    fontSize={11}
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    width={28}
-                    domain={[0, 10]}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <ReferenceLine
-                    yAxisId="eak"
-                    y={100}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeDasharray="2 4"
-                  />
-                  <Line
-                    yAxisId="eak"
-                    type="monotone"
-                    dataKey="EAk"
-                    name="EAk %"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                  <Line
-                    yAxisId="stiff"
-                    type="monotone"
-                    dataKey="Stiffness"
-                    name="Stiffness /10"
-                    stroke="hsl(0 80% 60%)"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
+function EAkoefficientCard({ logs, baselines }: { logs: LogRow[]; baselines: Record<string, number>; readiness: ReadinessRow[] }) {
+  const latest = useMemo(() => latestChartStrength(logs, baselines).filter(p => isReadinessLift(p.exercise)), [logs, baselines]);
+  return <Card><CardHeader><CardTitle>EAk per lyft</CardTitle><CardDescription>Snitt av de tre senaste mätpassen mot coachens baslinje.</CardDescription></CardHeader><CardContent className="space-y-3">
+    {latest.length === 0 ? <p className="text-sm text-muted-foreground">Inga kvalificerade mätpass ännu.</p> : latest.map(p => <div key={p.key} className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 last:border-0">
+      <div><p className="font-medium text-sm">{exerciseKey(p.exercise, p.variation)}</p><p className="text-xs text-muted-foreground">{p.date} · {p.samples} mätpass · baslinje {p.baseline > 0 ? `${p.baseline} kg` : "saknas"}</p></div>
+      <Badge className={readinessClasses(p.status)}>{p.eak == null ? "Baslinje saknas" : `${p.eak.toFixed(1)} % · ${readinessLabel(p.status)}`}</Badge>
+    </div>)}
+  </CardContent></Card>;
 }
 
 // ============= Training status (fatigue / adapting / peaking) =============
@@ -583,11 +373,7 @@ function strengthLoadSession(
   };
 }
 
-function TrainingStatusCard({
-  logs,
-}: {
-  logs: LogRow[];
-}) {
+function TrainingStatusCard({ logs, endurance, feedback }: { logs: LogRow[]; endurance: EnduranceRow[]; feedback: Array<{date: string; session_rpe: number | null; duration_min: number | null}> }) {
   const { ff, ratio, totalCount } = useMemo(() => {
     // Strength-only: group sets by date.
     const byDate = new Map<string, LogRow[]>();
@@ -598,13 +384,18 @@ function TrainingStatusCard({
     }
     const strengthSessions: LoadSession[] = [];
     for (const [date, rows] of byDate) {
-      const s = strengthLoadSession(date, rows);
+      const logged = feedback.find(f => f.date === date && f.session_rpe != null && f.duration_min != null);
+      const s = logged ? { date, discipline: "strength", actual_total_seconds: Number(logged.duration_min) * 60, overall_rpe: Number(logged.session_rpe), planned_total_seconds: null, peak_rpe: null, planned_avg_rpe: null } : strengthLoadSession(date, rows);
       if (s) strengthSessions.push(s);
     }
-    const ff = fitnessFatigueSeries(strengthSessions, 60);
-    const a = acwr(strengthSessions);
-    return { ff, ratio: a, totalCount: strengthSessions.length };
-  }, [logs]);
+    for (const f of feedback) {
+      if (!byDate.has(f.date) && f.session_rpe != null && f.duration_min != null) strengthSessions.push({ date: f.date, discipline: "strength", actual_total_seconds: Number(f.duration_min)*60, overall_rpe: Number(f.session_rpe), peak_rpe: null, planned_total_seconds: null, planned_avg_rpe: null });
+    }
+    const combined: LoadSession[] = [...strengthSessions, ...endurance.filter(s => s.status === "completed" && Number(s.actual_total_seconds) > 0 && s.overall_rpe != null).map(s => ({ ...s, peak_rpe: null, planned_avg_rpe: null, planned_total_seconds: null }))];
+    const ff = fitnessFatigueSeries(combined, 60);
+    const a = acwr(combined);
+    return { ff, ratio: a, totalCount: combined.length };
+  }, [logs, endurance, feedback]);
 
   if (totalCount < TRAINING_STATUS_THRESHOLD) {
     const pct = (totalCount / TRAINING_STATUS_THRESHOLD) * 100;
@@ -613,12 +404,11 @@ function TrainingStatusCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gauge className="h-5 w-5 text-primary" />
-            Training status
+            Belastning
           </CardTitle>
           <CardDescription>
             We need at least {TRAINING_STATUS_THRESHOLD} logged sessions
-            (strength days only) to estimate fatigue, adapting
-            and peaking reliably.
+            med passbelastning från styrka och kondition.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -658,11 +448,10 @@ function TrainingStatusCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Gauge className="h-5 w-5 text-primary" />
-          Training status
+          Belastning
         </CardTitle>
         <CardDescription>
-          Banister fitness–fatigue model. Fitness (CTL, 42d), Fatigue (ATL, 7d),
-          Form (TSB = CTL − ATL).
+          Belastning: sRPE × minuter från styrka och kondition. CTL (42 dagar), ATL (7 dagar), TSB = CTL − ATL. Saknad styrkepasstid uppskattas till tre minuter per arbetsset; saknad konditionstid eller pass-RPE räknas inte.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1146,32 +935,7 @@ function ExerciseDeltaList({
 
 // ============= PR Feed =============
 function PRFeedCard({ logs }: { logs: LogRow[] }) {
-  const prs = useMemo(() => {
-    const best = new Map<string, number>();
-    const events: {
-      date: string;
-      exercise: string;
-      e1rm: number;
-      prev: number;
-      log: LogRow;
-    }[] = [];
-    for (const l of logs) {
-      const key = exerciseKey(l.exercise, l.variation);
-      const e1rm = dailyE1RM({
-        weight_kg: Number(l.weight_kg),
-        reps: l.reps,
-        rpe: Number(l.rpe),
-      });
-      const prev = best.get(key) ?? 0;
-      if (prev === 0 || e1rm >= prev + 2.5) {
-        events.push({ date: l.date, exercise: key, e1rm, prev, log: l });
-        best.set(key, e1rm);
-      } else if (e1rm > prev) {
-        best.set(key, e1rm);
-      }
-    }
-    return events.reverse().slice(0, 12);
-  }, [logs]);
+  const prs = useMemo(() => personalRecords(logs).slice(0, 12).map(p => ({ ...p, date: p.log.date, exercise: exerciseKey(p.log.exercise, p.log.variation), e1rm: p.value, prev: p.previous })), [logs]);
 
   return (
     <Card>
@@ -1181,7 +945,7 @@ function PRFeedCard({ logs }: { logs: LogRow[] }) {
           PR feed
         </CardTitle>
         <CardDescription>
-          Automatic personal bests on estimated 1RM (per exercise & variation).
+          Faktiska rep-PR och uppskattade max från mätsetet, per övning och variant.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -1207,6 +971,7 @@ function PRFeedCard({ logs }: { logs: LogRow[] }) {
                 <div className="text-right">
                   <div className="text-sm font-semibold">
                     {fmtNum(p.e1rm, 1)} kg
+                    <Badge variant="secondary" className="ml-2">{p.kind === "actual" ? `${p.log.reps} reps · Faktiskt PR` : "Uppskattat"}</Badge>
                   </div>
                   {p.prev > 0 && (
                     <div className="text-xs text-emerald-600 dark:text-emerald-400">
@@ -1223,209 +988,32 @@ function PRFeedCard({ logs }: { logs: LogRow[] }) {
   );
 }
 
-// ============= Bodyweight + performance =============
-function BodyweightCard({
-  readiness,
-  logs,
-}: {
-  readiness: ReadinessRow[];
-  logs: LogRow[];
-}) {
+function BodyweightCard({ readiness, logs, profile, athleteId }: { readiness: ReadinessRow[]; logs: LogRow[]; athleteId: string; profile: { scoring_sex: string | null; weight_class: string | null } | null }) {
+  const qc = useQueryClient();
+  const [sex, setSex] = useState("");
+  const { user } = useAuth();
+  const saveSex = useMutation({ mutationFn: async () => {
+    if (user?.id !== athleteId || !["male", "female"].includes(sex)) throw new Error("Välj poängklass för ditt eget konto.");
+    const { error } = await supabase.from("profiles").update({ scoring_sex: sex }).eq("id", athleteId);
+    if (error) throw error;
+  }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["stats-scoring-profile", athleteId] }); toast.success("Poängklass sparad"); }, onError: (e: Error) => toast.error(e.message) });
   const data = useMemo(() => {
-    const weekBW = new Map<string, number[]>();
-    for (const r of readiness) {
-      if (r.bodyweight_kg == null) continue;
-      const d = parseISO(r.date);
-      const wk = format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
-      const arr = weekBW.get(wk) ?? [];
-      arr.push(Number(r.bodyweight_kg));
-      weekBW.set(wk, arr);
-    }
-
-    // Strength index uses only the big 3 (squat, bench, deadlift) and their
-    // barbell variations — accessory exercises don't belong in the index.
-    const big3 = logs.filter((l) => isBig3Lift(l.exercise) && Number(l.rpe) >= 7 && l.reps > 0);
-    const counts = new Map<string, number>();
-    for (const l of big3) {
-      counts.set(l.exercise, (counts.get(l.exercise) ?? 0) + 1);
-    }
-    const topEx = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([ex]) => ex);
-    const topSet = new Map<string, Map<string, number>>();
-    for (const l of big3) {
-      if (!topEx.includes(l.exercise)) continue;
-      const d = parseISO(l.date);
-      const wk = format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
-      const e1rm = dailyE1RM({
-        weight_kg: Number(l.weight_kg),
-        reps: l.reps,
-        rpe: Number(l.rpe),
-      });
-      const inner = topSet.get(wk) ?? new Map<string, number>();
-      inner.set(l.exercise, Math.max(inner.get(l.exercise) ?? 0, e1rm));
-      topSet.set(wk, inner);
-    }
-
-    const allWeeks = new Set<string>([
-      ...Array.from(weekBW.keys()),
-      ...Array.from(topSet.keys()),
-    ]);
-    const weeks = Array.from(allWeeks).sort();
-
-    return weeks.map((wk) => {
-      const bwArr = weekBW.get(wk) ?? [];
-      const bw =
-        bwArr.length > 0
-          ? bwArr.reduce((s, n) => s + n, 0) / bwArr.length
-          : null;
-      const inner = topSet.get(wk);
-      let strength: number | null = null;
-      if (inner && inner.size > 0) {
-        const vals = Array.from(inner.values());
-        strength = vals.reduce((s, n) => s + n, 0) / vals.length;
-      }
-      return {
-        week: wk,
-        label: format(parseISO(wk), "MMM d"),
-        bodyweight: bw,
-        strength,
-      };
+    const points = chartStrengthSeries(logs.filter(l => isCompLift(l.exercise, l.variation)), {});
+    const weights = readiness.filter(r => r.bodyweight_kg != null && Number(r.bodyweight_kg) > 0).sort((a,b) => a.date.localeCompare(b.date));
+    const dates = [...new Set([...points.map(p => p.date), ...weights.map(w => w.date)])].sort();
+    return dates.map(date => {
+      const bw = weights.filter(w => w.date <= date).at(-1);
+      const lifts = ["squat", "bench", "deadlift"].map(lift => points.filter(p => p.date <= date && compLiftKey(p.exercise) === lift).at(-1));
+      const valid = lifts.every(p => p && differenceInCalendarDays(parseISO(date), parseISO(p.date)) <= 28);
+      const total = valid ? lifts.reduce((sum,p) => sum + (p?.rolling ?? 0),0) : 0;
+      const freshWeight = bw && differenceInCalendarDays(parseISO(date),parseISO(bw.date)) <= 28;
+      return { date, bodyweight: weights.find(w => w.date === date)?.bodyweight_kg ?? null, dots: freshWeight && bw ? dotsScore(total, Number(bw.bodyweight_kg), profile?.scoring_sex) : null };
     });
-  }, [readiness, logs]);
-
-  const hasBW = data.some((d) => d.bodyweight != null);
-  const hasStrength = data.some((d) => d.strength != null);
-
-  const bwSeries = data
-    .filter((d) => d.bodyweight != null)
-    .map((d) => d.bodyweight as number);
-  const strSeries = data
-    .filter((d) => d.strength != null)
-    .map((d) => d.strength as number);
-  const bwDelta =
-    bwSeries.length >= 2
-      ? pctDelta(bwSeries[bwSeries.length - 1], bwSeries[0])
-      : null;
-  const strDelta =
-    strSeries.length >= 2
-      ? pctDelta(strSeries[strSeries.length - 1], strSeries[0])
-      : null;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Scale className="h-5 w-5 text-primary" />
-          Bodyweight vs strength
-        </CardTitle>
-        <CardDescription>
-          Weekly bodyweight (from your daily readiness check-ins) against your
-          strength index (avg top-set e1RM across the big 3 — squat, bench and
-          deadlift).
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <Metric
-            label="Bodyweight change"
-            value={
-              bwSeries.length >= 2
-                ? `${fmtNum(bwSeries[bwSeries.length - 1] - bwSeries[0], 1)} kg`
-                : "—"
-            }
-            delta={bwDelta}
-          />
-          <Metric
-            label="Strength change"
-            value={
-              strSeries.length >= 2
-                ? `${fmtNum(strSeries[strSeries.length - 1] - strSeries[0], 1)} kg`
-                : "—"
-            }
-            delta={strDelta}
-          />
-        </div>
-
-        {!hasBW && !hasStrength ? (
-          <p className="text-sm text-muted-foreground">
-            Log your bodyweight in the daily readiness check-in and a few
-            strength sets — the chart will start filling in.
-          </p>
-        ) : (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={data}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="label"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                />
-                <YAxis
-                  yAxisId="bw"
-                  orientation="left"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  width={40}
-                  domain={["auto", "auto"]}
-                />
-                <YAxis
-                  yAxisId="str"
-                  orientation="right"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  width={40}
-                  domain={["auto", "auto"]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  formatter={(value, name) => {
-                    const n = typeof value === "number" ? value : Number(value);
-                    return [
-                      isFinite(n) ? `${fmtNum(n, 1)} kg` : "—",
-                      String(name),
-                    ];
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line
-                  yAxisId="bw"
-                  type="monotone"
-                  dataKey="bodyweight"
-                  name="Bodyweight"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ r: 2 }}
-                  connectNulls
-                />
-                <Line
-                  yAxisId="str"
-                  type="monotone"
-                  dataKey="strength"
-                  name="Strength index"
-                  stroke="hsl(var(--chart-2, 200 90% 55%))"
-                  strokeWidth={2}
-                  dot={{ r: 2 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  }, [logs, readiness, profile]);
+  const weightClass = profile?.weight_class?.includes("+") ? null : Number(profile?.weight_class?.match(/[0-9]+(?:[.,][0-9]+)?/)?.[0]?.replace(",",".")) || null;
+  return <Card><CardHeader><CardTitle>Kroppsvikt och DOTS</CardTitle><CardDescription>Uppskattad styrkelyftstotal från tre mätpass per tävlingslyft. Alla lyft och kroppsvikten måste vara högst 28 dagar gamla.</CardDescription></CardHeader><CardContent className="space-y-4">
+    {!profile?.scoring_sex && <div className="space-y-2"><p className="text-sm text-muted-foreground">Poängklass saknas; inga DOTS-poäng räknas utan den.</p>{user?.id === athleteId && <div className="flex gap-2"><Select value={sex} onValueChange={setSex}><SelectTrigger className="w-44" aria-label="Poängklass"><SelectValue placeholder="Poängklass" /></SelectTrigger><SelectContent><SelectItem value="male">Herrar</SelectItem><SelectItem value="female">Damer</SelectItem></SelectContent></Select><Button disabled={!sex || saveSex.isPending} onClick={() => saveSex.mutate()}>Spara</Button></div>}</div>}
+    <h3 className="text-sm font-medium">DOTS · uppskattad total</h3><div className="h-44"><ResponsiveContainer><LineChart data={data}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="date" fontSize={10}/><YAxis domain={["auto","auto"]} fontSize={10}/><Tooltip/><Line dataKey="dots" name="DOTS (uppskattat)" stroke="var(--chart-1)" dot={{r:3}} connectNulls={false}/></LineChart></ResponsiveContainer></div>
+    <h3 className="text-sm font-medium">Kroppsvikt {weightClass ? `· viktklass ${weightClass} kg` : "· viktklass saknas"}</h3><div className="h-40"><ResponsiveContainer><LineChart data={data.filter(p => p.bodyweight != null)}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="date" fontSize={10}/><YAxis domain={["auto","auto"]} fontSize={10}/><Tooltip/>{weightClass && <ReferenceLine y={weightClass} label={`${weightClass} kg`} stroke="var(--chart-3)"/>}<Line dataKey="bodyweight" name="Kroppsvikt (kg)" stroke="var(--chart-2)" dot={{r:3}}/></LineChart></ResponsiveContainer></div>
+  </CardContent></Card>;
 }

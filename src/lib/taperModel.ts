@@ -278,6 +278,7 @@ export function buildTaperPlan(input: {
   }
 
   // --- Tapervolym: referensvolym minus vald sänkning, fördelad på taperns pass ---
+  const accessoriesOut = daysBefore(d0, s.accessoriesOutDay);
   const taperDates = trainingDates.filter((d) => phaseOf(d) === "taper");
   const taperSlots = s.finalWeekFreq === "half"
     ? taperDates.filter((_, i) => i % 2 === 0) // frekvensen halveras de sista sju dagarna

@@ -574,6 +574,12 @@ function PlannedSessionCard({
   athleteId: string;
   dateStr: string;
 }) {
+  const extraPreferences=useQuery({queryKey:["generator-preferences",athleteId],queryFn:async()=>{
+    const {data,error}=await supabase.from("athlete_generator_preferences").select("settings").eq("athlete_id",athleteId).maybeSingle();
+    if(error) throw error;
+    const settings=data?.settings as {extraSets?:Record<string,boolean>}|undefined;
+    return settings?.extraSets??{};
+  }});
   // Match logs to a specific planned exercise. To avoid double-counting when
   // the same exercise name appears twice in a session (e.g. bench press as
   // both a main and an accessory lift), unlinked (freestyle) logs are only
@@ -641,6 +647,8 @@ function PlannedSessionCard({
                 baseline={lookupBaseline(baselines, ex.exercise) ?? 0}
                 athleteId={athleteId}
                 dateStr={dateStr}
+                coachExtraEnabled={extraPreferences.data?.[/squat|böj/i.test(ex.exercise)?"squat":/bench|bänk/i.test(ex.exercise)?"bench":/deadlift|mark/i.test(ex.exercise)?"deadlift":"none"]===true}
+                sessionSets={logs.filter(l=>!l.is_warmup_reference).length}
               />
             );
           })}
@@ -744,6 +752,8 @@ function PlannedExerciseRow({
   baseline,
   athleteId,
   dateStr,
+  coachExtraEnabled,
+  sessionSets,
 }: {
   ex: PlannedExercise;
   logs: LogRow[];
@@ -751,6 +761,8 @@ function PlannedExerciseRow({
   baseline: number;
   athleteId: string;
   dateStr: string;
+  coachExtraEnabled: boolean;
+  sessionSets: number;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const completed = logs.length;
@@ -881,6 +893,8 @@ function PlannedExerciseRow({
       )}
       {isDone && (() => {
         const extra = canAddExtraSet({
+          coachEnabled:coachExtraEnabled,
+          sessionSets,
           plannedSets: targetSets,
           doneSets: logs.map((l) => ({ reps: l.reps, weight_kg: Number(l.weight_kg), rpe: Number(l.rpe), set_number: l.set_number })),
           targetRpe: ex.target_rpe != null ? Number(ex.target_rpe) : ex.target_rir != null ? 10 - Number(ex.target_rir) : null,

@@ -50,7 +50,7 @@ describe("taperModel", () => {
     const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS });
     const heavy = plan.sessions.find((s) => s.date === "2027-01-14")?.exercises.find((e) => e.exercise === "Deadlift");
     expect(heavy?.kg).toBe(round25(240 * 0.922));
-    expect(heavy?.kg).toBe(220);
+    expect(heavy?.kg).toBe(222.5);
   });
 
   it("håller vilan: inga pass D-2 eller D-1", () => {

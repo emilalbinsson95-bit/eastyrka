@@ -6,6 +6,8 @@ import { DEFAULT_SET_PROTOCOLS } from "@/lib/setProtocols";
 import { peakPeriodDays } from "@/lib/peakingDates";
 
 export const generatorSettingsSchema = z.object({
+  extraSets: z.object({ squat:z.boolean(), bench:z.boolean(), deadlift:z.boolean() }).default({squat:false,bench:false,deadlift:false}),
+  roundingKg: z.union([z.literal(2.5),z.literal(1.25),z.literal(1)]).default(2.5),
   tuning: z.object({ volume: z.number().min(.7).max(1.3), intensity: z.number().min(-1.5).max(1.5), accessory: z.number().min(.5).max(1.5), mainLifts: z.number().min(.7).max(1.3) }).default(DEFAULT_TUNING),
   overload: z.object({ overWarmSingles: z.boolean(), waveLoading: z.boolean(), benchConsolidation: z.boolean(), deadliftStance: z.enum(["keep", "conventional", "sumo"]) }).optional(),
   setProtocols: z.object({ squat: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), bench: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), deadlift: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), accessories: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]) }).default(DEFAULT_SET_PROTOCOLS),

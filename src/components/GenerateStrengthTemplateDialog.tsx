@@ -135,14 +135,14 @@ export function GenerateStrengthTemplateDialog({
       const [logs, readiness, baselines, unavail, deloads] = await Promise.all([
         supabase
           .from("training_logs")
-          .select("date, exercise, variation, reps, weight_kg, rpe, set_number")
+          .select("date, exercise, variation, reps, weight_kg, rpe, set_number, is_warmup_reference")
           .eq("athlete_id", athleteId)
           .gte("date", since92),
         supabase
           .from("readiness_surveys")
           .select("date, fatigue, work_stress, life_stress, daily_form, sleep_hours")
           .eq("athlete_id", athleteId)
-          .gte("date", since28),
+          .gte("date", since92),
         supabase.from("baselines").select("exercise, one_rm_kg").eq("athlete_id", athleteId),
         supabase
           .from("athlete_unavailability")
@@ -317,6 +317,8 @@ export function GenerateStrengthTemplateDialog({
   const [setProtocols, setSetProtocols] = useState<SetProtocolOptions>(DEFAULT_SET_PROTOCOLS);
   const [heavySingles, setHeavySingles] = useState<GeneratorSettings["heavySingles"]>({ enabled: false, rpe: 8, weeks: [2, 3] });
   const [volumeDeltas, setVolumeDeltas] = useState({ squat: 0, bench: 0, deadlift: 0 });
+  const [extraSets,setExtraSets]=useState({squat:false,bench:false,deadlift:false});
+  const [roundingKg,setRoundingKg]=useState<2.5|1.25|1>(2.5);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const preferencesQuery = useQuery({
     queryKey: ["generator-preferences", athleteId], enabled: open,
@@ -329,10 +331,10 @@ export function GenerateStrengthTemplateDialog({
   useEffect(() => {
     if (settingsLoaded || !preferencesQuery.isSuccess) return;
     const saved = preferencesQuery.data;
-    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); }
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); setExtraSets(saved.extraSets);setRoundingKg(saved.roundingKg); }
     setSettingsLoaded(true);
   }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
-  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions };
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions,extraSets,roundingKg };
   const savePreferences = useMutation({
     mutationFn: async () => {
       const parsed = generatorSettingsSchema.parse(settings);
@@ -354,9 +356,9 @@ export function GenerateStrengthTemplateDialog({
       // applyAdjustments — the wave applies its RPE as a relative offset, so
       // no extra intensityOffset is passed here.
       const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
-      if (isPeaking) return { weeks: applyPeakSingles(weeks, peakOptions.singles === "yes", peakOptions.rpe, chosenOpeners, peakOptions.weeks, styleQuery.data), warnings: [] as string[] };
+      if (isPeaking) return { weeks: applyVolumeGuards(applyPeakSingles(weeks, peakOptions.singles === "yes", peakOptions.rpe, chosenOpeners, peakOptions.weeks, styleQuery.data), volumeProfile), warnings: [] as string[] };
       if (template?.sessionSetBudget) return {
-        weeks: applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),
+        weeks: applyVolumeGuards(applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),volumeProfile),
         warnings: [] as string[],
       };
       // Runner strength keeps its fixed dose: no data-driven extra sets.
@@ -372,7 +374,7 @@ export function GenerateStrengthTemplateDialog({
       const effProtocols = overload.waveLoading ? { ...setProtocols, squat: "keep" as const, bench: "keep" as const, deadlift: "keep" as const } : setProtocols;
       const guarded = applyVolumeGuards(adapted.weeks, volumeProfile);
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
-      return { weeks: applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
+      return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? ["Volymvakterna har begränsat eller justerat setantalet. Kontrollera veckovolymen i förhandsvisningen."] : [])] };
     },
     [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
   );
@@ -509,7 +511,7 @@ export function GenerateStrengthTemplateDialog({
             target_reps: e.target_reps,
             target_rpe: e.target_rpe ?? null,
             target_rir: e.target_rir ?? null,
-            target_weight_kg: e.target_weight_kg ?? null,
+            target_weight_kg: e.target_weight_kg == null ? null : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
             intensity_metric: e.intensity_metric,
             lengthened_partials: e.lengthened_partials ?? false,
             last_set_to_failure: e.last_set_to_failure ?? false,
@@ -854,6 +856,11 @@ export function GenerateStrengthTemplateDialog({
             <div className="grid grid-cols-3 gap-2">{(["squat", "bench", "deadlift"] as const).map((lift) => <div key={lift}><Label htmlFor={`delta-${lift}`}>{lift === "squat" ? "Knäböj" : lift === "bench" ? "Bänk" : "Mark"}</Label><Input id={`delta-${lift}`} type="number" min={-6} max={6} step={1} value={volumeDeltas[lift]} onChange={(e) => setVolumeDeltas((prev) => ({ ...prev, [lift]: Math.max(-6, Math.min(6, Math.trunc(Number(e.target.value)))) }))} /></div>)}</div>
             {blockResult.warnings.map((w) => <p key={w} className="text-xs text-destructive">{w}</p>)}
           </div>}
+          <div className="space-y-3 border-t border-border pt-3">
+            <h3 className="text-sm font-medium">Tillåt extra set efter dagens ordination</h3>
+            <div className="flex flex-wrap gap-4">{(["squat","bench","deadlift"] as const).map(lift=><label key={lift} className="flex items-center gap-2 text-sm"><Checkbox checked={extraSets[lift]} onCheckedChange={checked=>setExtraSets(prev=>({...prev,[lift]:checked===true}))}/>{OPENER_LABELS[lift]}</label>)}</div>
+            <Label>Viktsteg i träning</Label><div className="flex gap-2">{([2.5,1.25,1] as const).map(step=><Button key={step} variant={roundingKg===step?"default":"outline"} size="sm" onClick={()=>setRoundingKg(step)}>{step.toString().replace(".",",")} kg</Button>)}</div>
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3"><span className="text-xs text-muted-foreground">{preferencesQuery.isError ? "Kunde inte hämta sparade coachval." : preferencesQuery.data ? "Sparade coachval från tidigare block" : "Inga tidigare coachval sparade"}</span><Button variant="outline" size="sm" disabled={!settingsLoaded || savePreferences.isPending || preferencesQuery.isError} onClick={() => savePreferences.mutate()}>{savePreferences.isPending ? "Sparar…" : "Spara coachval"}</Button></div>
           {/* ---- coach tuning sliders ---- */}
           {isTimeLimited && <p className="text-xs text-muted-foreground">För att hålla passen korta används högst mallens 12 arbetsset och fem övningar per pass. Volymval kan minska antalet set, men inte lägga till fler. Annat setupplägg eller längre vila kan förlänga passet.</p>}

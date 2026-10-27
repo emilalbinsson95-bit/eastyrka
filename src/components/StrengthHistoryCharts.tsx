@@ -1,12 +1,12 @@
 import { chartStrengthSeries } from "@/lib/chartMetrics";
 import type { ChartLog } from "@/lib/chartMetrics";
-import { lookupBaseline } from "@/lib/eakoefficient";
+import { lookupBaseline, isReadinessLift } from "@/lib/eakoefficient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Area, ComposedChart, Line, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 type BaselineHistory = { exercise: string; one_rm_kg: number; recorded_at: string; note: string | null };
 export function StrengthHistoryCharts({ logs, baselines, history, since }: { logs: ChartLog[]; baselines: Record<string,number>; history: BaselineHistory[]; since: string }) {
-  const measurements = chartStrengthSeries(logs,baselines);
+  const measurements = chartStrengthSeries(logs,baselines).filter(p=>isReadinessLift(p.exercise,p.variation));
   const keys = [...new Set(measurements.map(p=>p.key))];
   return <div className="space-y-4">{keys.map(key=>{
     const points=measurements.filter(p=>p.key===key);const first=points[0];if(!first)return null;

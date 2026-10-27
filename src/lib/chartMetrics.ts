@@ -1,4 +1,4 @@
-import { dailyE1RM, lookupBaseline, pickMeasurementSet, readinessFromEAk, type SetInput } from "./eakoefficient";
+import { dailyE1RM, lookupBaseline, pickMeasurementSet, readinessFromEAk, isReadinessLift, type SetInput } from "./eakoefficient";
 import { COMP_NAME, compLiftKey } from "./liftIdentity";
 
 export interface ChartLog extends SetInput {
@@ -45,7 +45,7 @@ export function chartStrengthSeries(logs: ChartLog[], baselines: Record<string, 
     const rolling = history.reduce((sum, value) => sum + value, 0) / history.length;
     const identity = chartLiftIdentity(log.exercise, log.variation);
     const baseline = lookupBaseline(baselines, identity.exercise) ?? 0;
-    const eak = baseline > 0 ? rolling / baseline * 100 : null;
+    const eak = baseline > 0 && isReadinessLift(identity.exercise, identity.variation) ? rolling / baseline * 100 : null;
     return { ...log, ...identity, key, e1rm, rolling, baseline, eak, samples: history.length, status: readinessFromEAk(eak ?? 0) };
   });
 }

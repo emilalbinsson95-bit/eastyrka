@@ -285,7 +285,7 @@ export function StatsDashboard({
 
 // ============= EAkoefficient (strength-only) vs stiffness =============
 function EAkoefficientCard({ logs, baselines }: { logs: LogRow[]; baselines: Record<string, number>; readiness: ReadinessRow[] }) {
-  const latest = useMemo(() => latestChartStrength(logs, baselines).filter(p => isReadinessLift(p.exercise)), [logs, baselines]);
+  const latest = useMemo(() => latestChartStrength(logs, baselines).filter(p => isReadinessLift(p.exercise, p.variation)), [logs, baselines]);
   return <Card><CardHeader><CardTitle>EAk per lyft</CardTitle><CardDescription>Snitt av de tre senaste mätpassen mot coachens baslinje.</CardDescription></CardHeader><CardContent className="space-y-3">
     {latest.length === 0 ? <p className="text-sm text-muted-foreground">Inga kvalificerade mätpass ännu.</p> : latest.map(p => <div key={p.key} className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 last:border-0">
       <div><p className="font-medium text-sm">{exerciseKey(p.exercise, p.variation)}</p><p className="text-xs text-muted-foreground">{p.date} · {p.samples} mätpass · baslinje {p.baseline > 0 ? `${p.baseline} kg` : "saknas"}</p></div>

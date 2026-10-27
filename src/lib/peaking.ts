@@ -2,6 +2,7 @@
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { compSetCap } from "@/lib/volumeGuards";
 import { dailyE1RM } from "@/lib/eakoefficient";
+import { compLiftKey, isCompLift } from "@/lib/liftIdentity";
 import {
   volumeCategory,
   type TemplateExercise,
@@ -97,27 +98,12 @@ export function peakE1rm(weight: number, reps: number, rpe: number | null): numb
   return dailyE1RM({ weight_kg: weight, reps, rpe: rpe ?? 8 });
 }
 
-function isCompetitionSquat(name: string): boolean {
-  const n = norm(name);
-  if (!n.includes("squat")) return false;
-  return !/(split|bulgarian|hack|goblet|jump|pistol|zercher|belt|sissy|leg press|box)/.test(n);
-}
-function isCompetitionBench(name: string): boolean {
-  const n = norm(name);
-  if (!n.includes("bench")) return false;
-  return !/(dumbbell|db |incline|decline|floor|spoto|board|pin)/.test(n);
-}
-function isCompetitionDeadlift(name: string): boolean {
-  const n = norm(name);
-  if (!n.includes("deadlift")) return false;
-  return !/(romanian|rdl|stiff|trap bar|hex|snatch|single|dumbbell|good ?morning)/.test(n);
-}
-
-const MATCHER: Record<MainLiftKey, (name: string) => boolean> = {
-  squat: isCompetitionSquat,
-  bench: isCompetitionBench,
-  deadlift: isCompetitionDeadlift,
-};
+// Shared competition-lift identity: close-grip, touch-and-go, pause etc. are
+// variations and must never inflate the comp lift's e1RM or exposure count.
+const isCompEntry = (key: MainLiftKey, exercise: string, variation?: string | null) =>
+  compLiftKey(exercise) === key && isCompLift(exercise, variation);
+const isAnyCompEntry = (exercise: string, variation?: string | null) =>
+  compLiftKey(exercise) != null && isCompLift(exercise, variation);
 
 const FALLBACK_NAME: Record<MainLiftKey, string> = {
   squat: "Back squat",
@@ -170,7 +156,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const baselineFor = (key: MainLiftKey): number | null => {
     let best: number | null = null;
     for (const b of h.baselines) {
-      if (MATCHER[key](b.exercise) && Number(b.one_rm_kg) > 0) {
+      if (compLiftKey(b.exercise) === key && Number(b.one_rm_kg) > 0) {
         best = Math.max(best ?? 0, Number(b.one_rm_kg));
       }
     }
@@ -179,8 +165,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
 
   const lifts = {} as Record<MainLiftKey, MainLiftInfo>;
   for (const key of ["squat", "bench", "deadlift"] as MainLiftKey[]) {
-    const match = MATCHER[key];
-    const allHits = logs.filter((l) => match(l.exercise));
+    const allHits = logs.filter((l) => isCompEntry(key, l.exercise, l.variation));
     const topByDate = new Map<string, number>();
     for (const l of allHits) topByDate.set(l.date, Math.max(topByDate.get(l.date) ?? 0, l.weight_kg));
     // Warm-up sets do not count: logged RPE under 6, or unrated sets below 80 % of that day's top weight.
@@ -192,8 +177,17 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
     for (const l of hits) counts.set(l.exercise, (counts.get(l.exercise) ?? 0) + 1);
     const name = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? FALLBACK_NAME[key];
 
-    const estimates = hits.filter((l) => l.reps <= 8).map((l) => peakE1rm(l.weight_kg, l.reps, l.rpe));
-    const logE1rm = estimates.length ? Math.max(...estimates) : null;
+    // Robust RTS estimate: best qualifying set (RPE ≥ 7, ≤ 6 reps) per session,
+    // median of the six latest sessions. One lucky set must not set the loads.
+    const bestByDate = new Map<string, number>();
+    for (const l of hits) {
+      if (l.rpe == null || l.rpe < 7 || l.reps > 6) continue;
+      const est = peakE1rm(l.weight_kg, l.reps, l.rpe);
+      bestByDate.set(l.date, Math.max(bestByDate.get(l.date) ?? 0, est));
+    }
+    const latest = [...bestByDate.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6).map(([, v]) => v);
+    const fallback = hits.filter((l) => l.reps <= 8).map((l) => peakE1rm(l.weight_kg, l.reps, l.rpe));
+    const logE1rm = latest.length ? median(latest) : fallback.length ? median(fallback) : null;
     const base = baselineFor(key);
     const e1rm = logE1rm != null || base != null ? Math.max(logE1rm ?? 0, base ?? 0) : null;
 
@@ -239,12 +233,12 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
 
   // Accessories: everything that is not one of the three competition lifts,
   // ranked by how much the athlete actually does of it.
-  const accMap = new Map<string, { exercise: string; sets: number; reps: number[] }>();
+  const accMap = new Map<string, { exercise: string; variation?: string; sets: number; reps: number[] }>();
   for (const l of reference === "work3" ? workLogs : recent) {
-    if (isCompetitionSquat(l.exercise) || isCompetitionBench(l.exercise) || isCompetitionDeadlift(l.exercise))
-      continue;
-    const key = norm(l.exercise);
-    const entry = accMap.get(key) ?? { exercise: l.exercise, sets: 0, reps: [] };
+    if (isAnyCompEntry(l.exercise, l.variation)) continue;
+    const variation = compLiftKey(l.exercise) ? l.variation?.trim() || undefined : undefined;
+    const key = `${norm(l.exercise)}|${norm(variation ?? "")}`;
+    const entry = accMap.get(key) ?? { exercise: l.exercise, variation, sets: 0, reps: [] };
     entry.sets += 1;
     entry.reps.push(l.reps);
     accMap.set(key, entry);
@@ -252,6 +246,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const accessories: PeakAccessory[] = [...accMap.values()]
     .map((a) => ({
       exercise: a.exercise,
+      ...(a.variation ? { variation: a.variation } : {}),
       weeklySets: reference === "work3" ? a.sets / Math.max(1, workWindows.length) : weeksCovered > 0 ? a.sets / weeksCovered : 0,
       reps: clamp(Math.round(median(a.reps)) || 10, 5, 15),
     }))

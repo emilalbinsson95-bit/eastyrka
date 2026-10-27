@@ -110,12 +110,14 @@ export interface TaperLiftInput {
 
 export interface TaperAccessoryInput {
   exercise: string;
+  variation?: string;
   weeklySets: number;
   reps: number;
 }
 
 export interface TaperExercise {
   exercise: string;
+  variation?: string;
   sets: number;
   reps: number;
   /** Andel av e1RM när lasten är procentstyrd. */
@@ -126,6 +128,35 @@ export interface TaperExercise {
   kg?: number | null;
   notes?: string;
 }
+
+/**
+ * Träningsdagar räknade bakåt från D0 (dagar före tävling, modulo 7), så att
+ * regeldagarna (mark D−7, bänk D−5/D−3 m.fl.) hamnar på riktiga träningsdagar
+ * oavsett vilken veckodag tävlingen är. D−1/D−2 är alltid vila.
+ */
+const D0_PATTERNS: Record<number, number[]> = {
+  2: [0, 3],
+  3: [0, 3, 5],
+  4: [0, 1, 3, 5],
+  5: [0, 1, 2, 3, 5],
+  6: [0, 1, 2, 3, 4, 5],
+};
+export function d0TrainingWeekdays(competitionDate: string, daysPerWeek: number): number[] {
+  const offsets = D0_PATTERNS[daysPerWeek] ?? D0_PATTERNS[4];
+  return [...new Set(offsets.map((m) => {
+    const d = addDays(parseISO(competitionDate), -(m === 0 ? 7 : m)).getDay();
+    return d === 0 ? 7 : d;
+  }))].sort((a, b) => a - b);
+}
+
+/** Variationer av tävlingslyften (smalgrepp, touch-and-go, paus …). */
+const VARIANT_RE = /squat|bench|deadlift|knäböj|bänk|marklyft/i;
+/** Tung underkroppsassistans — tas bort från assistansdagen. */
+const HEAVY_LOWER_RE = /nordic|leg curl|hamstring|lunge|split|leg press|rdl|romanian|good ?morning|hip thrust|step.?up|hack/i;
+/** Lätta övningar med låg trötthet som kan ligga kvar längre in i toppningen. */
+const LOW_FATIGUE_RE = /face ?pull|rear.?delt|row|curl|pushdown|tricep|skull|lateral|fly|plank|pallof|core|ab |abs|crunch|calf|band|pull.?apart|back extension|dead ?bug|bird ?dog/i;
+const isVariant = (a: TaperAccessoryInput) => VARIANT_RE.test(a.exercise) && !HEAVY_LOWER_RE.test(a.exercise);
+const isLowFatigue = (a: TaperAccessoryInput) => !VARIANT_RE.test(a.exercise) && !HEAVY_LOWER_RE.test(a.exercise) && LOW_FATIGUE_RE.test(a.exercise);
 
 export type TaperPhase = "volymtopp" | "intensifiering" | "overbelastning" | "taper" | "vila" | "tavling";
 
@@ -243,12 +274,16 @@ export function buildTaperPlan(input: {
 
   // --- Regeldagar: sista tunga passet och sista passet per lyft ---
   const ruleDays = new Set<string>();
+  const heavyAt = new Map<string, TaperLiftKey[]>();
+  const lastAt = new Map<string, TaperLiftKey[]>();
   for (const k of active) {
     const heavy = snapToTrainingDay(daysBefore(d0, s.heavyDay[k]), weekdays);
     const last = snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays);
     ruleDays.add(heavy);
     ruleDays.add(last);
     if (!trainingDates.includes(heavy) || !trainingDates.includes(last)) continue;
+    heavyAt.set(heavy, [...(heavyAt.get(heavy) ?? []), k]);
+    lastAt.set(last, [...(lastAt.get(last) ?? []), k]);
     const heavyRpe = clamp(s.heavyRpe, 7, 8.5);
     const backoffRpe = clamp(s.backoffRpe, 7, 8.5);
     const heavyReps=k==="deadlift"&&!input.singlesEnabled?2:HEAVY_SCHEME[k].reps;
@@ -299,7 +334,8 @@ export function buildTaperPlan(input: {
     const slots = (openSlots.length > 0 ? openSlots : taperSlots).filter(d => d < snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays));
     for (const d of slots) {
       if (remaining <= 0) break;
-      const sets = Math.min(remaining, Math.max(2, Math.round(info.setsPerExposure * (1 - s.volumeCut))));
+      // Minst två set per exponering — ett ensamt set är inget pass.
+      const sets = Math.max(2, Math.min(remaining, Math.max(2, Math.round(info.setsPerExposure * (1 - s.volumeCut)))));
       remaining -= sets;
       sessionAt(d, "Taperpass").exercises.push({
         exercise: info.name,
@@ -312,43 +348,10 @@ export function buildTaperPlan(input: {
     }
   }
 
-  // --- Tunna taperpass fylls ut ---
-  // Inget pass under tapern ska bli "åka till gymmet för två set bänk och hem
-  // igen". Lätt teknikarbete på lyften (före respektive sista exponering) och
-  // lätt underhållsassistans så länge assistansen inte tagits bort ännu.
-  for (const ses of byDate.values()) {
-    if (ses.phase !== "taper") continue;
-    let total = ses.exercises.reduce((n, e) => n + e.sets, 0);
-    if (total >= 6) continue;
-    const present = new Set(ses.exercises.map((e) => e.exercise));
-    for (const k of active) {
-      if (total >= 6) break;
-      if (present.has(lift(k).name)) continue;
-      if (ses.date >= snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays)) continue;
-      ses.exercises.push({
-        exercise: lift(k).name,
-        sets: 2,
-        reps: 2,
-        pctOfE1rm: LIGHT_PCT[k],
-        isTechnique: true,
-        kg: kgFor(k, LIGHT_PCT[k]),
-        notes: "Lätt teknikarbete — håller rörelsen färsk utan att trötta.",
-      });
-      present.add(lift(k).name);
-      total += 2;
-    }
-    if (ses.date < accessoriesOut) {
-      for (const a of (input.accessories ?? [])) {
-        if (total >= 6) break;
-        if (present.has(a.exercise)) continue;
-        ses.exercises.push({ exercise: a.exercise, sets: 2, reps: a.reps, notes: "Lätt underhåll under tapern — långt från failure." });
-        present.add(a.exercise);
-        total += 2;
-      }
-    }
-  }
-
-  // --- Volymtopp och intensifiering: ordinarie träning enligt atletens eget mönster ---
+  // --- Volymtopp, intensifiering och överbelastning: atletens eget mönster ---
+  // Exponeringarna sprids jämnt över hela perioden före tapern (inte per
+  // kalendervecka), så att samma lyft inte hamnar två dagar i rad och så att
+  // lyften fördelas på olika dagar. Lasten styrs av RPE via RTS-tabellen.
   const overloadStart = s.overloadWeek ? daysBefore(d0, s.taperDays + 7) : null;
   const preDates = trainingDates.filter((d) => {
     const p = phaseOf(d);
@@ -357,36 +360,142 @@ export function buildTaperPlan(input: {
   for (const d of preDates) {
     const isOverload = overloadStart != null && d >= overloadStart;
     const ses = sessionAt(d, isOverload ? "Överbelastningsvecka" : phaseOf(d) === "intensifiering" ? "Intensifiering" : "Volymtopp");
-    if (isOverload) ses.phase = "overbelastning";
+    if (isOverload) { ses.phase = "overbelastning"; if (ses.title === "Taperpass") ses.title = "Överbelastningsvecka"; }
+  }
+  if (preDates.length > 0) {
+    const firstDay = [input.startDate, daysBefore(d0, 42)].filter(Boolean).sort().reverse()[0] as string;
+    const lastPreDay = daysBefore(d0, s.taperDays + 1);
+    const preSpan = Math.max(1, differenceInCalendarDays(parseISO(lastPreDay), parseISO(firstDay)) + 1);
+    const OFFSET: Record<TaperLiftKey, number> = { squat: 0, bench: 1 / 3, deadlift: 2 / 3 };
     for (const k of active) {
       const info = lift(k);
-      if (d >= snapToTrainingDay(daysBefore(d0, s.heavyDay[k]), weekdays)) continue;
-      const freq = Math.max(1, Math.round(info.exposuresPerWeek));
-      const everyNth = Math.max(1, Math.round(weekdays.length / freq));
-      if (preDates.indexOf(d) % everyNth !== 0) continue;
-      const sets = Math.max(2, Math.round(info.setsPerExposure * (isOverload ? 1.1 : 1)));
-      ses.exercises.push({
-        exercise: info.name,
-        sets,
-        reps: phaseOf(d) === "intensifiering" || isOverload ? 3 : 5,
-        pctOfE1rm: phaseOf(d) === "intensifiering" || isOverload ? 0.85 : 0.775,
-        kg: kgFor(k, phaseOf(d) === "intensifiering" || isOverload ? 0.85 : 0.775),
-        notes: isOverload
-          ? "Överbelastningsvecka: tillfälligt EAk-tapp är planerat och räknas inte som en dålig dag."
-          : undefined,
-      });
-    }
-    // Assistansövningar tas bort från D-14 (eller coachens valda dag).
-    if (d < accessoriesOut) {
-      for (const a of (input.accessories ?? []).slice(0, 3)) {
-        const sets = Math.min(3, Math.max(1, Math.round(a.weeklySets / Math.max(1, weekdays.length))));
-        ses.exercises.push({ exercise: a.exercise, sets, reps: a.reps, notes: "Underhållsdos — aldrig till failure." });
+      const heavyDate = snapToTrainingDay(daysBefore(d0, s.heavyDay[k]), weekdays);
+      const dates = preDates.filter((d) => d < heavyDate);
+      if (dates.length === 0) continue;
+      const perWeek = Math.max(1, Math.round(info.exposuresPerWeek || 1));
+      const count = Math.min(dates.length, Math.max(1, Math.round(perWeek * preSpan / 7)));
+      const chosen = new Set<number>();
+      for (let i = 0; i < count; i++) {
+        let idx = Math.min(dates.length - 1, Math.floor((i + OFFSET[k]) * dates.length / count));
+        while (chosen.has(idx) && idx < dates.length - 1) idx++;
+        while (chosen.has(idx) && idx > 0) idx--;
+        chosen.add(idx);
       }
+      [...chosen].sort((a, b) => a - b).forEach((idx, n) => {
+        const d = dates[idx];
+        const ses = byDate.get(d)!;
+        const isOverload = ses.phase === "overbelastning";
+        const intens = phaseOf(d) === "intensifiering" || isOverload;
+        // Första exponeringen varje vecka är den tunga; övriga är lättare volym.
+        const primary = n % perWeek === 0;
+        const reps = intens ? (primary ? 3 : 4) : 5;
+        const rpe = intens ? (primary ? 8 : isOverload ? 7.5 : 7) : primary ? 7.5 : 7;
+        const pct = pctOf1RMInterp(rpe, reps) / 100;
+        const sets = Math.max(2, Math.round(info.setsPerExposure || 3)) + (isOverload && primary ? 1 : 0);
+        ses.exercises.push({
+          exercise: info.name,
+          sets,
+          reps,
+          rpe,
+          pctOfE1rm: pct,
+          kg: kgFor(k, pct),
+          notes: isOverload
+            ? "Överbelastningsvecka: tillfälligt EAk-tapp är planerat och räknas inte som en dålig dag."
+            : primary ? "Tyngsta passet för lyftet den här veckan." : "Lättare volympass.",
+        });
+      });
     }
   }
 
+  // --- Inga tomma eller tunna pass ---
+  // Inget pass ska bli "åka till gymmet för några set bänk och hem igen".
+  // Före tapern: atletens egna variationer och assistans (sänkt dos efter
+  // assistansdagen). I tapern: lätt teknik på lyften före deras sista
+  // exponering och lätta övningar med låg trötthet fram till D−5.
+  const accessories = input.accessories ?? [];
+  const keyOf = (e: { exercise: string; variation?: string }) => `${e.exercise.toLowerCase()}|${(e.variation ?? "").toLowerCase()}`;
+  let rotation = 0;
+  for (const ses of [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))) {
+    const n = differenceInCalendarDays(parseISO(d0), parseISO(ses.date));
+    const isTaper = ses.phase === "taper";
+    const isPre = ses.phase === "volymtopp" || ses.phase === "intensifiering" || ses.phase === "overbelastning";
+    if (!isTaper && !isPre) continue;
+    const target = isTaper ? 7 : 10;
+    let total = ses.exercises.reduce((sum, e) => sum + e.sets, 0);
+    const present = new Set(ses.exercises.map(keyOf));
+    const presentLifts = new Set(ses.exercises.map((e) => e.exercise));
+    const techniqueFill = () => {
+      for (const k of active) {
+        if (total >= target) break;
+        if (presentLifts.has(lift(k).name)) continue;
+        // Mark efter sista tunga marken tränas bara på sin egen sista dag.
+        if (k === "deadlift" && ses.date >= snapToTrainingDay(daysBefore(d0, s.heavyDay.deadlift), weekdays)) continue;
+        if (ses.date >= snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays)) continue;
+        ses.exercises.push({
+          exercise: lift(k).name,
+          sets: 2,
+          reps: isTaper ? 2 : 3,
+          pctOfE1rm: LIGHT_PCT[k],
+          isTechnique: true,
+          kg: kgFor(k, LIGHT_PCT[k]),
+          notes: "Lätt teknikarbete — håller rörelsen färsk utan att trötta.",
+        });
+        presentLifts.add(lift(k).name);
+        total += 2;
+      }
+    };
+    if (isTaper) techniqueFill();
+    const eligible = accessories.filter((a) => {
+      if (isTaper) return n >= 5 && isLowFatigue(a);
+      if (ses.date < accessoriesOut) return true;
+      return isVariant(a) || isLowFatigue(a);
+    });
+    let added = 0;
+    const maxAdded = isTaper ? 2 : 3;
+    for (let i = 0; i < eligible.length && total < target && added < maxAdded; i++) {
+      const a = eligible[(rotation + i) % eligible.length];
+      if (present.has(keyOf(a))) continue;
+      const full = !isTaper && ses.date < accessoriesOut;
+      const sets = full ? Math.min(3, Math.max(2, Math.round(a.weeklySets / 2))) : 2;
+      ses.exercises.push({
+        exercise: a.exercise,
+        ...(a.variation ? { variation: a.variation } : {}),
+        sets,
+        reps: a.reps,
+        rpe: full ? 7.5 : 7,
+        notes: full
+          ? "Underhållsdos — aldrig till failure."
+          : isVariant(a)
+            ? "Variation i sänkt dos inför tävlingen — snabba, rena reps."
+            : "Lätt underhåll — långt från failure, ska inte trötta.",
+      });
+      present.add(keyOf(a));
+      total += sets;
+      added += 1;
+    }
+    rotation += 1;
+    if (!isTaper) techniqueFill();
+  }
+
+  // Tävlingslyften först, sedan teknik, sist variationer/assistans (stabil sortering).
+  const liftNames = new Set(active.map((k) => lift(k).name));
+  const rank = (e: TaperExercise) => (liftNames.has(e.exercise) && !e.variation ? (e.isTechnique ? 1 : 0) : 2);
   const sessions = [...byDate.values()]
     .filter((ses) => ses.exercises.length > 0)
+    .map((ses) => {
+      const heavy = heavyAt.get(ses.date) ?? [];
+      const last = lastAt.get(ses.date) ?? [];
+      const names = (ks: TaperLiftKey[]) => ks.map((k) => TAPER_LIFT_LABEL[k].toLowerCase()).join(" och ");
+      const hasMainWork = ses.exercises.some((e) => liftNames.has(e.exercise) && !e.isTechnique && !e.variation);
+      const title = heavy.length
+        ? `Sista tunga passet — ${names(heavy)}${last.length ? ` (sista ${names(last)})` : ""}`
+        : last.length
+          ? `Sista passet — ${names(last)}`
+          : hasMainWork
+            ? ses.title
+            : "Teknik och assistans";
+      return { ...ses, title: title.replace(/— (\p{Ll})/u, (_, c: string) => `— ${c.toUpperCase()}`), exercises: [...ses.exercises].sort((a, b) => rank(a) - rank(b)) };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // --- Hårda varningar, alltid aktiva ---

@@ -1,11 +1,12 @@
 import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 import { buildTaperPlan, type TaperSettings } from "./taperModel";
-import { peakWeekStartDates } from "./peakingDates";
+import { peakWeekStartDates,validPeakDate,peakPeriodDays } from "./peakingDates";
 import type { PeakSummary } from "./peaking";
 import type { TemplateWeek } from "./strengthTemplates";
 
 export function buildD0Weeks(input:{start:string;end:string;competition:string;days:number;summary:PeakSummary|null;singles:boolean;settings?:Partial<TaperSettings>}): {weeks:TemplateWeek[];warnings:string[]} {
   if(!input.summary) return {weeks:[],warnings:["Träningshistoriken kunde inte läsas."]};
+  if(!validPeakDate(input.competition)||!peakPeriodDays(input.start,input.end)) return {weeks:[],warnings:["Ange giltiga start-, slut- och tävlingsdatum."]};
   const patterns:Record<number,number[]>={2:[1,4],3:[1,3,5],4:[1,2,4,6],5:[1,2,3,5,6],6:[1,2,3,4,5,6]};
   const plan=buildTaperPlan({competitionDate:input.competition,startDate:input.start,endDate:input.end,trainingWeekdays:patterns[input.days]??patterns[4],lifts:input.summary.lifts,accessories:input.summary.accessories,settings:input.settings,singlesEnabled:input.singles});
   const starts=peakWeekStartDates(input.start,input.end);

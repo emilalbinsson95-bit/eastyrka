@@ -5,6 +5,9 @@ import { addDays,format,parseISO } from "date-fns";
 
 const summary=summarizePeaking({today:"2026-10-27",logs:Array.from({length:21},(_,i)=>({date:format(addDays(parseISO("2026-10-26"),-i),"yyyy-MM-dd"),exercise:"Back squat",variation:null,reps:5,weight_kg:100,rpe:8})),baselines:[{exercise:"Back squat",one_rm_kg:125}]});
 describe("D0 generation adapter",()=>{
+ it("returns a validation warning instead of crashing while date inputs are empty",()=>{
+  expect(buildD0Weeks({start:"2027-01-01",end:"2027-01-22",competition:"",days:4,summary,singles:false}).weeks).toEqual([]);
+ });
  it("allows every 2–6 day and 2–6 week combination with dates before competition",()=>{
   for(let days=2;days<=6;days++)for(let weeks=2;weeks<=6;weeks++){
    const end="2027-01-22",start=format(addDays(parseISO("2027-01-23"),-weeks*7),"yyyy-MM-dd");

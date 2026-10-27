@@ -387,7 +387,7 @@ export function buildTaperPlan(input: {
         const rpe = intens ? (primary ? 8 : isOverload ? 7.5 : 7) : primary ? 7.5 : 7;
         const pct = pctOf1RMInterp(rpe, reps) / 100;
         const sets = Math.max(2, Math.round(info.setsPerExposure || 3)) + (isOverload && primary ? 1 : 0);
-        ses.exercises.unshift({
+        ses.exercises.push({
           exercise: info.name,
           sets,
           reps,

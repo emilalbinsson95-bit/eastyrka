@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Genomför granskade generatorändringar 1–22 med skydd: gemensam beräkning (1–3, 14, 18–19, 21–22), tak/coachval (4–5, 11, 17), en D0-toppning (6–8, 15–16), coachbeslut/uppföljning (9–10, 12–13, 20). Verifiera med Alex Athlete; ändra aldrig loggar eller sparade program utan coachens bekräftelse.
 - [x] Granska alla 22 förslag i Ändringar i SETPOINTs autogenerator: rapport klar med kodjämförelse, forskningsbegränsningar, rättad volymmatematik och konflikter kring D0/coachstyrning; 105 befintliga tester gröna. Ingen träningsregel eller sparat program ändrat.
 - [x] EAk steg B del 1: databas (strategi per atlet, ömhet/motivation, pass-RPE/tid, uppvärmningsvikter, utökad beslutslogg med utfall), motorn läser allt, readiness frågar ömhet/motivation.
 - [x] EAk steg B del 2: uppvärmningsvikter i atlet-/coachinställningar, exakt viktmatchning och RPE 6–10 i halvsteg i båda loggflödena; referensset undantas från arbetsset och EAk. Alex sparade/återläste 60 kg och loggade/återläste RPE 7,5; 48 relevanta tester och bygge gröna.

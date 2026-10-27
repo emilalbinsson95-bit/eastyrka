@@ -91,6 +91,7 @@ interface PlannedExercise {
   last_set_to_failure: boolean;
   notes: string | null;
   order_index: number;
+  is_technique?:boolean;
 }
 
 interface PlannedSession {
@@ -124,6 +125,7 @@ interface LogRow {
   form_score: number | null;
   planned_exercise_id: string | null;
   is_warmup_reference?: boolean;
+  is_technique?:boolean;
   original_reps?: number | null;
   original_rpe?: number | null;
 }
@@ -163,7 +165,7 @@ function TodayPage() {
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
                target_weight_kg, lengthened_partials, last_set_to_failure,
-               notes, order_index
+               notes, order_index, is_technique
              )
            )`;
       // Prefer the current (or most recent past) published week.
@@ -424,6 +426,7 @@ function TodayPage() {
           exercise: l.exercise,
           variation: l.variation,
           is_warmup_reference: l.is_warmup_reference,
+          is_technique:l.is_technique,
           set_number: l.set_number,
           reps: l.reps,
           weight_kg: Number(l.weight_kg),
@@ -574,6 +577,12 @@ function PlannedSessionCard({
   athleteId: string;
   dateStr: string;
 }) {
+  const extraPreferences=useQuery({queryKey:["generator-preferences",athleteId],queryFn:async()=>{
+    const {data,error}=await supabase.from("athlete_generator_preferences").select("settings").eq("athlete_id",athleteId).maybeSingle();
+    if(error) throw error;
+    const settings=data?.settings as {extraSets?:Record<string,boolean>}|undefined;
+    return settings?.extraSets??{};
+  }});
   // Match logs to a specific planned exercise. To avoid double-counting when
   // the same exercise name appears twice in a session (e.g. bench press as
   // both a main and an accessory lift), unlinked (freestyle) logs are only
@@ -641,6 +650,8 @@ function PlannedSessionCard({
                 baseline={lookupBaseline(baselines, ex.exercise) ?? 0}
                 athleteId={athleteId}
                 dateStr={dateStr}
+                coachExtraEnabled={extraPreferences.data?.[/squat|böj/i.test(ex.exercise)?"squat":/bench|bänk/i.test(ex.exercise)?"bench":/deadlift|mark/i.test(ex.exercise)?"deadlift":"none"]===true}
+                sessionSets={logs.filter(l=>!l.is_warmup_reference).length}
               />
             );
           })}
@@ -744,6 +755,8 @@ function PlannedExerciseRow({
   baseline,
   athleteId,
   dateStr,
+  coachExtraEnabled,
+  sessionSets,
 }: {
   ex: PlannedExercise;
   logs: LogRow[];
@@ -751,6 +764,8 @@ function PlannedExerciseRow({
   baseline: number;
   athleteId: string;
   dateStr: string;
+  coachExtraEnabled: boolean;
+  sessionSets: number;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const completed = logs.length;
@@ -881,6 +896,8 @@ function PlannedExerciseRow({
       )}
       {isDone && (() => {
         const extra = canAddExtraSet({
+          coachEnabled:coachExtraEnabled,
+          sessionSets,
           plannedSets: targetSets,
           doneSets: logs.map((l) => ({ reps: l.reps, weight_kg: Number(l.weight_kg), rpe: Number(l.rpe), set_number: l.set_number })),
           targetRpe: ex.target_rpe != null ? Number(ex.target_rpe) : ex.target_rir != null ? 10 - Number(ex.target_rir) : null,
@@ -979,6 +996,7 @@ function LogSetButton({
         weight_kg: parsed.weight_kg,
         rpe: parsed.rpe,
         is_warmup_reference: isWarmup,
+        is_technique:ex.is_technique===true,
         rir: !isWarmup && usingRir ? rir : null,
         lengthened_partials: !isWarmup && partials,
         to_failure: !isWarmup && toFailure,

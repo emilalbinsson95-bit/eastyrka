@@ -24,6 +24,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState("Säsongsplan");
   const [competitionDate, setCompetitionDate] = useState("");
+  const [originalCompetition,setOriginalCompetition]=useState("");
   const [notes, setNotes] = useState("");
   const [blocks, setBlocks] = useState<SeasonBlock[]>([]);
   const [generating, setGenerating] = useState<{ planId: string; block: SeasonBlock; competitionDate: string } | null>(null);
@@ -49,7 +50,9 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
       const errorMessage = validateSeason(blocks, competitionDate);
       if (errorMessage) throw new Error(errorMessage);
       if (!name.trim() || name.trim().length > 100) throw new Error("Ange ett namn på högst 100 tecken.");
-      const row = { name: name.trim(), competition_date: competitionDate || null, notes, blocks: blocks as unknown as Json, updated_at: new Date().toISOString() };
+      const changed=Boolean(editId)&&competitionDate!==originalCompetition;
+      const nextBlocks=blocks.map(b=>changed&&b.templateId==="peak-3w"&&b.mesocycleId?{...b,inactive:true}:b);
+      const row = { name: name.trim(), competition_date: competitionDate || null, notes, blocks: nextBlocks as unknown as Json, updated_at: new Date().toISOString() };
       const result = editId
         ? await supabase.from("athlete_season_plans").update(row).eq("id", editId).eq("athlete_id", athleteId).eq("updated_at", editVersion ?? "").select("id").single()
         : await supabase.from("athlete_season_plans").insert({ ...row, athlete_id: athleteId, coach_id: coachId }).select("id").single();
@@ -120,21 +123,29 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
   return <section className="space-y-3 border-t border-border pt-4" aria-label="Säsongsplanering">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="text-lg font-semibold">Säsongsplanering</h2>
-      <Button variant="outline" onClick={() => { setEditId(null); setEditVersion(null); setName("Säsongsplan"); setNotes(""); const start = format(new Date(), "yyyy-MM-dd"); setBlocks(defaultSeason(start)); setCompetitionDate(format(addDays(new Date(), 77), "yyyy-MM-dd")); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Ny säsongsplan</Button>
+      <Button variant="outline" onClick={() => { setEditId(null); setEditVersion(null); setName("Säsongsplan"); setNotes(""); const start = format(new Date(), "yyyy-MM-dd"); setBlocks(defaultSeason(start)); setCompetitionDate(format(addDays(new Date(), 70), "yyyy-MM-dd")); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Ny säsongsplan</Button>
     </div>
     {plans.isLoading && <p className="text-sm text-muted-foreground">Hämtar säsongsplaner…</p>}
     {plans.isError && <p className="text-sm text-destructive">Kunde inte hämta säsongsplanerna. <Button variant="link" onClick={() => plans.refetch()}>Försök igen</Button></p>}
     {plans.data?.length === 0 && <p className="text-sm text-muted-foreground">Ingen säsongsplan sparad.</p>}
     {plans.data?.map((p) => <div key={p.id} className="space-y-2 border-b border-border pb-4">
       <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-medium">{p.name}</h3>{p.competition_date && <p className="text-xs text-muted-foreground">Tävling {p.competition_date}</p>}</div>
-        <div className="flex gap-1"><Button size="icon" variant="ghost" aria-label={`Redigera ${p.name}`} title="Redigera" disabled={!p.parsedBlocks.success} onClick={() => { if (!p.parsedBlocks.success) return; setEditId(p.id); setEditVersion(p.updated_at); setName(p.name); setCompetitionDate(p.competition_date ?? ""); setNotes(p.notes ?? ""); setBlocks(p.parsedBlocks.data); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+        <div className="flex gap-1"><Button size="icon" variant="ghost" aria-label={`Redigera ${p.name}`} title="Redigera" disabled={!p.parsedBlocks.success} onClick={() => { if (!p.parsedBlocks.success) return; setEditId(p.id); setEditVersion(p.updated_at); setName(p.name); setCompetitionDate(p.competition_date ?? "");setOriginalCompetition(p.competition_date??""); setNotes(p.notes ?? ""); setBlocks(p.parsedBlocks.data); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
         <Button size="icon" variant="ghost" aria-label={`Ta bort ${p.name}`} title="Ta bort säsongsplan" disabled={remove.isPending} onClick={() => { if (confirm("Ta bort säsongsplanen? Skapade träningsprogram behålls.")) remove.mutate(p.id); }}><Trash2 className="h-4 w-4" /></Button></div>
       </div>
       {p.notes && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{p.notes}</p>}
       {!p.parsedBlocks.success && <p className="text-sm text-destructive">Blocken kunde inte läsas.</p>}
       {p.parsedBlocks.success && p.parsedBlocks.data.map((b) => <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-primary pl-3 py-2">
         <div className="min-w-0"><p className="font-medium break-words">{b.name} <span className="text-xs font-normal text-muted-foreground">· {FOCUS_LABELS[b.focus]}</span></p><p className="text-xs text-muted-foreground">{b.startDate} – {blockEnd(b)} · {b.templateId === "manual" ? `Eget upplägg, ${blockWeeks(b)} veckor` : getTemplate(b.templateId)?.name} · {b.daysPerWeek} dagar/vecka</p>{b.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{b.notes}</p>}</div>
-        {b.mesocycleId ? <Button asChild variant="outline" size="sm"><Link to="/coach/athletes/$athleteId/cycles/$cycleId" params={{ athleteId, cycleId: b.mesocycleId }}>Öppna program<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
+        {b.inactive&&b.mesocycleId ? <div className="space-y-2"><p className="text-sm text-destructive">Tävlingsdatumet har ändrats. Toppningen är inaktuell; det gamla programmet ligger kvar tills du bekräftar omplanering.</p><Button size="sm" variant="outline" onClick={async()=>{
+          if(!p.competition_date||!confirm("Arkivera det gamla toppningsprogrammet och förbered ett nytt utkast? Loggar och tidigare program behålls.")) return;
+          const start=peakStartDate(p.competition_date,blockWeeks(b));if(!start) return;
+          const next=p.parsedBlocks.success?p.parsedBlocks.data.map(x=>x.id===b.id?{...x,previousMesocycleId:x.mesocycleId,mesocycleId:undefined,inactive:false,startDate:start,endDate:format(addDays(parseISO(p.competition_date??""),-1),"yyyy-MM-dd")}:x):[];
+          const result=await supabase.from("athlete_season_plans").update({blocks:next as unknown as Json,updated_at:new Date().toISOString()}).eq("id",p.id).eq("updated_at",p.updated_at).select("id").single();
+          if(result.error){toast.error("Säsongsplanen ändrades. Öppna den igen.");return;}
+          const archived=await supabase.from("mesocycles").update({status:"archived"}).eq("id",b.mesocycleId??"");if(archived.error){toast.error("Planen kopplades loss men arkivering misslyckades. Kontrollera det gamla programmet.");return;}
+          qc.invalidateQueries();const replacement=next.find(x=>x.id===b.id);if(replacement)setGenerating({planId:p.id,block:replacement,competitionDate:p.competition_date});
+        }}>Förbered om toppningen</Button></div> : b.mesocycleId ? <Button asChild variant="outline" size="sm"><Link to="/coach/athletes/$athleteId/cycles/$cycleId" params={{ athleteId, cycleId: b.mesocycleId }}>Öppna program<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
           : b.templateId === "manual" ? <Button variant="outline" size="sm" disabled={createManual.isPending} onClick={() => createManual.mutate({ planId: p.id, block: b })}>{createManual.isPending ? "Skapar…" : "Skapa tomt block"}</Button>
           : <Button variant="outline" size="sm" onClick={() => setGenerating({ planId: p.id, block: b, competitionDate: p.competition_date ?? "" })}>Förbered block</Button>}
       </div>)}

@@ -290,6 +290,45 @@ export type Database = {
         }
         Relationships: []
       }
+      baseline_max_decisions: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          decided_by: string
+          decision: string
+          training_log_id: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          decided_by: string
+          decision: string
+          training_log_id: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          decided_by?: string
+          decision?: string
+          training_log_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseline_max_decisions_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseline_max_decisions_training_log_id_fkey"
+            columns: ["training_log_id"]
+            isOneToOne: false
+            referencedRelation: "training_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       baselines: {
         Row: {
           athlete_id: string
@@ -1287,6 +1326,7 @@ export type Database = {
           exercise_id: string | null
           id: string
           intensity_metric: Database["public"]["Enums"]["intensity_metric"]
+          is_technique: boolean
           last_set_to_failure: boolean
           lengthened_partials: boolean
           notes: string | null
@@ -1305,6 +1345,7 @@ export type Database = {
           exercise_id?: string | null
           id?: string
           intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
+          is_technique?: boolean
           last_set_to_failure?: boolean
           lengthened_partials?: boolean
           notes?: string | null
@@ -1323,6 +1364,7 @@ export type Database = {
           exercise_id?: string | null
           id?: string
           intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
+          is_technique?: boolean
           last_set_to_failure?: boolean
           lengthened_partials?: boolean
           notes?: string | null
@@ -1976,6 +2018,7 @@ export type Database = {
           exercise: string
           form_score: number | null
           id: string
+          is_technique: boolean
           is_warmup_reference: boolean
           lengthened_partials: boolean
           original_reps: number | null
@@ -1998,6 +2041,7 @@ export type Database = {
           exercise: string
           form_score?: number | null
           id?: string
+          is_technique?: boolean
           is_warmup_reference?: boolean
           lengthened_partials?: boolean
           original_reps?: number | null
@@ -2020,6 +2064,7 @@ export type Database = {
           exercise?: string
           form_score?: number | null
           id?: string
+          is_technique?: boolean
           is_warmup_reference?: boolean
           lengthened_partials?: boolean
           original_reps?: number | null
@@ -2074,6 +2119,7 @@ export type Database = {
           mesocycle_id: string | null
           notes: string | null
           status: Database["public"]["Enums"]["plan_status"]
+          training_phase: string | null
           updated_at: string
           week_index: number | null
           week_start_date: string
@@ -2087,6 +2133,7 @@ export type Database = {
           mesocycle_id?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
+          training_phase?: string | null
           updated_at?: string
           week_index?: number | null
           week_start_date: string
@@ -2100,6 +2147,7 @@ export type Database = {
           mesocycle_id?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
+          training_phase?: string | null
           updated_at?: string
           week_index?: number | null
           week_start_date?: string
@@ -2155,6 +2203,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      decide_baseline_max: {
+        Args: { _approve: boolean; _log_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2169,6 +2221,10 @@ export type Database = {
       is_physio_of: {
         Args: { _patient_id: string; _physio_id: string }
         Returns: boolean
+      }
+      postpone_deload_checkpoint: {
+        Args: { _week_id: string }
+        Returns: undefined
       }
       search_athlete_profiles: {
         Args: { _query: string }

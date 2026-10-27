@@ -4,11 +4,11 @@ import { blockEnd, blockWeeks, defaultSeason, generatorSettingsSchema, reschedul
 describe("coach season planning", () => {
   it("accepts 2–6 peak weeks and 2–6 training days and rejects values outside those ranges", () => {
     for (const weeks of [2, 3, 4, 5, 6]) for (const days of [2, 3, 4, 5, 6]) {
-      const block = { ...defaultSeason("2026-10-19")[2], startDate: "2026-10-19", peakWeeks: weeks, daysPerWeek: days };
+      const block = { ...defaultSeason("2026-10-19")[1], startDate: "2026-10-19", peakWeeks: weeks, daysPerWeek: days };
       expect(validateSeason([block], "")).toBeNull();
       expect(blockWeeks(block)).toBe(weeks);
     }
-    const block = defaultSeason("2026-10-19")[2];
+    const block = defaultSeason("2026-10-19")[1];
     expect(blockEnd({ ...block, startDate: "2026-10-19", peakWeeks: 6 })).toBe("2026-11-29");
     for (const peakWeeks of [1, 7, 2.5]) expect(seasonBlocksSchema.safeParse([{ ...block, peakWeeks }]).success).toBe(false);
     for (const daysPerWeek of [1, 7]) expect(validateSeason([{ ...block, daysPerWeek }], "")).not.toBeNull();
@@ -23,14 +23,15 @@ describe("coach season planning", () => {
     for (const weeks of [0, 25, 2.5]) expect(seasonBlocksSchema.safeParse([{ ...block, manualWeeks: weeks }]).success).toBe(false);
   });
   it("requires unprepared peaks to end directly before competition but never moves prepared programs", () => {
-    const block = { ...defaultSeason("2026-10-19")[2], startDate: "2027-01-02" };
+    const block = { ...defaultSeason("2026-10-19")[1], startDate: "2026-12-12" };
     expect(validateSeason([block], "2027-01-23")).toBeNull();
-    expect(validateSeason([{ ...block, startDate: "2027-01-01" }], "2027-01-23")).toContain("direkt före");
-    expect(validateSeason([{ ...block, startDate: "2027-01-01", mesocycleId: "22222222-2222-2222-2222-222222222222" }], "2027-01-23")).toBeNull();
+    expect(validateSeason([{ ...block, startDate: "2026-12-11" }], "2027-01-23")).toContain("direkt före");
+    expect(validateSeason([{ ...block, startDate: "2026-12-11", mesocycleId: "22222222-2222-2222-2222-222222222222" }], "2027-01-23")).toBeNull();
   });
   it("reflows future blocks when own block length changes and preserves prepared programs", () => {
     const blocks = defaultSeason("2026-10-19");
     blocks[0] = { ...blocks[0], templateId: "manual", manualWeeks: 4 };
+    blocks.push({ ...blocks[1], id:"later", startDate:"2027-01-01" });
     blocks[2].mesocycleId = "22222222-2222-2222-2222-222222222222";
     const next = rescheduleFuture(blocks, blocks[0].id, { manualWeeks: 6 });
     expect(next[1].startDate).toBe("2026-11-30");
@@ -38,15 +39,15 @@ describe("coach season planning", () => {
     expect(blocks[0].manualWeeks).toBe(4);
     expect(blockWeeks({ ...blocks[0], manualWeeks: undefined })).toBe(4);
   });
-  it("places the three blocks consecutively before the meet", () => {
+  it("places four volume weeks and six D0 weeks consecutively before the meet", () => {
     const blocks = defaultSeason("2026-10-19");
-    expect(blocks.map((b) => b.startDate)).toEqual(["2026-10-19", "2026-11-16", "2026-12-14"]);
-    expect(blockEnd(blocks[2])).toBe("2027-01-03");
-    expect(validateSeason(blocks, "2027-01-04")).toBeNull();
+    expect(blocks.map((b) => b.startDate)).toEqual(["2026-10-19", "2026-11-16"]);
+    expect(blockEnd(blocks[1])).toBe("2026-12-27");
+    expect(validateSeason(blocks, "2026-12-28")).toBeNull();
   });
   it("rejects overlap with a competition or between blocks", () => {
     const blocks = defaultSeason("2026-10-19");
-    expect(validateSeason(blocks, "2027-01-03")).toContain("tävlingsdatumet");
+    expect(validateSeason(blocks, "2026-12-27")).toContain("tävlingsdatumet");
     blocks[1].startDate = blocks[0].startDate;
     expect(validateSeason(blocks, "")).toContain("överlapp");
   });
@@ -59,8 +60,8 @@ describe("coach season planning", () => {
   });
   it("validates frequency for the selected template", () => {
     const blocks = defaultSeason("2026-10-19");
-    blocks[2].templateId = "runner-strength";
-    blocks[2].daysPerWeek = 3;
+    blocks[1].templateId = "runner-strength";
+    blocks[1].daysPerWeek = 3;
     expect(validateSeason(blocks, "")).toContain("träningsdagar");
   });
   it("rejects unsupported or unsafe saved generator settings", () => {

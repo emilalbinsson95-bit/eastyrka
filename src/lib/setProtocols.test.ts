@@ -42,10 +42,10 @@ describe("coach-selected set protocols", () => {
     expect(e?.notes).not.toContain("Last set to failure");
     expect(e?.last_set_to_failure).toBe(false);
   });
-  it("uses 70 percent of the same exercise estimate for metabolic backoffs", () => {
+  it("uses RTS five reps at RPE 6 (76.2 percent) for metabolic backoffs", () => {
     const sets = protocolSets(exercise, "metabolic");
     expect(sets[0]?.weight).toBe(100);
-    expect(sets[1]?.weight).toBe(85);
+    expect(sets[1]?.weight).toBe(95);
   });
   it("limits metabolic backoff reps instead of prescribing high reps at 70 percent", () => {
     expect(protocolSets({ ...exercise, target_reps: 12 }, "metabolic").slice(1).every(s => s.reps <= 5)).toBe(true);
@@ -56,11 +56,11 @@ describe("coach-selected set protocols", () => {
     expect(result[1]?.sessions[0]?.exercises[0]?.target_weight_kg).toBe(100);
     expect(result[1]?.sessions[0]?.exercises[0]?.target_reps).toBe(5);
   });
-  it("keeps metabolic backoffs lighter even for high-rep top sets", () => {
-    for (const reps of [3, 5, 8, 10, 12, 15]) {
-      const sets = protocolSets({ ...exercise, target_reps: reps }, "metabolic");
-      expect(sets.slice(1).every(s => s.weight == null || s.weight <= 90)).toBe(true);
-    }
+  it("keeps rep drops at the same weight with progressively fewer reps", () => {
+    const sets = protocolSets(exercise, "rep-drops");
+    expect(sets.map(s => s.reps)).toEqual([5, 4, 3, 2]);
+    expect(sets.map(s => s.weight)).toEqual([100, 100, 100, 100]);
+    expect(sets.map(s => s.rpe)).toEqual([8, 7, 6, 6]);
   });
   it("gives main lifts enough rest rather than an accessory rest target", () => {
     const out = applySetProtocols([week], { ...DEFAULT_SET_PROTOCOLS, squat: "metabolic" });

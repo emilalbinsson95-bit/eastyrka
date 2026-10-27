@@ -22,7 +22,7 @@ const MIN_SESSIONS = 4;
 /** Over-warm / opener singles are neural practice, never volume candidates. */
 const SINGLE_VARIATION = /^(over-warm single|opener single)$/i;
 
-export interface BlockLog { date: string; exercise: string; reps: number; weight_kg: number; rpe: number | null; set_number?: number }
+export interface BlockLog { date: string; exercise: string; reps: number; weight_kg: number; rpe: number | null; set_number?: number; is_warmup_reference?: boolean;is_technique?:boolean }
 export interface LiftEvaluation { lift: Lift; delta: -1 | 0 | 1; sessions: number; source: "data" | "tolerance"; reason: string }
 
 export function toleranceDelta(t: VolumeTolerance | null | undefined): -1 | 0 | 1 {
@@ -38,7 +38,7 @@ export function evaluateBlock(
 ): LiftEvaluation[] {
   const since = new Date(new Date(today).getTime() - days * 864e5).toISOString().slice(0, 10);
   return (["squat", "bench", "deadlift"] as Lift[]).map((lift) => {
-    const rows = logs.filter((l) => l.date >= since && compLiftKey(l.exercise.trim()) === lift && l.rpe != null)
+    const rows = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && l.date >= since && compLiftKey(l.exercise.trim()) === lift && l.rpe != null && l.rpe >= 7)
       .map((l, i) => ({ ...l, rpe: Number(l.rpe), reps: Number(l.reps), weight_kg: Number(l.weight_kg), set_number: l.set_number ?? i + 1 }));
     const byDate = new Map<string, typeof rows>();
     for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
@@ -48,7 +48,7 @@ export function evaluateBlock(
       const e = dailyE1RM(m);
       const later = g.filter((s) => s !== m && s.set_number > m.set_number && countsForEAk(s));
       const drop = later.length ? Math.max(...later.map((s) => ((e - dailyE1RM(s)) / e) * 100)) : 0;
-      return { e, drop, exercise: m.exercise };
+      return { e, drop, measuredDrop: later.length > 0, exercise: m.exercise };
     }).filter((s): s is NonNullable<typeof s> => !!s);
 
     if (sessions.length < MIN_SESSIONS) {
@@ -62,9 +62,11 @@ export function evaluateBlock(
     const baseline = lookupBaseline(baselines, sessions[0].exercise) ?? 0;
     const lastTrendPct = baseline > 0 ? (ma[ma.length - 1] / baseline) * 100 : 100;
     const rising = ma[ma.length - 1] >= ma[Math.min(2, ma.length - 1)] * 0.99;
-    const good = sessions.filter((s) => s.drop <= 4).length / sessions.length;
-    const bad = sessions.filter((s) => s.drop >= 5).length / sessions.length;
-    if (lastTrendPct < 97 || bad > 1 / 3)
+    const measured = sessions.filter((s) => s.measuredDrop);
+    const good = measured.length ? measured.filter((s) => s.drop < 4).length / measured.length : 0;
+    const repeatedDrop = sessions.slice(-4).filter((s) => s.measuredDrop && s.drop >= 5).length >= 2;
+    const bad = measured.length ? measured.filter((s) => s.drop >= 5).length / measured.length : 0;
+    if (lastTrendPct < 97 || repeatedDrop)
       return { lift, delta: -1, sessions: sessions.length, source: "data", reason: `EAk-trend ${lastTrendPct.toFixed(0)} %, tapp ≥ 5 % i ${Math.round(bad * 100)} % av passen → −1 set/vecka.` };
     if (good >= 0.75 && rising)
       return { lift, delta: 1, sessions: sessions.length, source: "data", reason: `Tapp ≤ 4 % i ${Math.round(good * 100)} % av passen och stabil/stigande trend → +1 set/vecka.` };
@@ -126,8 +128,11 @@ export function canAddExtraSet(input: {
   doneSets: Array<{ reps: number; weight_kg: number; rpe: number; set_number: number }>;
   targetRpe: number | null;
   isLightOrSingle: boolean;
+  coachEnabled?: boolean;
+  sessionSets?: number;
 }): { allowed: boolean; reason: string } {
   const { plannedSets, doneSets, targetRpe, isLightOrSingle } = input;
+  if (!input.coachEnabled || (input.sessionSets ?? 30) >= 30) return { allowed: false, reason: "" };
   if (isLightOrSingle) return { allowed: false, reason: "" };
   if (doneSets.length < plannedSets) return { allowed: false, reason: "" };
   if (doneSets.length >= plannedSets + 2) return { allowed: false, reason: "Tak nått: planerat + 2 set." };
@@ -136,7 +141,7 @@ export function canAddExtraSet(input: {
   if (!m || !last || !countsForEAk(last)) return { allowed: false, reason: "" };
   const drop = ((dailyE1RM(m) - dailyE1RM(last)) / dailyE1RM(m)) * 100;
   if (drop >= 5) return { allowed: false, reason: `Tapp ${drop.toFixed(1)} % — stanna här.` };
-  if (drop > 4) return { allowed: false, reason: `Tapp ${drop.toFixed(1)} % — inga fler set.` };
+  if (drop >= 4) return { allowed: false, reason: `Tapp ${drop.toFixed(1)} % — inga fler set.` };
   if (targetRpe != null && last.rpe > targetRpe + 1) return { allowed: false, reason: "RPE mer än 1 över målet — stanna här." };
   return { allowed: true, reason: `Tapp ${Math.max(0, drop).toFixed(1)} % mot mätsetet — du får köra ett set till på samma vikt.` };
 }

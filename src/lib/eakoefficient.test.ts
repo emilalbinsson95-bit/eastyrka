@@ -52,7 +52,7 @@ describe("EAk (RTS model)", () => {
   });
   it("extra set allowed only with small drop", () => {
     const sets = [1, 2, 3].map((n) => ({ set_number: n, reps: 5, weight_kg: 120, rpe: 8 }));
-    expect(canAddExtraSet({ plannedSets: 3, doneSets: sets, targetRpe: 8, isLightOrSingle: false }).allowed).toBe(true);
+    expect(canAddExtraSet({ plannedSets: 3, doneSets: sets, targetRpe: 8, isLightOrSingle: false, coachEnabled:true,sessionSets:3 }).allowed).toBe(true);
     expect(canAddExtraSet({ plannedSets: 3, doneSets: [...sets, { set_number: 4, reps: 5, weight_kg: 120, rpe: 8 }, { set_number: 5, reps: 5, weight_kg: 120, rpe: 8 }], targetRpe: 8, isLightOrSingle: false }).allowed).toBe(false);
   });
 });

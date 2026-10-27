@@ -42,6 +42,7 @@ export interface SetInput {
   weight_kg: number;
   rpe: number;
   is_warmup_reference?: boolean;
+  is_technique?: boolean;
 }
 
 /** Sets below this RPE are too far from failure to estimate strength. */
@@ -50,7 +51,7 @@ export const EAK_MIN_RPE = 7;
 export const EAK_PEAK_PCT = 103;
 
 export function countsForEAk(set: SetInput): boolean {
-  return !set.is_warmup_reference && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
+  return !set.is_warmup_reference && !set.is_technique && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
 }
 
 /**
@@ -148,13 +149,13 @@ export function readinessFromEAk(eak: number): ReadinessStatus {
 export function readinessLabel(status: ReadinessStatus): string {
   switch (status) {
     case "exhausted":
-      return "Trött";
+      return "Långt under baslinjen";
     case "undertrained":
-      return "Under baseline";
+      return "Under baslinjen";
     case "adapting":
-      return "Normal";
+      return "Vid baslinjen";
     case "peaking":
-      return "Topp";
+      return "Över baslinjen";
     default:
       return "—";
   }
@@ -200,8 +201,8 @@ export function readinessClasses(status: ReadinessStatus): string {
 /**
  * Volume quality based on E1RM drop from set 1 of the same day & exercise.
  *  - Set 1 itself is the baseline reference (no drop yet).
- *  - drop ≤ 4%   → Optimal
- *  - 4% < drop < 5% → Acceptable
+ *  - drop < 4%   → Optimal
+ *  - 4% <= drop < 5% → Acceptable
  *  - drop ≥ 5%   → Fatigue limit reached
  */
 export function volumeQualityFromDrop(
@@ -210,7 +211,7 @@ export function volumeQualityFromDrop(
 ): VolumeQuality {
   if (setNumber <= 1) return "baseline";
   if (dropPercent < -SANDBAG_SET1_THRESHOLD_PCT) return "sandbag";
-  if (dropPercent <= 4) return "optimal";
+  if (dropPercent < 4) return "optimal";
   if (dropPercent >= 5) return "fatigue_limit";
   return "acceptable";
 }
@@ -331,8 +332,7 @@ export function processLogs<T extends RawLog>(
     const roll = rolling.get(key) ?? 0;
     const eakTrend = readiness && roll > 0 ? (roll / baseline) * 100 : 0;
     const planned = plannedLightDates?.has(log.date) ?? false;
-    let status = readinessFromEAk(eak);
-    if (planned && status === "exhausted") status = "adapting";
+    const status = readinessFromEAk(eakTrend || eak);
 
     const isMeasurement = meas === log;
     let volume: VolumeQuality;

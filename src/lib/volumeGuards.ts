@@ -20,29 +20,29 @@ const isLight = (w: TemplateWeek) =>
   /löparstyrka/i.test(`${w.label} ${(w as { notes?: string }).notes ?? ""}`);
 
 export function compSetCap(reps: number): number {
-  return reps <= 3 ? 6 : reps <= 4 ? 7 : 8;
+  return reps <= 3 ? 8 : reps <= 4 ? 7 : 6;
 }
 
 export function applyVolumeGuards(weeks: TemplateWeek[], profile: StrengthVolumeProfile = DEFAULT_STRENGTH_VOLUME): TemplateWeek[] {
   return weeks.map((week) => {
-    if (isLight(week)) return week;
+    const skipFloors = isLight(week);
     const sessions = week.sessions.map((s) => {
       const exercises = s.exercises.map((e) =>
         isComp(e.exercise) && e.target_sets > compSetCap(e.target_reps) ? { ...e, target_sets: compSetCap(e.target_reps) } : { ...e },
       );
       let total = exercises.reduce((a, e) => a + e.target_sets, 0);
       while (total > SESSION_CAP) {
-        const pool = exercises.filter((e) => !isComp(e.exercise) && e.target_sets > 2);
-        const target = (pool.length ? pool : exercises.filter((e) => e.target_sets > 3)).sort((a, b) => b.target_sets - a.target_sets)[0];
+        const pool = exercises.filter((e) => !isComp(e.exercise) && e.target_sets > 0);
+        const target = (pool.length ? pool : exercises.filter((e) => e.target_sets > 0)).sort((a, b) => b.target_sets - a.target_sets)[0];
         if (!target) break;
         target.target_sets -= 1;
         total -= 1;
       }
-      return { ...s, exercises };
+      return { ...s, exercises: exercises.filter(e => e.target_sets > 0) };
     });
     for (const cat of MAIN_CATS) {
       const factor = volumeFactorForCategory(cat, profile);
-      const floorSets = Math.round(WEEK_FLOOR * Math.min(1, factor));
+      const floorSets = skipFloors ? 0 : Math.round(WEEK_FLOOR * Math.min(1, factor));
       const ceilSets = Math.round(WEEK_CEIL * factor);
       const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat).map((e) => ({ s, e })));
       if (!items.length) continue;

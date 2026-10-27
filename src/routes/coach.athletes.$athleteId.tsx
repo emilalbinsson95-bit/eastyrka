@@ -1,4 +1,5 @@
 import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
+import { BaselineMaxProposals } from "@/components/BaselineMaxProposals";
 import { EakStrategyCard } from "@/components/EakStrategyCard";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { RoutineScore } from "@/components/RoutinePlayer";
@@ -200,6 +201,7 @@ function AthleteDetailPage() {
           <div className="mb-4"><StrengthVolumeProfileCard athleteId={athleteId} /></div>
           <div className="mb-4"><WarmupLoadsCard athleteId={athleteId} /></div>
           <div className="mb-4"><EakStrategyCard athleteId={athleteId} /></div>
+          <BaselineMaxProposals athleteId={athleteId} />
           <BaselinesEditor athleteId={athleteId} />
         </TabsContent>
       </Tabs>
@@ -216,7 +218,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_logs")
-        .select("id, date, exercise, variation, set_number, reps, weight_kg, rpe, edited_by_athlete_at, original_reps, original_rpe, created_at")
+        .select("id, date, exercise, variation, set_number, reps, weight_kg, rpe, edited_by_athlete_at, original_reps, original_rpe, created_at, is_warmup_reference, is_technique")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: false })
         .order("created_at", { ascending: true })

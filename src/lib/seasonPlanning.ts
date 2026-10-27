@@ -6,6 +6,8 @@ import { DEFAULT_SET_PROTOCOLS } from "@/lib/setProtocols";
 import { peakPeriodDays } from "@/lib/peakingDates";
 
 export const generatorSettingsSchema = z.object({
+  extraSets: z.object({ squat:z.boolean(), bench:z.boolean(), deadlift:z.boolean() }).default({squat:false,bench:false,deadlift:false}),
+  roundingKg: z.union([z.literal(2.5),z.literal(1.25),z.literal(1)]).default(2.5),
   tuning: z.object({ volume: z.number().min(.7).max(1.3), intensity: z.number().min(-1.5).max(1.5), accessory: z.number().min(.5).max(1.5), mainLifts: z.number().min(.7).max(1.3) }).default(DEFAULT_TUNING),
   overload: z.object({ overWarmSingles: z.boolean(), waveLoading: z.boolean(), benchConsolidation: z.boolean(), deadliftStance: z.enum(["keep", "conventional", "sumo"]) }).optional(),
   setProtocols: z.object({ squat: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), bench: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), deadlift: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]), accessories: z.enum(["keep", "straight", "rep-drops", "ramping", "descending", "metabolic", "double"]) }).default(DEFAULT_SET_PROTOCOLS),
@@ -23,6 +25,8 @@ export const seasonBlockSchema = z.object({
   daysPerWeek: z.number().int().min(2).max(6),
   notes: z.string().max(2000).default(""),
   mesocycleId: z.string().uuid().optional(),
+  inactive:z.boolean().optional(),
+  previousMesocycleId:z.string().uuid().optional(),
   endDate: z.string().optional(),
   peakWeeks: z.number().int().min(2).max(6).optional(),
 });
@@ -83,7 +87,6 @@ export function rescheduleFuture(blocks: SeasonBlock[], changedId: string, patch
 export function defaultSeason(startDate: string): SeasonBlock[] {
   return scheduleBlocks([
     { id: "volume", name: "Volymblock", focus: "volume", templateId: "standard-pl", startDate, daysPerWeek: 4, notes: "" },
-    { id: "strength", name: "Styrkeblock", focus: "strength", templateId: "standard-pl", startDate, daysPerWeek: 4, notes: "" },
-    { id: "competition", name: "Toppning", focus: "competition", templateId: "peak-3w", startDate, daysPerWeek: 3, notes: "" },
+    { id: "competition", name: "Tävlingsförberedelse D0", focus: "competition", templateId: "peak-3w", peakWeeks:6, startDate, daysPerWeek: 4, notes: "Ingen automatisk deload mellan D−42 och tävlingen. Coachen kan ändra vid behov." },
   ], startDate);
 }

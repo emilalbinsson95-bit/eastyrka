@@ -156,7 +156,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
   const baselineFor = (key: MainLiftKey): number | null => {
     let best: number | null = null;
     for (const b of h.baselines) {
-      if (MATCHER[key](b.exercise) && Number(b.one_rm_kg) > 0) {
+      if (compLiftKey(b.exercise) === key && Number(b.one_rm_kg) > 0) {
         best = Math.max(best ?? 0, Number(b.one_rm_kg));
       }
     }
@@ -165,8 +165,7 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
 
   const lifts = {} as Record<MainLiftKey, MainLiftInfo>;
   for (const key of ["squat", "bench", "deadlift"] as MainLiftKey[]) {
-    const match = MATCHER[key];
-    const allHits = logs.filter((l) => match(l.exercise));
+    const allHits = logs.filter((l) => isCompEntry(key, l.exercise, l.variation));
     const topByDate = new Map<string, number>();
     for (const l of allHits) topByDate.set(l.date, Math.max(topByDate.get(l.date) ?? 0, l.weight_kg));
     // Warm-up sets do not count: logged RPE under 6, or unrated sets below 80 % of that day's top weight.
@@ -178,8 +177,17 @@ export function summarizePeaking(h: PeakHistoryInput, reference: PeakReference =
     for (const l of hits) counts.set(l.exercise, (counts.get(l.exercise) ?? 0) + 1);
     const name = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? FALLBACK_NAME[key];
 
-    const estimates = hits.filter((l) => l.reps <= 8).map((l) => peakE1rm(l.weight_kg, l.reps, l.rpe));
-    const logE1rm = estimates.length ? Math.max(...estimates) : null;
+    // Robust RTS estimate: best qualifying set (RPE ≥ 7, ≤ 6 reps) per session,
+    // median of the six latest sessions. One lucky set must not set the loads.
+    const bestByDate = new Map<string, number>();
+    for (const l of hits) {
+      if (l.rpe == null || l.rpe < 7 || l.reps > 6) continue;
+      const est = peakE1rm(l.weight_kg, l.reps, l.rpe);
+      bestByDate.set(l.date, Math.max(bestByDate.get(l.date) ?? 0, est));
+    }
+    const latest = [...bestByDate.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6).map(([, v]) => v);
+    const fallback = hits.filter((l) => l.reps <= 8).map((l) => peakE1rm(l.weight_kg, l.reps, l.rpe));
+    const logE1rm = latest.length ? median(latest) : fallback.length ? median(fallback) : null;
     const base = baselineFor(key);
     const e1rm = logE1rm != null || base != null ? Math.max(logE1rm ?? 0, base ?? 0) : null;
 

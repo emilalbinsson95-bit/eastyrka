@@ -15,21 +15,21 @@ export const TAPER_LIFT_LABEL: Record<TaperLiftKey, string> = {
 
 /** Coachens elva reglage. Inom intervallet ändras värdet fritt; utanför krävs aktiv bekräftelse. */
 export interface TaperSettings {
-  /** Taperlängd i dagar (standard 9, intervall 7–10). */
+  /** Taperlängd i dagar (standard 9, intervall 7–14). */
   taperDays: number;
-  /** Volymsänkning i tapern som andel (standard 0.5, intervall 0.4–0.6). */
+  /** Volymsänkning i tapern som andel (standard 0.5, intervall 0.3–0.6). */
   volumeCut: number;
   /** Stegtaper (standard) eller snabb exponentiell — aldrig gradvis linjär. */
   taperModel: "step" | "exp";
   /** Överbelastningsvecka direkt före taperstart (standard på). */
   overloadWeek: boolean;
-  /** Intensitet i tapern: bibehållen (standard) eller något höjd. */
-  intensity: "keep" | "raise";
+  /** Intensitet i tapern: bibehållen (standard, minst 85 % på tunga set), något höjd, eller sänkt 25–30 % när återhämtningen går före (Bell 2025). */
+  intensity: "keep" | "raise" | "lower";
   /** Sista tunga passet, dagar före D0 per lyft (standard mark 9, böj 8, bänk 5; ±1). */
   heavyDay: Record<TaperLiftKey, number>;
   /** Last på sista tunga passet som andel av e1RM (standard 0.9125, intervall 0.875–0.95). */
   heavyLoadPct: number;
-  /** Sista passet per lyft, dagar före D0 (standard mark 6, böj 4, bänk 3; ±1). */
+  /** Sista passet per lyft, dagar före D0 (standard mark 7, böj 4, bänk 3; ±1). Lyftspecifika uppehåll enligt Bell 2025: mark 7–10, böj 4–7, bänk 2–4 (högst 3 för bänk enligt Travis 2022). */
   lastDay: Record<TaperLiftKey, number>;
   /** Totalt träningsuppehåll före D0 (standard 2, intervall 2–3). */
   restDays: number;

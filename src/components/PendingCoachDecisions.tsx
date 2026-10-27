@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lookupBaseline } from "@/lib/eakoefficient";
+import { seasonBlocksSchema } from "@/lib/seasonPlanning";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +18,7 @@ export function PendingCoachDecisions({ athletes }: { athletes: Array<{ athlete_
       supabase.from("baseline_max_decisions").select("training_log_id").in("athlete_id",ids),
       supabase.from("baselines").select("athlete_id, exercise, one_rm_kg").in("athlete_id",ids),
       supabase.from("taper_followups").select("mesocycle_id, athlete_id, flags").in("athlete_id",ids),
-      supabase.from("season_blocks").select("id, season_plan_id, name, start_date, mesocycle_id, status, season_plans!inner(athlete_id)").in("season_plans.athlete_id",ids),
+      supabase.from("athlete_season_plans").select("id, athlete_id, blocks").in("athlete_id",ids),
     ]);
     for (const result of [evaluations, logs, decisions, baselines, peaks, seasons]) if(result.error) throw result.error;
     const items: Array<{id: string; athleteId: string; kind: "eak"|"max"|"peak"|"season"; label: string}> = (evaluations.data ?? []).map(e => ({id:e.id, athleteId:e.athlete_id,kind:"eak",label:`EAk · ${e.lift}`}));
@@ -31,8 +32,10 @@ export function PendingCoachDecisions({ athletes }: { athletes: Array<{ athlete_
       peak.flags.forEach((flag,index) => { if(flag && typeof flag === "object" && !Array.isArray(flag) && flag.decision === "pending") items.push({id:`${peak.mesocycle_id}-${index}`,athleteId:peak.athlete_id,kind:"peak",label:`Toppning · ${String(flag.message ?? "Flagga")}`}); });
     }
     const today = new Date().toISOString().slice(0,10);
-    for(const block of seasons.data ?? []) {
-      if(!block.mesocycle_id && block.status === "planned" && block.start_date < today) items.push({id:block.id,athleteId:block.season_plans.athlete_id,kind:"season",label:`Inaktuellt block · ${block.name}`});
+    for(const season of seasons.data ?? []) {
+      const parsed = seasonBlocksSchema.safeParse(season.blocks);
+      if (!parsed.success) continue;
+      for (const block of parsed.data) if((!block.mesocycleId && block.startDate < today) || block.inactive) items.push({id:`${season.id}-${block.id}`,athleteId:season.athlete_id,kind:"season",label:`Inaktuellt block · ${block.name}`});
     }
     return items;
   }});

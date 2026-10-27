@@ -1,4 +1,5 @@
 import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
+import { EakStrategyCard } from "@/components/EakStrategyCard";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { RoutineScore } from "@/components/RoutinePlayer";
 import { createFileRoute, Link, Outlet, useParams, useChildMatches } from "@tanstack/react-router";
@@ -198,6 +199,7 @@ function AthleteDetailPage() {
         <TabsContent value="baselines">
           <div className="mb-4"><StrengthVolumeProfileCard athleteId={athleteId} /></div>
           <div className="mb-4"><WarmupLoadsCard athleteId={athleteId} /></div>
+          <div className="mb-4"><EakStrategyCard athleteId={athleteId} /></div>
           <BaselinesEditor athleteId={athleteId} />
         </TabsContent>
       </Tabs>

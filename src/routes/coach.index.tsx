@@ -25,6 +25,7 @@ import {
 } from "@/lib/eakoefficient";
 
 import { cn } from "@/lib/utils";
+import { EakDecisionPanel } from "@/components/EakDecisionPanel";
 
 export const Route = createFileRoute("/coach/")({
   head: () => ({
@@ -65,6 +66,7 @@ const SIGNAL_CHIP: Record<string, { label: string; cls: string }> = {
   red_strong: { label: "Bromsa nu", cls: "bg-red-600/20 text-red-700 dark:text-red-300" },
   push: { label: "Redo för mer", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
   insufficient_data: { label: "För lite data", cls: "bg-muted text-muted-foreground" },
+  low_confidence: { label: "Ovanligt brusigt block", cls: "bg-status-peaking text-status-peaking-foreground" },
 };
 
 function CoachRosterPage() {
@@ -360,6 +362,7 @@ function CoachRosterPage() {
           />
         ))}
       </div>
+      <EakDecisionPanel athletes={athletes} />
     </div>
   );
 }

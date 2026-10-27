@@ -22,7 +22,7 @@ const MIN_SESSIONS = 4;
 /** Over-warm / opener singles are neural practice, never volume candidates. */
 const SINGLE_VARIATION = /^(over-warm single|opener single)$/i;
 
-export interface BlockLog { date: string; exercise: string; reps: number; weight_kg: number; rpe: number | null; set_number?: number; is_warmup_reference?: boolean }
+export interface BlockLog { date: string; exercise: string; reps: number; weight_kg: number; rpe: number | null; set_number?: number; is_warmup_reference?: boolean;is_technique?:boolean }
 export interface LiftEvaluation { lift: Lift; delta: -1 | 0 | 1; sessions: number; source: "data" | "tolerance"; reason: string }
 
 export function toleranceDelta(t: VolumeTolerance | null | undefined): -1 | 0 | 1 {
@@ -38,7 +38,7 @@ export function evaluateBlock(
 ): LiftEvaluation[] {
   const since = new Date(new Date(today).getTime() - days * 864e5).toISOString().slice(0, 10);
   return (["squat", "bench", "deadlift"] as Lift[]).map((lift) => {
-    const rows = logs.filter((l) => !l.is_warmup_reference && l.date >= since && compLiftKey(l.exercise.trim()) === lift && l.rpe != null && l.rpe >= 7)
+    const rows = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && l.date >= since && compLiftKey(l.exercise.trim()) === lift && l.rpe != null && l.rpe >= 7)
       .map((l, i) => ({ ...l, rpe: Number(l.rpe), reps: Number(l.reps), weight_kg: Number(l.weight_kg), set_number: l.set_number ?? i + 1 }));
     const byDate = new Map<string, typeof rows>();
     for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);

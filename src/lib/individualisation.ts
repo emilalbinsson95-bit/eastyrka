@@ -29,6 +29,7 @@ export interface HistLog {
   rpe: number | null;
   set_number?: number;
   is_warmup_reference?: boolean;
+  is_technique?:boolean;
 }
 
 export interface HistReadiness {
@@ -133,7 +134,7 @@ const LOOKBACK_DAYS = 28;
 export function summarizeHistory(h: HistoryInputs): HistorySummary {
   const recent = h.logs.filter((l) => {
     const d = daysAgo(h.today, l.date);
-    return !l.is_warmup_reference && d >= 0 && d < 92;
+    return !l.is_warmup_reference && !l.is_technique && d >= 0 && d < 92;
   });
   const windows = Array.from({ length: 13 }, (_, i) => i).filter(i => {
     const rows = recent.filter(l => Math.floor(daysAgo(h.today, l.date) / 7) === i);

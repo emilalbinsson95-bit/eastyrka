@@ -19,7 +19,7 @@ export function suggestOpeners(history: PeakHistoryInput, style?: string | null)
     const ordered = [...history.logs].sort((a, b) => ((a as typeof a & { set_number?: number }).set_number ?? 0) - ((b as typeof b & { set_number?: number }).set_number ?? 0));
     for (const log of ordered) {
       const age = differenceInCalendarDays(parseISO(history.today), parseISO(log.date));
-      if (log.is_warmup_reference || age < 0 || age > 42 || peakLift(log.exercise, style) !== key || days.has(log.date) ||
+      if (log.is_warmup_reference || log.is_technique || history.overloadDates?.includes(log.date) || age < 0 || age > 42 || peakLift(log.exercise, style) !== key || days.has(log.date) ||
         (log.variation && !/^(competition stance & commands|competition technique|competition pause|paused|pause)$/i.test(log.variation.trim())) ||
         log.rpe == null || log.rpe < 7 || log.rpe > 10 || log.reps < 1 || log.reps > 5 || log.weight_kg <= 0) continue;
       days.set(log.date, dailyE1RM({ weight_kg: log.weight_kg, reps: log.reps, rpe: log.rpe }));

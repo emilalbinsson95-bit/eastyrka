@@ -125,6 +125,7 @@ interface LogRow {
   form_score: number | null;
   planned_exercise_id: string | null;
   is_warmup_reference?: boolean;
+  is_technique?:boolean;
   original_reps?: number | null;
   original_rpe?: number | null;
 }

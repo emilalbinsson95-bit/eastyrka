@@ -969,10 +969,10 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
   },
   {
     id: "peak-3w",
-    name: "Toppning från historik (2–6 veckor)",
+    name: "Tävlingsförberedelse D0 (2–6 veckor)",
     short: "Tävlingsförberedelse — 2–6 dagar / 2–6 veckor",
     goal:
-      "Toppning med volym från tre senaste arbetsveckorna. Gradvis nedtrappning över 14–42 dagar med valbara datum och 2–6 dagar/vecka; sista veckan har två korta pass.",
+      "Tävlingsförankrad förberedelse med volym från tre senaste arbetsveckorna, stegtaper och lyftspecifika sista pass. Coachvald period på 14–42 dagar och 2–6 dagar/vecka.",
     weeks: 3,
     daysPerWeek: 3,
     minDays: 2,

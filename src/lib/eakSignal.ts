@@ -17,6 +17,7 @@ export interface SetLog {
   weight_kg: number;
   rpe: number | null;
   is_warmup_reference?: boolean;
+  is_technique?:boolean;
 }
 
 export interface CheckIn {
@@ -158,7 +159,7 @@ export interface MesoInput {
 
 /** Mätsets-e1RM och EAk_d per pass för ett lyft, kronologiskt. */
 export function sessionPoints(logs: SetLog[], lift: CompLift, baseline: number): { date: string; e1rm: number; eak: number }[] {
-  const rows = logs.filter((l) => !l.is_warmup_reference && compLiftKey(l.exercise.trim()) === lift && l.rpe != null);
+  const rows = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && compLiftKey(l.exercise.trim()) === lift && l.rpe != null);
   const byDate = new Map<string, SetLog[]>();
   for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
   return [...byDate.entries()]

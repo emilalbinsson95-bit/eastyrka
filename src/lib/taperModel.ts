@@ -251,7 +251,8 @@ export function buildTaperPlan(input: {
     if (!trainingDates.includes(heavy) || !trainingDates.includes(last)) continue;
     const heavyRpe = clamp(s.heavyRpe, 7, 8.5);
     const backoffRpe = clamp(s.backoffRpe, 7, 8.5);
-    const heavyPct = pctOf1RMInterp(k === "deadlift" ? heavyRpe : backoffRpe, HEAVY_SCHEME[k].reps) / 100;
+    const heavyReps=k==="deadlift"&&!input.singlesEnabled?2:HEAVY_SCHEME[k].reps;
+    const heavyPct = pctOf1RMInterp(k === "deadlift" ? heavyRpe : backoffRpe, heavyReps) / 100;
     if (input.singlesEnabled && k !== "deadlift") {
       const pct = pctOf1RMInterp(heavyRpe, 1) / 100;
       sessionAt(heavy, `Sista tunga passet — ${TAPER_LIFT_LABEL[k]}`).exercises.push({ exercise: lift(k).name, sets: 1, reps: 1, rpe: heavyRpe, pctOfE1rm: pct, kg: kgFor(k, pct), notes: "Coachvald singel, ersätter ett arbetsset." });
@@ -259,7 +260,7 @@ export function buildTaperPlan(input: {
     sessionAt(heavy, `Sista tunga passet — ${TAPER_LIFT_LABEL[k]}`).exercises.push({
       exercise: lift(k).name,
       sets: Math.max(2, Math.min(HEAVY_SCHEME[k].sets, Math.round(lift(k).setsPerExposure)) - (input.singlesEnabled && k !== "deadlift" ? 1 : 0)),
-      reps: HEAVY_SCHEME[k].reps,
+      reps: heavyReps,
       rpe: k === "deadlift" ? heavyRpe : backoffRpe,
       pctOfE1rm: heavyPct,
       kg: kgFor(k, heavyPct),

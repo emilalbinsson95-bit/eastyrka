@@ -23,7 +23,7 @@ const LIFTS = {
 
 describe("taperModel", () => {
   it("förankrar regeldagarna exakt vid D0 när alla dagar är träningsdagar", () => {
-    const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS });
+    const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS, singlesEnabled:true });
     const at = (date: string) => plan.sessions.find((s) => s.date === date);
     // Sista tunga: mark D-9, böj D-8, bänk D-5
     expect(at("2027-01-14")?.exercises.some((e) => e.exercise === "Deadlift" && e.sets === 3 && e.reps === 1)).toBe(true);
@@ -49,8 +49,8 @@ describe("taperModel", () => {
     expect(round25(101.1)).toBe(100);
     const plan = buildTaperPlan({ competitionDate: D0, trainingWeekdays: ALL_DAYS, lifts: LIFTS });
     const heavy = plan.sessions.find((s) => s.date === "2027-01-14")?.exercises.find((e) => e.exercise === "Deadlift");
-    expect(heavy?.kg).toBe(round25(240 * 0.922));
-    expect(heavy?.kg).toBe(222.5);
+    expect(heavy?.kg).toBe(round25(240 * 0.892));
+    expect(heavy?.kg).toBe(215);
   });
 
   it("håller vilan: inga pass D-2 eller D-1", () => {
@@ -132,7 +132,7 @@ describe("taperModel", () => {
     expect(lowered.every((e) => e.pctOfE1rm === 0.7)).toBe(true);
     const heavyLowered = lower.sessions.find((s) => s.date === "2027-01-14")?.exercises.find((e) => e.exercise === "Deadlift");
     expect(heavyLowered?.rpe).toBe(8);
-    expect(heavyLowered?.pctOfE1rm).toBeCloseTo(0.922, 4);
+    expect(heavyLowered?.pctOfE1rm).toBeCloseTo(0.892, 4);
   });
   it("never exceeds RPE 8.5 on final heavy work, even with raised intensity", () => {
     const plan=buildTaperPlan({competitionDate:D0,trainingWeekdays:ALL_DAYS,lifts:LIFTS,singlesEnabled:true,settings:{heavyRpe:10,backoffRpe:10,intensity:"raise"}});

@@ -1,8 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet } from "./eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, baselineExerciseKey } from "./eakoefficient";
 import { canAddExtraSet } from "./blockVolume";
 
 describe("EAk (RTS model)", () => {
+  it("finds Back Squat baselines stored as Squat or Knäböj", () => {
+    expect(lookupBaseline({Squat:200},"Back Squat")).toBe(200);
+    expect(lookupBaseline({"Knäböj":180},"Back squat")).toBe(180);
+    expect(lookupBaseline({"Back squat":190},"Squat")).toBe(190);
+    expect(baselineExerciseKey(" KNÄBÖJ ")).toBe(baselineExerciseKey("Back Squat"));
+  });
+  it("preserves exact overrides and never substitutes variants or other deadlift stances", () => {
+    expect(lookupBaseline({Squat:200,"Back squat":190},"Back squat")).toBe(190);
+    expect(lookupBaseline({"Pause squat":200},"Back squat")).toBeUndefined();
+    expect(lookupBaseline({"Sumo Deadlift":250},"Conventional Deadlift")).toBeUndefined();
+    expect(lookupBaseline({"Bänkpress":140},"Bench press")).toBe(140);
+  });
   it("preserves athlete and exercise keys without mixing lifts or athletes", () => {
     const logs = [
       { date: "2026-01-01", exercise: "athlete-a::Back squat", set_number: 1, reps: 1, weight_kg: 100, rpe: 10 },

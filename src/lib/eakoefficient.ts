@@ -361,7 +361,18 @@ export function processLogs<T extends RawLog>(
   });
 }
 
-/** Case/whitespace-insensitive baseline lookup ("Sumo deadlift" == "Sumo Deadlift"). */
+/** Exact competition aliases only: never collapse variants or deadlift stances. */
+export function baselineExerciseKey(exercise: string): string {
+  const name = exercise.trim().toLowerCase().replace(/\s+/g, " ");
+  if (/^(back squat|squat|knäböj|knaboj)$/.test(name)) return "squat";
+  if (/^(bench press|bench|bänkpress|bänk)$/.test(name)) return "bench press";
+  if (/^(deadlift|marklyft)$/.test(name)) return "deadlift";
+  if (/^(conventional deadlift|konventionell marklyft|konventionellt marklyft)$/.test(name)) return "conventional deadlift";
+  if (/^(sumo deadlift|sumomarklyft|sumomark)$/.test(name)) return "sumo deadlift";
+  return name;
+}
+
+/** Prefer exact stored names, then safe competition aliases. */
 export function lookupBaseline(
   baselines: Record<string, number> | undefined | null,
   exercise: string,
@@ -372,6 +383,10 @@ export function lookupBaseline(
   const norm = exercise.trim().toLowerCase().replace(/\s+/g, " ");
   for (const [k, v] of Object.entries(baselines)) {
     if (k.trim().toLowerCase().replace(/\s+/g, " ") === norm) return v;
+  }
+  const alias = baselineExerciseKey(exercise);
+  for (const [k, v] of Object.entries(baselines)) {
+    if (baselineExerciseKey(k) === alias) return v;
   }
   return undefined;
 }

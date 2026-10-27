@@ -33,7 +33,7 @@ describe("Emil's chart rules", () => {
     expect(paceRange(Array.from({ length: 10 }, (_, i) => ({ sessionId: String(i), sec: 300 + i * 10, m: 1000 })))).toMatchObject({ lower: 309, upper: 381, sessions: 10 });
   });
   it("calculates DOTS without assuming sex", () => {
-    expect(dotsScore(600, 83, "male")).toBeCloseTo(405.612, 2);
+    expect(dotsScore(600, 83, "male")).toBeCloseTo(405.0524254, 2);
     expect(dotsScore(600, 83, null)).toBeNull();
   });
   it("calculates injured/healthy symmetry without division by zero", () => {

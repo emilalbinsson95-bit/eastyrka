@@ -261,6 +261,7 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
                 <span>Pass: {ev.n_sessions}</span>
                 <span>Tröskel: {ev.threshold_i != null ? `±${ev.threshold_i.toFixed(1)} %` : "—"}</span>
               </div>
+              <p className="text-xs text-muted-foreground">Jämförelse: mesocykelns medel-e1RM mot föregående mesocykel (annars coachens baslinje). Δ {ev.dl_m == null ? "saknas" : `${ev.dl_m.toFixed(2)} %`} jämförs med ±{ev.threshold_i?.toFixed(2) ?? "—"} %. Lutningen visas separat; trenden tas bara bort när bruset skattas.</p>
               <p className="text-xs text-muted-foreground">Signalbrus: SEM_pool {ev.sem_pool == null ? "— (underlaget byggs upp)" : `${ev.sem_pool.toFixed(2)} %`} · Blockets bruskvot {ev.noise_ratio == null ? "—" : ev.noise_ratio.toFixed(2)}</p>
               {noisy && <p role="alert" className="text-xs font-medium text-status-peaking-foreground">Ovanligt brusigt block – dra inte slutsatser för snabbt.</p>}
               <div className="flex flex-wrap gap-2">{[

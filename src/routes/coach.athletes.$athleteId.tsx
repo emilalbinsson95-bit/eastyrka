@@ -487,7 +487,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
           <div>
             <CardTitle>EAkoefficient log</CardTitle>
             <CardDescription>
-              Sets grouped by session date with readiness and volume quality applied.
+              EAk är mätsetets max mot baslinjen. Volymkvalitet jämför senare set med mätsetet: under 4 % tapp = bra, 4–under 5 % = godtagbart, minst 5 % = trötthetsgräns. Planerade lätta set är undantagna.
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -507,10 +507,10 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
               className="h-9 rounded-md border border-input bg-background px-2 text-sm"
             >
               <option value="all">All statuses</option>
-              <option value="peaking">Topp</option>
-              <option value="adapting">Normal</option>
-              <option value="undertrained">Under baseline</option>
-              <option value="exhausted">Trött</option>
+              <option value="peaking">Över baslinjen</option>
+              <option value="adapting">Vid baslinjen</option>
+              <option value="undertrained">Under baslinjen</option>
+              <option value="exhausted">Långt under baslinjen</option>
             </select>
           </div>
         </CardHeader>

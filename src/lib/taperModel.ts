@@ -278,6 +278,7 @@ export function buildTaperPlan(input: {
   }
 
   // --- Tapervolym: referensvolym minus vald sänkning, fördelad på taperns pass ---
+  const accessoriesOut = daysBefore(d0, s.accessoriesOutDay);
   const taperDates = trainingDates.filter((d) => phaseOf(d) === "taper");
   const taperSlots = s.finalWeekFreq === "half"
     ? taperDates.filter((_, i) => i % 2 === 0) // frekvensen halveras de sista sju dagarna
@@ -311,13 +312,48 @@ export function buildTaperPlan(input: {
     }
   }
 
+  // --- Tunna taperpass fylls ut ---
+  // Inget pass under tapern ska bli "åka till gymmet för två set bänk och hem
+  // igen". Lätt teknikarbete på lyften (före respektive sista exponering) och
+  // lätt underhållsassistans så länge assistansen inte tagits bort ännu.
+  for (const ses of byDate.values()) {
+    if (ses.phase !== "taper") continue;
+    let total = ses.exercises.reduce((n, e) => n + e.sets, 0);
+    if (total >= 6) continue;
+    const present = new Set(ses.exercises.map((e) => e.exercise));
+    for (const k of active) {
+      if (total >= 6) break;
+      if (present.has(lift(k).name)) continue;
+      if (ses.date >= snapToTrainingDay(daysBefore(d0, s.lastDay[k]), weekdays)) continue;
+      ses.exercises.push({
+        exercise: lift(k).name,
+        sets: 2,
+        reps: 2,
+        pctOfE1rm: LIGHT_PCT[k],
+        isTechnique: true,
+        kg: kgFor(k, LIGHT_PCT[k]),
+        notes: "Lätt teknikarbete — håller rörelsen färsk utan att trötta.",
+      });
+      present.add(lift(k).name);
+      total += 2;
+    }
+    if (ses.date < accessoriesOut) {
+      for (const a of (input.accessories ?? [])) {
+        if (total >= 6) break;
+        if (present.has(a.exercise)) continue;
+        ses.exercises.push({ exercise: a.exercise, sets: 2, reps: a.reps, notes: "Lätt underhåll under tapern — långt från failure." });
+        present.add(a.exercise);
+        total += 2;
+      }
+    }
+  }
+
   // --- Volymtopp och intensifiering: ordinarie träning enligt atletens eget mönster ---
   const overloadStart = s.overloadWeek ? daysBefore(d0, s.taperDays + 7) : null;
   const preDates = trainingDates.filter((d) => {
     const p = phaseOf(d);
     return p === "volymtopp" || p === "intensifiering";
   });
-  const accessoriesOut = daysBefore(d0, s.accessoriesOutDay);
   for (const d of preDates) {
     const isOverload = overloadStart != null && d >= overloadStart;
     const ses = sessionAt(d, isOverload ? "Överbelastningsvecka" : phaseOf(d) === "intensifiering" ? "Intensifiering" : "Volymtopp");

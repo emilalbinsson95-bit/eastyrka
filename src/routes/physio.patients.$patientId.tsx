@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,10 +26,19 @@ export const Route = createFileRoute("/physio/patients/$patientId")({
     meta: [
       { title: "Patient — EA Physio" },
       { name: "description", content: "Patient rehab progress and session history." },
+      { property: "og:title", content: "Patientuppföljning — SETPOINT" },
+      { property: "og:description", content: "Rehabpass, progression och patientens återkoppling." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: PatientDetail,
+  component: PatientDetailLayout,
 });
+
+function PatientDetailLayout() {
+  const children = useChildMatches();
+  return children.length ? <Outlet /> : <PatientDetail />;
+}
 
 function PatientDetail() {
   const { patientId } = Route.useParams();

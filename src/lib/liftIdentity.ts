@@ -46,7 +46,7 @@ const NON_VARIANT =
 
 /** Which competition lift an exercise name belongs to, regardless of variation. */
 export function compLiftKey(exercise: string): CompLift | null {
-  const name = exercise.trim();
+  const name = normalizeLiftName(exercise);
   for (const key of Object.keys(COMP_RE) as CompLift[]) {
     if (COMP_RE[key].test(name)) return key;
   }

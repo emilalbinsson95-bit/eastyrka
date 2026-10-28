@@ -283,9 +283,8 @@ export interface RawLog extends SetInput {
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;
 /** Only competition lifts contribute EAk; prescription descriptors are not variants. */
 export function isReadinessLift(exercise: string, variation?: string | null): boolean {
-  const name = exercise.trim().replace(/\s+(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i, "");
   const note = (variation ?? "").trim();
-  return compLiftKey(name) !== null && (!note || /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i.test(note));
+  return compLiftKey(exercise) !== null && (!note || /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i.test(note));
 }
 
 const BIG3_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b/i;

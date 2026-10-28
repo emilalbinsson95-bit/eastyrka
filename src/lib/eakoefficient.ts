@@ -1,5 +1,5 @@
 import { pctOf1RMInterp } from "@/lib/intensity";
-import { compLiftKey } from "./liftIdentity";
+import { compLiftKey, normalizeLiftName } from "./liftIdentity";
 /**
  * EAkoefficient — autoregulation engine.
  *

@@ -362,10 +362,10 @@ export function processLogs<T extends RawLog>(
 
 /** Exact competition aliases only: never collapse variants or deadlift stances. */
 export function baselineExerciseKey(exercise: string): string {
-  const name = exercise.trim().toLowerCase().replace(/\s+/g, " ");
-  if (/^(back squat|squat|knäböj|knaboj)$/.test(name)) return "squat";
+  const name = normalizeLiftName(exercise);
+  if (/^(back squat|squat|knäböj|knaboj|böj)$/.test(name)) return "squat";
   if (/^(bench press|bench|bänkpress|bänk)$/.test(name)) return "bench press";
-  if (/^(deadlift|marklyft)$/.test(name)) return "deadlift";
+  if (/^(deadlift|dead lift|marklyft|mark)$/.test(name)) return "deadlift";
   if (/^(conventional deadlift|konventionell marklyft|konventionellt marklyft)$/.test(name)) return "conventional deadlift";
   if (/^(sumo deadlift|sumomarklyft|sumomark)$/.test(name)) return "sumo deadlift";
   return name;

@@ -1,5 +1,5 @@
 import { dailyE1RM, lookupBaseline, pickMeasurementSet, readinessFromEAk, isReadinessLift, type SetInput } from "./eakoefficient";
-import { COMP_NAME, compLiftKey } from "./liftIdentity";
+import { COMP_NAME, compLiftKey, normalizeLiftName } from "./liftIdentity";
 
 export interface ChartLog extends SetInput {
   date: string;

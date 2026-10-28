@@ -1,5 +1,5 @@
 import { dailyE1RM, lookupBaseline, pickMeasurementSet, readinessFromEAk, isReadinessLift, type SetInput } from "./eakoefficient";
-import { COMP_NAME, compLiftKey } from "./liftIdentity";
+import { COMP_NAME, compLiftKey, normalizeLiftName } from "./liftIdentity";
 
 export interface ChartLog extends SetInput {
   date: string;
@@ -11,15 +11,15 @@ export const repInterval = (reps: number) => reps <= 3 ? "1–3" : reps <= 6 ? "
 /** Prescription notes are not separate exercises; real variants and deadlift stances remain distinct. */
 export function chartLiftIdentity(exercise: string, variation?: string | null) {
   const descriptor = /^(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i;
-  const embedded = exercise.trim().match(/^(back squat|squat|bench press|deadlift)\s+(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i);
-  const name = embedded?.[1] ?? exercise.trim();
-  const lift = compLiftKey(name);
+  const lift = compLiftKey(exercise);
+  const name = normalizeLiftName(exercise);
   const note = (variation ?? "").trim();
-  return { exercise: lift && !/^(sumo|conventional) deadlift$/i.test(name) ? COMP_NAME[lift] : name, variation: descriptor.test(note) ? "" : note };
+  const stanceDeadlift = /^(sumo|conventional) deadlift$/.test(name);
+  return { exercise: lift && !stanceDeadlift ? COMP_NAME[lift] : exercise.trim(), variation: descriptor.test(note) ? "" : note };
 }
 export const chartExerciseKey = (exercise: string, variation?: string | null) => {
   const identity = chartLiftIdentity(exercise, variation);
-  return JSON.stringify([identity.exercise.toLowerCase(), identity.variation.toLowerCase()]);
+  return JSON.stringify([normalizeLiftName(identity.exercise), identity.variation.toLowerCase()]);
 };
 
 /** One shared measurement per exercise/variant/session, selected before plotting any period. */

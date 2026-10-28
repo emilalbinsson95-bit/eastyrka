@@ -1,5 +1,5 @@
 import { pctOf1RMInterp } from "@/lib/intensity";
-import { compLiftKey } from "./liftIdentity";
+import { compLiftKey, normalizeLiftName } from "./liftIdentity";
 /**
  * EAkoefficient — autoregulation engine.
  *
@@ -283,9 +283,8 @@ export interface RawLog extends SetInput {
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;
 /** Only competition lifts contribute EAk; prescription descriptors are not variants. */
 export function isReadinessLift(exercise: string, variation?: string | null): boolean {
-  const name = exercise.trim().replace(/\s+(competition stance|competition grip & pause|over[ -]?warm single|opener single)$/i, "");
   const note = (variation ?? "").trim();
-  return compLiftKey(name) !== null && (!note || /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i.test(note));
+  return compLiftKey(exercise) !== null && (!note || /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i.test(note));
 }
 
 const BIG3_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b/i;
@@ -363,10 +362,10 @@ export function processLogs<T extends RawLog>(
 
 /** Exact competition aliases only: never collapse variants or deadlift stances. */
 export function baselineExerciseKey(exercise: string): string {
-  const name = exercise.trim().toLowerCase().replace(/\s+/g, " ");
-  if (/^(back squat|squat|knäböj|knaboj)$/.test(name)) return "squat";
+  const name = normalizeLiftName(exercise);
+  if (/^(back squat|squat|knäböj|knaboj|böj)$/.test(name)) return "squat";
   if (/^(bench press|bench|bänkpress|bänk)$/.test(name)) return "bench press";
-  if (/^(deadlift|marklyft)$/.test(name)) return "deadlift";
+  if (/^(deadlift|dead lift|marklyft|mark)$/.test(name)) return "deadlift";
   if (/^(conventional deadlift|konventionell marklyft|konventionellt marklyft)$/.test(name)) return "conventional deadlift";
   if (/^(sumo deadlift|sumomarklyft|sumomark)$/.test(name)) return "sumo deadlift";
   return name;

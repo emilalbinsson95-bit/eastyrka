@@ -105,6 +105,42 @@ describe("comp-lift capture for EAk", () => {
     expect(isReadinessLift("Knäböj")).toBe(true);
     expect(isReadinessLift("Pause Squat")).toBe(false);
   });
+  it("counts English spellings of the same lift as comp lifts", () => {
+    expect(isReadinessLift("Back-Squat")).toBe(true);
+    expect(isReadinessLift("Backsquat")).toBe(false); // okänt namn, inte tävlingslyft
+    expect(isReadinessLift("Competition Squat")).toBe(true);
+    expect(isReadinessLift("Comp squat")).toBe(true);
+    expect(isReadinessLift("Powerlifting squat")).toBe(true);
+    expect(isReadinessLift("Benchpress")).toBe(false);
+    expect(isReadinessLift("Bench-Press")).toBe(true);
+    expect(isReadinessLift("Competition Bench Press")).toBe(true);
+    expect(isReadinessLift("Comp bench")).toBe(true);
+    expect(isReadinessLift("Dead lift")).toBe(true);
+    expect(isReadinessLift("Competition Deadlift")).toBe(true);
+    expect(isReadinessLift("Mark")).toBe(true);
+    expect(isReadinessLift("Bänk")).toBe(true);
+    expect(isReadinessLift("Squat Competition Stance")).toBe(true);
+    expect(isReadinessLift("Bench Press Over-warm single")).toBe(true);
+  });
+  it("still excludes true variants written with the same words", () => {
+    expect(isReadinessLift("High-Bar Squat")).toBe(false);
+    expect(isReadinessLift("Low-Bar Squat")).toBe(false);
+    expect(isReadinessLift("Touch-and-go bench press")).toBe(false);
+    expect(isReadinessLift("Close-Grip Bench")).toBe(false);
+    expect(isReadinessLift("Front Squat")).toBe(false);
+    expect(isReadinessLift("Box Squat")).toBe(false);
+    expect(isReadinessLift("Bench Press 1.5")).toBe(false);
+    expect(isReadinessLift("Deficit Deadlift")).toBe(false);
+  });
+  it("matches baselines across English spellings of the same lift", () => {
+    expect(lookupBaseline({ Squat: 200 }, "Competition Squat")).toBe(200);
+    expect(lookupBaseline({ Squat: 200 }, "Back-Squat")).toBe(200);
+    expect(lookupBaseline({ "Bench Press": 140 }, "Comp bench")).toBe(140);
+    expect(lookupBaseline({ "Bench Press": 140 }, "Bench-press")).toBe(140);
+    expect(lookupBaseline({ "Conventional Deadlift": 250 }, "Dead lift")).toBeUndefined();
+    expect(lookupBaseline({ Marklyft: 250 }, "Deadlift")).toBe(250);
+    expect(lookupBaseline({ "High-Bar Squat": 180 }, "Squat")).toBeUndefined();
+  });
   it("stance deadlift falls back to generic deadlift baseline only", () => {
     expect(lookupBaseline({ Deadlift: 250 }, "Sumo Deadlift")).toBe(250);
     expect(lookupBaseline({ "Sumo deadlift": 240 }, "Conventional Deadlift")).toBeUndefined();

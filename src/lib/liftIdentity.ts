@@ -7,10 +7,26 @@
 
 export type CompLift = "squat" | "bench" | "deadlift";
 
+/**
+ * Name normalisation shared by EAk, charts, baselines and volume guards.
+ * Hyphens/underscores become spaces, case is ignored, and words that only
+ * describe HOW the lift is entered (competition/comp/powerlifting prefix,
+ * stance/grip/over-warm suffixes) are stripped — so "Back-Squat",
+ * "Competition Squat" and "Squat competition stance" all resolve to the
+ * same lift. True variants (pause, tempo, high-bar, close-grip, …) keep
+ * their own names and never match.
+ */
+export function normalizeLiftName(exercise: string): string {
+  let name = exercise.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+  name = name.replace(/\s+(competition stance|comp stance|competition grip & pause|competition grip|over warm single|opener single)$/, "");
+  name = name.replace(/^(competition|comp|powerlifting)\s+/, "").replace(/\s+(competition|comp|powerlifting)$/, "");
+  return name.replace(/\s+/g, " ").trim();
+}
+
 const COMP_RE: Record<CompLift, RegExp> = {
   squat: /^(back squat|squat|knäböj|knaboj|böj)$/i,
   bench: /^(bench press|bench|bänkpress|bänk)$/i,
-  deadlift: /^(deadlift|sumo deadlift|conventional deadlift|marklyft|sumomarklyft|sumomark|konventionell marklyft|konventionellt marklyft)$/i,
+  deadlift: /^(deadlift|dead lift|sumo deadlift|conventional deadlift|marklyft|mark|sumomarklyft|sumomark|konventionell marklyft|konventionellt marklyft)$/i,
 };
 
 /** Canonical exercise name per competition lift (matches baselines table). */
@@ -30,7 +46,7 @@ const NON_VARIANT =
 
 /** Which competition lift an exercise name belongs to, regardless of variation. */
 export function compLiftKey(exercise: string): CompLift | null {
-  const name = exercise.trim();
+  const name = normalizeLiftName(exercise);
   for (const key of Object.keys(COMP_RE) as CompLift[]) {
     if (COMP_RE[key].test(name)) return key;
   }

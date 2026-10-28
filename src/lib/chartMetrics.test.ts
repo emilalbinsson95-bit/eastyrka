@@ -29,6 +29,22 @@ describe("Emil's chart rules", () => {
     expect(logs[0].exercise).toBe("Squat Over warm single");
     expect(compareStrength(logs,"2026-10-27")[0].count).toBe(3);
   });
+  it("merges English spellings of the same comp lift into one series", () => {
+    const logs = [
+      log("2026-10-01", 100, { exercise: "Squat" }),
+      log("2026-10-02", 110, { exercise: "Back-Squat" }),
+      log("2026-10-03", 120, { exercise: "Competition squat" }),
+      log("2026-10-04", 130, { exercise: "Bench-Press" }),
+      log("2026-10-05", 140, { exercise: "Competition Bench Press" }),
+      log("2026-10-06", 150, { exercise: "Dead lift" }),
+      log("2026-10-07", 160, { exercise: "Competition Deadlift" }),
+    ];
+    const points = latestChartStrength(logs, { "Back squat": 110, "Bench press": 135, Deadlift: 155 });
+    expect(points.map(p => p.exercise).sort()).toEqual(["Back squat", "Bench press", "Deadlift"]);
+    expect(points.find(p => p.exercise === "Back squat")?.rolling).toBe(110);
+    expect(points.find(p => p.exercise === "Bench press")?.rolling).toBe(135);
+    expect(points.every(p => p.eak != null)).toBe(true);
+  });
   it("does not merge real squat variants or include flagged reference warmups", () => {
     const logs=[log("2026-10-01",100,{exercise:"Squat",variation:"competition stance"}),log("2026-10-01",200,{exercise:"Squat",variation:"Over warm single",is_warmup_reference:true}),log("2026-10-02",80,{exercise:"Squat",variation:"pause"})];
     const points=latestChartStrength(logs,{"Back squat":100});

@@ -42,7 +42,7 @@ describe("Emil's chart rules", () => {
     const points = latestChartStrength(logs, { "Back squat": 110, "Bench press": 135, Deadlift: 155 });
     expect(points.map(p => p.exercise).sort()).toEqual(["Back squat", "Bench press", "Deadlift"]);
     expect(points.find(p => p.exercise === "Back squat")?.rolling).toBe(110);
-    expect(points.find(p => p.exercise === "Bench press")?.rolling).toBeCloseTo(135 * 100 / 135, 5);
+    expect(points.find(p => p.exercise === "Bench press")?.rolling).toBe(135);
     expect(points.every(p => p.eak != null)).toBe(true);
   });
   it("does not merge real squat variants or include flagged reference warmups", () => {

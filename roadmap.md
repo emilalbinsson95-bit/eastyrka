@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Aktuellt
-- [ ] Justera Hannas och Shadis publicerade toppningsmark och ta bort Vincents ologgade extra böjpost efter hans genomförda SSB-pass; bevara loggar och kontrollera sparade ändringar i coachvyn.
+- [x] Justera Hannas och Shadis publicerade toppningsmark och ta bort Vincents ologgade extra böjpost efter hans genomförda SSB-pass; loggar bevarade och ändrade setantal återlästa i samtliga tre coachvyer utan körfel.
 - [x] Grafer/tabeller 1–22: gemensamma mätset och EAk-gränser; samlade väntande beslut; historiska baslinjeband; setvolym/readiness; samlad belastning/PR/DOTS/vikt; tempointervall/rehab; separat toppningsuppföljning. 314 tester gröna och bygge OK. Alex återläste toppningsdatum, flagga, öppning och försök samt rehabgräns/sida; sparade träningsprogram och riktiga atletloggar orörda.
 - [ ] Rehabdiagram slutprov med sparade band-/friviktsmätningar och tvåsidiga tester för Alex: aktuella fysioterapeuten saknar accepterad patientkoppling till Alex, och befintlig åtkomstkontroll stoppar testskrivning. Beräkningar testade och preferenser återlästa; patientåtkomst har inte vidgats.
 - [ ] Genomför granskade generatorändringar 1–22 med skydd: gemensam beräkning (1–3, 14, 18–19, 21–22), tak/coachval (4–5, 11, 17), en D0-toppning (6–8, 15–16), coachbeslut/uppföljning (9–10, 12–13, 20). Verifiera med Alex Athlete; ändra aldrig loggar eller sparade program utan coachens bekräftelse.

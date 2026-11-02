@@ -8,6 +8,28 @@ import { compareStrength } from "./strengthComparison";
 
 const log = (date: string, weight: number, extra = {}) => ({ date, exercise: "Bench press", variation: null, set_number: 1, reps: 1, weight_kg: weight, rpe: 10, ...extra });
 describe("Emil's chart rules", () => {
+  it("merges conventional competition descriptors without mixing sumo baselines", () => {
+    const logs = [
+      log("2026-10-01", 240, { exercise: "Conventional Deadlift" }),
+      log("2026-10-02", 250, { exercise: "Conventional Deadlift / Competition stance" }),
+      log("2026-10-03", 260, { exercise: "Conventional Deadlift", variation: "Competition stance" }),
+      log("2026-10-03", 300, { exercise: "Sumo Deadlift · Competition stance" }),
+    ];
+    const points = latestChartStrength(logs, { "Conventional Deadlift": 250, "Sumo Deadlift": 300 });
+    expect(points).toHaveLength(2);
+    expect(points.find(p => p.exercise === "Conventional deadlift")).toMatchObject({ rolling: 250, baseline: 250, eak: 100, samples: 3 });
+    expect(points.find(p => p.exercise === "Sumo deadlift")).toMatchObject({ rolling: 300, baseline: 300, eak: 100 });
+    expect(logs[1].exercise).toBe("Conventional Deadlift / Competition stance");
+  });
+  it("gives stance notes the matching baseline while excluding real variants", () => {
+    const points = latestChartStrength([
+      log("2026-10-01", 250, { exercise: "Deadlift", variation: "Conventional stance" }),
+      log("2026-10-02", 300, { exercise: "Deadlift", variation: "Sumo stance" }),
+      log("2026-10-03", 400, { exercise: "Deadlift", variation: "Deficit" }),
+    ], { "Conventional Deadlift": 250, "Sumo Deadlift": 300, Deadlift: 200 });
+    expect(points.filter(p => p.eak !== null).map(p => p.eak)).toEqual([100, 100]);
+    expect(points.find(p => p.variation === "Deficit")?.eak).toBeNull();
+  });
   it("gives EAk only to competition lifts, never variants or Olympic lifts", () => {
     const logs=[log("2026-10-01",100),log("2026-10-02",80,{variation:"close grip"}),log("2026-10-03",90,{exercise:"Snatch"}),log("2026-10-04",120,{exercise:"Squat",variation:"pause"}),log("2026-10-05",160,{exercise:"Deadlift"})];
     const points=latestChartStrength(logs,{"Bench press":100,Snatch:90,"Back squat":120,Deadlift:160});

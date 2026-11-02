@@ -170,7 +170,7 @@ function TodayPage() {
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
                target_weight_kg, lengthened_partials, last_set_to_failure,
-               notes, order_index, is_technique, push_main, push_lift
+               notes, order_index, is_technique, push_main, push_lift, rules_version
              )
            )`;
       // Prefer the current (or most recent past) published week.
@@ -239,7 +239,7 @@ function TodayPage() {
              id, exercise, variation, target_sets, target_reps,
              target_rpe, target_rir, intensity_metric,
              target_weight_kg, lengthened_partials, last_set_to_failure,
-             notes, order_index, is_technique, push_main, push_lift
+             notes, order_index, is_technique, push_main, push_lift, rules_version
            )`,
         )
         .in("id", crossWeekSessionIds);

@@ -239,6 +239,13 @@
       "when": 1793608188357,
       "tag": "0033_coach_load_push",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793608301076,
+      "tag": "0034_push_guarded_outcomes",
+      "breakpoints": true
     }
   ]
 }

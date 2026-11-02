@@ -1345,6 +1345,7 @@ export type Database = {
           push_lift: string | null
           push_load_pct: number | null
           push_main: boolean
+          push_terminal_reason: string | null
           rules_version: string | null
           target_reps: number
           target_rir: number | null
@@ -1372,6 +1373,7 @@ export type Database = {
           push_lift?: string | null
           push_load_pct?: number | null
           push_main?: boolean
+          push_terminal_reason?: string | null
           rules_version?: string | null
           target_reps: number
           target_rir?: number | null
@@ -1399,6 +1401,7 @@ export type Database = {
           push_lift?: string | null
           push_load_pct?: number | null
           push_main?: boolean
+          push_terminal_reason?: string | null
           rules_version?: string | null
           target_reps?: number
           target_rir?: number | null
@@ -2529,6 +2532,10 @@ export type Database = {
         Returns: undefined
       }
       decide_push: { Args: { _exercise: string }; Returns: Json }
+      finish_push_with_outcome: {
+        Args: { _exercise: string; _outcome?: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

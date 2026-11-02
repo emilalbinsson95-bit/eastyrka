@@ -1,5 +1,6 @@
 import { useWarmupLoads } from "@/components/WarmupLoadsCard";
 import { FinishPushButton } from "@/components/PushProgressionCard";
+import { firstSetInstruction } from "@/lib/pushPresentation";
 import { WarmupReferenceFields } from "@/components/WarmupReferenceFields";
 import { matchesWarmupLoad } from "@/lib/warmupReference";
 import { SessionFeedbackRow } from "@/components/SessionFeedbackRow";
@@ -95,6 +96,7 @@ interface PlannedExercise {
   is_technique?:boolean;
   push_main?: boolean;
   push_lift?: string | null;
+  rules_version?: string | null;
 }
 
 interface PlannedSession {
@@ -168,7 +170,7 @@ function TodayPage() {
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
                target_weight_kg, lengthened_partials, last_set_to_failure,
-               notes, order_index, is_technique, push_main, push_lift
+               notes, order_index, is_technique, push_main, push_lift, rules_version
              )
            )`;
       // Prefer the current (or most recent past) published week.
@@ -237,7 +239,7 @@ function TodayPage() {
              id, exercise, variation, target_sets, target_reps,
              target_rpe, target_rir, intensity_metric,
              target_weight_kg, lengthened_partials, last_set_to_failure,
-             notes, order_index, is_technique, push_main, push_lift
+             notes, order_index, is_technique, push_main, push_lift, rules_version
            )`,
         )
         .in("id", crossWeekSessionIds);
@@ -659,7 +661,6 @@ function PlannedSessionCard({
             );
           })}
         <AddExtraExerciseInline athleteId={athleteId} dateStr={dateStr} />
-        {session.planned_exercises.filter(ex=>ex.push_main).map(ex=><FinishPushButton key={ex.id} exerciseId={ex.id}/>)}
         {allDone && <SessionFeedbackRow athleteId={athleteId} dateStr={dateStr} />}
         {inProgress && <PauseSessionRow sessionId={session.id} athleteId={athleteId} />}
       </CardContent>
@@ -797,7 +798,7 @@ function PlannedExerciseRow({
           <p className="text-xs text-muted-foreground">
             {ex.notes?.includes("Setupplägg:") ? `${ex.target_sets} arbetsset · första setet: ${ex.target_reps} reps` : `Target: ${ex.target_sets}×${ex.target_reps}`}
             {intensityLabel && ` @ ${intensityLabel}`}
-            {ex.target_weight_kg && ` · ${ex.target_weight_kg}kg`}
+            {ex.target_weight_kg != null && ` · ${ex.push_main && ex.rules_version === "push-2.0" ? "Startvikt: " : ""}${ex.target_weight_kg} kg`}
           </p>
           {(ex.lengthened_partials || ex.last_set_to_failure) && (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -813,7 +814,8 @@ function PlannedExerciseRow({
               )}
             </div>
           )}
-          {ex.notes && (
+          {(ex.push_main || ex.target_weight_kg == null) && <p className="mt-2 text-sm">{ex.push_main && ex.rules_version !== "push-2.0" ? "Detta sparade pass har samma målvikter för huvudseten. Logga faktisk RPE; sänk vikten om den blir för tung. Ändrad vikt ger ingen automatisk höjning." : firstSetInstruction(ex.target_weight_kg, ex.target_rpe)}</p>}
+          {ex.notes && !ex.notes.startsWith("Fyra arbetsset på angiven vikt.") && (
             <p className="mt-1 whitespace-pre-line text-xs italic text-muted-foreground">
               {ex.notes}
             </p>
@@ -824,6 +826,7 @@ function PlannedExerciseRow({
         </span>
       </div>
 
+      {ex.push_main && <div className="mb-3 border-t border-border pt-3"><FinishPushButton exerciseId={ex.id} exerciseName={ex.exercise} ready={isDone}/></div>}
       {processed.length > 0 && (
         <div className="mb-3 space-y-1">
           {processed
@@ -945,7 +948,7 @@ function LogSetButton({
 }) {
   const [open, setOpen] = useState(false);
   const [weight, setWeight] = useState<number>(
-    previousLog ? Number(previousLog.weight_kg) : Number(ex.target_weight_kg ?? 100),
+    previousLog ? Number(previousLog.weight_kg) : ex.target_weight_kg == null ? NaN : Number(ex.target_weight_kg),
   );
   const [reps, setReps] = useState<number>(
     previousLog ? previousLog.reps : ex.target_reps,
@@ -1046,7 +1049,7 @@ function LogSetButton({
           </SheetTitle>
           <SheetDescription>
             Target: {ex.target_reps} reps @ {intensityLabel}
-            {ex.target_weight_kg && ` · ${ex.target_weight_kg}kg`}
+            {ex.target_weight_kg != null && (!ex.push_main || ex.rules_version !== "push-2.0" || nextSet === 1) && ` · ${ex.push_main && ex.rules_version === "push-2.0" ? "Startvikt: " : ""}${ex.target_weight_kg} kg`}
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-4 px-4 py-4">
@@ -1056,7 +1059,7 @@ function LogSetButton({
           {!isWarmup && (usingRir ? (
             <NumField label="RIR (reps in reserve)" step={1} min={0} max={10} value={rir} onChange={setRir} />
           ) : (
-            <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
+            <NumField label="Faktisk RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
           ))}
 
           <div className="flex flex-wrap gap-4 rounded-md border border-border p-3">

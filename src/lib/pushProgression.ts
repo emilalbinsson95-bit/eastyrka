@@ -3,7 +3,7 @@ import { isReadinessLift } from "./eakoefficient";
 import { prescribedWeightKg, pctOf1RMInterp } from "./intensity";
 import type { TemplateExercise, TemplateWeek } from "./strengthTemplates";
 
-export const PUSH_RULES_VERSION = "push-1.0";
+export const PUSH_RULES_VERSION = "push-2.0";
 export const PUSH_LIFTS = ["squat", "bench", "conventional", "sumo"] as const;
 export type PushLift = typeof PUSH_LIFTS[number];
 export const PUSH_LABELS: Record<PushLift, string> = { squat: "Knäböj", bench: "Bänkpress", conventional: "Konventionellt marklyft", sumo: "Sumomarklyft" };
@@ -47,8 +47,8 @@ export function applyPushProgression(weeks: TemplateWeek[], configs: PushConfig[
 }
 
 export type PushDecision = "push" | "hold" | "miss" | "reset" | "skip" | "paused" | "none";
-export interface PushEvidence { confirmed: boolean; prescribedReps: number; prescribedKg: number; reps: number; kg: number }
-export function decidePush(input: { plan: number; start: number; step: number; misses: number; sets: PushEvidence[]; expectedSets: number; cooldownDays?: number; phase?: string; paused?: boolean; eak?: number; protocolReduced?: boolean; fatigueStopped?: boolean }) {
+export interface PushEvidence { confirmed: boolean; prescribedReps: number; prescribedKg: number; reps: number; kg: number; rpe?: number }
+export function decidePush(input: { plan: number; start: number; step: number; misses: number; sets: PushEvidence[]; expectedSets: number; cooldownDays?: number; phase?: string; paused?: boolean; eak?: number; protocolReduced?: boolean; fatigueStopped?: boolean; firstSetMode?: boolean; targetRpe?: number }) {
   const out = (decision: PushDecision, reason: string, after = input.plan, misses = input.misses) => ({ decision, reason, after, misses });
   if (["deload","ramp"].includes(input.phase ?? "")) return out("none","light_phase");
   if (["peak","taper"].includes(input.phase ?? "") || input.paused) return out("paused","peaking_or_coach_pause");
@@ -57,7 +57,14 @@ export function decidePush(input: { plan: number; start: number; step: number; m
   if (input.protocolReduced) return out("hold","protocol_reduction");
   const miss = () => input.misses >= 1 ? out("reset","second_miss",input.plan*0.95,0) : out("miss","missed_reps",input.plan,input.misses+1);
   if (input.fatigueStopped) return miss();
-  if (input.sets.length !== input.expectedSets || input.sets.some(s => !s.confirmed || Math.abs(s.kg-s.prescribedKg)>0.001)) return out("skip","incomplete_or_changed_load");
+  if (input.sets.length !== input.expectedSets || input.sets.some(s => !s.confirmed)) return out("skip","incomplete_or_changed_load");
+  if (input.firstSetMode) {
+    const first = input.sets[0];
+    const targetRpe = input.targetRpe;
+    if (!first || Math.abs(first.kg-first.prescribedKg)>0.001 || targetRpe == null || input.sets.some(s=>s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","first_set_or_rpe_missing");
+    if (input.sets.some(s=>s.reps<s.prescribedReps)) return miss();
+    if (input.sets.some(s=>s.kg<first.kg-0.001 || (s.rpe ?? 11)>targetRpe)) return out("hold","load_reduced_or_rpe_high");
+  } else if (input.sets.some(s=>Math.abs(s.kg-s.prescribedKg)>0.001)) return out("skip","incomplete_or_changed_load");
   if (input.sets.some(s => s.reps < s.prescribedReps)) return miss();
   const next = input.plan*(1+input.step/100);
   if (next > input.start*1.06+1e-9) return out("hold","block_cap");

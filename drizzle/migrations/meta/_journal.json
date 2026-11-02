@@ -253,6 +253,13 @@
       "when": 1793608346048,
       "tag": "0035_push_decision_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793608594343,
+      "tag": "0036_coach_push_pause_override",
+      "breakpoints": true
     }
   ]
 }

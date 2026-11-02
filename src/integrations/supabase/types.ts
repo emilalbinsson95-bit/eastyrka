@@ -1620,6 +1620,7 @@ export type Database = {
       push_state: {
         Row: {
           athlete_id: string
+          eak_pause_released_at: string | null
           enabled: boolean
           last_decision_at: string | null
           lift: string
@@ -1636,6 +1637,7 @@ export type Database = {
         }
         Insert: {
           athlete_id: string
+          eak_pause_released_at?: string | null
           enabled?: boolean
           last_decision_at?: string | null
           lift: string
@@ -1652,6 +1654,7 @@ export type Database = {
         }
         Update: {
           athlete_id?: string
+          eak_pause_released_at?: string | null
           enabled?: boolean
           last_decision_at?: string | null
           lift?: string

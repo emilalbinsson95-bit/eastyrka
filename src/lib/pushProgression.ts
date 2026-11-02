@@ -60,9 +60,10 @@ export function decidePush(input: { plan: number; start: number; step: number; m
   if (input.sets.length !== input.expectedSets || input.sets.some(s => !s.confirmed)) return out("skip","incomplete_or_changed_load");
   if (input.firstSetMode) {
     const first = input.sets[0];
-    if (!first || Math.abs(first.kg-first.prescribedKg)>0.001 || input.targetRpe == null || input.sets.some(s=>s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","first_set_or_rpe_missing");
+    const targetRpe = input.targetRpe;
+    if (!first || Math.abs(first.kg-first.prescribedKg)>0.001 || targetRpe == null || input.sets.some(s=>s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","first_set_or_rpe_missing");
     if (input.sets.some(s=>s.reps<s.prescribedReps)) return miss();
-    if (input.sets.some(s=>s.kg<first.kg-0.001 || (s.rpe ?? 11)>input.targetRpe)) return out("hold","load_reduced_or_rpe_high");
+    if (input.sets.some(s=>s.kg<first.kg-0.001 || (s.rpe ?? 11)>targetRpe)) return out("hold","load_reduced_or_rpe_high");
   } else if (input.sets.some(s=>Math.abs(s.kg-s.prescribedKg)>0.001)) return out("skip","incomplete_or_changed_load");
   if (input.sets.some(s => s.reps < s.prescribedReps)) return miss();
   const next = input.plan*(1+input.step/100);

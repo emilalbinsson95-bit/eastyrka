@@ -281,6 +281,13 @@
       "when": 1793608735505,
       "tag": "0039_push_confirmation_and_audit_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793609046936,
+      "tag": "0040_push_future_draft_only",
+      "breakpoints": true
     }
   ]
 }

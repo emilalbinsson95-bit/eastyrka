@@ -924,10 +924,12 @@ export type Database = {
           coach_id: string
           created_at: string
           days_per_week: number
+          generator_version: string | null
           goal: string | null
           id: string
           name: string
           notes: string | null
+          rules_version: string | null
           start_date: string
           status: Database["public"]["Enums"]["cycle_status"]
           total_weeks: number
@@ -938,10 +940,12 @@ export type Database = {
           coach_id: string
           created_at?: string
           days_per_week?: number
+          generator_version?: string | null
           goal?: string | null
           id?: string
           name: string
           notes?: string | null
+          rules_version?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["cycle_status"]
           total_weeks: number
@@ -952,10 +956,12 @@ export type Database = {
           coach_id?: string
           created_at?: string
           days_per_week?: number
+          generator_version?: string | null
           goal?: string | null
           id?: string
           name?: string
           notes?: string | null
+          rules_version?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["cycle_status"]
           total_weeks?: number
@@ -1324,6 +1330,7 @@ export type Database = {
           created_at: string
           exercise: string
           exercise_id: string | null
+          generator_version: string | null
           id: string
           intensity_metric: Database["public"]["Enums"]["intensity_metric"]
           is_technique: boolean
@@ -1331,7 +1338,15 @@ export type Database = {
           lengthened_partials: boolean
           notes: string | null
           order_index: number
+          plan_e1rm_used: number | null
           planned_session_id: string
+          prescription_revision: number
+          push_block_start: number | null
+          push_lift: string | null
+          push_load_pct: number | null
+          push_main: boolean
+          push_terminal_reason: string | null
+          rules_version: string | null
           target_reps: number
           target_rir: number | null
           target_rpe: number | null
@@ -1343,6 +1358,7 @@ export type Database = {
           created_at?: string
           exercise: string
           exercise_id?: string | null
+          generator_version?: string | null
           id?: string
           intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
           is_technique?: boolean
@@ -1350,7 +1366,15 @@ export type Database = {
           lengthened_partials?: boolean
           notes?: string | null
           order_index?: number
+          plan_e1rm_used?: number | null
           planned_session_id: string
+          prescription_revision?: number
+          push_block_start?: number | null
+          push_lift?: string | null
+          push_load_pct?: number | null
+          push_main?: boolean
+          push_terminal_reason?: string | null
+          rules_version?: string | null
           target_reps: number
           target_rir?: number | null
           target_rpe?: number | null
@@ -1362,6 +1386,7 @@ export type Database = {
           created_at?: string
           exercise?: string
           exercise_id?: string | null
+          generator_version?: string | null
           id?: string
           intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
           is_technique?: boolean
@@ -1369,7 +1394,15 @@ export type Database = {
           lengthened_partials?: boolean
           notes?: string | null
           order_index?: number
+          plan_e1rm_used?: number | null
           planned_session_id?: string
+          prescription_revision?: number
+          push_block_start?: number | null
+          push_lift?: string | null
+          push_load_pct?: number | null
+          push_main?: boolean
+          push_terminal_reason?: string | null
+          rules_version?: string | null
           target_reps?: number
           target_rir?: number | null
           target_rpe?: number | null
@@ -1398,24 +1431,30 @@ export type Database = {
         Row: {
           created_at: string
           day_of_week: number
+          generator_version: string | null
           id: string
           notes: string | null
+          rules_version: string | null
           title: string | null
           week_plan_id: string
         }
         Insert: {
           created_at?: string
           day_of_week: number
+          generator_version?: string | null
           id?: string
           notes?: string | null
+          rules_version?: string | null
           title?: string | null
           week_plan_id: string
         }
         Update: {
           created_at?: string
           day_of_week?: number
+          generator_version?: string | null
           id?: string
           notes?: string | null
+          rules_version?: string | null
           title?: string | null
           week_plan_id?: string
         }
@@ -1479,6 +1518,169 @@ export type Database = {
           weight_class?: string | null
         }
         Relationships: []
+      }
+      push_log: {
+        Row: {
+          athlete_id: string
+          changes: Json
+          created_at: string
+          created_by: string
+          decision: string
+          decision_date: string
+          evidence: Json
+          exercise_id: string | null
+          generator_version: string
+          id: string
+          lift: string
+          mesocycle_id: string | null
+          misses_after: number
+          misses_before: number
+          plan_e1rm_after: number
+          plan_e1rm_before: number
+          reason: string
+          rules_version: string
+          session_id: string | null
+          state_version: number
+          undone_at: string | null
+        }
+        Insert: {
+          athlete_id: string
+          changes?: Json
+          created_at?: string
+          created_by: string
+          decision: string
+          decision_date?: string
+          evidence?: Json
+          exercise_id?: string | null
+          generator_version?: string
+          id?: string
+          lift: string
+          mesocycle_id?: string | null
+          misses_after: number
+          misses_before: number
+          plan_e1rm_after: number
+          plan_e1rm_before: number
+          reason: string
+          rules_version?: string
+          session_id?: string | null
+          state_version: number
+          undone_at?: string | null
+        }
+        Update: {
+          athlete_id?: string
+          changes?: Json
+          created_at?: string
+          created_by?: string
+          decision?: string
+          decision_date?: string
+          evidence?: Json
+          exercise_id?: string | null
+          generator_version?: string
+          id?: string
+          lift?: string
+          mesocycle_id?: string | null
+          misses_after?: number
+          misses_before?: number
+          plan_e1rm_after?: number
+          plan_e1rm_before?: number
+          reason?: string
+          rules_version?: string
+          session_id?: string | null
+          state_version?: number
+          undone_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_log_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_log_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: true
+            referencedRelation: "planned_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_log_mesocycle_id_fkey"
+            columns: ["mesocycle_id"]
+            isOneToOne: false
+            referencedRelation: "mesocycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "planned_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_state: {
+        Row: {
+          athlete_id: string
+          eak_pause_released_at: string | null
+          enabled: boolean
+          last_decision_at: string | null
+          lift: string
+          main_reps: number
+          main_rpe: number
+          main_sets: number
+          miss_streak: number
+          paused_reason: string | null
+          plan_e1rm: number
+          rounding_kg: number
+          step_pct: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          athlete_id: string
+          eak_pause_released_at?: string | null
+          enabled?: boolean
+          last_decision_at?: string | null
+          lift: string
+          main_reps?: number
+          main_rpe?: number
+          main_sets?: number
+          miss_streak?: number
+          paused_reason?: string | null
+          plan_e1rm: number
+          rounding_kg?: number
+          step_pct: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          athlete_id?: string
+          eak_pause_released_at?: string | null
+          enabled?: boolean
+          last_decision_at?: string | null
+          lift?: string
+          main_reps?: number
+          main_rpe?: number
+          main_sets?: number
+          miss_streak?: number
+          paused_reason?: string | null
+          plan_e1rm?: number
+          rounding_kg?: number
+          step_pct?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_state_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       readiness_surveys: {
         Row: {
@@ -2102,6 +2304,7 @@ export type Database = {
       }
       training_logs: {
         Row: {
+          actively_confirmed: boolean
           athlete_id: string
           comment: string | null
           created_at: string
@@ -2109,6 +2312,7 @@ export type Database = {
           edited_by_athlete_at: string | null
           exercise: string
           form_score: number | null
+          generator_version: string | null
           id: string
           is_technique: boolean
           is_warmup_reference: boolean
@@ -2116,15 +2320,21 @@ export type Database = {
           original_reps: number | null
           original_rpe: number | null
           planned_exercise_id: string | null
+          prescribed_reps: number | null
+          prescribed_weight_kg: number | null
+          prescription_revision: number | null
+          prescription_snapshot: Json | null
           reps: number
           rir: number | null
           rpe: number
+          rules_version: string | null
           set_number: number
           to_failure: boolean
           variation: string | null
           weight_kg: number
         }
         Insert: {
+          actively_confirmed?: boolean
           athlete_id: string
           comment?: string | null
           created_at?: string
@@ -2132,6 +2342,7 @@ export type Database = {
           edited_by_athlete_at?: string | null
           exercise: string
           form_score?: number | null
+          generator_version?: string | null
           id?: string
           is_technique?: boolean
           is_warmup_reference?: boolean
@@ -2139,15 +2350,21 @@ export type Database = {
           original_reps?: number | null
           original_rpe?: number | null
           planned_exercise_id?: string | null
+          prescribed_reps?: number | null
+          prescribed_weight_kg?: number | null
+          prescription_revision?: number | null
+          prescription_snapshot?: Json | null
           reps: number
           rir?: number | null
           rpe: number
+          rules_version?: string | null
           set_number: number
           to_failure?: boolean
           variation?: string | null
           weight_kg: number
         }
         Update: {
+          actively_confirmed?: boolean
           athlete_id?: string
           comment?: string | null
           created_at?: string
@@ -2155,6 +2372,7 @@ export type Database = {
           edited_by_athlete_at?: string | null
           exercise?: string
           form_score?: number | null
+          generator_version?: string | null
           id?: string
           is_technique?: boolean
           is_warmup_reference?: boolean
@@ -2162,9 +2380,14 @@ export type Database = {
           original_reps?: number | null
           original_rpe?: number | null
           planned_exercise_id?: string | null
+          prescribed_reps?: number | null
+          prescribed_weight_kg?: number | null
+          prescription_revision?: number | null
+          prescription_snapshot?: Json | null
           reps?: number
           rir?: number | null
           rpe?: number
+          rules_version?: string | null
           set_number?: number
           to_failure?: boolean
           variation?: string | null
@@ -2295,9 +2518,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      configure_push: {
+        Args: {
+          _athlete: string
+          _enabled: boolean
+          _lift: string
+          _plan: number
+          _reps: number
+          _resume?: boolean
+          _rounding: number
+          _rpe: number
+          _sets: number
+          _step: number
+        }
+        Returns: undefined
+      }
       decide_baseline_max: {
         Args: { _approve: boolean; _log_id: string }
         Returns: undefined
+      }
+      decide_push: { Args: { _exercise: string }; Returns: Json }
+      finish_push_with_outcome: {
+        Args: { _exercise: string; _outcome?: string }
+        Returns: Json
       }
       has_role: {
         Args: {
@@ -2318,6 +2561,7 @@ export type Database = {
         Args: { _week_id: string }
         Returns: undefined
       }
+      push_rts_pct: { Args: { _reps: number; _rpe: number }; Returns: number }
       search_athlete_profiles: {
         Args: { _query: string }
         Returns: {
@@ -2336,6 +2580,7 @@ export type Database = {
         Args: { _session_id: string; _target_date: string }
         Returns: string
       }
+      undo_push: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "coach" | "athlete" | "physio" | "patient" | "admin"

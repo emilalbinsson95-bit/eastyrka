@@ -232,6 +232,55 @@
       "when": 1793105194159,
       "tag": "0032_chart_preferences_and_taper_followup",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793608188357,
+      "tag": "0033_coach_load_push",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793608301076,
+      "tag": "0034_push_guarded_outcomes",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793608346048,
+      "tag": "0035_push_decision_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793608594343,
+      "tag": "0036_coach_push_pause_override",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793608622382,
+      "tag": "0037_honor_coach_released_push_pause",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793608633638,
+      "tag": "0038_push_undo_cooldown_restore",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793608735505,
+      "tag": "0039_push_confirmation_and_audit_hardening",
+      "breakpoints": true
     }
   ]
 }

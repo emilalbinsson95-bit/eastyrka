@@ -1,4 +1,5 @@
 import { dMinus21, frozenPeakBaseline } from "@/lib/taperFollowup";
+import { applyPushProgression, PUSH_RULES_VERSION, type PushConfig, type PushExercise } from "@/lib/pushProgression";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -192,6 +193,11 @@ export function GenerateStrengthTemplateDialog({
     },
   });
   const volumeProfile = volumeProfileQuery.data ?? DEFAULT_STRENGTH_VOLUME;
+  const pushQuery = useQuery({ queryKey: ["push-state-generator", athleteId], enabled: open, queryFn: async () => {
+    const {data,error}=await supabase.from("push_state").select("*").eq("athlete_id",athleteId);
+    if(error)throw error;
+    return (data??[]) as PushConfig[];
+  }});
 
   const [weakIds, setWeakIds] = useState<string[]>([]);
   const styleQuery = useQuery({
@@ -385,7 +391,7 @@ export function GenerateStrengthTemplateDialog({
     },
     [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
   );
-  const plannedWeeks = blockResult.weeks;
+  const plannedWeeks = useMemo(() => isPeaking || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, pushQuery.data ?? [], styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isTimeLimited,template]);
 
   const weeklySets = useMemo(() => {
     const m = templateWeeklySets(plannedWeeks);
@@ -407,6 +413,7 @@ export function GenerateStrengthTemplateDialog({
       if (peakDateError) throw new Error(peakDateError);
       if (isPeaking && (peakOptions.singles === "unset" || (peakOptions.singles === "yes" && !peakOptions.weeks.some((w) => w < peakWeeks)))) throw new Error("Välj om atleten behöver singlar och minst en vecka om svaret är ja.");
       if (!settingsLoaded || preferencesQuery.isError) throw new Error("Coachvalen kunde inte laddas. Försök igen.");
+      if (pushQuery.isLoading || pushQuery.isError) throw new Error("Viktprogressionen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
       if (!isPeaking && !isTimeLimited) {
@@ -424,6 +431,8 @@ export function GenerateStrengthTemplateDialog({
         .insert({
           coach_id: coachId,
           athlete_id: athleteId,
+          generator_version: "generator-push-1.0",
+          rules_version: PUSH_RULES_VERSION,
           name: blockName ?? template.name,
           goal: blockFocus ? `${blockFocus === "volume" ? "Volymfokus" : blockFocus === "strength" ? "Styrkefokus" : "Tävlingsförberedelse"}. ${template.goal}` : template.goal,
           start_date: effectiveStartDate,
@@ -508,26 +517,35 @@ export function GenerateStrengthTemplateDialog({
               day_of_week: s.day,
               title: s.title,
               notes: s.notes,
+              generator_version: "generator-push-1.0",
+              rules_version: PUSH_RULES_VERSION,
             })
             .select("id")
             .single();
           if (psErr) throw psErr;
 
-          const exRows = s.exercises.map((e, idx) => ({
+          const exRows = s.exercises.map((source, idx) => { const e = source as PushExercise; return ({
             planned_session_id: ps.id,
             ...resolveVariantExercise(e.exercise, e.variation),
             target_sets: e.target_sets,
             target_reps: e.target_reps,
             target_rpe: e.target_rpe ?? null,
             target_rir: e.target_rir ?? null,
-            target_weight_kg: e.target_weight_kg == null ? null : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
+            target_weight_kg: e.target_weight_kg == null ? null : e.push_lift ? e.target_weight_kg : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
+            push_lift: e.push_lift ?? null,
+            push_main: e.push_main ?? false,
+            push_load_pct: e.push_load_pct ?? null,
+            plan_e1rm_used: e.plan_e1rm_used ?? null,
+            push_block_start: e.plan_e1rm_used ?? null,
+            generator_version: "generator-push-1.0",
+            rules_version: PUSH_RULES_VERSION,
             intensity_metric: e.intensity_metric,
             lengthened_partials: e.lengthened_partials ?? false,
             last_set_to_failure: e.last_set_to_failure ?? false,
             is_technique:e.variation==="Teknikpass – ej EAk",
             notes: e.notes ?? null,
             order_index: idx,
-          }));
+          }); });
           if (exRows.length > 0) {
             const { error: exErr } = await supabase.from("planned_exercises").insert(exRows);
             if (exErr) throw exErr;

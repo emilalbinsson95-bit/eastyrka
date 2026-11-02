@@ -1,4 +1,5 @@
 import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
+import { PushProgressionCard } from "@/components/PushProgressionCard";
 import { BaselineMaxProposals } from "@/components/BaselineMaxProposals";
 import { EakStrategyCard } from "@/components/EakStrategyCard";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
@@ -199,6 +200,7 @@ function AthleteDetailPage() {
         </TabsContent>
 
         <TabsContent value="baselines">
+          <div className="mb-6"><PushProgressionCard athleteId={athleteId} /></div>
           <div className="mb-4"><StrengthVolumeProfileCard athleteId={athleteId} /></div>
           <div className="mb-4"><WarmupLoadsCard athleteId={athleteId} /></div>
           <div className="mb-4"><EakStrategyCard athleteId={athleteId} /></div>

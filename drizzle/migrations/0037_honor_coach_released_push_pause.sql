@@ -1,0 +1,1 @@
+DO $$ DECLARE definition text; BEGIN SELECT pg_get_functiondef('public.decide_push(uuid)'::regprocedure) INTO definition; definition=replace(definition,'AND ev.coach_decision<>''rejected'')','AND ev.coach_decision<>''rejected'' AND (st.eak_pause_released_at IS NULL OR ev.created_at>st.eak_pause_released_at))'); EXECUTE definition; END $$;

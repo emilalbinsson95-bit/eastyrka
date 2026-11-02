@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Tydlig startvikt för första setet, faktisk RPE och justerbara senare set; begripligt avslut per lyft, RPE-only utan påhittad vikt, versionsskydd för sparade planer och historik.
 - [x] Mattis senaste block: sex opublicerade huvudordinationer i vecka 2–3 ändrade till böj 4×4/180 kg, bänk 4×4/115 kg och sumomark 4×3/192,5 kg @7,5; coachgodkänd push aktiverad med planettor 220/140/227,5. Böjvolym 7 set och övriga set oförändrade. Publicerat/loggar/baslinjer har identiska kontrollsummor före/efter. Återläst i coachvyn, 21 tester gröna. Push omräknar nu bara kommande draft-arbetsveckor.
 - [x] Push-kärna: separat stanssäker planetta, coachval, fasta huvudset utan fler set, bekräftade arbetsset, bromsar, atomisk omräkning och ångra. Alex: inställning/generering/push 180→182,7/fyra kommande ordinationer/ångra återlästa; testset borttagna och testblock arkiverat. 362 tester gröna. Ingen verklig atlet aktiverad.
 - [ ] Push-specens fortsättning: variantkvoter, stallförslag, strukturerade tävlingsresultat, fullständig datakvalitet/readiness och versionsfilter återstår; inte aktiverade i första införandet.

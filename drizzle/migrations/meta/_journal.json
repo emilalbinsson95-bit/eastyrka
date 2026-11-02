@@ -274,6 +274,13 @@
       "when": 1793608633638,
       "tag": "0038_push_undo_cooldown_restore",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793608735505,
+      "tag": "0039_push_confirmation_and_audit_hardening",
+      "breakpoints": true
     }
   ]
 }

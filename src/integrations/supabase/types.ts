@@ -1526,6 +1526,7 @@ export type Database = {
           created_at: string
           created_by: string
           decision: string
+          decision_date: string
           evidence: Json
           exercise_id: string | null
           generator_version: string
@@ -1548,6 +1549,7 @@ export type Database = {
           created_at?: string
           created_by: string
           decision: string
+          decision_date?: string
           evidence?: Json
           exercise_id?: string | null
           generator_version?: string
@@ -1570,6 +1572,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           decision?: string
+          decision_date?: string
           evidence?: Json
           exercise_id?: string | null
           generator_version?: string

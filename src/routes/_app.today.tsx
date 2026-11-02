@@ -1,4 +1,5 @@
 import { useWarmupLoads } from "@/components/WarmupLoadsCard";
+import { FinishPushButton } from "@/components/PushProgressionCard";
 import { WarmupReferenceFields } from "@/components/WarmupReferenceFields";
 import { matchesWarmupLoad } from "@/lib/warmupReference";
 import { SessionFeedbackRow } from "@/components/SessionFeedbackRow";
@@ -92,6 +93,8 @@ interface PlannedExercise {
   notes: string | null;
   order_index: number;
   is_technique?:boolean;
+  push_main?: boolean;
+  push_lift?: string | null;
 }
 
 interface PlannedSession {
@@ -165,7 +168,7 @@ function TodayPage() {
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
                target_weight_kg, lengthened_partials, last_set_to_failure,
-               notes, order_index, is_technique
+               notes, order_index, is_technique, push_main, push_lift
              )
            )`;
       // Prefer the current (or most recent past) published week.
@@ -234,7 +237,7 @@ function TodayPage() {
              id, exercise, variation, target_sets, target_reps,
              target_rpe, target_rir, intensity_metric,
              target_weight_kg, lengthened_partials, last_set_to_failure,
-             notes, order_index
+             notes, order_index, is_technique, push_main, push_lift
            )`,
         )
         .in("id", crossWeekSessionIds);
@@ -656,6 +659,7 @@ function PlannedSessionCard({
             );
           })}
         <AddExtraExerciseInline athleteId={athleteId} dateStr={dateStr} />
+        {session.planned_exercises.filter(ex=>ex.push_main).map(ex=><FinishPushButton key={ex.id} exerciseId={ex.id}/>)}
         {allDone && <SessionFeedbackRow athleteId={athleteId} dateStr={dateStr} />}
         {inProgress && <PauseSessionRow sessionId={session.id} athleteId={athleteId} />}
       </CardContent>
@@ -946,11 +950,9 @@ function LogSetButton({
   const [reps, setReps] = useState<number>(
     previousLog ? previousLog.reps : ex.target_reps,
   );
-  const [rpe, setRpe] = useState<number>(
-    previousLog ? Number(previousLog.rpe) : Number(ex.target_rpe ?? 7),
-  );
+  const [rpe, setRpe] = useState<number>(NaN);
   const [rir, setRir] = useState<number>(
-    ex.target_rir != null ? Number(ex.target_rir) : 2,
+    NaN,
   );
   const [partials, setPartials] = useState<boolean>(ex.lengthened_partials);
   const [toFailure, setToFailure] = useState<boolean>(
@@ -979,6 +981,7 @@ function LogSetButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!Number.isFinite(effectiveRpe)) throw new Error("Välj faktisk RPE eller reps kvar innan setet sparas.");
       if (isWarmup && warmupRpe === null) throw new Error("Välj uppvärmnings-RPE.");
       const parsed = setSchema.parse({
         weight_kg: weight,
@@ -1002,6 +1005,7 @@ function LogSetButton({
         to_failure: !isWarmup && toFailure,
         comment: parsed.comment ?? null,
         planned_exercise_id: ex.id,
+        actively_confirmed: !isWarmup,
       });
       if (error) throw error;
     },
@@ -1013,6 +1017,8 @@ function LogSetButton({
       setComment("");
       setWarmup(false);
       setWarmupRpe(null);
+      setRpe(NaN);
+      setRir(NaN);
     },
     onError: (e) => toast.error((e as Error).message),
   });

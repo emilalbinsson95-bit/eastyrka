@@ -1,5 +1,5 @@
 import { pctOf1RMInterp } from "@/lib/intensity";
-import { compLiftKey, normalizeLiftName } from "./liftIdentity";
+import { competitionExerciseName, isCompetitionDescriptor, normalizeLiftName } from "./liftIdentity";
 /**
  * EAkoefficient — autoregulation engine.
  *
@@ -283,8 +283,7 @@ export interface RawLog extends SetInput {
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;
 /** Only competition lifts contribute EAk; prescription descriptors are not variants. */
 export function isReadinessLift(exercise: string, variation?: string | null): boolean {
-  const note = (variation ?? "").trim();
-  return compLiftKey(exercise) !== null && (!note || /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i.test(note));
+  return competitionExerciseName(exercise) !== null && isCompetitionDescriptor(variation);
 }
 
 const BIG3_LIFT = /squat|b[äa]nk|bench|deadlift|marklyft|b[öo]j|\bmark\b/i;
@@ -306,9 +305,13 @@ export function processLogs<T extends RawLog>(
   baselines: Record<string, number>,
   plannedLightDates?: ReadonlySet<string>,
 ): Array<ProcessedSet<T> & ProcessedSetExtra> {
+  const exerciseKey = (log: T) => JSON.stringify([
+    baselineExerciseKey(competitionExerciseName(log.exercise, log.variation) ?? log.exercise),
+    isCompetitionDescriptor(log.variation) ? "" : (log.variation ?? "").trim().toLowerCase(),
+  ]);
   const groups = new Map<string, T[]>();
   for (const l of logs) {
-    const k = `${l.date}::${l.exercise}`;
+    const k = `${l.date}::${exerciseKey(l)}`;
     const g = groups.get(k) ?? [];
     g.push(l);
     groups.set(k, g);
@@ -318,11 +321,11 @@ export function processLogs<T extends RawLog>(
     const m = pickMeasurementSet(g);
     if (m) measurement.set(k, m);
   }
-  const rolling = rollingE1RMBySession(logs);
+  const rolling = rollingE1RMBySession(logs.map(log => ({ ...log, exercise: exerciseKey(log) })));
 
   return logs.filter((log) => !log.is_warmup_reference).map((log) => {
-    const key = `${log.date}::${log.exercise}`;
-    const baseline = lookupBaseline(baselines, log.exercise) ?? 0;
+    const key = `${log.date}::${exerciseKey(log)}`;
+    const baseline = lookupBaseline(baselines, competitionExerciseName(log.exercise, log.variation) ?? log.exercise) ?? 0;
     const e1rm = dailyE1RM(log);
     const meas = measurement.get(key);
     const measE1 = meas ? dailyE1RM(meas) : 0;
@@ -362,7 +365,7 @@ export function processLogs<T extends RawLog>(
 
 /** Exact competition aliases only: never collapse variants or deadlift stances. */
 export function baselineExerciseKey(exercise: string): string {
-  const name = normalizeLiftName(exercise);
+  const name = normalizeLiftName(competitionExerciseName(exercise) ?? exercise);
   if (/^(back squat|squat|knäböj|knaboj|böj)$/.test(name)) return "squat";
   if (/^(bench press|bench|bänkpress|bänk)$/.test(name)) return "bench press";
   if (/^(deadlift|dead lift|marklyft|mark)$/.test(name)) return "deadlift";

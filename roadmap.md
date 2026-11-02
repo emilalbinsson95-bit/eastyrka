@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [x] EAk-namnmatchning: gemensamma tävlingsnamn och utförandenoteringar inklusive / och ·; riktiga varianter utesluts även i signalmotorn, markstansbaslinjer/historik hålls separata. 343 tester gröna, bygge OK; Alex och verkliga Conventional Deadlift/Competition stance-rader återlästa med EAk 100,3 % och baslinje 260 utan körfel. Inga loggar, program eller baslinjer ändrade.
 - [x] Justera Hannas och Shadis publicerade toppningsmark och ta bort Vincents ologgade extra böjpost efter hans genomförda SSB-pass; loggar bevarade och ändrade setantal återlästa i samtliga tre coachvyer utan körfel.
 - [x] Grafer/tabeller 1–22: gemensamma mätset och EAk-gränser; samlade väntande beslut; historiska baslinjeband; setvolym/readiness; samlad belastning/PR/DOTS/vikt; tempointervall/rehab; separat toppningsuppföljning. 314 tester gröna och bygge OK. Alex återläste toppningsdatum, flagga, öppning och försök samt rehabgräns/sida; sparade träningsprogram och riktiga atletloggar orörda.
 - [ ] Rehabdiagram slutprov med sparade band-/friviktsmätningar och tvåsidiga tester för Alex: aktuella fysioterapeuten saknar accepterad patientkoppling till Alex, och befintlig åtkomstkontroll stoppar testskrivning. Beräkningar testade och preferenser återlästa; patientåtkomst har inte vidgats.

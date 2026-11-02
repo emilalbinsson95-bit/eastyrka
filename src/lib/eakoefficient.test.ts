@@ -98,6 +98,28 @@ describe("pickMeasurementSet (heavy singles)", () => {
 });
 
 describe("comp-lift capture for EAk", () => {
+  it.each([
+    ["Conventional Deadlift / Competition stance", "Conventional Deadlift", 250],
+    ["Sumo Deadlift · Competition stance", "Sumo Deadlift", 240],
+    ["Squat (Competition stance)", "Squat", 200],
+    ["Bench Press / Competition grip & pause", "Bench Press", 140],
+    ["Conventional Dead lift", "Conventional Deadlift", 250],
+  ])("includes %s with its saved baseline", (exercise, baselineName, baseline) => {
+    expect(isReadinessLift(String(exercise))).toBe(true);
+    expect(lookupBaseline({ [baselineName]: baseline }, String(exercise))).toBe(baseline);
+  });
+  it.each(["1.5-rep squat", "SSB", "Beltless", "Low bar", "Pausböj", "Smalgrepp", "Unknown variation"])("excludes %s in the variation field", variation => {
+    expect(isReadinessLift("Squat", variation)).toBe(false);
+  });
+  it("does not use a variant measurement for a normal lift on the same date", () => {
+    const common = { date: "2026-11-02", exercise: "Squat", reps: 1, rpe: 10 };
+    const result = processLogs([
+      { ...common, id: "variant", variation: "Pause squat", set_number: 1, weight_kg: 300 },
+      { ...common, id: "normal", variation: "Competition stance", set_number: 2, weight_kg: 200 },
+    ], { Squat: 200 });
+    expect(result.find(p => p.source.id === "normal")?.eaKoefficient).toBe(100);
+    expect(result.find(p => p.source.id === "variant")?.eaKoefficient).toBe(0);
+  });
   it("counts stance/grip notes and Swedish names as comp lifts", () => {
     expect(isReadinessLift("Squat", "Competition stance")).toBe(true);
     expect(isReadinessLift("Sumo Deadlift", "Over-warm single")).toBe(true);
@@ -107,11 +129,11 @@ describe("comp-lift capture for EAk", () => {
   });
   it("counts English spellings of the same lift as comp lifts", () => {
     expect(isReadinessLift("Back-Squat")).toBe(true);
-    expect(isReadinessLift("Backsquat")).toBe(false); // okänt namn, inte tävlingslyft
+    expect(isReadinessLift("Backsquat")).toBe(true);
     expect(isReadinessLift("Competition Squat")).toBe(true);
     expect(isReadinessLift("Comp squat")).toBe(true);
     expect(isReadinessLift("Powerlifting squat")).toBe(true);
-    expect(isReadinessLift("Benchpress")).toBe(false);
+    expect(isReadinessLift("Benchpress")).toBe(true);
     expect(isReadinessLift("Bench-Press")).toBe(true);
     expect(isReadinessLift("Competition Bench Press")).toBe(true);
     expect(isReadinessLift("Comp bench")).toBe(true);

@@ -24,6 +24,25 @@ const noiseHistory = (levels: number[][]) => {
 };
 
 describe("evaluateMesocycle", () => {
+  it("does not combine sumo history with the latest conventional deadlift sessions", () => {
+    const logs = [
+      ...day(D[0], 300).map(s => ({ ...s, exercise: "Sumo Deadlift" })),
+      ...day(D[1], 250).map(s => ({ ...s, exercise: "Conventional Deadlift", variation: "Competition stance" })),
+    ];
+    expect(sessionPoints(logs, "deadlift", 250)).toEqual([{ date: D[1], e1rm: 250, eak: 100 }]);
+  });
+  it("excludes real variants stored separately from the exercise name", () => {
+    const logs = [
+      ...day(D[0], 500).map(s => ({ ...s, variation: "1.5-rep squat" })),
+      ...day(D[0], 100).map(s => ({ ...s, set_number: 2, variation: "Competition stance" })),
+      ...day(D[1], 500).map(s => ({ ...s, variation: "Pause squat" })),
+    ];
+    expect(sessionPoints(logs, "squat", 100)).toEqual([{ date: D[0], e1rm: 100, eak: 100 }]);
+  });
+  it("includes conventional competition stance with display separators", () => {
+    expect(sessionPoints(day(D[0], 250).map(s => ({ ...s, exercise: "Conventional Deadlift / Competition stance" })), "deadlift", 250))
+      .toEqual([{ date: D[0], e1rm: 250, eak: 100 }]);
+  });
   it("5 pass med stabil e1RM → green", () => {
     const r = evaluateMesocycle({ logs: block(D, [100, 100, 100, 100, 100]), lift: "squat", baseline: 100 });
     expect(r.status).toBe("green");

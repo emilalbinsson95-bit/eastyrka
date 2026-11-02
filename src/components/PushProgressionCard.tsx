@@ -24,11 +24,20 @@ export function PushProgressionCard({athleteId}:{athleteId:string}) {
   return {states:states.data??[],logs:logs.data??[],baselines:Object.fromEntries((baselines.data??[]).map(b=>[b.exercise,Number(b.one_rm_kg)]))};
  }});
  const reverse=useMutation({mutationFn:(id:string)=>undo({data:{id}}),onSuccess:()=>{qc.invalidateQueries();toast.success("Planettan och kommande vikter återställda");},onError:(e:Error)=>toast.error(e.message)});
+ const pending=useQuery({queryKey:["push-pending",athleteId],queryFn:async()=>{
+  const {data,error}=await supabase.from("planned_exercises").select("id,exercise,planned_sessions!inner(week_plans!inner(athlete_id))").eq("push_main",true).eq("planned_sessions.week_plans.athlete_id",athleteId);
+  if(error)throw error;
+  const ids=(data??[]).map(e=>e.id);if(!ids.length)return [];
+  const {data:logs,error:logError}=await supabase.from("training_logs").select("planned_exercise_id").in("planned_exercise_id",ids);
+  if(logError)throw logError;
+  return (data??[]).filter(e=>logs?.some(l=>l.planned_exercise_id===e.id)&&!query.data?.logs.some(l=>l.exercise_id===e.id));
+ },enabled:query.isSuccess});
  return <section className="space-y-4 border-b border-border pb-6" aria-label="Viktprogression">
   <h2 className="flex items-center gap-2 text-lg font-semibold"><TrendingUp className="h-5 w-5"/>Viktprogression</h2>
   {query.isLoading&&<p className="text-sm text-muted-foreground">Laddar…</p>}
   {query.isError&&<p role="alert" className="text-sm text-destructive">Kunde inte läsa viktprogressionen.</p>}
   {query.data&&PUSH_LIFTS.map(lift=>{const row=query.data.states.find(s=>s.lift===lift);const name=lift==="squat"?"Back squat":lift==="bench"?"Bench press":lift==="sumo"?"Sumo deadlift":"Conventional deadlift";return <PushSettings key={`${lift}-${row?.version??"new"}`} athleteId={athleteId} lift={lift} row={row} baseline={lookupBaseline(query.data.baselines,name)??0}/>;})}
+  {pending.data?.map(e=><div key={e.id} className="space-y-2 border-t border-border pt-3"><h3 className="font-medium">{e.exercise} · huvudpass att avsluta</h3><FinishPushButton exerciseId={e.id}/></div>)}
   {query.data&&query.data.logs.length>0&&<div className="divide-y divide-border">{query.data.logs.map(log=><div key={log.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><p className="font-medium">{PUSH_LABELS[log.lift as PushLift]??log.lift} · {log.decision} · {Number(log.plan_e1rm_before).toFixed(2)} → {Number(log.plan_e1rm_after).toFixed(2)} kg</p><p className="text-muted-foreground">{reasons[log.reason]??log.reason} · {log.created_at.slice(0,10)}{log.undone_at?" · Ångrat":""}</p></div>{!log.undone_at&&<Button size="icon" variant="outline" title="Ångra beslut" aria-label="Ångra beslut" disabled={reverse.isPending} onClick={()=>reverse.mutate(log.id)}><Undo2 className="h-4 w-4"/></Button>}</div>)}</div>}
  </section>;
 }
@@ -46,7 +55,7 @@ function PushSettings({athleteId,lift,row,baseline}:{athleteId:string;lift:PushL
 export function FinishPushButton({exerciseId}:{exerciseId:string}) {
  const finish=useServerFn(finishPushExposure);const qc=useQueryClient();const [result,setResult]=useState("");
  const [outcome,setOutcome]=useState<"protocol_reduction"|"fatigue_stop"|null>(null);
- const mutation=useMutation({mutationFn:()=>finish({data:{exerciseId,outcome}}),onSuccess:r=>{setResult(`${r.decision} · ${reasons[r.reason]??r.reason}${r.after?` · planetta ${r.after.toFixed(2)} kg`:""}`);qc.invalidateQueries({queryKey:["push-state"]});qc.invalidateQueries({queryKey:["athlete-plan"]});},onError:(e:Error)=>toast.error(e.message)});
+ const mutation=useMutation({mutationFn:()=>finish({data:{exerciseId,outcome}}),onSuccess:r=>{setResult(`${r.decision} · ${reasons[r.reason]??r.reason}${r.after?` · planetta ${r.after.toFixed(2)} kg`:""}`);qc.invalidateQueries({queryKey:["push-state"]});qc.invalidateQueries({queryKey:["push-pending"]});qc.invalidateQueries({queryKey:["athlete-plan"]});},onError:(e:Error)=>toast.error(e.message)});
  return <div className="space-y-2"><div className="flex flex-wrap gap-3 text-sm"><label className="flex items-center gap-2"><Checkbox checked={outcome==="protocol_reduction"} onCheckedChange={v=>setOutcome(v===true?"protocol_reduction":null)}/>Setprotokollet sänkte vikten</label><label className="flex items-center gap-2"><Checkbox checked={outcome==="fatigue_stop"} onCheckedChange={v=>setOutcome(v===true?"fatigue_stop":null)}/>Huvudset ströks vid trötthetsstopp</label></div><Button variant="outline" disabled={mutation.isPending} onClick={()=>mutation.mutate()}><CheckResultIcon/>Avsluta huvudpass</Button>{result&&<p role="status" className="text-sm text-muted-foreground">{result}</p>}</div>;
 }
 function CheckResultIcon(){return <TrendingUp className="mr-2 h-4 w-4"/>;}

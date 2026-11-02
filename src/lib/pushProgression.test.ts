@@ -6,6 +6,11 @@ import type { TemplateWeek } from "./strengthTemplates";
 const sets = Array.from({length:4},()=>({confirmed:true,prescribedReps:5,prescribedKg:145,reps:5,kg:145}));
 const base = {plan:180,start:180,step:1.5,misses:0,sets,expectedSets:4};
 describe("coach-enabled load progression",()=>{
+ it("allows later increases after the prescribed first set when actual RPE stays at target",()=>expect(decidePush({...base,firstSetMode:true,targetRpe:7.5,sets:sets.map((s,i)=>({...s,kg:i===0?145:147.5,rpe:7.5}))}).decision).toBe("push"));
+ it("holds a later weight reduction without adding a miss",()=>expect(decidePush({...base,firstSetMode:true,targetRpe:7.5,sets:sets.map((s,i)=>({...s,kg:i===0?145:140,rpe:7.5}))})).toMatchObject({decision:"hold",misses:0}));
+ it("holds actual RPE above 7.5",()=>expect(decidePush({...base,firstSetMode:true,targetRpe:7.5,sets:sets.map(s=>({...s,rpe:8}))}).decision).toBe("hold"));
+ it("requires actual RPE for every set",()=>expect(decidePush({...base,firstSetMode:true,targetRpe:7.5}).decision).toBe("skip"));
+ it("does not push a changed first start weight",()=>expect(decidePush({...base,firstSetMode:true,targetRpe:7.5,sets:sets.map(s=>({...s,kg:140,rpe:7}))}).decision).toBe("skip"));
  it("pushes squat 1.5% without raising the EAk baseline",()=>{expect(decidePush(base)).toMatchObject({decision:"push",after:182.7,misses:0});expect(base.plan).toBe(180);});
  it("uses bench 1.25% and deadlift 2% defaults",()=>{expect(PUSH_STEPS).toEqual({squat:1.5,bench:1.25,conventional:2,sumo:2});});
  it("keeps 145 kg after the first rounded push instead of forcing an increase",()=>{expect(prescribedWeightKg({oneRmKg:180,reps:5,metric:"rpe",rpe:7.5})).toBe(145);expect(prescribedWeightKg({oneRmKg:182.7,reps:5,metric:"rpe",rpe:7.5})).toBe(145);});

@@ -246,6 +246,13 @@
       "when": 1793608301076,
       "tag": "0034_push_guarded_outcomes",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793608346048,
+      "tag": "0035_push_decision_integrity",
+      "breakpoints": true
     }
   ]
 }

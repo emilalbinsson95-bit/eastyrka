@@ -13,9 +13,9 @@ export const savePushSettings = createServerFn({method:"POST"})
  });
 export const finishPushExposure = createServerFn({method:"POST"})
  .middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({exerciseId:z.string().uuid()}).parse(input))
+ .inputValidator(input=>z.object({exerciseId:z.string().uuid(),outcome:z.enum(["protocol_reduction","fatigue_stop"]).nullable().default(null)}).parse(input))
  .handler(async({data,context})=>{
-  const {data:result,error}=await context.supabase.rpc("decide_push",{_exercise:data.exerciseId});
+  const {data:result,error}=await context.supabase.rpc("finish_push_with_outcome",{_exercise:data.exerciseId,_outcome:data.outcome??undefined});
   if(error)throw new Error("Viktbeslutet kunde inte sparas. Försök igen; samma pass räknas bara en gång.");
   return result as {decision:string;reason:string;after?:number;id?:string};
  });

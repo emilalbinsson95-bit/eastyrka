@@ -45,7 +45,8 @@ function PushSettings({athleteId,lift,row,baseline}:{athleteId:string;lift:PushL
 
 export function FinishPushButton({exerciseId}:{exerciseId:string}) {
  const finish=useServerFn(finishPushExposure);const qc=useQueryClient();const [result,setResult]=useState("");
- const mutation=useMutation({mutationFn:()=>finish({data:{exerciseId}}),onSuccess:r=>{setResult(`${r.decision} · ${reasons[r.reason]??r.reason}${r.after?` · planetta ${r.after.toFixed(2)} kg`:""}`);qc.invalidateQueries({queryKey:["push-state"]});qc.invalidateQueries({queryKey:["athlete-plan"]});},onError:(e:Error)=>toast.error(e.message)});
- return <div className="space-y-2"><Button variant="outline" disabled={mutation.isPending} onClick={()=>mutation.mutate()}><CheckResultIcon/>Avsluta huvudpass</Button>{result&&<p role="status" className="text-sm text-muted-foreground">{result}</p>}</div>;
+ const [outcome,setOutcome]=useState<"protocol_reduction"|"fatigue_stop"|null>(null);
+ const mutation=useMutation({mutationFn:()=>finish({data:{exerciseId,outcome}}),onSuccess:r=>{setResult(`${r.decision} · ${reasons[r.reason]??r.reason}${r.after?` · planetta ${r.after.toFixed(2)} kg`:""}`);qc.invalidateQueries({queryKey:["push-state"]});qc.invalidateQueries({queryKey:["athlete-plan"]});},onError:(e:Error)=>toast.error(e.message)});
+ return <div className="space-y-2"><div className="flex flex-wrap gap-3 text-sm"><label className="flex items-center gap-2"><Checkbox checked={outcome==="protocol_reduction"} onCheckedChange={v=>setOutcome(v===true?"protocol_reduction":null)}/>Setprotokollet sänkte vikten</label><label className="flex items-center gap-2"><Checkbox checked={outcome==="fatigue_stop"} onCheckedChange={v=>setOutcome(v===true?"fatigue_stop":null)}/>Huvudset ströks vid trötthetsstopp</label></div><Button variant="outline" disabled={mutation.isPending} onClick={()=>mutation.mutate()}><CheckResultIcon/>Avsluta huvudpass</Button>{result&&<p role="status" className="text-sm text-muted-foreground">{result}</p>}</div>;
 }
 function CheckResultIcon(){return <TrendingUp className="mr-2 h-4 w-4"/>;}

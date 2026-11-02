@@ -1234,7 +1234,7 @@ function NumField({
           type="button"
           variant="outline"
           size="icon"
-          onClick={() => onChange(Math.max(min, +(value - step).toFixed(2)))}
+          onClick={() => onChange(Math.max(min, +((Number.isFinite(value) ? value : min + step) - step).toFixed(2)))}
         >
           −
         </Button>
@@ -1243,8 +1243,9 @@ function NumField({
           step={step}
           min={min}
           max={max}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          value={Number.isFinite(value) ? value : ""}
+          placeholder="—"
+          onChange={(e) => onChange(e.target.value === "" ? NaN : Number(e.target.value))}
           className="text-center"
         />
         <Button
@@ -1252,7 +1253,7 @@ function NumField({
           variant="outline"
           size="icon"
           onClick={() => {
-            const next = +(value + step).toFixed(2);
+            const next = +((Number.isFinite(value) ? value : min - step) + step).toFixed(2);
             onChange(max !== undefined ? Math.min(max, next) : next);
           }}
         >

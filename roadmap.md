@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Kontrollera EAk-namnmatchning i alla vyer: vanliga tävlingslyft och utförandenoteringar ska inkluderas, riktiga varianter uteslutas; separata markstansbaslinjer och historik bevaras.
 - [x] Justera Hannas och Shadis publicerade toppningsmark och ta bort Vincents ologgade extra böjpost efter hans genomförda SSB-pass; loggar bevarade och ändrade setantal återlästa i samtliga tre coachvyer utan körfel.
 - [x] Grafer/tabeller 1–22: gemensamma mätset och EAk-gränser; samlade väntande beslut; historiska baslinjeband; setvolym/readiness; samlad belastning/PR/DOTS/vikt; tempointervall/rehab; separat toppningsuppföljning. 314 tester gröna och bygge OK. Alex återläste toppningsdatum, flagga, öppning och försök samt rehabgräns/sida; sparade träningsprogram och riktiga atletloggar orörda.
 - [ ] Rehabdiagram slutprov med sparade band-/friviktsmätningar och tvåsidiga tester för Alex: aktuella fysioterapeuten saknar accepterad patientkoppling till Alex, och befintlig åtkomstkontroll stoppar testskrivning. Beräkningar testade och preferenser återlästa; patientåtkomst har inte vidgats.

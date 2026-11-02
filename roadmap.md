@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Granska Mattis Hanssons senaste schema och tillämpa push-principer endast på opublicerade, opåbörjade pass efter Emils tillåtelse; publicerat och historik skyddas.
 - [x] Push-kärna: separat stanssäker planetta, coachval, fasta huvudset utan fler set, bekräftade arbetsset, bromsar, atomisk omräkning och ångra. Alex: inställning/generering/push 180→182,7/fyra kommande ordinationer/ångra återlästa; testset borttagna och testblock arkiverat. 362 tester gröna. Ingen verklig atlet aktiverad.
 - [ ] Push-specens fortsättning: variantkvoter, stallförslag, strukturerade tävlingsresultat, fullständig datakvalitet/readiness och versionsfilter återstår; inte aktiverade i första införandet.
 - [x] EAk-namnmatchning: gemensamma tävlingsnamn och utförandenoteringar inklusive / och ·; riktiga varianter utesluts även i signalmotorn, markstansbaslinjer/historik hålls separata. 343 tester gröna, bygge OK; Alex och verkliga Conventional Deadlift/Competition stance-rader återlästa med EAk 100,3 % och baslinje 260 utan körfel. Inga loggar, program eller baslinjer ändrade.

@@ -74,7 +74,7 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     ] = await Promise.all([
       supabaseAdmin
         .from("training_logs")
-        .select("date, exercise, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
+        .select("date, exercise, variation, set_number, reps, weight_kg, rpe, is_warmup_reference, is_technique")
         .eq("athlete_id", athleteId)
         .order("date", { ascending: true })
         .limit(5000),

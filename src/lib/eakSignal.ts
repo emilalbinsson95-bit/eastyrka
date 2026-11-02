@@ -1,4 +1,4 @@
-import { dailyE1RM, pickMeasurementSet } from "@/lib/eakoefficient";
+import { dailyE1RM, pickMeasurementSet, isReadinessLift } from "@/lib/eakoefficient";
 import { compLiftKey, type CompLift } from "@/lib/liftIdentity";
 
 /**
@@ -12,6 +12,7 @@ import { compLiftKey, type CompLift } from "@/lib/liftIdentity";
 export interface SetLog {
   date: string;
   exercise: string;
+  variation?: string | null;
   set_number: number;
   reps: number;
   weight_kg: number;
@@ -159,7 +160,7 @@ export interface MesoInput {
 
 /** Mätsets-e1RM och EAk_d per pass för ett lyft, kronologiskt. */
 export function sessionPoints(logs: SetLog[], lift: CompLift, baseline: number): { date: string; e1rm: number; eak: number }[] {
-  const rows = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && compLiftKey(l.exercise.trim()) === lift && l.rpe != null);
+  const rows = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && isReadinessLift(l.exercise, l.variation) && compLiftKey(l.exercise) === lift && l.rpe != null);
   const byDate = new Map<string, SetLog[]>();
   for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
   return [...byDate.entries()]

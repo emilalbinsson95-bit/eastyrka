@@ -17,16 +17,27 @@ export type CompLift = "squat" | "bench" | "deadlift";
  * their own names and never match.
  */
 export function normalizeLiftName(exercise: string): string {
-  let name = exercise.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
-  name = name.replace(/\s+(competition stance|comp stance|competition grip & pause|competition grip|over warm single|opener single)$/, "");
-  name = name.replace(/^(competition|comp|powerlifting)\s+/, "").replace(/\s+(competition|comp|powerlifting)$/, "");
+  let name = normalizeLiftLabel(exercise);
+  // Separators come from both exercise names and combined display labels.
+  name = name.replace(/\s+(competition stance|comp stance|competition grip (?:&|and) pause|competition grip|comp grip|conventional stance|sumo stance|over warm single|opener single)$/, "");
+  name = name.replace(/^(?:(?:competition|comp|powerlifting)\s+)+/, "").replace(/\s+(competition|comp|powerlifting)$/, "");
   return name.replace(/\s+/g, " ").trim();
 }
 
+function normalizeLiftLabel(label: string): string {
+  return label.trim().toLowerCase().replace(/[-_·/()[\]]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Strict allow-list: unknown notes are not silently treated as EAk lifts. */
+export function isCompetitionDescriptor(variation?: string | null): boolean {
+  const note = normalizeLiftLabel(variation ?? "");
+  return !note || /^(competition stance|comp stance|competition grip (?:&|and) pause|competition grip|comp grip|conventional stance|sumo stance|over warm single|opener single)$/.test(note);
+}
+
 const COMP_RE: Record<CompLift, RegExp> = {
-  squat: /^(back squat|squat|knäböj|knaboj|böj)$/i,
-  bench: /^(bench press|bench|bänkpress|bänk)$/i,
-  deadlift: /^(deadlift|dead lift|sumo deadlift|conventional deadlift|marklyft|mark|sumomarklyft|sumomark|konventionell marklyft|konventionellt marklyft)$/i,
+  squat: /^(back squat|backsquat|squat|knäböj|knaboj|böj)$/i,
+  bench: /^(bench press|benchpress|bench|bänkpress|bänk)$/i,
+  deadlift: /^(deadlift|dead lift|sumo dead ?lift|conventional dead ?lift|marklyft|mark|sumo marklyft|sumomarklyft|sumomark|konventionell marklyft|konventionellt marklyft)$/i,
 };
 
 /** Canonical exercise name per competition lift (matches baselines table). */
@@ -41,8 +52,6 @@ const TRUE_VARIANT =
   /pause|tempo|pin|deficit|block|spoto|larsen|touch|close.?grip|wide|board|floor|high.?bar/i;
 
 /** Labels that describe HOW the comp lift is performed — still the comp lift. */
-const NON_VARIANT =
-  /^(competition stance|competition grip & pause|conventional stance|sumo stance|over[ -]?warm single|opener single)$/i;
 
 /** Which competition lift an exercise name belongs to, regardless of variation. */
 export function compLiftKey(exercise: string): CompLift | null {
@@ -51,6 +60,18 @@ export function compLiftKey(exercise: string): CompLift | null {
     if (COMP_RE[key].test(name)) return key;
   }
   return null;
+}
+
+/** Canonical read identity; never collapse sumo into conventional or generic deadlift. */
+export function competitionExerciseName(exercise: string, variation?: string | null): string | null {
+  const lift = compLiftKey(exercise);
+  if (!lift) return null;
+  if (lift !== "deadlift") return COMP_NAME[lift];
+  const name = normalizeLiftLabel(exercise);
+  const note = normalizeLiftLabel(variation ?? "");
+  if (/\bsumo\b|sumomark/.test(`${name} ${note}`)) return "Sumo deadlift";
+  if (/\bconventional\b|\bkonventionell(?:t)?\b/.test(`${name} ${note}`)) return "Conventional deadlift";
+  return COMP_NAME.deadlift;
 }
 
 /**
@@ -62,7 +83,7 @@ export function isCompLift(exercise: string, variation?: string | null): boolean
   if (!compLiftKey(exercise)) return false;
   const v = (variation ?? "").trim();
   if (!v) return true;
-  if (NON_VARIANT.test(v)) return true;
+  if (isCompetitionDescriptor(v)) return true;
   return !TRUE_VARIANT.test(v);
 }
 

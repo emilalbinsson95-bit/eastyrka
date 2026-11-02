@@ -22,7 +22,8 @@ import {
   type SetLog,
   type WarmupLog,
 } from "./eakSignal";
-import { compLiftKey, COMP_NAME, type CompLift } from "./liftIdentity";
+import { compLiftKey, competitionExerciseName, COMP_NAME, type CompLift } from "./liftIdentity";
+import { countsForEAk, isReadinessLift, lookupBaseline } from "./eakoefficient";
 import { eakDecisionSchema, strategyFromRow } from "./eakStrategy";
 
 const LIFTS: CompLift[] = ["squat", "bench", "deadlift"];
@@ -140,8 +141,11 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
     const results: Array<{ lift: CompLift; status: string; stored: boolean }> = [];
 
     for (const lift of LIFTS) {
-      const baselineRow = (baselines ?? []).find((b: { exercise: string }) => compLiftKey(b.exercise) === lift);
-      const B = Number(baselineRow?.one_rm_kg ?? 0);
+      const latest = [...allLogs].filter(l => isReadinessLift(l.exercise, l.variation) && compLiftKey(l.exercise) === lift && countsForEAk({ ...l, rpe: Number(l.rpe) }))
+        .sort((a, b) => b.date.localeCompare(a.date))[0];
+      const exercise = latest ? competitionExerciseName(latest.exercise, latest.variation) : COMP_NAME[lift];
+      const baselineMap = Object.fromEntries((baselines ?? []).map(b => [b.exercise, Number(b.one_rm_kg)]));
+      const B = exercise ? lookupBaseline(baselineMap, exercise) ?? 0 : 0;
       if (B <= 0) continue;
 
       const points = sessionPoints(allLogs, lift, B);

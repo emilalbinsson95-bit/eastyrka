@@ -1,5 +1,5 @@
 import { dailyE1RM, pickMeasurementSet, isReadinessLift } from "@/lib/eakoefficient";
-import { compLiftKey, type CompLift } from "@/lib/liftIdentity";
+import { compLiftKey, competitionExerciseName, type CompLift } from "@/lib/liftIdentity";
 
 /**
  * EAk-motorn v1 — ren signal, aldrig automatiska planändringar.
@@ -160,7 +160,10 @@ export interface MesoInput {
 
 /** Mätsets-e1RM och EAk_d per pass för ett lyft, kronologiskt. */
 export function sessionPoints(logs: SetLog[], lift: CompLift, baseline: number): { date: string; e1rm: number; eak: number }[] {
-  const rows = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && isReadinessLift(l.exercise, l.variation) && compLiftKey(l.exercise) === lift && l.rpe != null);
+  const qualified = logs.filter((l) => !l.is_warmup_reference && !l.is_technique && isReadinessLift(l.exercise, l.variation) && compLiftKey(l.exercise) === lift && l.rpe != null);
+  const latest = [...qualified].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const identity = latest ? competitionExerciseName(latest.exercise, latest.variation) : null;
+  const rows = lift === "deadlift" ? qualified.filter(l => competitionExerciseName(l.exercise, l.variation) === identity) : qualified;
   const byDate = new Map<string, SetLog[]>();
   for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
   return [...byDate.entries()]

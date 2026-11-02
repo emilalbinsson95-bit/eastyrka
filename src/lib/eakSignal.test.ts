@@ -24,6 +24,13 @@ const noiseHistory = (levels: number[][]) => {
 };
 
 describe("evaluateMesocycle", () => {
+  it("does not combine sumo history with the latest conventional deadlift sessions", () => {
+    const logs = [
+      ...day(D[0], 300).map(s => ({ ...s, exercise: "Sumo Deadlift" })),
+      ...day(D[1], 250).map(s => ({ ...s, exercise: "Conventional Deadlift", variation: "Competition stance" })),
+    ];
+    expect(sessionPoints(logs, "deadlift", 250)).toEqual([{ date: D[1], e1rm: 250, eak: 100 }]);
+  });
   it("excludes real variants stored separately from the exercise name", () => {
     const logs = [
       ...day(D[0], 500).map(s => ({ ...s, variation: "1.5-rep squat" })),

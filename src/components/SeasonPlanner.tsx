@@ -84,7 +84,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
         const next = list[index + 1];
         const newStart = format(addDays(parseISO(last.week_start_date), 7), "yyyy-MM-dd");
         if (next?.mesocycleId && next.startDate <= format(addDays(parseISO(newStart), 6), "yyyy-MM-dd")) throw new Error("Nästa block är redan förberett och skulle överlappa. Flytta eller frikoppla det först.");
-        const ins = await supabase.from("week_plans").insert({ coach_id: coachId, athlete_id: athleteId, mesocycle_id: block.mesocycleId, week_index: last.week_index + 1, week_start_date: newStart, status: "draft" });
+        const ins = await supabase.from("week_plans").insert({ coach_id: coachId, athlete_id: athleteId, mesocycle_id: block.mesocycleId, week_index: (last.week_index ?? weeks.data.length) + 1, week_start_date: newStart, status: "draft" });
         if (ins.error) throw new Error("Kunde inte lägga till veckan.");
       } else {
         if (weeks.data.length <= 1) throw new Error("Blocket måste ha minst en vecka.");

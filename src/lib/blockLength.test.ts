@@ -66,3 +66,14 @@ describe("primary and secondary competitions", () => {
     expect(validateSeason([b], "2027-03-06", sec)).toMatch(/tävlingsdag/);
   });
 });
+
+import { rescheduleFuture } from "./seasonPlanning";
+describe("peaks stay anchored", () => {
+  it("shortening an earlier block does not move or lengthen a 2-week peak", () => {
+    const v: SeasonBlock = { id: "v", name: "V", focus: "volume", templateId: "standard-pl", startDate: "2026-11-03", daysPerWeek: 4, notes: "" };
+    const pk: SeasonBlock = { id: "p", name: "P", focus: "competition", templateId: "peak-3w", startDate: "2026-11-28", endDate: "2026-12-11", peakWeeks: 2, daysPerWeek: 4, notes: "" };
+    const out = rescheduleFuture([v, pk], "v", { workingWeeks: 3, deload: false });
+    expect(out[1].startDate).toBe("2026-11-28");
+    expect(blockWeeks(out[1])).toBe(2);
+  });
+});

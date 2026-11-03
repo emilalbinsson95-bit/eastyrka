@@ -113,6 +113,8 @@ export function rescheduleFuture(blocks: SeasonBlock[], changedId: string, patch
   if (patch.peakWeeks && next[index].endDate && !patch.endDate) next[index].endDate = format(addDays(parseISO(next[index].startDate), patch.peakWeeks * 7 - 1), "yyyy-MM-dd");
   for (let i = index + 1; i < next.length; i++) {
     if (next[i].mesocycleId) break;
+    // Peaks are anchored to their competition date and never slide with earlier blocks.
+    if (next[i].templateId === "peak-3w" && next[i].endDate) continue;
     const gap = Math.max(1, differenceInCalendarDays(parseISO(blocks[i].startDate), parseISO(blockEnd(blocks[i - 1]))));
     next[i].startDate = format(addDays(parseISO(blockEnd(next[i - 1])), gap), "yyyy-MM-dd");
   }
@@ -129,6 +131,8 @@ export function reflowAfter(blocks: SeasonBlock[], index: number, previous: Seas
   const next = blocks.map((b) => ({ ...b }));
   for (let i = index + 1; i < next.length; i++) {
     if (next[i].mesocycleId) break;
+    // Peaks are anchored to their competition date and never slide with earlier blocks.
+    if (next[i].templateId === "peak-3w" && next[i].endDate) continue;
     const gap = Math.max(1, differenceInCalendarDays(parseISO(previous[i].startDate), parseISO(blockEnd(previous[i - 1]))));
     next[i].startDate = format(addDays(parseISO(blockEnd(next[i - 1])), gap), "yyyy-MM-dd");
   }

@@ -30,6 +30,7 @@ function snapRpe(rpe: number): number {
  * rounding). Used by E1RM so measurement and prescription share one model.
  */
 export function pctOf1RMInterp(rpe: number, reps: number): number {
+  if (!Number.isFinite(rpe) || !Number.isFinite(reps)) return NaN;
   const r = clamp(rpe, 6, 10);
   const repClamp = clamp(Math.round(reps), 1, 12);
   const lo = Math.floor(r * 2) / 2;

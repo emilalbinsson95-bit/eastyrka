@@ -51,4 +51,4 @@
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.
 <!-- LOVABLE:END -->
 - D0 peak weeks start on their first session date with zero-based day_of_week (DB allows 0–6), so the calendar reads the offsets as zero-based and every session lands on its planned date.
-- Template block length is coach-chosen (1–12 working weeks + optional deload) via `resizeTemplateWeeks` before all modifiers; longer blocks repeat the template's own wave so effort never exceeds its hardest week.
+- Template block length (1–12 working weeks + optional deload) is set by `resizeTemplateWeeks` before modifiers; longer blocks repeat the template wave so effort never exceeds its hardest week.

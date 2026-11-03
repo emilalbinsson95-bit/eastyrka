@@ -116,6 +116,7 @@ export type Database = {
           blocks: Json
           coach_id: string
           competition_date: string | null
+          competitions: Json
           created_at: string
           generator_settings: Json
           id: string
@@ -128,6 +129,7 @@ export type Database = {
           blocks?: Json
           coach_id: string
           competition_date?: string | null
+          competitions?: Json
           created_at?: string
           generator_settings?: Json
           id?: string
@@ -140,6 +142,7 @@ export type Database = {
           blocks?: Json
           coach_id?: string
           competition_date?: string | null
+          competitions?: Json
           created_at?: string
           generator_settings?: Json
           id?: string

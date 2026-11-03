@@ -1,0 +1,2 @@
+ALTER TABLE public.athlete_season_plans ADD COLUMN IF NOT EXISTS competitions jsonb NOT NULL DEFAULT '[]'::jsonb;
+COMMENT ON COLUMN public.athlete_season_plans.competitions IS 'Secondary competitions [{id,name,date}]; competition_date stays the primary meet.';

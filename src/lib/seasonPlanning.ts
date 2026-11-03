@@ -25,6 +25,8 @@ export const seasonBlockSchema = z.object({
   workingWeeks: z.number().int().min(1).max(12).optional(),
   deload: z.boolean().optional(),
   /** Real length of a prepared, non-peak block after coach adjustments. */
+  /** Peak target: a secondary competition id; absent = the primary meet. */
+  competitionId: z.string().optional(),
   adjustedWeeks: z.number().int().min(1).max(30).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   daysPerWeek: z.number().int().min(2).max(6),
@@ -36,6 +38,16 @@ export const seasonBlockSchema = z.object({
   peakWeeks: z.number().int().min(2).max(6).optional(),
 });
 export type SeasonBlock = z.infer<typeof seasonBlockSchema>;
+export const seasonCompetitionSchema = z.object({ id: z.string(), name: z.string().trim().min(1).max(100), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
+export type SeasonCompetition = z.infer<typeof seasonCompetitionSchema>;
+export const seasonCompetitionsSchema = z.array(seasonCompetitionSchema).max(10);
+/** Secondary meets get a short peak by default; the primary meet keeps the full one. */
+export const SECONDARY_PEAK_WEEKS = 2;
+/** The competition a peak block aims at: its secondary meet, else the primary date. */
+export function peakTarget(block: SeasonBlock, primaryDate: string, secondaries: SeasonCompetition[] = []): string {
+  if (block.competitionId) return secondaries.find((c) => c.id === block.competitionId)?.date ?? "";
+  return primaryDate;
+}
 export const seasonBlocksSchema = z.array(seasonBlockSchema).min(1).max(20);
 export const FOCUS_LABELS = { volume: "Volymfokus", strength: "Styrkefokus", competition: "Tävlingsförberedelse" };
 export function blockWeeks(block: SeasonBlock): number {
@@ -69,10 +81,14 @@ export function scheduleBlocks(blocks: SeasonBlock[], startDate: string): Season
     return out;
   });
 }
-export function validateSeason(blocks: SeasonBlock[], competitionDate: string): string | null {
+export function validateSeason(blocks: SeasonBlock[], competitionDate: string, secondaries: SeasonCompetition[] = []): string | null {
   const parsed = seasonBlocksSchema.safeParse(blocks);
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "Kontrollera blocken";
   if (competitionDate && !validSeasonDate(competitionDate)) return "Kontrollera tävlingsdatumet.";
+  for (const c of secondaries) {
+    if (!c.name.trim() || !validSeasonDate(c.date)) return "Kontrollera namn och datum på delmålstävlingarna.";
+    if (competitionDate && c.date >= competitionDate) return `${c.name}: en delmålstävling ska ligga före huvudtävlingen.`;
+  }
   if (new Set(blocks.map((b) => b.id)).size !== blocks.length) return "Blocken måste ha unika ID:n.";
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
@@ -82,7 +98,10 @@ export function validateSeason(blocks: SeasonBlock[], competitionDate: string): 
     if (b.templateId !== "manual" && (!template || b.daysPerWeek < template.minDays || b.daysPerWeek > template.maxDays)) return `${b.name}: kontrollera antal träningsdagar.`;
     if (i > 0 && differenceInCalendarDays(parseISO(b.startDate), parseISO(blockEnd(blocks[i - 1]))) < 1) return "Blocken får inte överlappa. Pauser mellan block är tillåtna.";
     if (competitionDate && blockEnd(b) >= competitionDate) return "Sista träningsdagen måste ligga före tävlingsdatumet.";
-    if (competitionDate && b.templateId === "peak-3w" && !b.mesocycleId && blockEnd(b) !== format(addDays(parseISO(competitionDate), -1), "yyyy-MM-dd")) return `${b.name}: lägg toppningen direkt före tävlingen så att de lätta passen hamnar rätt.`;
+    if (b.templateId === "peak-3w" && b.competitionId && !secondaries.some((c) => c.id === b.competitionId)) return `${b.name}: tävlingen toppningen siktar mot finns inte längre.`;
+    const target = b.templateId === "peak-3w" ? peakTarget(b, competitionDate, secondaries) : "";
+    if (target && !b.mesocycleId && blockEnd(b) !== format(addDays(parseISO(target), -1), "yyyy-MM-dd")) return `${b.name}: lägg toppningen direkt före sin tävling så att de lätta passen hamnar rätt.`;
+    if (secondaries.some((c) => b.startDate <= c.date && blockEnd(b) >= c.date)) return `${b.name}: ett block får inte pågå över en tävlingsdag. Lägg tävlingen mellan två block.`;
   }
   return null;
 }

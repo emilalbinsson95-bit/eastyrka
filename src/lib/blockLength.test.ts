@@ -48,3 +48,21 @@ describe("adjusting a running season", () => {
     expect(reflowAfter([{ ...before[0], adjustedWeeks: 5 }, before[1]], 0, before)[1].startDate).toBe("2026-12-07");
   });
 });
+
+import { peakTarget, validateSeason } from "./seasonPlanning";
+describe("primary and secondary competitions", () => {
+  const sec = [{ id: "serie", name: "Serietävling", date: "2026-12-12" }];
+  const peak = (start: string, end: string, competitionId?: string): SeasonBlock => ({ id: `p${start}`, name: "Topp", focus: "competition", templateId: "peak-3w", startDate: start, endDate: end, peakWeeks: 2, daysPerWeek: 4, notes: "", competitionId });
+  it("a peak aimed at the secondary meet must end the day before it", () => {
+    expect(peakTarget(peak("2026-11-28", "2026-12-11", "serie"), "2027-03-06", sec)).toBe("2026-12-12");
+    expect(validateSeason([peak("2026-11-28", "2026-12-11", "serie")], "2027-03-06", sec)).toBeNull();
+    expect(validateSeason([peak("2026-11-27", "2026-12-10", "serie")], "2027-03-06", sec)).toMatch(/före sin tävling/);
+  });
+  it("secondary meets must come before the primary meet", () => {
+    expect(validateSeason([peak("2026-11-28", "2026-12-11", "serie")], "2026-12-01", sec)).toMatch(/före huvudtävlingen/);
+  });
+  it("no block may run across a competition day", () => {
+    const b: SeasonBlock = { id: "v", name: "Volym", focus: "volume", templateId: "standard-pl", startDate: "2026-12-07", daysPerWeek: 4, notes: "" };
+    expect(validateSeason([b], "2027-03-06", sec)).toMatch(/tävlingsdag/);
+  });
+});

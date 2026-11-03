@@ -13,7 +13,7 @@
 
 - Keep coaching availability in a public-read, admin-write singleton and reuse its information component so counts agree.
 
-- Gate calendar fueling on a current non-archived cycle window containing planned non-draft endurance work, because generated blocks retain draft status and endurance sessions lack cycle IDs.
+- Show calendar fueling only inside a current non-archived cycle with planned non-draft endurance work (drafts and missing cycle IDs exist).
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Persist coach-only lift-volume preferences for shared generation baselines.

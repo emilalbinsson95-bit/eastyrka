@@ -44,7 +44,6 @@ import {
   dailyE1RM,
   eaKoefficient,
   readinessFromEAk,
-  readinessLabel,
   readinessAction,
   readinessClasses,
   volumeQualityClasses,

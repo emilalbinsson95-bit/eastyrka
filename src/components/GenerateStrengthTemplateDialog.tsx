@@ -59,6 +59,7 @@ import { SetProtocolPicker } from "@/components/SetProtocolPicker";
 import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } from "@/lib/setProtocols";
 import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPlanning";
 import type { Json } from "@/integrations/supabase/types";
+import { resizeTemplateWeeks, templateShape, MAX_WORKING_WEEKS } from "@/lib/blockLength";
 import { peakStartDate, peakFinalSessionDates, validPeakDate, peakPeriodDays, peakWeekStartDates } from "@/lib/peakingDates";
 
 
@@ -72,7 +73,7 @@ export function GenerateStrengthTemplateDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger,
-  defaultDaysPerWeek, defaultPeakWeeks, defaultEndDate, blockName, blockNotes, blockFocus, defaultCompetitionDate,
+  defaultDaysPerWeek, defaultPeakWeeks, defaultEndDate, blockName, blockNotes, blockFocus, defaultCompetitionDate, defaultWorkingWeeks, defaultDeload,
 }: {
   athleteId: string;
   coachId: string;
@@ -93,6 +94,8 @@ export function GenerateStrengthTemplateDialog({
   blockName?: string;
   blockNotes?: string;
   blockFocus?: "volume" | "strength" | "competition";
+  defaultWorkingWeeks?: number;
+  defaultDeload?: boolean;
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -247,13 +250,20 @@ export function GenerateStrengthTemplateDialog({
     if (!template?.buildFromHistory || peakDateError) return null;
     return buildD0Weeks({start:peakStart,end:peakEndDate,competition:competitionDate,days:daysPerWeek,summary:peakSummary,singles:peakOptions.singles==="yes",settings:{...taperSettings,heavyRpe:Math.min(8.5,peakOptions.rpe)}});
   }, [template, peakDateError, peakStart, peakEndDate, competitionDate, daysPerWeek, peakSummary, peakOptions.singles, peakOptions.rpe, taperSettings]);
+  const defaultShape = useMemo(() => template && !template.buildFromHistory ? templateShape(template.buildWeeks(template.daysPerWeek)) : null, [template]);
+  const [workingWeeks, setWorkingWeeks] = useState<number | null>(defaultWorkingWeeks ?? null);
+  const [withDeload, setWithDeload] = useState<boolean | null>(defaultDeload ?? null);
+  const effWorking = workingWeeks ?? defaultShape?.workingWeeks ?? 3;
+  const effDeload = withDeload ?? defaultShape?.deload ?? true;
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory) return d0Plan?.weeks ?? [];
+    // Coach-chosen length first, so every later step sees the real block.
+    const sized = resizeTemplateWeeks(template.buildWeeks(daysPerWeek), effWorking, effDeload);
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
-    if (template.skipVolumeFloors) return applyDeadliftStyle(template.buildWeeks(daysPerWeek), styleQuery.data);
-    return applyDeadliftStyle(enforceTemplateFloors(template.buildWeeks(daysPerWeek)), styleQuery.data);
-  }, [template, daysPerWeek, styleQuery.data, d0Plan]);
+    if (template.skipVolumeFloors) return applyDeadliftStyle(sized, styleQuery.data);
+    return applyDeadliftStyle(enforceTemplateFloors(sized), styleQuery.data);
+  }, [template, daysPerWeek, styleQuery.data, d0Plan, effWorking, effDeload]);
 
 
   const suggestion = useMemo(() => {
@@ -682,6 +692,19 @@ export function GenerateStrengthTemplateDialog({
               )}
             </div>
           </div>
+
+          {template && !isPeaking && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="tpl-weeks">Arbetsveckor</Label>
+                <select id="tpl-weeks" disabled={Boolean(blockName)} value={effWorking} onChange={(e) => setWorkingWeeks(Number(e.target.value))} className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm">
+                  {Array.from({ length: MAX_WORKING_WEEKS }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} {n === 1 ? "vecka" : "veckor"}{n === defaultShape?.workingWeeks ? " (mallens)" : ""}</option>)}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 pt-6 text-sm"><input type="checkbox" disabled={Boolean(blockName)} checked={effDeload} onChange={(e) => setWithDeload(e.target.checked)} />Avlastningsvecka sist</label>
+              {defaultShape && effWorking > defaultShape.workingWeeks && <p className="text-[11px] text-muted-foreground sm:col-span-2">Längre block upprepar mallens vågor ({defaultShape.workingWeeks} veckor åt gången), så ansträngningen går inte över mallens tyngsta vecka. Totalt {effWorking + (effDeload ? 1 : 0)} veckor.</p>}
+            </div>
+          )}
 
           {/* ---- peaking options ---- */}
           {!isPeaking && <SetProtocolPicker value={setProtocols} onChange={setSetProtocols} shortSessions={isTimeLimited} />}

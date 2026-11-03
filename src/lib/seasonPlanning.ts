@@ -21,6 +21,9 @@ export const seasonBlockSchema = z.object({
   focus: z.enum(["volume", "strength", "competition"]),
   templateId: z.string().refine((id) => id === "manual" || Boolean(getTemplate(id)), "Välj eget upplägg eller en befintlig mall"),
   manualWeeks: z.number().int().min(1).max(24).optional(),
+  /** Coach-chosen length for template blocks; template default when absent. */
+  workingWeeks: z.number().int().min(1).max(12).optional(),
+  deload: z.boolean().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   daysPerWeek: z.number().int().min(2).max(6),
   notes: z.string().max(2000).default(""),
@@ -36,7 +39,16 @@ export const FOCUS_LABELS = { volume: "Volymfokus", strength: "Styrkefokus", com
 export function blockWeeks(block: SeasonBlock): number {
   if (block.templateId === "manual") return block.manualWeeks ?? 4;
   if (block.templateId === "peak-3w" && block.endDate) return Math.ceil(peakPeriodDays(block.startDate, block.endDate) / 7);
-  return block.templateId === "peak-3w" ? block.peakWeeks ?? 3 : getTemplate(block.templateId)?.weeks ?? 4;
+  if (block.templateId === "peak-3w") return block.peakWeeks ?? 3;
+  const shape = templateBlockShape(block);
+  return shape.workingWeeks + (shape.deload ? 1 : 0);
+}
+/** Working weeks and deload for a template block, falling back to the template's own shape. */
+export function templateBlockShape(block: SeasonBlock): { workingWeeks: number; deload: boolean } {
+  const t = getTemplate(block.templateId);
+  const defaultDeload = t ? t.buildWeeks(t.daysPerWeek).some((w) => w.kind === "deload") : true;
+  const defaultWorking = (t?.weeks ?? 4) - (defaultDeload ? 1 : 0);
+  return { workingWeeks: block.workingWeeks ?? defaultWorking, deload: block.deload ?? defaultDeload };
 }
 export function validSeasonDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(parseISO(value).getTime()) && format(parseISO(value), "yyyy-MM-dd") === value;

@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
-import { Plus, Save, Trash2, Pencil, ArrowRight } from "lucide-react";
+import { Plus, Save, Trash2, Pencil, ArrowRight, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Switch } from "@/components/ui/switch";
+import { PushProgressionCard } from "@/components/PushProgressionCard";
+import { StrengthVolumeProfileCard } from "@/components/StrengthVolumeProfileCard";
+import { EakStrategyCard } from "@/components/EakStrategyCard";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
-import { blockEnd, blockWeeks, defaultSeason, FOCUS_LABELS, rescheduleFuture, seasonBlocksSchema, validateSeason, type SeasonBlock } from "@/lib/seasonPlanning";
+import { blockEnd, blockWeeks, templateBlockShape, defaultSeason, FOCUS_LABELS, rescheduleFuture, seasonBlocksSchema, validateSeason, type SeasonBlock } from "@/lib/seasonPlanning";
 import { peakStartDate } from "@/lib/peakingDates";
 
 export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: string; coachId: string; athleteName: string }) {
@@ -79,7 +84,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
     if (error) { toast.error("Utkastet skapades, men kunde inte kopplas till säsongsplanen."); return; }
     const parsed = seasonBlocksSchema.safeParse(data.blocks);
     if (!parsed.success) { toast.error("Utkastet skapades. Kontrollera säsongsplanens block."); return; }
-    if (!parsed.data.some((b) => b.id === generating.block.id && !b.mesocycleId && b.startDate === generating.block.startDate && b.templateId === generating.block.templateId && b.daysPerWeek === generating.block.daysPerWeek && b.endDate === generating.block.endDate && b.peakWeeks === generating.block.peakWeeks && b.manualWeeks === generating.block.manualWeeks)) {
+    if (!parsed.data.some((b) => b.id === generating.block.id && !b.mesocycleId && b.startDate === generating.block.startDate && b.templateId === generating.block.templateId && b.daysPerWeek === generating.block.daysPerWeek && b.endDate === generating.block.endDate && b.peakWeeks === generating.block.peakWeeks && b.manualWeeks === generating.block.manualWeeks && b.workingWeeks === generating.block.workingWeeks && b.deload === generating.block.deload)) {
       toast.error("Utkastet skapades, men blocket ändrades under tiden. Det finns bland atletens träningsblock."); setGenerating(null); return;
     }
     const next = parsed.data.map((b) => b.id === generating.block.id ? { ...b, mesocycleId: mesoId } : b);
@@ -135,8 +140,9 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
       </div>
       {p.notes && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{p.notes}</p>}
       {!p.parsedBlocks.success && <p className="text-sm text-destructive">Blocken kunde inte läsas.</p>}
+      {p.parsedBlocks.success && <SeasonTimeline blocks={p.parsedBlocks.data} competitionDate={p.competition_date ?? ""} />}
       {p.parsedBlocks.success && p.parsedBlocks.data.map((b) => <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-primary pl-3 py-2">
-        <div className="min-w-0"><p className="font-medium break-words">{b.name} <span className="text-xs font-normal text-muted-foreground">· {FOCUS_LABELS[b.focus]}</span></p><p className="text-xs text-muted-foreground">{b.startDate} – {blockEnd(b)} · {b.templateId === "manual" ? `Eget upplägg, ${blockWeeks(b)} veckor` : getTemplate(b.templateId)?.name} · {b.daysPerWeek} dagar/vecka</p>{b.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{b.notes}</p>}</div>
+        <div className="min-w-0"><p className="font-medium break-words">{b.name} <span className="text-xs font-normal text-muted-foreground">· {FOCUS_LABELS[b.focus]}</span></p><p className="text-xs text-muted-foreground">{b.startDate} – {blockEnd(b)} · {b.templateId === "manual" ? `Eget upplägg, ${blockWeeks(b)} veckor` : `${getTemplate(b.templateId)?.name} · ${lengthLabel(b)}`} · {b.daysPerWeek} dagar/vecka</p>{b.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{b.notes}</p>}</div>
         {b.inactive&&b.mesocycleId ? <div className="space-y-2"><p className="text-sm text-destructive">Tävlingsdatumet har ändrats. Toppningen är inaktuell; det gamla programmet ligger kvar tills du bekräftar omplanering.</p><Button size="sm" variant="outline" onClick={async()=>{
           if(!p.competition_date||!confirm("Arkivera det gamla toppningsprogrammet och förbered ett nytt utkast? Loggar och tidigare program behålls.")) return;
           const start=peakStartDate(p.competition_date,blockWeeks(b));if(!start) return;
@@ -154,14 +160,19 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
       <div className="grid gap-3 sm:grid-cols-2"><div><Label htmlFor="season-name">Namn</Label><Input id="season-name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} /></div><div><Label htmlFor="season-meet">Tävlingsdatum</Label><Input id="season-meet" type="date" value={competitionDate} onChange={(e) => setCompetitionDate(e.target.value)} /></div></div>
       <div><Label htmlFor="season-start">Första blockets startdatum</Label><Input id="season-start" type="date" value={blocks[0]?.startDate ?? ""} disabled={Boolean(blocks[0]?.mesocycleId)} onChange={(e) => { if (e.target.value && blocks[0]) updateBlock(blocks[0].id, { startDate: e.target.value }); }} /></div>
       {competitions.data && competitions.data.length > 0 && <div><Label>Tävling i kalendern</Label><Select value={competitions.data.find((c) => c.comp_date === competitionDate)?.id ?? "manual"} onValueChange={(v) => { const c = competitions.data?.find((c) => c.id === v); if (c) setCompetitionDate(c.comp_date); }}><SelectTrigger aria-label="Tävling i kalendern"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Eget datum</SelectItem>{competitions.data.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} · {c.comp_date}</SelectItem>)}</SelectContent></Select></div>}
+      <SeasonTimeline blocks={blocks} competitionDate={competitionDate} />
+      <AthleteSettingsPanel athleteId={athleteId} />
       <div className="space-y-4">{blocks.map((b, i) => <div key={b.id}><fieldset disabled={Boolean(b.mesocycleId)} className="space-y-2 border-b border-border pb-4"><legend className="text-sm font-medium">Block {i + 1} · {b.startDate} – {blockEnd(b)}{b.mesocycleId ? " · Utkast skapat" : ""}</legend>
         <div className="grid gap-2 sm:grid-cols-2"><div><Label htmlFor={`block-name-${b.id}`}>Blocknamn</Label><Input id={`block-name-${b.id}`} value={b.name} onChange={(e) => updateBlock(b.id, { name: e.target.value })} /></div><div><Label>Fokus</Label><Select disabled={Boolean(b.mesocycleId)} value={b.focus} onValueChange={(v) => updateBlock(b.id, { focus: v as SeasonBlock["focus"] })}><SelectTrigger aria-label={`Fokus block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Object.entries(FOCUS_LABELS).map(([id, label]) => <SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label>Upplägg</Label><Select disabled={Boolean(b.mesocycleId)} value={b.templateId} onValueChange={(v) => { if (v === "manual") { updateBlock(b.id, { templateId: v, manualWeeks: b.manualWeeks ?? 4 }); return; } const t = getTemplate(v); if (t) updateBlock(b.id, { templateId: v, daysPerWeek: t.daysPerWeek }); }}><SelectTrigger aria-label={`Upplägg block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Eget upplägg — jag skriver passen själv</SelectItem>{STRENGTH_TEMPLATES.filter((t) => !t.sessionSetBudget && t.id !== "runner-strength" && t.id !== "athletic-power").map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label>Träningsdagar/vecka</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.daysPerWeek)} onValueChange={(v) => updateBlock(b.id, { daysPerWeek: Number(v) })}><SelectTrigger aria-label={`Träningsdagar block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{(b.templateId === "manual" ? [2,3,4,5,6] : Array.from({ length: (getTemplate(b.templateId)?.maxDays ?? 6) - (getTemplate(b.templateId)?.minDays ?? 3) + 1 }, (_, n) => n + (getTemplate(b.templateId)?.minDays ?? 3))).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent></Select></div></div>
-        <div className="grid gap-2 sm:grid-cols-2"><div><Label htmlFor={`block-date-${b.id}`}>Startdatum</Label><Input id={`block-date-${b.id}`} type="date" value={b.startDate} onChange={(e) => { if (e.target.value) updateBlock(b.id, { startDate: e.target.value }); }} /></div>{b.templateId === "peak-3w" && <div><Label htmlFor={`block-end-${b.id}`}>Slutdatum</Label><Input id={`block-end-${b.id}`} type="date" value={blockEnd(b)} onChange={(e) => updateBlock(b.id, { endDate: e.target.value })} /></div>}{b.templateId === "peak-3w" && <div><Label>Toppning, veckor</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.peakWeeks ?? 3)} onValueChange={(v) => updateBlock(b.id, { peakWeeks: Number(v) })}><SelectTrigger aria-label={`Toppningslängd block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{[2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{n} veckor</SelectItem>)}</SelectContent></Select></div>}{b.templateId === "manual" && <div><Label>Antal veckor</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.manualWeeks ?? 4)} onValueChange={(v) => updateBlock(b.id, { manualWeeks: Number(v) })}><SelectTrigger aria-label={`Antal veckor block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 24 }, (_, n) => n + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} {n === 1 ? "vecka" : "veckor"}</SelectItem>)}</SelectContent></Select></div>}</div>
-        {b.templateId === "manual" && !b.mesocycleId && <p className="text-xs text-muted-foreground">Blocket skapas tomt med veckor och dagar. Du lägger själv in övningar, set och vikter i programmet.</p>}
+        <div><Label>Upplägg</Label><Select disabled={Boolean(b.mesocycleId)} value={b.templateId} onValueChange={(v) => { if (v === "manual") { updateBlock(b.id, { templateId: v, manualWeeks: b.manualWeeks ?? 4 }); return; } const t = getTemplate(v); if (t) updateBlock(b.id, { templateId: v, daysPerWeek: t.daysPerWeek, workingWeeks: undefined, deload: undefined }); }}><SelectTrigger aria-label={`Upplägg block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Eget upplägg — jag skriver passen själv</SelectItem>{STRENGTH_TEMPLATES.filter((t) => !t.sessionSetBudget && t.id !== "runner-strength" && t.id !== "athletic-power").map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></div>
+        <BlockLengthControl block={b} index={i} onChange={(patch) => updateBlock(b.id, patch)} /></div>
         {b.templateId === "peak-3w" && competitionDate && !b.mesocycleId && <Button variant="outline" size="sm" onClick={() => { const startDate = peakStartDate(competitionDate, blockWeeks(b)); if (startDate) updateBlock(b.id, { startDate, endDate: format(addDays(parseISO(competitionDate), -1), "yyyy-MM-dd") }); }}>Lägg toppningen före tävlingen</Button>}
+        <Collapsible><CollapsibleTrigger asChild><Button type="button" variant="ghost" size="sm" className="px-0 text-muted-foreground"><ChevronDown className="mr-1 h-4 w-4" />Fler val: dagar, datum, anteckningar</Button></CollapsibleTrigger><CollapsibleContent className="space-y-2 pt-2">
+        <div className="grid gap-2 sm:grid-cols-2"><div><Label>Träningsdagar/vecka</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.daysPerWeek)} onValueChange={(v) => updateBlock(b.id, { daysPerWeek: Number(v) })}><SelectTrigger aria-label={`Träningsdagar block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{(b.templateId === "manual" ? [2,3,4,5,6] : Array.from({ length: (getTemplate(b.templateId)?.maxDays ?? 6) - (getTemplate(b.templateId)?.minDays ?? 3) + 1 }, (_, n) => n + (getTemplate(b.templateId)?.minDays ?? 3))).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label htmlFor={`block-date-${b.id}`}>Startdatum</Label><Input id={`block-date-${b.id}`} type="date" value={b.startDate} onChange={(e) => { if (e.target.value) updateBlock(b.id, { startDate: e.target.value }); }} /></div>{b.templateId === "peak-3w" && <div><Label htmlFor={`block-end-${b.id}`}>Slutdatum</Label><Input id={`block-end-${b.id}`} type="date" value={blockEnd(b)} onChange={(e) => updateBlock(b.id, { endDate: e.target.value })} /></div>}</div>
+        {b.templateId === "manual" && !b.mesocycleId && <p className="text-xs text-muted-foreground">Blocket skapas tomt med veckor och dagar. Du lägger själv in övningar, set och vikter i programmet.</p>}
         <Textarea aria-label={`Anteckningar block ${i + 1}`} maxLength={2000} placeholder="Coachanteckningar" value={b.notes} onChange={(e) => updateBlock(b.id, { notes: e.target.value })} />
+        </CollapsibleContent></Collapsible>
         <Button variant="ghost" size="sm" disabled={blocks.length <= 1} onClick={() => setBlocks(blocks.filter((x) => x.id !== b.id))}><Trash2 className="mr-1 h-4 w-4" />Ta bort block</Button>
       </fieldset>{b.mesocycleId && <Button variant="outline" size="sm" onClick={() => {
           if (confirm("Frikoppla blocket för ny planering? Det befintliga programmet och publicerade pass behålls. Arkivera det gamla programmet innan du publicerar en ersättning.")) setBlocks((prev) => prev.map((x) => x.id === b.id ? { ...x, mesocycleId: undefined } : x));
@@ -171,6 +182,54 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
       {validateSeason(blocks, competitionDate) && <p className="text-sm text-destructive">{validateSeason(blocks, competitionDate)}</p>}
       <DialogFooter><Button variant="ghost" onClick={() => setOpen(false)}>Avbryt</Button><Button disabled={save.isPending || Boolean(validateSeason(blocks, competitionDate))} onClick={() => save.mutate()}><Save className="mr-1 h-4 w-4" />{save.isPending ? "Sparar…" : "Spara säsongsplan"}</Button></DialogFooter>
     </DialogContent></Dialog>
-    {generating && <GenerateStrengthTemplateDialog key={`${generating.planId}-${generating.block.id}`} athleteId={athleteId} coachId={coachId} athleteName={athleteName} defaultCompetitionDate={generating.competitionDate} defaultTemplateId={generating.block.templateId} defaultStartDate={generating.block.startDate} defaultDaysPerWeek={generating.block.daysPerWeek} defaultPeakWeeks={generating.block.peakWeeks} defaultEndDate={generating.block.endDate} blockName={generating.block.name} blockNotes={generating.block.notes} blockFocus={generating.block.focus} open hideTrigger onOpenChange={(v) => { if (!v) setGenerating(null); }} onCreated={attach} />}
+    {generating && <GenerateStrengthTemplateDialog key={`${generating.planId}-${generating.block.id}`} athleteId={athleteId} coachId={coachId} athleteName={athleteName} defaultCompetitionDate={generating.competitionDate} defaultTemplateId={generating.block.templateId} defaultStartDate={generating.block.startDate} defaultDaysPerWeek={generating.block.daysPerWeek} defaultPeakWeeks={generating.block.peakWeeks} defaultWorkingWeeks={generating.block.templateId === "peak-3w" ? undefined : templateBlockShape(generating.block).workingWeeks} defaultDeload={generating.block.templateId === "peak-3w" ? undefined : templateBlockShape(generating.block).deload} defaultEndDate={generating.block.endDate} blockName={generating.block.name} blockNotes={generating.block.notes} blockFocus={generating.block.focus} open hideTrigger onOpenChange={(v) => { if (!v) setGenerating(null); }} onCreated={attach} />}
   </section>;
+}
+function lengthLabel(b: SeasonBlock): string {
+  if (b.templateId === "peak-3w") return `${blockWeeks(b)} veckor toppning`;
+  const { workingWeeks, deload } = templateBlockShape(b);
+  return `${workingWeeks} arbetsveckor${deload ? " + avlastning" : ", ingen avlastning"}`;
+}
+
+/** Length is the one thing coaches change most, so it sits in the simple view. */
+function BlockLengthControl({ block: b, index: i, onChange }: { block: SeasonBlock; index: number; onChange: (patch: Partial<SeasonBlock>) => void }) {
+  const locked = Boolean(b.mesocycleId);
+  if (b.templateId === "manual") return <div><Label>Antal veckor</Label><Select disabled={locked} value={String(b.manualWeeks ?? 4)} onValueChange={(v) => onChange({ manualWeeks: Number(v) })}><SelectTrigger aria-label={`Antal veckor block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 24 }, (_, n) => n + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} {n === 1 ? "vecka" : "veckor"}</SelectItem>)}</SelectContent></Select></div>;
+  if (b.templateId === "peak-3w") return <div><Label>Toppning, veckor</Label><Select disabled={locked} value={String(b.peakWeeks ?? 3)} onValueChange={(v) => onChange({ peakWeeks: Number(v) })}><SelectTrigger aria-label={`Toppningslängd block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{[2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{n} veckor</SelectItem>)}</SelectContent></Select></div>;
+  const { workingWeeks, deload } = templateBlockShape(b);
+  return <div className="space-y-2"><Label>Längd</Label><div className="flex flex-wrap items-center gap-3"><Select disabled={locked} value={String(workingWeeks)} onValueChange={(v) => onChange({ workingWeeks: Number(v) })}><SelectTrigger className="w-40" aria-label={`Arbetsveckor block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 12 }, (_, n) => n + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} arbetsv.</SelectItem>)}</SelectContent></Select>
+    <label className="flex items-center gap-2 text-sm"><Switch disabled={locked} checked={deload} onCheckedChange={(v) => onChange({ deload: v })} aria-label={`Avlastningsvecka block ${i + 1}`} />Avlastning sist</label></div></div>;
+}
+
+const FOCUS_TONE: Record<SeasonBlock["focus"], string> = { volume: "bg-secondary text-secondary-foreground", strength: "bg-primary/20 text-foreground", competition: "bg-primary text-primary-foreground" };
+
+/** Whole season at a glance: blocks sized by weeks, gaps visible, meet at the end. */
+function SeasonTimeline({ blocks, competitionDate }: { blocks: SeasonBlock[]; competitionDate: string }) {
+  const valid = blocks.filter((b) => blockEnd(b));
+  if (valid.length === 0) return null;
+  const start = parseISO(valid[0].startDate);
+  const endStr = competitionDate && competitionDate > blockEnd(valid[valid.length - 1]) ? competitionDate : blockEnd(valid[valid.length - 1]);
+  const total = Math.max(1, (parseISO(endStr).getTime() - start.getTime()) / 864e5 + 1);
+  const pct = (d: string) => ((parseISO(d).getTime() - start.getTime()) / 864e5 / total) * 100;
+  const weeks = valid.reduce((n, b) => n + blockWeeks(b), 0);
+  return <div className="space-y-1" aria-label="Säsongsöversikt">
+    <div className="relative h-9 overflow-hidden rounded-md bg-muted">
+      {valid.map((b) => <div key={b.id} title={`${b.name}: ${b.startDate} – ${blockEnd(b)}`} className={`absolute inset-y-0 flex items-center overflow-hidden border-r border-background px-1 text-[10px] font-medium ${FOCUS_TONE[b.focus]}`} style={{ left: `${pct(b.startDate)}%`, width: `${Math.max(2, pct(blockEnd(b)) - pct(b.startDate) + 100 / total)}%` }}><span className="truncate">{b.name} · {blockWeeks(b)}v</span></div>)}
+      {competitionDate && <div className="absolute inset-y-0 w-1 bg-destructive" style={{ left: `calc(${Math.min(100, pct(competitionDate))}% - 2px)` }} title={`Tävling ${competitionDate}`} />}
+    </div>
+    <p className="text-xs text-muted-foreground">{valid[0].startDate} – {endStr} · {valid.length} block · {weeks} veckor{competitionDate ? ` · tävling ${competitionDate}` : ""}</p>
+  </div>;
+}
+
+/** The athlete's coach settings, editable right where the season is planned. */
+function AthleteSettingsPanel({ athleteId }: { athleteId: string }) {
+  return <Collapsible className="rounded-md border border-border">
+    <CollapsibleTrigger asChild><Button type="button" variant="ghost" className="w-full justify-between"><span className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />Atletens inställningar: push, volym, EAk</span><ChevronDown className="h-4 w-4" /></Button></CollapsibleTrigger>
+    <CollapsibleContent className="space-y-4 p-3">
+      <p className="text-xs text-muted-foreground">Ändringar här gäller nästa block som förbereds. Svagpunkter och setupplägg väljs när du förbereder blocket. Baslinjer ändras under atletens Baselines.</p>
+      <PushProgressionCard athleteId={athleteId} />
+      <StrengthVolumeProfileCard athleteId={athleteId} />
+      <EakStrategyCard athleteId={athleteId} />
+    </CollapsibleContent>
+  </Collapsible>;
 }

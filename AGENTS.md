@@ -9,11 +9,11 @@
 
 - Store monthly athlete payments in one admin-managed schedule; derive fixed calendar dates from its original start day, with RLS reads, never movable sessions.
 
-- Reject outdated Vite dependency requests so updates reload instead of mixing React dispatchers.
+- Reject outdated Vite dependency requests so React dispatchers never mix.
 
 - Keep coaching availability in a public-read, admin-write singleton and reuse its information component so counts agree.
 
-- Gate calendar fueling on a current non-archived cycle window containing planned non-draft endurance work, because generated blocks retain draft status and endurance sessions lack cycle IDs.
+- Show calendar fueling only inside a current non-archived cycle with planned non-draft endurance work (drafts and missing cycle IDs exist).
 
 - Keep password recovery on public `/forgot-password` and `/reset-password` routes, requiring a recovery auth event before accepting a new password; existing signed-in sessions must not turn a bare recovery URL into a password-change form.
 - Persist coach-only lift-volume preferences for shared generation baselines.
@@ -26,11 +26,11 @@
 - 1.5-rep variations are their own exercises (`exerciseVariants.ts`): load = main lift 1RM × 0.8, 3–5×3–5 @ RPE 6–8, counted as 1.25 sets in weekly volume, because each rep costs more than a normal rep.
 - Accessory exercises are capped at 4 sets when topping templates up to MEV and 5 sets after individual scaling (unless the template itself prescribes more), because extra volume belongs on the main lifts and main lifts already give indirect accessory volume.
 
-- Clip document-level horizontal overflow (no nested scroll container) and wrap role headers; wide tables/calendars keep local scrolling.
+- Clip page-level horizontal overflow; wide tables/calendars scroll locally.
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
 - EAk/E1RM use shared RTS and first qualifying sets; baselines match exact names/comp aliases only. Pool detrended EAk noise by mesocycle ID; thresholds come from athlete_eak_strategy (coach-set, default fallback), preserving history.
 - EAk decisions require a plan_changed yes/no before saving and record next-window outcomes, so the coach overview can describe whether signals helped without claiming causation.
-- Roster and statistics share chartMetrics, history windows and stored baselines per exercise/variant; three measurements agree across views without mixed athletes or derived baselines.
+- Roster and statistics share chartMetrics, history windows and stored baselines per exercise/variant, so views agree.
 - Block-to-block volume adaptation and fatigue-stop extra sets live in src/lib/blockVolume.ts and run before volume guards, because data-driven volume must still respect realism caps.
 - Keep routine steps in src/lib/routines.ts matching Learn; persist stars per athlete in routine_completions (athlete insert, coach/admin read).
 - Admins pass `is_coach_of` for every athlete so they can open any athlete's coach pages to inspect and fix data; skipped routines are stored as `routine='skipped'` rows in routine_completions (thumbs down), because stars and thumbs must share one auditable history.
@@ -39,15 +39,16 @@
 
 - Short full-body templates keep base slots via `applySessionSetBudget`; accessory sets trim first, main lifts keep ≥3.
 
-- Catalog reads allow shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; only shared aliases and the availability singleton are exposed, preserving plans without catalog leakage.
+- Catalog reads: shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; expose only shared aliases and the availability singleton, to avoid catalog leakage.
 
-- Keep season outlines separate; shift only unprepared blocks, allow gaps and detach without deleting programs. Version-check writes and resolve cycle links to prevent stale edits.
+- Season outlines: shift only unprepared blocks, allow gaps, detach without deleting programs; version-check writes.
 - Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
 - Compare six first measurements by exercise/variant/rep interval; RTS normalizes RPE without fragmenting trends.
 
-- Exclude flagged reference warmups from EAk/work progress to avoid distorted strength.
+- Flagged reference warmups never count in EAk/work progress (distorts strength).
 
 <!-- LOVABLE:BEGIN -->
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.
 <!-- LOVABLE:END -->
 - D0 peak weeks start on their first session date with zero-based day_of_week (DB allows 0–6), so the calendar reads the offsets as zero-based and every session lands on its planned date.
+- Template block length (1–12 working weeks + optional deload) is set by `resizeTemplateWeeks` before modifiers; longer blocks repeat the template wave so effort never exceeds its hardest week.

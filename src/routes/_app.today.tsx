@@ -525,7 +525,7 @@ function TodayPage() {
       {processed.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Today's logged sets</CardTitle>
+            <CardTitle>Loggade set idag</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {processed.map((p) => (
@@ -548,7 +548,7 @@ function TodayPage() {
                     )}
                   >
                     {p.eaKoefficient > 0
-                      ? `${p.eaKoefficient.toFixed(0)}% · ${readinessLabel(p.status)}`
+                      ? `Dagsform ${p.eaKoefficient.toFixed(0)} %`
                       : `${p.dailyE1RM.toFixed(0)}kg E1RM`}
                   </span>
                 </div>
@@ -559,9 +559,8 @@ function TodayPage() {
       )}
 
       <p className="text-center text-xs text-muted-foreground">
-        Prescribed weights come from your coach based on your current strength —
-        focus on hitting the target reps and {""}
-        <span className="font-medium">RPE/RIR</span>.
+        Följ instruktionen vid varje övning: står det en vikt börjar du där, annars väljer du vikt efter mål-RPE.
+        Logga alltid vikt, reps och <span className="font-medium">faktisk RPE</span>.
       </p>
     </div>
   );
@@ -796,7 +795,7 @@ function PlannedExerciseRow({
             {isDone && <CheckCircle2 className="h-4 w-4 text-primary" />}
           </div>
           <p className="text-xs text-muted-foreground">
-            {ex.notes?.includes("Setupplägg:") ? `${ex.target_sets} arbetsset · första setet: ${ex.target_reps} reps` : `Target: ${ex.target_sets}×${ex.target_reps}`}
+            {ex.notes?.includes("Setupplägg:") ? `${ex.target_sets} arbetsset · första setet: ${ex.target_reps} reps` : `Mål: ${ex.target_sets}×${ex.target_reps}`}
             {intensityLabel && ` @ ${intensityLabel}`}
             {ex.target_weight_kg != null && ` · ${ex.push_main && ex.rules_version === "push-2.0" ? "Startvikt: " : ""}${ex.target_weight_kg} kg`}
           </p>
@@ -804,12 +803,12 @@ function PlannedExerciseRow({
             <div className="mt-1.5 flex flex-wrap gap-1">
               {ex.lengthened_partials && (
                 <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
-                  + Lengthened partials
+                  + Halvreps i utsträckt läge efter sista fulla rep
                 </span>
               )}
               {ex.last_set_to_failure && (
                 <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
-                  Last set → failure
+                  Sista setet till failure
                 </span>
               )}
             </div>
@@ -1039,7 +1038,7 @@ function LogSetButton({
       <SheetTrigger asChild>
         <Button className="w-full" size="lg">
           <Plus className="mr-1 h-4 w-4" />
-          Log set {nextSet} of {ex.target_sets}
+          Logga set {nextSet} av {ex.target_sets}
         </Button>
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
@@ -1048,12 +1047,12 @@ function LogSetButton({
             {ex.exercise} — Set {nextSet}
           </SheetTitle>
           <SheetDescription>
-            Target: {ex.target_reps} reps @ {intensityLabel}
+            Mål: {ex.target_reps} reps @ {intensityLabel}
             {ex.target_weight_kg != null && (!ex.push_main || ex.rules_version !== "push-2.0" || nextSet === 1) && ` · ${ex.push_main && ex.rules_version === "push-2.0" ? "Startvikt: " : ""}${ex.target_weight_kg} kg`}
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-4 px-4 py-4">
-          <NumField label="Weight (kg)" step={2.5} value={weight} onChange={setWeight} />
+          <NumField label="Vikt (kg)" step={2.5} value={weight} onChange={setWeight} />
           <NumField label="Reps" step={1} value={reps} onChange={setReps} />
           {matchesWarmup && <WarmupReferenceFields checked={warmup} rpe={warmupRpe} onChecked={setWarmup} onRpe={setWarmupRpe} />}
           {!isWarmup && (usingRir ? (
@@ -1068,31 +1067,31 @@ function LogSetButton({
                 checked={partials}
                 onCheckedChange={(v) => setPartials(v === true)}
               />
-              Lengthened partials
+              Halvreps i utsträckt läge
             </label>
             <label className="flex cursor-pointer items-center gap-2 text-sm">
               <Checkbox
                 checked={toFailure}
                 onCheckedChange={(v) => setToFailure(v === true)}
               />
-              Set taken to failure
+              Setet till failure
             </label>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="comment">Comment (optional)</Label>
+            <Label htmlFor="comment">Kommentar (valfritt)</Label>
             <Input
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               maxLength={500}
-              placeholder="Felt heavy / fast / etc."
+              placeholder="Kändes tungt / snabbt / osv."
             />
           </div>
 
           {!isWarmup && <div className="rounded-lg border border-border bg-readiness-tint p-3">
             <div className="text-xs font-medium text-muted-foreground">
-              Live E1RM preview
+              Beräknat max (E1RM) för setet
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-lg font-bold">
@@ -1105,7 +1104,7 @@ function LogSetButton({
                     readinessClasses(livePreview.status),
                   )}
                 >
-                  {livePreview.eak.toFixed(0)}% · {readinessLabel(livePreview.status)}
+                  Dagsform {livePreview.eak.toFixed(0)} %
                 </span>
               )}
               {baseline > 0 && readinessAction(livePreview.status) && (
@@ -1198,7 +1197,7 @@ function FreestyleQuickLog({
           </datalist>
         </div>
         <NumField label="Set" step={1} value={setNumber} onChange={setSetNumber} />
-        <NumField label="Weight (kg)" step={2.5} value={weight} onChange={setWeight} />
+        <NumField label="Vikt (kg)" step={2.5} value={weight} onChange={setWeight} />
         <NumField label="Reps" step={1} value={reps} onChange={setReps} />
         {!isWarmup && <NumField label="RPE" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />}
       </div>
@@ -1208,7 +1207,7 @@ function FreestyleQuickLog({
         disabled={mutation.isPending || warmupLoads.isLoading || warmupLoads.isError || (isWarmup && warmupRpe === null)}
         className="w-full"
       >
-        <Save className="mr-1 h-4 w-4" /> Log set
+        <Save className="mr-1 h-4 w-4" /> Logga set
       </Button>
     </div>
   );

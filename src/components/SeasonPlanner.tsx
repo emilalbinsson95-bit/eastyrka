@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
-import { Plus, Save, Trash2, Pencil, ArrowRight, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { Minus, Plus, Save, Trash2, Pencil, ArrowRight, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import { PushProgressionCard } from "@/components/PushProgressionCard";
@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 import { STRENGTH_TEMPLATES, getTemplate } from "@/lib/strengthTemplates";
-import { blockEnd, blockWeeks, templateBlockShape, defaultSeason, FOCUS_LABELS, rescheduleFuture, seasonBlocksSchema, validateSeason, type SeasonBlock } from "@/lib/seasonPlanning";
+import { reflowAfter, blockEnd, blockWeeks, templateBlockShape, defaultSeason, FOCUS_LABELS, rescheduleFuture, seasonBlocksSchema, validateSeason, type SeasonBlock } from "@/lib/seasonPlanning";
 import { peakStartDate } from "@/lib/peakingDates";
 
 export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: string; coachId: string; athleteName: string }) {
@@ -44,7 +44,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
         const parsed = seasonBlocksSchema.safeParse(p.blocks);
         const normalized = parsed.success ? parsed.data.map((b) => {
           const cycle = cycles.data?.find((c) => c.id === b.mesocycleId);
-          return cycle ? { ...b, startDate: cycle.start_date, daysPerWeek: cycle.days_per_week, ...(b.templateId === "peak-3w" ? { peakWeeks: Math.max(2, Math.min(6, cycle.total_weeks)) } : {}), ...(b.templateId === "manual" ? { manualWeeks: Math.max(1, Math.min(24, cycle.total_weeks)) } : {}) } : { ...b, mesocycleId: undefined };
+          return cycle ? { ...b, startDate: cycle.start_date, daysPerWeek: cycle.days_per_week, ...(b.templateId === "peak-3w" ? { peakWeeks: Math.max(2, Math.min(6, cycle.total_weeks)) } : {}), ...(b.templateId === "manual" ? { manualWeeks: Math.max(1, Math.min(24, cycle.total_weeks)) } : {}), ...(b.templateId !== "peak-3w" ? { adjustedWeeks: Math.max(1, Math.min(30, cycle.total_weeks)) } : {}) } : { ...b, mesocycleId: undefined };
         }) : p.blocks;
         return { ...p, parsedBlocks: seasonBlocksSchema.safeParse(normalized) };
       });
@@ -70,6 +70,46 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
     mutationFn: async (id: string) => { const { error } = await supabase.from("athlete_season_plans").delete().eq("id", id).eq("athlete_id", athleteId); if (error) throw error; },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["season-plans", athleteId] }),
     onError: (e: Error) => toast.error(e.message),
+  });
+  // Adjust a prepared block while the season runs: add an empty draft week or drop the last untouched one.
+  const adjust = useMutation({
+    mutationFn: async ({ plan, blockId, change }: { plan: { id: string; updated_at: string; parsedBlocks: ReturnType<typeof seasonBlocksSchema.safeParse> }; blockId: string; change: "add" | "remove" }) => {
+      if (!plan.parsedBlocks.success) throw new Error("Blocken kunde inte läsas.");
+      const list = plan.parsedBlocks.data; const index = list.findIndex((b) => b.id === blockId); const block = list[index];
+      if (!block?.mesocycleId) throw new Error("Blocket är inte förberett.");
+      const weeks = await supabase.from("week_plans").select("id, week_index, week_start_date, status").eq("mesocycle_id", block.mesocycleId).order("week_index");
+      if (weeks.error || !weeks.data?.length) throw new Error("Kunde inte läsa blockets veckor.");
+      const last = weeks.data[weeks.data.length - 1];
+      if (change === "add") {
+        const next = list[index + 1];
+        const newStart = format(addDays(parseISO(last.week_start_date), 7), "yyyy-MM-dd");
+        if (next?.mesocycleId && next.startDate <= format(addDays(parseISO(newStart), 6), "yyyy-MM-dd")) throw new Error("Nästa block är redan förberett och skulle överlappa. Flytta eller frikoppla det först.");
+        const ins = await supabase.from("week_plans").insert({ coach_id: coachId, athlete_id: athleteId, mesocycle_id: block.mesocycleId, week_index: (last.week_index ?? weeks.data.length) + 1, week_start_date: newStart, status: "draft" });
+        if (ins.error) throw new Error("Kunde inte lägga till veckan.");
+      } else {
+        if (weeks.data.length <= 1) throw new Error("Blocket måste ha minst en vecka.");
+        if (last.status !== "draft") throw new Error("Sista veckan är publicerad. Avpublicera den först om den ska bort.");
+        const sessions = await supabase.from("planned_sessions").select("id").eq("week_plan_id", last.id);
+        const ids = (sessions.data ?? []).map((x) => x.id);
+        if (ids.length) {
+          const ex = await supabase.from("planned_exercises").select("id").in("planned_session_id", ids);
+          const exIds = (ex.data ?? []).map((x) => x.id);
+          if (exIds.length) { const logs = await supabase.from("training_logs").select("id", { count: "exact", head: true }).in("planned_exercise_id", exIds); if (logs.error || (logs.count ?? 0) > 0) throw new Error("Veckan har loggad träning och tas inte bort."); }
+        }
+        const del = await supabase.from("week_plans").delete().eq("id", last.id).eq("status", "draft");
+        if (del.error) throw new Error("Kunde inte ta bort veckan.");
+      }
+      const total = weeks.data.length + (change === "add" ? 1 : -1);
+      const meso = await supabase.from("mesocycles").update({ total_weeks: total }).eq("id", block.mesocycleId);
+      if (meso.error) throw new Error("Veckan ändrades, men blockets längd kunde inte sparas.");
+      const resized = list.map((b, i) => i === index ? { ...b, adjustedWeeks: total } : b);
+      const nextBlocks = reflowAfter(resized, index, list);
+      const res = await supabase.from("athlete_season_plans").update({ blocks: nextBlocks as unknown as Json, updated_at: new Date().toISOString() }).eq("id", plan.id).eq("updated_at", plan.updated_at).select("id").single();
+      if (res.error) throw new Error("Veckan ändrades, men säsongsplanen hade ändrats under tiden. Ladda om sidan.");
+      return change;
+    },
+    onSuccess: (change) => { qc.invalidateQueries({ queryKey: ["season-plans", athleteId] }); qc.invalidateQueries({ queryKey: ["mesocycles", athleteId] }); toast.success(change === "add" ? "En tom vecka är tillagd. Kommande block har flyttats." : "Sista veckan är borttagen. Kommande block har flyttats."); },
+    onError: (e: Error) => { qc.invalidateQueries({ queryKey: ["season-plans", athleteId] }); toast.error(e.message); },
   });
   const updateBlock = (id: string, patch: Partial<SeasonBlock>) => setBlocks((prev) => rescheduleFuture(prev, id, patch));
   const competitions = useQuery({ queryKey: ["season-competitions", athleteId], queryFn: async () => {
@@ -151,7 +191,10 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
           if(result.error){toast.error("Säsongsplanen ändrades. Öppna den igen.");return;}
           const archived=await supabase.from("mesocycles").update({status:"archived"}).eq("id",b.mesocycleId??"");if(archived.error){toast.error("Planen kopplades loss men arkivering misslyckades. Kontrollera det gamla programmet.");return;}
           qc.invalidateQueries();const replacement=next.find(x=>x.id===b.id);if(replacement)setGenerating({planId:p.id,block:replacement,competitionDate:p.competition_date});
-        }}>Förbered om toppningen</Button></div> : b.mesocycleId ? <Button asChild variant="outline" size="sm"><Link to="/coach/athletes/$athleteId/cycles/$cycleId" params={{ athleteId, cycleId: b.mesocycleId }}>Öppna program<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
+        }}>Förbered om toppningen</Button></div> : b.mesocycleId ? <div className="flex flex-wrap items-center gap-1">{b.templateId !== "peak-3w" && p.parsedBlocks.success && <>
+            <Button variant="ghost" size="sm" disabled={adjust.isPending} title="Lägg till en tom vecka sist" onClick={() => adjust.mutate({ plan: p, blockId: b.id, change: "add" })}><Plus className="mr-1 h-4 w-4" />Vecka</Button>
+            <Button variant="ghost" size="sm" disabled={adjust.isPending || blockWeeks(b) <= 1} title="Ta bort sista veckan om den är opublicerad och ologgad" onClick={() => { if (confirm("Ta bort blockets sista vecka? Det går bara om veckan är opublicerad och saknar loggar.")) adjust.mutate({ plan: p, blockId: b.id, change: "remove" }); }}><Minus className="mr-1 h-4 w-4" />Vecka</Button></>}
+            <Button asChild variant="outline" size="sm"><Link to="/coach/athletes/$athleteId/cycles/$cycleId" params={{ athleteId, cycleId: b.mesocycleId }}>Öppna program<ArrowRight className="ml-1 h-4 w-4" /></Link></Button></div>
           : b.templateId === "manual" ? <Button variant="outline" size="sm" disabled={createManual.isPending} onClick={() => createManual.mutate({ planId: p.id, block: b })}>{createManual.isPending ? "Skapar…" : "Skapa tomt block"}</Button>
           : <Button variant="outline" size="sm" onClick={() => setGenerating({ planId: p.id, block: b, competitionDate: p.competition_date ?? "" })}>Förbered block</Button>}
       </div>)}
@@ -162,18 +205,18 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
       {competitions.data && competitions.data.length > 0 && <div><Label>Tävling i kalendern</Label><Select value={competitions.data.find((c) => c.comp_date === competitionDate)?.id ?? "manual"} onValueChange={(v) => { const c = competitions.data?.find((c) => c.id === v); if (c) setCompetitionDate(c.comp_date); }}><SelectTrigger aria-label="Tävling i kalendern"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Eget datum</SelectItem>{competitions.data.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} · {c.comp_date}</SelectItem>)}</SelectContent></Select></div>}
       <SeasonTimeline blocks={blocks} competitionDate={competitionDate} />
       <AthleteSettingsPanel athleteId={athleteId} />
-      <div className="space-y-4">{blocks.map((b, i) => <div key={b.id}><fieldset disabled={Boolean(b.mesocycleId)} className="space-y-2 border-b border-border pb-4"><legend className="text-sm font-medium">Block {i + 1} · {b.startDate} – {blockEnd(b)}{b.mesocycleId ? " · Utkast skapat" : ""}</legend>
+      <div className="space-y-4">{blocks.map((b, i) => <div key={b.id}><fieldset className="space-y-2 border-b border-border pb-4"><legend className="text-sm font-medium">Block {i + 1} · {b.startDate} – {blockEnd(b)}{b.mesocycleId ? " · Utkast skapat" : ""}</legend>
         <div className="grid gap-2 sm:grid-cols-2"><div><Label htmlFor={`block-name-${b.id}`}>Blocknamn</Label><Input id={`block-name-${b.id}`} value={b.name} onChange={(e) => updateBlock(b.id, { name: e.target.value })} /></div><div><Label>Fokus</Label><Select disabled={Boolean(b.mesocycleId)} value={b.focus} onValueChange={(v) => updateBlock(b.id, { focus: v as SeasonBlock["focus"] })}><SelectTrigger aria-label={`Fokus block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Object.entries(FOCUS_LABELS).map(([id, label]) => <SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent></Select></div>
         <div><Label>Upplägg</Label><Select disabled={Boolean(b.mesocycleId)} value={b.templateId} onValueChange={(v) => { if (v === "manual") { updateBlock(b.id, { templateId: v, manualWeeks: b.manualWeeks ?? 4 }); return; } const t = getTemplate(v); if (t) updateBlock(b.id, { templateId: v, daysPerWeek: t.daysPerWeek, workingWeeks: undefined, deload: undefined }); }}><SelectTrigger aria-label={`Upplägg block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Eget upplägg — jag skriver passen själv</SelectItem>{STRENGTH_TEMPLATES.filter((t) => !t.sessionSetBudget && t.id !== "runner-strength" && t.id !== "athletic-power").map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></div>
         <BlockLengthControl block={b} index={i} onChange={(patch) => updateBlock(b.id, patch)} /></div>
         {b.templateId === "peak-3w" && competitionDate && !b.mesocycleId && <Button variant="outline" size="sm" onClick={() => { const startDate = peakStartDate(competitionDate, blockWeeks(b)); if (startDate) updateBlock(b.id, { startDate, endDate: format(addDays(parseISO(competitionDate), -1), "yyyy-MM-dd") }); }}>Lägg toppningen före tävlingen</Button>}
         <Collapsible><CollapsibleTrigger asChild><Button type="button" variant="ghost" size="sm" className="px-0 text-muted-foreground"><ChevronDown className="mr-1 h-4 w-4" />Fler val: dagar, datum, anteckningar</Button></CollapsibleTrigger><CollapsibleContent className="space-y-2 pt-2">
         <div className="grid gap-2 sm:grid-cols-2"><div><Label>Träningsdagar/vecka</Label><Select disabled={Boolean(b.mesocycleId)} value={String(b.daysPerWeek)} onValueChange={(v) => updateBlock(b.id, { daysPerWeek: Number(v) })}><SelectTrigger aria-label={`Träningsdagar block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{(b.templateId === "manual" ? [2,3,4,5,6] : Array.from({ length: (getTemplate(b.templateId)?.maxDays ?? 6) - (getTemplate(b.templateId)?.minDays ?? 3) + 1 }, (_, n) => n + (getTemplate(b.templateId)?.minDays ?? 3))).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label htmlFor={`block-date-${b.id}`}>Startdatum</Label><Input id={`block-date-${b.id}`} type="date" value={b.startDate} onChange={(e) => { if (e.target.value) updateBlock(b.id, { startDate: e.target.value }); }} /></div>{b.templateId === "peak-3w" && <div><Label htmlFor={`block-end-${b.id}`}>Slutdatum</Label><Input id={`block-end-${b.id}`} type="date" value={blockEnd(b)} onChange={(e) => updateBlock(b.id, { endDate: e.target.value })} /></div>}</div>
+        <div><Label htmlFor={`block-date-${b.id}`}>Startdatum</Label><Input id={`block-date-${b.id}`} type="date" disabled={Boolean(b.mesocycleId)} value={b.startDate} onChange={(e) => { if (e.target.value) updateBlock(b.id, { startDate: e.target.value }); }} /></div>{b.templateId === "peak-3w" && <div><Label htmlFor={`block-end-${b.id}`}>Slutdatum</Label><Input id={`block-end-${b.id}`} type="date" disabled={Boolean(b.mesocycleId)} value={blockEnd(b)} onChange={(e) => updateBlock(b.id, { endDate: e.target.value })} /></div>}</div>
         {b.templateId === "manual" && !b.mesocycleId && <p className="text-xs text-muted-foreground">Blocket skapas tomt med veckor och dagar. Du lägger själv in övningar, set och vikter i programmet.</p>}
         <Textarea aria-label={`Anteckningar block ${i + 1}`} maxLength={2000} placeholder="Coachanteckningar" value={b.notes} onChange={(e) => updateBlock(b.id, { notes: e.target.value })} />
         </CollapsibleContent></Collapsible>
-        <Button variant="ghost" size="sm" disabled={blocks.length <= 1} onClick={() => setBlocks(blocks.filter((x) => x.id !== b.id))}><Trash2 className="mr-1 h-4 w-4" />Ta bort block</Button>
+        <Button variant="ghost" size="sm" disabled={blocks.length <= 1 || Boolean(b.mesocycleId)} onClick={() => setBlocks(blocks.filter((x) => x.id !== b.id))}><Trash2 className="mr-1 h-4 w-4" />Ta bort block</Button>
       </fieldset>{b.mesocycleId && <Button variant="outline" size="sm" onClick={() => {
           if (confirm("Frikoppla blocket för ny planering? Det befintliga programmet och publicerade pass behålls. Arkivera det gamla programmet innan du publicerar en ersättning.")) setBlocks((prev) => prev.map((x) => x.id === b.id ? { ...x, mesocycleId: undefined } : x));
         }}>Frikoppla för omplanering</Button>}</div>)}</div>

@@ -24,6 +24,8 @@ export const seasonBlockSchema = z.object({
   /** Coach-chosen length for template blocks; template default when absent. */
   workingWeeks: z.number().int().min(1).max(12).optional(),
   deload: z.boolean().optional(),
+  /** Real length of a prepared, non-peak block after coach adjustments. */
+  adjustedWeeks: z.number().int().min(1).max(30).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   daysPerWeek: z.number().int().min(2).max(6),
   notes: z.string().max(2000).default(""),
@@ -37,6 +39,7 @@ export type SeasonBlock = z.infer<typeof seasonBlockSchema>;
 export const seasonBlocksSchema = z.array(seasonBlockSchema).min(1).max(20);
 export const FOCUS_LABELS = { volume: "Volymfokus", strength: "Styrkefokus", competition: "Tävlingsförberedelse" };
 export function blockWeeks(block: SeasonBlock): number {
+  if (block.mesocycleId && block.adjustedWeeks && block.templateId !== "peak-3w") return block.adjustedWeeks;
   if (block.templateId === "manual") return block.manualWeeks ?? 4;
   if (block.templateId === "peak-3w" && block.endDate) return Math.ceil(peakPeriodDays(block.startDate, block.endDate) / 7);
   if (block.templateId === "peak-3w") return block.peakWeeks ?? 3;
@@ -101,4 +104,14 @@ export function defaultSeason(startDate: string): SeasonBlock[] {
     { id: "volume", name: "Volymblock", focus: "volume", templateId: "standard-pl", startDate, daysPerWeek: 4, notes: "" },
     { id: "competition", name: "Tävlingsförberedelse D0", focus: "competition", templateId: "peak-3w", peakWeeks:6, startDate, daysPerWeek: 4, notes: "Ingen automatisk deload mellan D−42 och tävlingen. Coachen kan ändra vid behov." },
   ], startDate);
+}
+/** Move the unprepared blocks after `index` so gaps stay but nothing overlaps; prepared blocks never move. */
+export function reflowAfter(blocks: SeasonBlock[], index: number, previous: SeasonBlock[] = blocks): SeasonBlock[] {
+  const next = blocks.map((b) => ({ ...b }));
+  for (let i = index + 1; i < next.length; i++) {
+    if (next[i].mesocycleId) break;
+    const gap = Math.max(1, differenceInCalendarDays(parseISO(previous[i].startDate), parseISO(blockEnd(previous[i - 1]))));
+    next[i].startDate = format(addDays(parseISO(blockEnd(next[i - 1])), gap), "yyyy-MM-dd");
+  }
+  return next;
 }

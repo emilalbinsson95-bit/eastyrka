@@ -33,3 +33,18 @@ describe("block length", () => {
     expect(blockWeeks({ ...b, workingWeeks: 5, deload: false })).toBe(5);
   });
 });
+
+import { reflowAfter } from "./seasonPlanning";
+describe("adjusting a running season", () => {
+  const mk = (id: string, start: string, extra: Partial<SeasonBlock> = {}): SeasonBlock => ({ id, name: id, focus: "strength", templateId: "standard-pl", startDate: start, daysPerWeek: 4, notes: "", ...extra });
+  it("an extra week on a prepared block moves the next unprepared block one week, keeping its gap", () => {
+    const before = [mk("a", "2026-11-02", { mesocycleId: "00000000-0000-4000-8000-000000000001", adjustedWeeks: 4 }), mk("b", "2026-12-07")];
+    const after = reflowAfter([{ ...before[0], adjustedWeeks: 5 }, before[1]], 0, before);
+    expect(after[1].startDate).toBe("2026-12-14");
+  });
+  it("prepared later blocks never move", () => {
+    const id = "00000000-0000-4000-8000-000000000002";
+    const before = [mk("a", "2026-11-02", { mesocycleId: id, adjustedWeeks: 4 }), mk("b", "2026-12-07", { mesocycleId: id })];
+    expect(reflowAfter([{ ...before[0], adjustedWeeks: 5 }, before[1]], 0, before)[1].startDate).toBe("2026-12-07");
+  });
+});

@@ -1,17 +1,22 @@
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { dailyE1RM } from "@/lib/eakoefficient";
 import { pctOf1RMInterp } from "@/lib/intensity";
+import { compLiftKey, competitionExerciseName, isCompetitionDescriptor } from "@/lib/liftIdentity";
 import type { MainLiftKey, PeakHistoryInput } from "@/lib/peaking";
 import type { TemplateWeek } from "@/lib/strengthTemplates";
 
 export const OPENER_LABELS = { squat: "Knäböj", bench: "Bänkpress", deadlift: "Marklyft" };
-export function peakLift(name: string, style?: string | null): MainLiftKey | null {
-  const n = name.trim().toLowerCase();
-  if (/^(squat|back squat|competition squat)$/.test(n)) return "squat";
-  if (/^(bench|bench press|competition bench press)$/.test(n)) return "bench";
-  if (n === "sumo deadlift") return style === "sumo" ? "deadlift" : null;
-  if (n === "conventional deadlift") return style === "sumo" ? null : "deadlift";
-  return /^(deadlift|competition deadlift)$/.test(n) ? "deadlift" : null;
+export function peakLift(name: string, style?: string | null, variation?: string | null): MainLiftKey | null {
+  const key = compLiftKey(name);
+  if (!key) return null;
+  const note = (variation ?? "").trim();
+  const legacyCompetitionNote = /^(competition stance & commands|competition technique)$/i.test(note)
+    || (key === "bench" && /^competition pause$/i.test(note));
+  if (!isCompetitionDescriptor(note) && !legacyCompetitionNote) return null;
+  const identity = competitionExerciseName(name, variation);
+  if (identity === "Sumo deadlift" && style !== "sumo") return null;
+  if (identity === "Conventional deadlift" && style === "sumo") return null;
+  return key;
 }
 export function suggestOpeners(history: PeakHistoryInput, style?: string | null) {
   return (["squat", "bench", "deadlift"] as MainLiftKey[]).map((key) => {
@@ -19,8 +24,7 @@ export function suggestOpeners(history: PeakHistoryInput, style?: string | null)
     const ordered = [...history.logs].sort((a, b) => ((a as typeof a & { set_number?: number }).set_number ?? 0) - ((b as typeof b & { set_number?: number }).set_number ?? 0));
     for (const log of ordered) {
       const age = differenceInCalendarDays(parseISO(history.today), parseISO(log.date));
-      if (log.is_warmup_reference || log.is_technique || history.overloadDates?.includes(log.date) || age < 0 || age > 42 || peakLift(log.exercise, style) !== key || days.has(log.date) ||
-        (log.variation && !/^(competition stance & commands|competition technique|competition pause|paused|pause)$/i.test(log.variation.trim())) ||
+      if (log.is_warmup_reference || log.is_technique || history.overloadDates?.includes(log.date) || age < 0 || age > 42 || peakLift(log.exercise, style, log.variation) !== key || days.has(log.date) ||
         log.rpe == null || log.rpe < 7 || log.rpe > 10 || log.reps < 1 || log.reps > 5 || log.weight_kg <= 0) continue;
       days.set(log.date, dailyE1RM({ weight_kg: log.weight_kg, reps: log.reps, rpe: log.rpe }));
     }

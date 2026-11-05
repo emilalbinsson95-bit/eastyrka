@@ -43,6 +43,7 @@
 
 - Season outlines: shift only unprepared blocks, allow gaps, detach without deleting programs; version-check writes.
 - Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
+- Resolve peak opener lift names through shared competition identity with a strict competition-note filter and stance checks, so competition aliases are included without admitting variants.
 - Compare six first measurements by exercise/variant/rep interval; RTS normalizes RPE without fragmenting trends.
 
 - Flagged reference warmups never count in EAk/work progress (distorts strength).

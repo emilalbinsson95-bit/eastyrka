@@ -1,9 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { applyPeakSingles, suggestOpeners } from "./peakOpeners";
+import { applyPeakSingles, peakLift, suggestOpeners } from "./peakOpeners";
 import { buildPeakingWeeks } from "./peaking";
 import { generatorSettingsSchema } from "./seasonPlanning";
 
 describe("editable peak openers", () => {
+  it.each(["Bench Press", "Bänkpress", "Bench Press / Competition grip & pause"])("includes competition bench %s with grip and pause in opener estimates", (exercise) => {
+    const result = suggestOpeners({ today: "2026-11-05", baselines: [], logs: [{ date: "2026-11-02", exercise, variation: "Competition grip & pause", reps: 1, weight_kg: 100, rpe: 8 }] });
+    expect(result[1].count).toBe(1);
+    expect(result[1].estimate).toBeGreaterThan(100);
+    expect(result[1].kg).toBe(100);
+  });
+  it.each(["Close-Grip Bench", "Touch-and-go bench press", "Long-pause bench press"])("excludes bench variant %s from competition estimates", (exercise) => {
+    expect(peakLift(exercise)).toBeNull();
+  });
+  it("excludes true pause variants and preserves deadlift stance even in combined names", () => {
+    expect(peakLift("Squat", null, "Pause")).toBeNull();
+    expect(peakLift("Bench Press", null, "3ct Pause")).toBeNull();
+    expect(peakLift("Conventional Deadlift / Competition stance", "conventional")).toBe("deadlift");
+    expect(peakLift("Conventional Deadlift / Competition stance", "sumo")).toBeNull();
+    expect(peakLift("Deadlift", "conventional", "Sumo stance")).toBeNull();
+    expect(peakLift("Deadlift", "sumo", "Sumo stance")).toBe("deadlift");
+  });
   it("uses recent first qualifying sets, not stale PRs, late singles or another stance", () => {
     const log = { date: "2026-10-15", exercise: "Sumo Deadlift", variation: null, reps: 3, weight_kg: 200, rpe: 8 };
     const result = suggestOpeners({ today: "2026-10-16", baselines: [{ exercise: "Sumo Deadlift", one_rm_kg: 350 }], logs: [log, { ...log, reps: 1, weight_kg: 300 }, { ...log, date: "2026-07-01", weight_kg: 350 }, { ...log, exercise: "Conventional Deadlift", weight_kg: 400 }, { ...log, date: "2026-10-14", variation: "Deficit", weight_kg: 400 }] }, "sumo");

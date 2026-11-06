@@ -31,7 +31,7 @@ const signupSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password must be under 72 characters"),
-  role: z.enum(["coach", "athlete", "physio", "patient"]),
+  role: z.enum(["coach", "athlete"]),
 });
 
 export const Route = createFileRoute("/signup")({
@@ -41,14 +41,16 @@ export const Route = createFileRoute("/signup")({
       {
         name: "description",
         content:
-          "Create an account on SETPOINT — for coaches, athletes, physiotherapists and patients.",
+          "Create an account on SETPOINT — for coaches and athletes.",
       },
       { property: "og:title", content: "Sign up — SETPOINT" },
       {
         property: "og:description",
-        content: "Get started in minutes. Pick your role and start tracking training or rehab.",
+        content: "Create your coach or athlete account and track training in SETPOINT.",
       },
       { property: "og:url", content: "https://set-smart-guide.lovable.app/signup" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [{ rel: "canonical", href: "https://set-smart-guide.lovable.app/signup" }],
   }),
@@ -114,7 +116,7 @@ function SignupPage() {
           </div>
           <CardTitle>Create your account</CardTitle>
           <CardDescription>
-            Choose your role — you can only have one per account.
+            Choose athlete or coach.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -165,8 +167,6 @@ function SignupPage() {
                   [
                     { v: "athlete", label: "Athlete" },
                     { v: "coach", label: "Coach" },
-                    { v: "patient", label: "Patient" },
-                    { v: "physio", label: "Physiotherapist" },
                   ] as const
                 ).map((opt) => (
                   <Label

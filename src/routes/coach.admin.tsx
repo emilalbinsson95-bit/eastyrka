@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoachingAvailabilityEditor } from "@/components/CoachingAvailabilityEditor";
+import { isArchivedRole } from "@/lib/moduleAvailability";
 
 export const Route = createFileRoute("/coach/admin")({
   head: () => ({ meta: [
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/coach/admin")({
   component: AdminPage,
 });
 
-const MANAGEABLE_ROLES: AppRole[] = ["coach", "athlete", "physio", "patient"];
+const MANAGEABLE_ROLES: AppRole[] = (["coach", "athlete", "physio", "patient"] as AppRole[]).filter((role) => !isArchivedRole(role));
 
 interface AdminUser {
   id: string;
@@ -97,6 +98,7 @@ function AdminPage() {
       role: AppRole;
       grant: boolean;
     }) => {
+      if (isArchivedRole(role)) throw new Error("Patient och fysio är tillfälligt pausade.");
       const { error } = await supabase.rpc(
         grant ? "admin_grant_role" : "admin_revoke_role",
         { _user_id: userId, _role: role },

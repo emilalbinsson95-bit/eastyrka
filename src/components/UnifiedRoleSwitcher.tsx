@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { isArchivedRole } from "@/lib/moduleAvailability";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,10 +56,9 @@ export function UnifiedRoleSwitcher() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  if (!user || roles.length === 0) return null;
-
   const enableMutation = useMutation({
     mutationFn: async (target: ViewRole) => {
+      if (!user || isArchivedRole(target)) throw new Error("Den här vyn är tillfälligt pausad.");
       const { error: roleErr } = await supabase
         .from("user_roles")
         .upsert(
@@ -106,6 +106,8 @@ export function UnifiedRoleSwitcher() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  if (!user || roles.length === 0) return null;
+
   const switchTo = (next: ViewRole) => {
     setViewMode(next);
     navigate({ to: ROLE_META[next].route });
@@ -128,7 +130,7 @@ export function UnifiedRoleSwitcher() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Switch view</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {ROLE_ORDER.map((r) => {
+        {ROLE_ORDER.filter((r) => !isArchivedRole(r)).map((r) => {
           const { label, Icon } = ROLE_META[r];
           const has = roles.includes(r);
           if (has) {

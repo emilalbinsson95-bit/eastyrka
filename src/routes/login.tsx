@@ -13,9 +13,9 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — SETPOINT" },
-      { name: "description", content: "Sign in to your coach, athlete, physiotherapist or patient account." },
+      { name: "description", content: "Sign in to your SETPOINT coach or athlete account." },
       { property: "og:title", content: "Sign in — SETPOINT" },
-      { property: "og:description", content: "Access your readiness dashboard, athlete roster or rehab sessions." },
+      { property: "og:description", content: "Access your training, readiness dashboard or athlete roster." },
       { property: "og:url", content: "https://eastyrka.lovable.app/login" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

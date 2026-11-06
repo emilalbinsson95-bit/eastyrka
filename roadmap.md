@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Aktuellt
+- [ ] Förtydliga informationens RPE, mål/faktisk ansträngning, startvikt och singlar; förklara m/s utan loggfält eller ändrade träningsregler. Kontrollera sidan på dator och mobil.
 - [x] Patient/fysio arkiverade utan dataradering: direktlänkar går till pausbesked; registrering, rollväxling och adminval dolda. Verifierat inloggad som Emil på dator/mobil, återgång till coach fungerar; aktiva atlet-/coachvägar testade i regeltester. 392 tester gröna och bygge OK.
 - [x] Nya pushpass använder första setets startvikt och faktisk RPE, justerbara senare set; sänkning/hög RPE håller vikten utan miss. Avslut namnger lyftet och kräver loggade set eller valt stopp. RPE-only har tom vikt, coachvärdet heter Beräkningsmax. Sparad push-1.0 behåller gamla beslut/instruktioner. Alex 145→147,5 kg @7,5 gav push-2.0 beslut återläst via coachvyn, ångrat och kontrollen rensad. 369 tester gröna, bygge OK; atletens inloggade dagsplan inte slutprovad.
 - [x] Mattis senaste block: sex opublicerade huvudordinationer i vecka 2–3 ändrade till böj 4×4/180 kg, bänk 4×4/115 kg och sumomark 4×3/192,5 kg @7,5; coachgodkänd push aktiverad med planettor 220/140/227,5. Böjvolym 7 set och övriga set oförändrade. Publicerat/loggar/baslinjer har identiska kontrollsummor före/efter. Återläst i coachvyn, 21 tester gröna. Push omräknar nu bara kommande draft-arbetsveckor.

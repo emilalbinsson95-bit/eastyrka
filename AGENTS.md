@@ -53,3 +53,4 @@
 <!-- LOVABLE:END -->
 - D0 peak weeks start on their first session date with zero-based day_of_week (DB allows 0–6), so the calendar reads the offsets as zero-based and every session lands on its planned date.
 - Template block length (1–12 working weeks + optional deload) is set by `resizeTemplateWeeks` before modifiers; longer blocks repeat the template wave so effort never exceeds its hardest week.
+- Push: first-set start weight is semi-fixed (±`START_WEIGHT_TOLERANCE_KG`) in logging and decisions; push working weeks fold heavy singles of push lifts into main sets (volume-neutral), cap light-week loads at the main weight and replace week notes with push text, so plans never contradict push.

@@ -7,10 +7,10 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_app/learn")({
   head: () => ({
     meta: [
-      { title: "Lär dig: RPE, RIR, block, deload, toppning och morgonflow — SETPOINT" },
-      { name: "description", content: "Enkla förklaringar av begreppen i ditt träningsprogram, samt morgonflödet med steg för steg." },
+      { title: "RPE, lyfthastighet och träningsbegrepp — SETPOINT" },
+      { name: "description", content: "Praktiska förklaringar av RPE, singlar, startvikter och lyfthastighet i m/s, samt begreppen i ditt träningsprogram." },
       { property: "og:title", content: "Lär dig träningsbegreppen — SETPOINT" },
-      { property: "og:description", content: "Enkla förklaringar av RPE, RIR, block, deload och toppning, plus morgonflödet steg för steg." },
+      { property: "og:description", content: "Förstå mål-RPE, faktisk RPE och lyfthastighet i m/s, tillsammans med block, deload och toppning." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -28,12 +28,14 @@ function Topic({ title, children }: { title: string; children: React.ReactNode }
 }
 
 const RPE_ROWS: [string, string, string][] = [
-  ["10", "0", "Max. Inga fler reps, ingen mer vikt."],
-  ["9.5", "0", "Ingen rep till, men lite mer vikt hade kanske gått."],
-  ["9", "1", "En rep kvar i tanken."],
-  ["8", "2", "Två reps kvar. Typiskt tungt arbetsset."],
-  ["7", "3", "Tre reps kvar. Snabbt och kontrollerat."],
-  ["6 och lägre", "4+", "Uppvärmning eller teknikträning."],
+  ["10", "0", "Maximal ansträngning. Ingen rep till med samma utförande."],
+  ["9,5", "0", "Ingen hel rep till, men lite mer vikt hade kanske gått."],
+  ["9", "1", "Ungefär en rep till på samma vikt."],
+  ["8,5", "1–2", "En rep till säkert, kanske två."],
+  ["8", "2", "Ungefär två reps till."],
+  ["7,5", "2–3", "Två reps till säkert, kanske tre."],
+  ["7", "3", "Ungefär tre reps till."],
+  ["6 och lägre", "4+", "Minst fyra reps till. Svårare att uppskatta exakt."],
 ];
 
 function LearnPage() {
@@ -122,11 +124,12 @@ function LearnPage() {
 
 
       <Topic title="RPE — hur tungt var setet?">
-        <p>RPE (Rating of Perceived Exertion) är en skala 1–10 för hur ansträngande ett set var. I styrketräning
-          betyder den i praktiken: <strong>hur många reps hade du kvar?</strong></p>
+        <p>RPE beskriver hur nära din gräns ett set var. Bedöm direkt efter setet:
+          <strong> hur många fler reps hade du kunnat göra på samma vikt, med samma teknik, djup och paus?</strong>
+          Räkna inte reps efter en vilopaus eller med sämre utförande.</p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="text-foreground"><tr><th className="py-1 pr-3">RPE</th><th className="pr-3">Reps kvar</th><th>Känsla</th></tr></thead>
+            <thead className="text-foreground"><tr><th className="py-1 pr-3">RPE</th><th className="pr-3">Reps kvar</th><th>Bedömning efter setet</th></tr></thead>
             <tbody>
               {RPE_ROWS.map(([r, rir, d]) => (
                 <tr key={r} className="border-t border-border"><td className="py-1 pr-3 font-medium text-foreground">{r}</td><td className="pr-3">{rir}</td><td>{d}</td></tr>
@@ -134,13 +137,42 @@ function LearnPage() {
             </tbody>
           </table>
         </div>
-        <p>Står det "3×5 @ RPE 8" väljer du en vikt där du har ungefär två reps kvar efter femte repen. Känns
-          dagen tung tar du ner vikten, känns den lätt går du upp.</p>
+        <p><strong>Mål-RPE</strong> är coachens ordination. <strong>Faktisk RPE</strong> är din bedömning av det du gjorde.
+          Står det 3×5 @ RPE 8 ska femte repen lämna ungefär två reps kvar.
+          Blev det i stället RPE 9 loggar du 9, inte 8.</p>
+        <p><strong>Med angiven startvikt:</strong> följ vikten och utrymmet för justering som står i dagsplanen.
+          I pushpass är första arbetssetets vikt delvis fast; följande set kan justeras efter faktisk RPE.
+          Höj inte första setet i förväg bara för att uppvärmningen känns lätt.</p>
+        <p><strong>Utan angiven vikt:</strong> välj vikt efter uppvärmningen och mål-RPE.
+          Logga sedan vikten du använde och hur tungt setet faktiskt var.</p>
+        <p><strong>Singlar inför tävling:</strong> 1×1 @ RPE 9 är en tung singel med viss marginal, inte ett maxförsök.
+          Frågan är ungefär om en andra rep på samma vikt hade gått utan vila, inte om du kan göra en ny singel efter flera minuter.
+          Ett personbästa kan ändå vara RPE 9 om ditt tidigare rekord låg under vad du klarar nu.
+          Följ coachens viktval; mål-RPE är inte ett fritt tillstånd att testa max.</p>
+        <p>RPE är en uppskattning, inte ett exakt mätvärde. Filma gärna tunga set och jämför din bedömning med coachens.
+          Ett långsamt lyft är inte automatiskt RPE 10, och ett set som känns jobbigt behöver inte vara nära max.</p>
+      </Topic>
+
+      <Topic title="Lyfthastighet — m/s">
+        <p>Har du en hastighetsmätare kan den ge ytterligare underlag för viktvalet.
+          <strong> m/s betyder meter per sekund</strong> och beskriver hur snabbt stången rör sig.
+          Det är ett annat mått än RPE: mätaren visar hastighet, du bedömer ansträngning.</p>
+        <p><strong>Jämför samma mätvärde.</strong> Medelhastighet under lyftfasen och topphastighet är olika saker.
+          Använd samma mätare och inställning, samma övning, stans, grepp, djup och paus.
+          Försök lyfta snabbt i lyftfasen, utan att ändra tekniken; avsiktligt långsamma reps går inte att jämföra på samma sätt.</p>
+        <p><strong>Exempel:</strong> om 100 kg i bänk brukar ge 0,40 m/s i medelhastighet men i dag ger 0,30 m/s
+          med samma utförande, går vikten långsammare än vanligt. Jämför med fler reps, din RPE och uppvärmningen
+          innan du och coachen drar slutsatser. Siffrorna är ett exempel, inte gränsvärden.</p>
+        <p><strong>Ingen gemensam RPE-tabell i m/s.</strong> 0,30 m/s betyder inte automatiskt RPE 9.
+          Sambandet beror på personen, lyftet, antalet reps och vad mätaren mäter.
+          Coachen kan använda dina egna jämförbara mätningar för att bedöma tunga singlar och hastighetstapp inom ett set.</p>
+        <p>Fortsätt logga faktisk RPE även om du har en mätare. Appen räknar inte om m/s till RPE
+          och ändrar inte vikter eller öppningsförslag utifrån hastighet.</p>
       </Topic>
 
       <Topic title="RIR — reps in reserve">
-        <p>RIR är samma sak från andra hållet: antal reps du hade kvar. RIR 2 = RPE 8. Var ärlig — det är
-          bättre att gissa en rep för lågt än att gå till fail varje set. Det blir lättare att bedöma med tiden.</p>
+        <p>RIR (reps in reserve) är antalet reps du hade kvar när setet slutade. RIR 2 motsvarar ungefär RPE 8.
+          Bedöm med samma utförande som i setet. Du behöver inte gå till misslyckade reps för att kontrollera varje bedömning.</p>
       </Topic>
 
       <Topic title="Block (mesocykel)">

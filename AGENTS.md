@@ -23,8 +23,8 @@
 - Keep methodology on one route with running/strength/coaching tabs to preserve links.
 - Weak points (`src/lib/weakPoints.ts`): coach-only, one/lift, variation + one accessory/week; 8/7/6 exercise caps for 2/3/4+ days; replace comp > weak-point > variation > compound > isolation > core, skipping deloads for focus and realism.
 - Store stance in athlete_strength_volume_profiles.deadlift_style; apply last via `applyDeadliftStyle`. Sumo lifters may get conventional accessories; never prescribe sumo to conventional lifters, whose stance mobility may not allow it.
-- 1.5-rep variations are their own exercises (`exerciseVariants.ts`): load = main lift 1RM × 0.8, 3–5×3–5 @ RPE 6–8, counted as 1.25 sets in weekly volume, because each rep costs more than a normal rep.
-- Accessory exercises are capped at 4 sets when topping templates up to MEV and 5 sets after individual scaling (unless the template itself prescribes more), because extra volume belongs on the main lifts and main lifts already give indirect accessory volume.
+- 1.5-rep variations (`exerciseVariants.ts`): 1RM×0.8, 3–5×3–5 @ RPE 6–8, 1.25 volume sets each, as reps cost more.
+- Accessories cap at 4 sets for MEV top-up and 5 after scaling (unless the template prescribes more); extra volume belongs on main lifts.
 
 - Clip page-level horizontal overflow; wide tables/calendars scroll locally.
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
@@ -51,6 +51,6 @@
 <!-- LOVABLE:BEGIN -->
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.
 <!-- LOVABLE:END -->
-- D0 peak weeks start on their first session date with zero-based day_of_week (DB allows 0–6), so the calendar reads the offsets as zero-based and every session lands on its planned date.
+- D0 peak weeks start on their first session date with zero-based day_of_week, so sessions land on planned dates.
 - Template block length (1–12 working weeks + optional deload) is set by `resizeTemplateWeeks` before modifiers; longer blocks repeat the template wave so effort never exceeds its hardest week.
 - Push: first set semi-fixed (±START_WEIGHT_TOLERANCE_KG); push weeks fold push-lift singles into main sets, cap light loads at main weight, use push notes, so plans never contradict push.

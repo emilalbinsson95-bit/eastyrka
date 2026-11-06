@@ -1,6 +1,7 @@
 import { useWarmupLoads } from "@/components/WarmupLoadsCard";
 import { FinishPushButton } from "@/components/PushProgressionCard";
 import { firstSetInstruction } from "@/lib/pushPresentation";
+import { START_WEIGHT_TOLERANCE_KG } from "@/lib/pushProgression";
 import { WarmupReferenceFields } from "@/components/WarmupReferenceFields";
 import { matchesWarmupLoad } from "@/lib/warmupReference";
 import { SessionFeedbackRow } from "@/components/SessionFeedbackRow";
@@ -968,6 +969,7 @@ function LogSetButton({
   const matchesWarmup = matchesWarmupLoad(ex.exercise, ex.variation, weight, warmupLoads.data ?? {});
   const isWarmup = matchesWarmup && warmup;
   const usingRir = ex.intensity_metric === "rir";
+  const lockedStart = ex.push_main && ex.rules_version === "push-2.0" && nextSet === 1 && ex.target_weight_kg != null ? Number(ex.target_weight_kg) : null;
   const effectiveRpe = isWarmup ? warmupRpe ?? 6 : usingRir ? rirToRpe(rir) : rpe;
 
   const livePreview = useMemo(() => {
@@ -984,6 +986,7 @@ function LogSetButton({
     mutationFn: async () => {
       if (!Number.isFinite(effectiveRpe)) throw new Error("Välj faktisk RPE eller reps kvar innan setet sparas.");
       if (isWarmup && warmupRpe === null) throw new Error("Välj uppvärmnings-RPE.");
+      if (lockedStart != null && !isWarmup && Math.abs(weight - lockedStart) > START_WEIGHT_TOLERANCE_KG + 1e-9) throw new Error(`Första arbetssetet ska ligga på ${lockedStart} kg (±${START_WEIGHT_TOLERANCE_KG} kg).`);
       const parsed = setSchema.parse({
         weight_kg: weight,
         reps,
@@ -1051,7 +1054,14 @@ function LogSetButton({
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-4 px-4 py-4">
-          <NumField label="Vikt (kg)" step={2.5} value={weight} onChange={setWeight} />
+          {lockedStart != null && !isWarmup ? (
+            <div className="space-y-1">
+              <NumField label="Vikt (kg)" step={2.5} min={lockedStart - START_WEIGHT_TOLERANCE_KG} max={lockedStart + START_WEIGHT_TOLERANCE_KG} value={weight} onChange={setWeight} />
+              <p className="text-xs text-muted-foreground">Startvikten är fast: {lockedStart} kg, högst ±{START_WEIGHT_TOLERANCE_KG} kg. Följande set väljer du efter RPE.</p>
+            </div>
+          ) : (
+            <NumField label="Vikt (kg)" step={2.5} value={weight} onChange={setWeight} />
+          )}
           <NumField label="Reps" step={1} value={reps} onChange={setReps} />
           {matchesWarmup && <WarmupReferenceFields checked={warmup} rpe={warmupRpe} onChecked={setWarmup} onRpe={setWarmupRpe} />}
           {!isWarmup && (usingRir ? (

@@ -4,6 +4,9 @@ import { prescribedWeightKg, pctOf1RMInterp } from "./intensity";
 import type { TemplateExercise, TemplateWeek } from "./strengthTemplates";
 
 export const PUSH_RULES_VERSION = "push-2.0";
+/** Start weight may differ this much from the plan and still count (rounding, plate choice). */
+export const START_WEIGHT_TOLERANCE_KG = 2.5;
+export const PUSH_WEEK_NOTE = "Viktprogression: första arbetssetet på angiven startvikt, logga faktisk RPE och justera följande set efter mål-RPE. Höj inte i förväg — nästa steg kommer när alla huvudset är klarade.";
 export const PUSH_LIFTS = ["squat", "bench", "conventional", "sumo"] as const;
 export type PushLift = typeof PUSH_LIFTS[number];
 export const PUSH_LABELS: Record<PushLift, string> = { squat: "Knäböj", bench: "Bänkpress", conventional: "Konventionellt marklyft", sumo: "Sumomarklyft" };
@@ -28,21 +31,44 @@ export function applyPushProgression(weeks: TemplateWeek[], configs: PushConfig[
     const first = weeks.filter(w => w.kind === "working" && w.week_index > rampWeeks).map(w => w.sessions.flatMap(s => s.exercises).find(e => e.target_reps > 1 && pushLift(e.exercise, e.variation, style) === c.lift));
     if (first.length && first.every(e => e != null)) ceilings.set(c.lift, Math.min(c.main_sets, ...first.map(e => e?.target_sets ?? 0)));
   }
+  // Main working weight per lift: deload/light weeks must never be heavier.
+  const mainKg = new Map<PushLift, number>();
+  for (const c of active) {
+    const reps = c.main_reps, rpe = c.main_rpe;
+    const kg = prescribedWeightKg({ oneRmKg: c.plan_e1rm, reps, metric: "rpe", rpe, roundTo: c.rounding_kg });
+    if (kg != null) mainKg.set(c.lift, kg);
+  }
   return weeks.map(w => {
     if (w.kind === "peak" || w.kind === "taper" || w.kind === "ramp" || w.week_index <= rampWeeks) return w;
     const picked = new Set<PushLift>();
-    return { ...w, sessions: [...w.sessions].sort((a,b) => a.day_of_week-b.day_of_week).map(s => ({ ...s, exercises: s.exercises.map(e => {
-      const lift = pushLift(e.exercise, e.variation, style);
-      const c = active.find(c => c.lift === lift);
-      if (!c || !lift) return e;
-      const main = w.kind === "working" && e.target_reps > 1 && !picked.has(lift) && (ceilings.get(lift) ?? 0) > 0;
-      if (main) picked.add(lift);
-      const reps = main ? c.main_reps : e.target_reps;
-      const rpe = main ? c.main_rpe : e.target_rpe ?? (e.target_rir != null ? 10-e.target_rir : null);
-      if (rpe == null) return e;
-      const weight = prescribedWeightKg({ oneRmKg: c.plan_e1rm, reps, metric: "rpe", rpe, roundTo: c.rounding_kg });
-      return { ...e, target_sets: main ? ceilings.get(lift) ?? e.target_sets : e.target_sets, target_reps: reps, target_rpe: rpe, target_rir: undefined, intensity_metric: "rpe", target_weight_kg: weight ?? undefined, push_lift: lift, push_main: main, push_load_pct: pctOf1RMInterp(rpe,reps)/100, plan_e1rm_used: c.plan_e1rm } satisfies PushExercise;
-    }) })) };
+    let hasMain = false;
+    const sessions = [...w.sessions].sort((a,b) => a.day_of_week-b.day_of_week).map(s => {
+      // In push working weeks, heavy singles of a push lift are folded into the main sets (no RPE 9 single on top of push work).
+      const singles = new Map<PushLift, number>();
+      const kept = s.exercises.filter(e => {
+        const lift = pushLift(e.exercise, e.variation, style);
+        if (w.kind !== "working" || !lift || e.target_reps !== 1 || !active.some(c => c.lift === lift)) return true;
+        singles.set(lift, (singles.get(lift) ?? 0) + e.target_sets);
+        return false;
+      });
+      return { ...s, exercises: kept.map(e => {
+        const lift = pushLift(e.exercise, e.variation, style);
+        const c = active.find(c => c.lift === lift);
+        if (!c || !lift) return e;
+        const main = w.kind === "working" && e.target_reps > 1 && !picked.has(lift) && (ceilings.get(lift) ?? 0) > 0;
+        if (main) { picked.add(lift); hasMain = true; }
+        const reps = main ? c.main_reps : e.target_reps;
+        const rpe = main ? c.main_rpe : e.target_rpe ?? (e.target_rir != null ? 10-e.target_rir : null);
+        if (rpe == null) return e;
+        let weight = prescribedWeightKg({ oneRmKg: c.plan_e1rm, reps, metric: "rpe", rpe, roundTo: c.rounding_kg });
+        const cap = mainKg.get(lift);
+        if (!main && w.kind !== "working" && weight != null && cap != null && weight > cap) weight = Math.floor(cap / c.rounding_kg) * c.rounding_kg;
+        const sets = main ? Math.min(c.main_sets, Math.max(ceilings.get(lift) ?? e.target_sets, e.target_sets + (singles.get(lift) ?? 0))) : e.target_sets;
+        if (main) singles.delete(lift);
+        return { ...e, target_sets: sets, target_reps: reps, target_rpe: rpe, target_rir: undefined, intensity_metric: "rpe", target_weight_kg: weight ?? undefined, push_lift: lift, push_main: main, push_load_pct: pctOf1RMInterp(rpe,reps)/100, plan_e1rm_used: c.plan_e1rm } satisfies PushExercise;
+      }) };
+    });
+    return { ...w, sessions, ...(hasMain ? { notes: PUSH_WEEK_NOTE } : {}) };
   });
 }
 
@@ -61,7 +87,7 @@ export function decidePush(input: { plan: number; start: number; step: number; m
   if (input.firstSetMode) {
     const first = input.sets[0];
     const targetRpe = input.targetRpe;
-    if (!first || Math.abs(first.kg-first.prescribedKg)>0.001 || targetRpe == null || input.sets.some(s=>s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","first_set_or_rpe_missing");
+    if (!first || Math.abs(first.kg-first.prescribedKg)>START_WEIGHT_TOLERANCE_KG+1e-9 || targetRpe == null || input.sets.some(s=>s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","first_set_or_rpe_missing");
     if (input.sets.some(s=>s.reps<s.prescribedReps)) return miss();
     if (input.sets.some(s=>s.kg<first.kg-0.001 || (s.rpe ?? 11)>targetRpe)) return out("hold","load_reduced_or_rpe_high");
   } else if (input.sets.some(s=>Math.abs(s.kg-s.prescribedKg)>0.001)) return out("skip","incomplete_or_changed_load");

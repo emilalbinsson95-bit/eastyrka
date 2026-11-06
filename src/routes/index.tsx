@@ -12,12 +12,12 @@ export const Route = createFileRoute("/")({
       { title: "SETPOINT — Train at your readiness" },
       {
         name: "description",
-        content: "Training, coaching and rehabilitation in one place.",
+        content: "Training and coaching for powerlifters.",
       },
       { property: "og:title", content: "SETPOINT — Train at your readiness" },
       {
         property: "og:description",
-        content: "Training, coaching and rehabilitation in one place.",
+        content: "Training and coaching for powerlifters.",
       },
       { property: "og:url", content: "https://eastyrka.lovable.app/" },
       { property: "og:type", content: "website" },
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/")({
           name: "SETPOINT",
           applicationCategory: "HealthApplication",
           operatingSystem: "Web, iOS, Android",
-          description: "Training, coaching and rehabilitation in one place.",
+          description: "Training and coaching for powerlifters.",
           url: "https://eastyrka.lovable.app/",
           image: "https://eastyrka.lovable.app/__l5e/assets-v1/4bf5e6a5-90ae-4231-a3ba-35d301d670a7/setpoint-logo.png",
           offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -89,7 +89,7 @@ function Landing() {
         <img src={heroAsset.url} alt="Barbell in a training space" className="absolute inset-0 h-full w-full object-cover opacity-60" />
         <div className="relative mx-auto w-full max-w-6xl px-4 pb-14 pt-32 sm:pb-20">
           <h1 className="text-5xl font-bold text-paper sm:text-7xl">SETPOINT</h1>
-          <p className="mt-4 max-w-lg text-lg text-paper">Training, coaching and rehabilitation in one place.</p>
+          <p className="mt-4 max-w-lg text-lg text-paper">Training and coaching for powerlifters.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg"><Link to="/login">Sign in</Link></Button>
             <Button asChild size="lg" variant="secondary"><Link to="/signup">Create account</Link></Button>

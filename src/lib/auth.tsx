@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isArchivedRole, pickAvailableRole } from "@/lib/moduleAvailability";
 
 export type AppRole = "coach" | "athlete" | "physio" | "patient" | "admin";
 
@@ -64,13 +65,7 @@ function pickActiveRole(
   roles: AppRole[],
   storedView: AppRole | null,
 ): AppRole | null {
-  if (roles.length === 0) return null;
-  if (storedView && roles.includes(storedView)) return storedView;
-  // Default priority: coach → physio → athlete → patient
-  for (const r of ["coach", "physio", "athlete", "patient"] as AppRole[]) {
-    if (roles.includes(r)) return r;
-  }
-  return roles[0];
+  return pickAvailableRole(roles, storedView);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -150,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback<AuthState["signUp"]>(
     async (email, password, fullName, signupRole) => {
+      if (isArchivedRole(signupRole)) return { error: "Patient och fysio är tillfälligt pausade." };
       // The selected role is passed in user metadata and read by the
       // `handle_new_user` database trigger, which assigns the matching
       // row in public.user_roles. Doing it server-side avoids the RLS
@@ -200,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setViewMode = useCallback(
     (next: AppRole) => {
-      if (!roles.includes(next)) return;
+      if (!roles.includes(next) || isArchivedRole(next)) return;
       setView(next);
       if (typeof window !== "undefined") {
         window.localStorage.setItem(VIEW_MODE_KEY, next);

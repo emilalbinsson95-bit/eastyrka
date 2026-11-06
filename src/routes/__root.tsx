@@ -4,6 +4,7 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
+  redirect,
 } from "@tanstack/react-router";
 import {
   QueryClient,
@@ -12,6 +13,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import { isArchivedPath } from "@/lib/moduleAvailability";
 import "@/lib/i18n";
 
 import appCss from "../styles.css?url";
@@ -43,6 +45,9 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  beforeLoad: ({ location }) => {
+    if (isArchivedPath(location.pathname)) throw redirect({ to: "/archived" });
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -69,8 +74,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "SETPOINT — Train at your readiness" },
       { name: "twitter:description", content: "The readiness baseline for strength. Per-set fatigue-limit detection for lifters and coaches." },
-      { property: "og:image", content: "https://eastyrka.lovable.app/__l5e/assets-v1/b689a073-500c-4544-9005-bfee4934a2f3/setpoint-og.jpg" },
-      { name: "twitter:image", content: "https://eastyrka.lovable.app/__l5e/assets-v1/b689a073-500c-4544-9005-bfee4934a2f3/setpoint-og.jpg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

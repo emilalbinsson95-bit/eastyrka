@@ -60,6 +60,7 @@ import { applySetProtocols, DEFAULT_SET_PROTOCOLS, type SetProtocolOptions } fro
 import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPlanning";
 import type { Json } from "@/integrations/supabase/types";
 import { resizeTemplateWeeks, templateShape, MAX_WORKING_WEEKS } from "@/lib/blockLength";
+import { buildFixedWeeks, isFixedTemplate } from "@/lib/fixedTemplate";
 import { peakStartDate, peakFinalSessionDates, validPeakDate, peakPeriodDays, peakWeekStartDates } from "@/lib/peakingDates";
 
 
@@ -258,6 +259,7 @@ export function GenerateStrengthTemplateDialog({
   const baseWeeks = useMemo(() => {
     if (!template) return [];
     if (template.buildFromHistory) return d0Plan?.weeks ?? [];
+    if (isFixedTemplate(template)) return buildFixedWeeks(template, daysPerWeek, styleQuery.data);
     // Coach-chosen length first, so every later step sees the real block.
     const sized = resizeTemplateWeeks(template.buildWeeks(daysPerWeek), effWorking, effDeload);
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
@@ -280,6 +282,7 @@ export function GenerateStrengthTemplateDialog({
 
   const isPeaking = Boolean(template?.buildFromHistory);
   const isTimeLimited = Boolean(template?.sessionSetBudget);
+  const isFixed = isFixedTemplate(template);
 
   // A peak is already derived from history — only the load prescription and
   // genuine fatigue cuts apply; never let the engine add volume back into a taper.
@@ -318,7 +321,7 @@ export function GenerateStrengthTemplateDialog({
 
   const finalWeeks = useMemo(
     () =>
-      isPeaking ? baseWeeks : baseWeeks.length === 0
+      isPeaking || isFixed ? baseWeeks : baseWeeks.length === 0
         ? []
         : applyAdjustments(
             baseWeeks,
@@ -332,7 +335,7 @@ export function GenerateStrengthTemplateDialog({
              volumeProfile,
             { skipFloors: template?.skipVolumeFloors === true, shortSessions: isTimeLimited },
           ),
-    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile, template, isTimeLimited],
+    [baseWeeks, activeAdjustments, historyQuery.data, emptyHistory, tuning, volumeProfile, template, isTimeLimited, isFixed],
   );
 
   const [overload, setOverload] = useState<OverloadOptions>(DEFAULT_OVERLOAD);
@@ -378,6 +381,8 @@ export function GenerateStrengthTemplateDialog({
       // Coach intensity tuning is already baked into target_rpe by
       // applyAdjustments — the wave applies its RPE as a relative offset, so
       // no extra intensityOffset is passed here.
+      // Fixed weeks (start week) keep their RPE 10 triples exactly as written.
+      if (isFixed) return { weeks: finalWeeks, warnings: [] as string[] };
       const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
       if (isPeaking) return { weeks: applyVolumeGuards(weeks, volumeProfile), warnings: d0Plan?.warnings ?? [] };
       if (template?.sessionSetBudget) return {
@@ -399,9 +404,9 @@ export function GenerateStrengthTemplateDialog({
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
       return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? guarded.flatMap((w,wi)=>w.sessions.flatMap((session,si)=>session.exercises.flatMap((e,ei)=>{const before=adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets;return before!=null&&before!==e.target_sets?[`${e.exercise}: ${before} → ${e.target_sets} set (slutvakt: pass/vecka).`]:[]}))) : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
   );
-  const plannedWeeks = useMemo(() => isPeaking || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, pushQuery.data ?? [], styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isTimeLimited,template]);
+  const plannedWeeks = useMemo(() => isPeaking || isFixed || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, pushQuery.data ?? [], styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isFixed,isTimeLimited,template]);
 
   const weeklySets = useMemo(() => {
     const m = templateWeeklySets(plannedWeeks);
@@ -412,8 +417,8 @@ export function GenerateStrengthTemplateDialog({
   }, [plannedWeeks]);
 
   const warnings = useMemo(
-    () => (isPeaking || isTimeLimited ? [] : volumeWarnings(plannedWeeks, volumeProfile)),
-    [plannedWeeks, volumeProfile, isPeaking, isTimeLimited],
+    () => (isPeaking || isTimeLimited || isFixed ? [] : volumeWarnings(plannedWeeks, volumeProfile)),
+    [plannedWeeks, volumeProfile, isPeaking, isTimeLimited, isFixed],
   );
 
   const mutation = useMutation({
@@ -426,7 +431,7 @@ export function GenerateStrengthTemplateDialog({
       if (pushQuery.isLoading || pushQuery.isError) throw new Error("Viktprogressionen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
-      if (!isPeaking && !isTimeLimited) {
+      if (!isPeaking && !isTimeLimited && !isFixed) {
         const { error: wpErr } = await supabase.from("athlete_weak_points").upsert(
           { athlete_id: athleteId, weak_points: weakIds, updated_at: new Date().toISOString() },
           { onConflict: "athlete_id" },

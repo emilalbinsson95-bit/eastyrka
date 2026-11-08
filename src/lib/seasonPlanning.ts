@@ -61,6 +61,8 @@ export function blockWeeks(block: SeasonBlock): number {
 /** Working weeks and deload for a template block, falling back to the template's own shape. */
 export function templateBlockShape(block: SeasonBlock): { workingWeeks: number; deload: boolean } {
   const t = getTemplate(block.templateId);
+  // Fixed one-off weeks (start week) are always exactly one week.
+  if (t?.fixedPrescription) return { workingWeeks: t.weeks, deload: false };
   const defaultDeload = t ? t.buildWeeks(t.daysPerWeek).some((w) => w.kind === "deload") : true;
   const defaultWorking = (t?.weeks ?? 4) - (defaultDeload ? 1 : 0);
   return { workingWeeks: block.workingWeeks ?? defaultWorking, deload: block.deload ?? defaultDeload };

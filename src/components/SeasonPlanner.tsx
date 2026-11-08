@@ -194,7 +194,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
           if(result.error){toast.error("Säsongsplanen ändrades. Öppna den igen.");return;}
           const archived=await supabase.from("mesocycles").update({status:"archived"}).eq("id",b.mesocycleId??"");if(archived.error){toast.error("Planen kopplades loss men arkivering misslyckades. Kontrollera det gamla programmet.");return;}
           qc.invalidateQueries();const replacement=next.find(x=>x.id===b.id);if(replacement)setGenerating({planId:p.id,block:replacement,competitionDate:target});
-        }}>Förbered om toppningen</Button></div> : b.mesocycleId ? <div className="flex flex-wrap items-center gap-1">{b.templateId !== "peak-3w" && p.parsedBlocks.success && <>
+        }}>Förbered om toppningen</Button></div> : b.mesocycleId ? <div className="flex flex-wrap items-center gap-1">{b.templateId !== "peak-3w" && !getTemplate(b.templateId)?.fixedPrescription && p.parsedBlocks.success && <>
             <Button variant="ghost" size="sm" disabled={adjust.isPending} title="Lägg till en tom vecka sist" onClick={() => adjust.mutate({ plan: p, blockId: b.id, change: "add" })}><Plus className="mr-1 h-4 w-4" />Vecka</Button>
             <Button variant="ghost" size="sm" disabled={adjust.isPending || blockWeeks(b) <= 1} title="Ta bort sista veckan om den är opublicerad och ologgad" onClick={() => { if (confirm("Ta bort blockets sista vecka? Det går bara om veckan är opublicerad och saknar loggar.")) adjust.mutate({ plan: p, blockId: b.id, change: "remove" }); }}><Minus className="mr-1 h-4 w-4" />Vecka</Button></>}
             <Button asChild variant="outline" size="sm"><Link to="/coach/athletes/$athleteId/cycles/$cycleId" params={{ athleteId, cycleId: b.mesocycleId }}>Öppna program<ArrowRight className="ml-1 h-4 w-4" /></Link></Button></div>
@@ -235,6 +235,7 @@ export function SeasonPlanner({ athleteId, coachId, athleteName }: { athleteId: 
 }
 function lengthLabel(b: SeasonBlock): string {
   if (b.templateId === "peak-3w") return `${blockWeeks(b)} veckor toppning`;
+  if (getTemplate(b.templateId)?.fixedPrescription) return "1 vecka";
   const { workingWeeks, deload } = templateBlockShape(b);
   return `${workingWeeks} arbetsveckor${deload ? " + avlastning" : ", ingen avlastning"}`;
 }
@@ -244,6 +245,7 @@ function BlockLengthControl({ block: b, index: i, onChange }: { block: SeasonBlo
   const locked = Boolean(b.mesocycleId);
   if (b.templateId === "manual") return <div><Label>Antal veckor</Label><Select disabled={locked} value={String(b.manualWeeks ?? 4)} onValueChange={(v) => onChange({ manualWeeks: Number(v) })}><SelectTrigger aria-label={`Antal veckor block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 24 }, (_, n) => n + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} {n === 1 ? "vecka" : "veckor"}</SelectItem>)}</SelectContent></Select></div>;
   if (b.templateId === "peak-3w") return <div><Label>Toppning, veckor</Label><Select disabled={locked} value={String(b.peakWeeks ?? 3)} onValueChange={(v) => onChange({ peakWeeks: Number(v) })}><SelectTrigger aria-label={`Toppningslängd block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{[2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{n} veckor</SelectItem>)}</SelectContent></Select></div>;
+  if (getTemplate(b.templateId)?.fixedPrescription) return <div><Label>Längd</Label><p className="mt-2 text-sm text-muted-foreground">1 vecka. Startveckan går inte att förlänga.</p></div>;
   const { workingWeeks, deload } = templateBlockShape(b);
   return <div className="space-y-2"><Label>Längd</Label><div className="flex flex-wrap items-center gap-3"><Select disabled={locked} value={String(workingWeeks)} onValueChange={(v) => onChange({ workingWeeks: Number(v) })}><SelectTrigger className="w-40" aria-label={`Arbetsveckor block ${i + 1}`}><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 12 }, (_, n) => n + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} arbetsv.</SelectItem>)}</SelectContent></Select>
     <label className="flex items-center gap-2 text-sm"><Switch disabled={locked} checked={deload} onCheckedChange={(v) => onChange({ deload: v })} aria-label={`Avlastningsvecka block ${i + 1}`} />Avlastning sist</label></div></div>;

@@ -683,13 +683,13 @@ export function GenerateStrengthTemplateDialog({
                   </option>
                 ))}
               </select>
-              {template && !isPeaking && daysPerWeek < template.daysPerWeek && (
+              {template && !isPeaking && !isFixed && daysPerWeek < template.daysPerWeek && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Fewer days than the template — key work is folded into the remaining sessions
                   (volume +{Math.round((Math.min(1.25, 1 + 0.1 * (template.daysPerWeek - daysPerWeek)) - 1) * 100)}% per day).
                 </p>
               )}
-              {template && !isPeaking && daysPerWeek > template.daysPerWeek && (
+              {template && !isPeaking && !isFixed && daysPerWeek > template.daysPerWeek && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Extra days added as targeted hypertrophy / weak-point work; main-lift sets trimmed
                   ~{Math.round((1 - Math.max(0.8, 1 - 0.075 * (daysPerWeek - template.daysPerWeek))) * 100)}% to keep weekly load in range.
@@ -698,6 +698,13 @@ export function GenerateStrengthTemplateDialog({
             </div>
           </div>
 
+          {isFixed && (
+            <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Startveckan skapas exakt som mallen</p>
+              <p>En vecka med en maximal trea på RPE 10 i knäböj, bänk och marklyft. Marken följer atletens stans. Viktprogression, svagpunkter, setprotokoll, tunga singlar, volymjusteringar och historikförslag används inte, så treorna ändras inte. Du kan redigera passen efteråt.</p>
+            </div>
+          )}
+          {!isFixed && <>
           {template && !isPeaking && (
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
@@ -1084,6 +1091,7 @@ export function GenerateStrengthTemplateDialog({
               })}
             </div>
           </div>
+          </>}
 
         </div>
 

@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Aktuellt
-- [ ] Lägg till coachvald startvecka med filmad maximal trea i böj/bänk/mark och måttlig powerbuilding; skydda mot push och volymtillägg, gör valbar i säsongen och provkör med Alex.
+- [x] Coachvald startvecka (1 vecka, 2–4 dagar): en filmad maxtrea @RPE 10 per tävlingslyft + powerbuilding 3×8–12 @8; markstans följs, inga övriga modifierare/push. Valbar i generator och säsong (låst till 1 vecka). Alex: genererad och återläst (13 övningar, treor 1×3 @10 utan vikt), sedan arkiverad. 402 tester gröna.
 - [x] Informationens RPE förtydligad med mål/faktisk ansträngning, startvikt och singlar; m/s förklaras utan loggfält eller ändrade träningsregler. Verifierat inloggad i atletvyn på dator/mobil utan körfel eller sidöverflöde; bygge OK.
 - [x] Patient/fysio arkiverade utan dataradering: direktlänkar går till pausbesked; registrering, rollväxling och adminval dolda. Verifierat inloggad som Emil på dator/mobil, återgång till coach fungerar; aktiva atlet-/coachvägar testade i regeltester. 392 tester gröna och bygge OK.
 - [x] Nya pushpass använder första setets startvikt och faktisk RPE, justerbara senare set; sänkning/hög RPE håller vikten utan miss. Avslut namnger lyftet och kräver loggade set eller valt stopp. RPE-only har tom vikt, coachvärdet heter Beräkningsmax. Sparad push-1.0 behåller gamla beslut/instruktioner. Alex 145→147,5 kg @7,5 gav push-2.0 beslut återläst via coachvyn, ångrat och kontrollen rensad. 369 tester gröna, bygge OK; atletens inloggade dagsplan inte slutprovad.

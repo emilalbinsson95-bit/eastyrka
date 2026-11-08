@@ -74,6 +74,12 @@ export interface StrengthTemplate {
   skipVolumeFloors?: boolean;
   /** Bound final prescriptions for short, full-body sessions after all modifiers. */
   sessionSetBudget?: number;
+  /**
+   * Fixed one-off week (e.g. the onboarding start week). Generated exactly as
+   * written plus the athlete's deadlift stance: no resizing, history
+   * adjustments, weak points, set protocols, singles, volume changes or push.
+   */
+  fixedPrescription?: boolean;
 }
 
 // ---------- helpers ----------
@@ -873,6 +879,48 @@ function fullBody50(_daysPerWeek: number): TemplateWeek[] {
   });
 }
 
+// ---------- Start week (coach-selected onboarding, 1 week, 2–4 days) ----------
+// One filmed maximal triple (RPE 10) per competition lift, plus moderate
+// powerbuilding work (3 × 8–12 @ RPE 8) to fill the sessions. Gives the coach
+// technique video and a first look at how the athlete handles the work. One
+// week says little about volume tolerance; the next block decides that.
+
+export const START_WEEK_TRIPLE_NOTE =
+  "Arbeta upp i stegringsset till en maximal trea med godkänd teknik. RPE 10 betyder inga reps kvar. Filma det tyngsta setet från sidan, gärna även snett framifrån. Avsluta stegringen om tekniken bryter ihop eller stången stannar, och logga den tyngsta godkända trean.";
+
+function startWeek(daysPerWeek: number): TemplateWeek[] {
+  const triple = (exercise: string, variation: string): TemplateExercise => ({
+    exercise, variation, target_sets: 1, target_reps: 3, target_rpe: 10, intensity_metric: "rpe", notes: START_WEEK_TRIPLE_NOTE,
+  });
+  const pb = (exercise: string, reps: number, notes?: string): TemplateExercise => ({
+    exercise, target_sets: 3, target_reps: reps, target_rpe: 8, intensity_metric: "rpe",
+    notes: notes ?? "Vila 60–90 sekunder. Två reps kvar i varje set.",
+  });
+  const squat = triple("Back squat", "Competition stance");
+  const bench = triple("Bench press", "Competition grip & pause");
+  const pull = triple("Deadlift", "Competition stance");
+  const sessionNote = "Värm upp ordentligt och ta 3–5 minuter vila före trean. Powerbuildingövningarna görs efter trean.";
+  const days = Math.max(2, Math.min(4, daysPerWeek));
+  const sessions: Omit<TemplateSession, "day_of_week">[] = days === 2
+    ? [
+        { title: "Startvecka — maxtrea knäböj + bänk", notes: `${sessionNote} Knäböj först, sedan bänk.`, exercises: [squat, bench, pb("Leg press", 10), pb("Chest-supported row", 10), pb("Cable triceps pushdown", 12)] },
+        { title: "Startvecka — maxtrea marklyft", notes: sessionNote, exercises: [pull, pb("Incline dumbbell press", 10), pb("Lat pulldown", 10), pb("Leg curl", 12), pb("Lateral raise", 12)] },
+      ]
+    : [
+        { title: "Startvecka — maxtrea knäböj", notes: sessionNote, exercises: [squat, pb("Leg press", 10), pb("Leg curl", 12), pb("Standing calf raise", 12)] },
+        { title: "Startvecka — maxtrea bänk", notes: sessionNote, exercises: [bench, pb("Incline dumbbell press", 10), pb("Chest-supported row", 10), pb("Lateral raise", 12), pb("Cable triceps pushdown", 12)] },
+        { title: "Startvecka — maxtrea marklyft", notes: sessionNote, exercises: [pull, pb("Bulgarian split squat", 8, "Per ben. Vila 60–90 sekunder. Två reps kvar i varje set."), pb("Lat pulldown", 10), pb("Incline dumbbell curl", 12)] },
+        ...(days === 4 ? [{ title: "Startvecka — powerbuilding överkropp", notes: "Inga maxförsök i dag. Två reps kvar i varje set.", exercises: [pb("Overhead press", 8), pb("Weighted chin-up", 8), pb("Cable chest fly", 12), pb("Face pull", 12), pb("Skull crusher", 12)] }] : []),
+      ];
+  return [{
+    week_index: 1,
+    kind: "working",
+    label: "Startvecka",
+    notes: "Startvecka: en maximal trea på RPE 10 i knäböj, bänk och marklyft, filmad för teknikbedömning. Skicka filmerna till coachen. Övriga övningar görs med två reps kvar.",
+    sessions: assignWeekdays(sessions),
+  }];
+}
+
 export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
   {
     id: "standard-pl",
@@ -966,6 +1014,20 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     inspiration: "Støren 2008, Beattie 2014, Blagrove 2018 (löpekonomi) · Lauersen 2014 (skadeprevention)",
     buildWeeks: runnerStrength,
     skipVolumeFloors: true,
+  },
+  {
+    id: "start-week",
+    name: "Startvecka — filmade maxtreor",
+    short: "Maxtrea i böj, bänk och mark + powerbuilding — 2–4 dagar / 1 vecka",
+    goal: "Coachvald första vecka när atleten börjar coachas, även utan planerad tävling: en maximal trea på RPE 10 i varje tävlingslyft, filmad för teknikbedömning, plus måttligt med powerbuilding (3 × 8–12). Treorna lämnas orörda av push, svagpunkter, setprotokoll och volymjusteringar.",
+    weeks: 1,
+    daysPerWeek: 3,
+    minDays: 2,
+    maxDays: 4,
+    inspiration: "Teknikbedömning på film och en första referens för nästa block. En vecka visar inte volymtolerans.",
+    buildWeeks: startWeek,
+    skipVolumeFloors: true,
+    fixedPrescription: true,
   },
   {
     id: "peak-3w",

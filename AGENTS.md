@@ -52,6 +52,6 @@
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.
 <!-- LOVABLE:END -->
 - D0 peak weeks start on their first session date with zero-based day_of_week, so sessions land on planned dates.
-- Template block length (1–12 working weeks + optional deload) is set by `resizeTemplateWeeks` before modifiers; longer blocks repeat the template wave so effort never exceeds its hardest week.
-- Push: first set semi-fixed (±START_WEIGHT_TOLERANCE_KG); push weeks fold push-lift singles into main sets, cap light loads at main weight, use push notes, so plans never contradict push.
+- `resizeTemplateWeeks` sets block length before modifiers, repeating the wave so effort never exceeds its hardest week.
+- Push: semi-fixed first set; push weeks fold singles into main sets and cap light loads, so plans never contradict push.
 - Calendar shows planned sessions with logged sets as done, so trained days never look unconfirmed.

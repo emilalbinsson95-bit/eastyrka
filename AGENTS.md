@@ -54,4 +54,4 @@
 - D0 peak weeks start on their first session date with zero-based day_of_week, so sessions land on planned dates.
 - Template block length (1–12 working weeks + optional deload) is set by `resizeTemplateWeeks` before modifiers; longer blocks repeat the template wave so effort never exceeds its hardest week.
 - Push: first set semi-fixed (±START_WEIGHT_TOLERANCE_KG); push weeks fold push-lift singles into main sets, cap light loads at main weight, use push notes, so plans never contradict push.
-- Calendar treats planned sessions with linked logged sets as done (solid, check icon) without needing athlete confirmation, so trained days never look like open suggestions.
+- Calendar shows planned sessions with logged sets as done, so trained days never look unconfirmed.

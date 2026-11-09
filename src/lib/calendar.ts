@@ -27,6 +27,8 @@ export type CalendarItem = {
   effectiveDate: string;
   /** True if the card is still a coach/physio suggestion that hasn't been confirmed/moved. */
   isGhost: boolean;
+  /** True when the athlete has logged sets for this planned session. */
+  isLogged?: boolean;
   /** True if the athlete/patient cancelled this session. */
   isCancelled: boolean;
   cancelReason?: string | null;
@@ -57,16 +59,18 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
   // 1. Strength planned sessions via week_plans
   const { data: weekPlans } = await supabase
     .from("week_plans")
-    .select("id, week_start_date, status, mesocycle_id, planned_sessions(id, day_of_week, title)")
+    .select("id, week_start_date, status, mesocycle_id, planned_sessions(id, day_of_week, title, planned_exercises(id))")
     .eq("athlete_id", ownerId)
     .eq("status", "published")
     .gte("week_start_date", fmt(addDays(parseISO(rangeStart), -7)))
     .lte("week_start_date", rangeEnd);
 
   const plannedItems: CalendarItem[] = [];
+  const exerciseToSession = new Map<string, string>();
   for (const wp of weekPlans ?? []) {
-    const sessions = (wp.planned_sessions ?? []) as { id: string; day_of_week: number; title: string | null }[];
+    const sessions = (wp.planned_sessions ?? []) as { id: string; day_of_week: number; title: string | null; planned_exercises?: { id: string }[] | null }[];
     for (const ps of sessions) {
+      for (const pe of ps.planned_exercises ?? []) exerciseToSession.set(pe.id, ps.id);
       const suggested = plannedSessionDate(wp.week_start_date as string, ps, sessions);
       plannedItems.push({
         key: `planned:${ps.id}`,
@@ -239,6 +243,43 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
     }
   }
 
+  // Planned sessions with logged sets are done: show them solid, not as suggestions.
+  if (exerciseToSession.size > 0) {
+    const { data: plannedLogs } = await supabase
+      .from("training_logs")
+      .select("planned_exercise_id")
+      .eq("athlete_id", ownerId)
+      .not("planned_exercise_id", "is", null)
+      .gte("date", fmt(addDays(parseISO(rangeStart), -21)))
+      .lte("date", fmt(addDays(parseISO(rangeEnd), 21)));
+    markLoggedPlannedItems(
+      items,
+      exerciseToSession,
+      (plannedLogs ?? []).map((l) => l.planned_exercise_id as string),
+    );
+  }
+
+  return items;
+}
+
+/** Mark planned items whose exercises have logged sets as done (not ghost). */
+export function markLoggedPlannedItems(
+  items: CalendarItem[],
+  exerciseToSession: Map<string, string>,
+  loggedExerciseIds: string[],
+) {
+  const loggedSessions = new Set<string>();
+  for (const id of loggedExerciseIds) {
+    const sessionId = exerciseToSession.get(id);
+    if (sessionId) loggedSessions.add(sessionId);
+  }
+  for (const it of items) {
+    if (it.source !== "planned" || it.isCancelled) continue;
+    if (loggedSessions.has(it.sourceId)) {
+      it.isLogged = true;
+      it.isGhost = false;
+    }
+  }
   return items;
 }
 

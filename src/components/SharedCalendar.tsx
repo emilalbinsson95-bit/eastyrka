@@ -904,7 +904,7 @@ function SessionCard({
     disabled: !draggable,
   });
 
-  const Icon = isPayment ? Wallet : isComp ? Trophy : item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
+  const Icon = isPayment ? Wallet : isComp ? Trophy : item.isLogged ? Check : item.source === "endurance" ? Footprints : item.source === "rehab" ? HeartPulse : Dumbbell;
   const moved = !!item.override && item.override.scheduledDate !== item.suggestedDate;
 
   return (
@@ -936,6 +936,8 @@ function SessionCard({
       title={
         item.isCancelled
           ? `${t("calendar.cancelled")}${item.cancelReason ? ` — ${item.cancelReason}` : ""}`
+          : item.isLogged
+            ? `${t("calendar.logged")}${moved ? ` · ${t("calendar.movedFrom", { date: format(parseISO(item.suggestedDate), "MMM d") })}` : ""}`
           : item.isGhost
             ? `${t("calendar.suggested")} ${item.subtitle ?? ""}`
             : moved

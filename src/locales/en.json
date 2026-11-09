@@ -90,6 +90,7 @@
     "cancelled": "Cancelled",
     "suggested": "Suggested",
     "movedFrom": "Moved from {{date}}",
+    "logged": "Logged",
     "acceptSuggested": "Accept suggested day",
     "restoreSession": "Restore session",
     "deleteSession": "Delete session",

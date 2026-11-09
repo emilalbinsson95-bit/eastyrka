@@ -90,6 +90,7 @@
     "cancelled": "Avbokad",
     "suggested": "Föreslagen",
     "movedFrom": "Flyttad från {{date}}",
+    "logged": "Tränat",
     "acceptSuggested": "Acceptera föreslagen dag",
     "restoreSession": "Återställ pass",
     "deleteSession": "Radera pass",

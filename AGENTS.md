@@ -46,7 +46,7 @@
 - Resolve peak opener lift names through shared competition identity with a strict competition-note filter and stance checks, so competition aliases are included without admitting variants.
 - Compare six first measurements by exercise/variant/rep interval; RTS normalizes RPE without fragmenting trends.
 
-- Flagged reference warmups never count in EAk/work progress (distorts strength).
+- Flagged warmups never count in EAk/progress.
 
 <!-- LOVABLE:BEGIN -->
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.

@@ -374,27 +374,32 @@ export function baselineExerciseKey(exercise: string): string {
   return name;
 }
 
+/** Stored baseline name a lift resolves to: exact names first, then safe competition aliases. */
+export function lookupBaselineName(
+  baselines: Record<string, number> | undefined | null,
+  exercise: string,
+): string | undefined {
+  if (!baselines) return undefined;
+  if (baselines[exercise] !== undefined) return exercise;
+  const keys = Object.keys(baselines);
+  const norm = exercise.trim().toLowerCase().replace(/\s+/g, " ");
+  const exact = keys.find((k) => k.trim().toLowerCase().replace(/\s+/g, " ") === norm);
+  if (exact) return exact;
+  const alias = baselineExerciseKey(exercise);
+  const aliased = keys.find((k) => baselineExerciseKey(k) === alias);
+  if (aliased) return aliased;
+  // A stance-named comp deadlift may use the athlete's generic deadlift baseline (never the other stance's).
+  if (alias === "sumo deadlift" || alias === "conventional deadlift") {
+    return keys.find((k) => baselineExerciseKey(k) === "deadlift");
+  }
+  return undefined;
+}
+
 /** Prefer exact stored names, then safe competition aliases. */
 export function lookupBaseline(
   baselines: Record<string, number> | undefined | null,
   exercise: string,
 ): number | undefined {
-  if (!baselines) return undefined;
-  const direct = baselines[exercise];
-  if (direct !== undefined) return direct;
-  const norm = exercise.trim().toLowerCase().replace(/\s+/g, " ");
-  for (const [k, v] of Object.entries(baselines)) {
-    if (k.trim().toLowerCase().replace(/\s+/g, " ") === norm) return v;
-  }
-  const alias = baselineExerciseKey(exercise);
-  for (const [k, v] of Object.entries(baselines)) {
-    if (baselineExerciseKey(k) === alias) return v;
-  }
-  // A stance-named comp deadlift may use the athlete's generic deadlift baseline (never the other stance's).
-  if (alias === "sumo deadlift" || alias === "conventional deadlift") {
-    for (const [k, v] of Object.entries(baselines)) {
-      if (baselineExerciseKey(k) === "deadlift") return v;
-    }
-  }
-  return undefined;
+  const name = lookupBaselineName(baselines, exercise);
+  return name === undefined ? undefined : baselines?.[name];
 }

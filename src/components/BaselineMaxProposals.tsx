@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lookupBaseline } from "@/lib/eakoefficient";
+import { lookupBaseline, lookupBaselineName } from "@/lib/eakoefficient";
 import { Button } from "@/components/ui/button";
 
 export function BaselineMaxProposals({athleteId}:{athleteId:string}) {
@@ -15,10 +15,10 @@ export function BaselineMaxProposals({athleteId}:{athleteId:string}) {
     if(baselines.error) throw baselines.error; if(logs.error) throw logs.error; if(decisions.error) throw decisions.error;
     const map=Object.fromEntries((baselines.data??[]).map(b=>[b.exercise,Number(b.one_rm_kg)]));
     const seen=new Set((decisions.data??[]).map(d=>d.training_log_id));
-    return (logs.data??[]).filter(l=>!seen.has(l.id)&&!l.variation&&Number(l.weight_kg)>(lookupBaseline(map,l.exercise)??Infinity)).map(l=>({...l,baseline:lookupBaseline(map,l.exercise)??0}));
+    return (logs.data??[]).filter(l=>!seen.has(l.id)&&!l.variation&&Number(l.weight_kg)>(lookupBaseline(map,l.exercise)??Infinity)).map(l=>({...l,baseline:lookupBaseline(map,l.exercise)??0,baselineName:lookupBaselineName(map,l.exercise)}));
   }});
   const decide=useMutation({mutationFn:async({log,approve}:{log:NonNullable<typeof proposals.data>[number];approve:boolean})=>{
-    const {error}=await supabase.rpc("decide_baseline_max",{_log_id:log.id,_approve:approve});
+    const {error}=await supabase.rpc("decide_baseline_max",{_log_id:log.id,_approve:approve,_baseline_exercise:log.baselineName});
     if(error) throw error;
   },onSuccess:(_,v)=>{qc.invalidateQueries({queryKey:["baseline-max-proposals",athleteId]});qc.invalidateQueries({queryKey:["athlete-baselines",athleteId]});qc.invalidateQueries({queryKey:["athlete-baselines-list",athleteId]});toast.success(v.approve?"Baslinjen är uppdaterad":"Förslaget är avvisat");},onError:(e:Error)=>toast.error(e.message)});
   if(!proposals.data?.length) return null;

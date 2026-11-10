@@ -95,20 +95,23 @@ describe("overload options", () => {
 });
 
 describe("wave loading (fix 6)", () => {
-  it("applies RPE as an offset so coach tuning is preserved, not overwritten", () => {
-    const base = weeks();
-    // Simulate coach intensity tuning: week 1 squat at RPE 8.5 instead of 8.
-    const tuned = base.map((w, i) => i === 0
-      ? { ...w, sessions: w.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => e.exercise === "Back squat" && (!e.variation || e.variation === "Competition stance") ? { ...e, target_rpe: 8.5 } : e) })) }
-      : w);
+  const compSquat = (e: { exercise: string; variation?: string }) =>
+    e.exercise === "Back squat" && (!e.variation || e.variation === "Competition stance");
+  const squatRpe = (w: ReturnType<typeof weeks>[number]) =>
+    w.sessions.flatMap((s) => s.exercises).find(compSquat)?.target_rpe;
+
+  it("waves main lifts at RPE 7, 8 and 8.5 — never RPE 9–10 from a double-counted ramp", () => {
+    const out = applyOverload(weeks(), { ...DEFAULT_OVERLOAD, waveLoading: true });
+    expect([squatRpe(out[0]), squatRpe(out[1]), squatRpe(out[2])]).toEqual([7, 8, 8.5]);
+  });
+
+  it("keeps a coach's +0.5 RPE tuning through the whole wave", () => {
+    const tuned = weeks().map((w) => ({
+      ...w,
+      sessions: w.sessions.map((s) => ({ ...s, exercises: s.exercises.map((e) => compSquat(e) && e.target_rpe != null ? { ...e, target_rpe: e.target_rpe + 0.5 } : e) })),
+    }));
     const out = applyOverload(tuned, { ...DEFAULT_OVERLOAD, waveLoading: true });
-    const compSquat = (e: { exercise: string; variation?: string }) =>
-      e.exercise === "Back squat" && (!e.variation || e.variation === "Competition stance");
-    const w1 = out[0].sessions.flatMap((s) => s.exercises).find(compSquat);
-    expect(w1?.target_rpe).toBe(8.5);
-    // Week 2 wave step is +0.5 RPE relative to week 1.
-    const w2 = out[1].sessions.flatMap((s) => s.exercises).find(compSquat);
-    expect(w2?.target_rpe).toBe(9);
+    expect([squatRpe(out[0]), squatRpe(out[1]), squatRpe(out[2])]).toEqual([7.5, 8.5, 9]);
   });
 
   it("never waves pause, tempo or touch-and-go variants", () => {

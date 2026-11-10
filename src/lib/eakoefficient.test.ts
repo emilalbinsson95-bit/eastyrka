@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, baselineExerciseKey, isReadinessLift } from "./eakoefficient";
+import { dailyE1RM, readinessFromEAk, processLogs, countsForEAk, rollingE1RMBySession, measurementE1RMBySession, pickMeasurementSet, lookupBaseline, lookupBaselineName, baselineExerciseKey, isReadinessLift } from "./eakoefficient";
 import { canAddExtraSet } from "./blockVolume";
 
 describe("EAk (RTS model)", () => {
@@ -166,5 +166,17 @@ describe("comp-lift capture for EAk", () => {
   it("stance deadlift falls back to generic deadlift baseline only", () => {
     expect(lookupBaseline({ Deadlift: 250 }, "Sumo Deadlift")).toBe(250);
     expect(lookupBaseline({ "Sumo deadlift": 240 }, "Conventional Deadlift")).toBeUndefined();
+  });
+});
+
+describe("baseline name for max decisions", () => {
+  it("resolves Back Squat to the stored Knäböj baseline so approve/reject can save", () => {
+    expect(lookupBaselineName({ "Knäböj": 180, "Bänkpress": 120 }, "Back Squat")).toBe("Knäböj");
+  });
+  it("lets Conventional Deadlift use a generic Deadlift baseline", () => {
+    expect(lookupBaselineName({ Deadlift: 250 }, "Conventional Deadlift")).toBe("Deadlift");
+  });
+  it("never maps a deadlift to the other stance's baseline", () => {
+    expect(lookupBaselineName({ "Sumo deadlift": 230 }, "Conventional Deadlift")).toBeUndefined();
   });
 });

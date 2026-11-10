@@ -2537,7 +2537,11 @@ export type Database = {
         Returns: undefined
       }
       decide_baseline_max: {
-        Args: { _approve: boolean; _log_id: string }
+        Args: {
+          _approve: boolean
+          _baseline_exercise?: string
+          _log_id: string
+        }
         Returns: undefined
       }
       decide_push: { Args: { _exercise: string }; Returns: Json }

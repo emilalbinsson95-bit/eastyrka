@@ -202,13 +202,24 @@ const WAVE: WaveStep[] = [
   { reps: 3, deadliftReps: 2, rpe: 8.5, pct: "88–91%" },
 ];
 
-function withWaveLoading(week: TemplateWeek, workingIndex: number, intensityOffset: number): TemplateWeek {
+function waveSlot(sessionIndex: number, e: { exercise: string; variation?: string }): string {
+  return `${sessionIndex}|${e.exercise}|${e.variation ?? ""}`;
+}
+
+/**
+ * The wave replaces the template's own week-to-week RPE ramp. The coach's
+ * deviation is measured once, on the first working week (its RPE minus the
+ * wave's week-1 RPE), and carried through the wave. Adding the step offset to
+ * an already ramped week would count the progression twice (RPE 9–10).
+ */
+function withWaveLoading(
+  week: TemplateWeek,
+  workingIndex: number,
+  intensityOffset: number,
+  firstWeekRpe: Map<string, number>,
+): TemplateWeek {
   const step = WAVE[workingIndex % WAVE.length];
-  // The wave's RPE is an offset relative to the template's week-1 RPE, so
-  // coach intensity tuning and ramp-in reductions are preserved instead of
-  // being overwritten with an absolute value.
-  const rpeOffset = step.rpe - WAVE[0].rpe;
-  const out = mapSessions(week, (s) => ({
+  const sessions = week.sessions.map((s, si) => ({
     ...s,
     exercises: s.exercises.map((e) => {
       const lift = mainLift(e);
@@ -220,8 +231,9 @@ function withWaveLoading(week: TemplateWeek, workingIndex: number, intensityOffs
       // Leave dedicated hypertrophy prescriptions (8+ reps) alone.
       if (e.target_reps > 6) return e;
       const reps = lift === "deadlift" ? step.deadliftReps : step.reps;
-      const baseRpe = e.target_rpe ?? WAVE[0].rpe;
-      const rpe = Math.max(5, Math.min(10, baseRpe + rpeOffset + intensityOffset));
+      const firstRpe = firstWeekRpe.get(waveSlot(si, e)) ?? WAVE[0].rpe;
+      const deviation = firstRpe - WAVE[0].rpe;
+      const rpe = Math.max(5, Math.min(10, step.rpe + deviation + intensityOffset));
       return reconcileLoad(e, {
         ...e,
         target_reps: reps,
@@ -232,6 +244,7 @@ function withWaveLoading(week: TemplateWeek, workingIndex: number, intensityOffs
       });
     }),
   }));
+  const out = { ...week, sessions };
   return {
     ...out,
     label: `${out.label} · Wave ${workingIndex + 1}`,
@@ -354,13 +367,21 @@ function withBenchConsolidation(week: TemplateWeek): TemplateWeek {
 export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions, intensityOffset = 0): TemplateWeek[] {
   if (!overloadTouched(o)) return weeks;
   let workingIndex = 0;
+  const firstWeekRpe = new Map<string, number>();
   return weeks.map((week) => {
     let w = week;
     const deload = isDeloadWeek(w);
     if (o.deadliftStance !== "keep") w = withStanceCommitment(w, o.deadliftStance);
     if (o.benchConsolidation) w = withBenchConsolidation(w);
     if (o.waveLoading && !deload) {
-      w = withWaveLoading(w, workingIndex, intensityOffset);
+      if (workingIndex === 0) {
+        w.sessions.forEach((s, si) =>
+          s.exercises.forEach((e) => {
+            if (e.target_rpe != null && !firstWeekRpe.has(waveSlot(si, e))) firstWeekRpe.set(waveSlot(si, e), e.target_rpe);
+          }),
+        );
+      }
+      w = withWaveLoading(w, workingIndex, intensityOffset, firstWeekRpe);
       workingIndex += 1;
     }
     if (o.overWarmSingles) w = withOverWarmSingles(w);

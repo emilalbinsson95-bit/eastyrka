@@ -168,3 +168,16 @@ describe("comp-lift capture for EAk", () => {
     expect(lookupBaseline({ "Sumo deadlift": 240 }, "Conventional Deadlift")).toBeUndefined();
   });
 });
+
+import { lookupBaselineName as _lookupBaselineName } from "./eakoefficient";
+describe("baseline name for max decisions", () => {
+  it("resolves Back Squat to the stored Knäböj baseline so approve/reject can save", () => {
+    expect(_lookupBaselineName({ "Knäböj": 180, "Bänkpress": 120 }, "Back Squat")).toBe("Knäböj");
+  });
+  it("lets Conventional Deadlift use a generic Deadlift baseline", () => {
+    expect(_lookupBaselineName({ Deadlift: 250 }, "Conventional Deadlift")).toBe("Deadlift");
+  });
+  it("never maps a deadlift to the other stance's baseline", () => {
+    expect(_lookupBaselineName({ "Sumo deadlift": 230 }, "Conventional Deadlift")).toBeUndefined();
+  });
+});

@@ -85,6 +85,20 @@ describe("pickMeasurementSet (heavy singles)", () => {
     ];
     expect(pickMeasurementSet(sets)?.set_number).toBe(1);
   });
+  it("uses a separately logged over-warm single even when both entries start at set 1", () => {
+    const sets = [
+      { set_number: 1, reps: 1, weight_kg: 193, rpe: 7.5, created_at: "2026-10-07T17:44:02Z" },
+      { set_number: 1, reps: 3, weight_kg: 165, rpe: 7, created_at: "2026-10-07T17:52:10Z" },
+    ];
+    expect(pickMeasurementSet(sets)?.weight_kg).toBe(193);
+  });
+  it("keeps the working set when a same-numbered single was logged after it", () => {
+    const sets = [
+      { set_number: 1, reps: 3, weight_kg: 165, rpe: 7, created_at: "2026-10-07T17:52:10Z" },
+      { set_number: 1, reps: 1, weight_kg: 193, rpe: 7.5, created_at: "2026-10-07T18:30:00Z" },
+    ];
+    expect(pickMeasurementSet(sets)?.weight_kg).toBe(165);
+  });
 });
 
  it("reference warmups never become EAk measurements or work sets", () => {

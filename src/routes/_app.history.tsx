@@ -46,6 +46,9 @@ interface LogRow {
   edited_by_athlete_at: string | null;
   original_reps: number | null;
   original_rpe: number | null;
+  created_at: string | null;
+  is_warmup_reference: boolean;
+  is_technique: boolean;
 }
 
 function HistoryPage() {
@@ -59,7 +62,7 @@ function HistoryPage() {
       const { data, error } = await supabase
         .from("training_logs")
         .select(
-          "id, date, exercise, variation, set_number, reps, weight_kg, rpe, edited_by_athlete_at, original_reps, original_rpe",
+          "id, date, exercise, variation, set_number, reps, weight_kg, rpe, edited_by_athlete_at, original_reps, original_rpe, created_at, is_warmup_reference, is_technique",
         )
         .eq("athlete_id", userId)
         .order("date", { ascending: false })
@@ -123,6 +126,9 @@ function HistoryPage() {
         exercise: l.exercise,
         variation: l.variation,
         set_number: l.set_number,
+        created_at: l.created_at,
+        is_warmup_reference: l.is_warmup_reference,
+        is_technique: l.is_technique,
         reps: l.reps,
         weight_kg: Number(l.weight_kg),
         rpe: Number(l.rpe),

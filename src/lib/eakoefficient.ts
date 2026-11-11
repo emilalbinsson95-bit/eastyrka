@@ -78,13 +78,18 @@ export function eaKoefficient(set: SetInput, baseline1RM: number): number {
  * sets never replaces the first working set. Same rule every session so
  * values are comparable over time.
  */
-export function pickMeasurementSet<T extends SetInput & { set_number: number }>(sets: T[]): T | null {
+export function pickMeasurementSet<T extends SetInput & { set_number: number; created_at?: string | null }>(sets: T[]): T | null {
   const ok = sets.filter(countsForEAk).sort((a, b) => a.set_number - b.set_number);
   if (ok.length === 0) return null;
   const firstWorking = ok.find((s) => s.reps > 1);
-  const leadingSingle = ok.find(
-    (s) => s.reps === 1 && (!firstWorking || s.set_number < firstWorking.set_number),
-  );
+  // A separately logged over-warm single restarts set numbering (both are set 1);
+  // on a tie it leads unless timestamps show it was logged after the working set.
+  const leads = (s: T) => {
+    if (!firstWorking || s.set_number < firstWorking.set_number) return true;
+    if (s.set_number > firstWorking.set_number) return false;
+    return !(s.created_at && firstWorking.created_at && s.created_at > firstWorking.created_at);
+  };
+  const leadingSingle = ok.find((s) => s.reps === 1 && leads(s));
   return leadingSingle ?? firstWorking ?? ok[0];
 }
 
@@ -278,6 +283,7 @@ export interface RawLog extends SetInput {
   exercise: string;
   variation: string | null;
   set_number: number;
+  created_at?: string | null;
 }
 
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;

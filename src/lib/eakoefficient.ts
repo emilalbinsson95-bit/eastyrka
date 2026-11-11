@@ -283,6 +283,7 @@ export interface RawLog extends SetInput {
   exercise: string;
   variation: string | null;
   set_number: number;
+  created_at?: string | null;
 }
 
 const NOT_READINESS_LIFT = /split|bulgar|goblet|hack|leg press|dumbbell|\bdb\b|hantel|smith|machine|maskin|belt squat|sissy|jump|hopp|box squat jump|incline db|floor press db/i;

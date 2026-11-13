@@ -55,3 +55,4 @@
 - `resizeTemplateWeeks` sets block length before modifiers, repeating the wave so effort never exceeds its hardest week.
 - Push: semi-fixed first set; push weeks fold singles into main sets and cap light loads, so plans never contradict push.
 - Calendar shows planned sessions with logged sets as done, so trained days never look unconfirmed.
+- EAk presets (`eakStrategy.ts`) write the same strategy columns; generator EAk advice (`eakStatus.ts`) only fills coach-chosen set deltas, so nothing bypasses coach approval.

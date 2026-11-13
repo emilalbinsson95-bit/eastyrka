@@ -48,6 +48,42 @@ export function strategyValuesToRow(values: Partial<Record<keyof EakStrategy, st
   return row;
 }
 
+type StrategyValues = Partial<Record<keyof EakStrategy, number>>;
+
+/**
+ * Ready-made levels so coaches can pick a strategy without filling every
+ * field. Only the signal limits change; in-session drop limits stay as they are.
+ */
+export const STRATEGY_PRESETS: ReadonlyArray<{ id: "careful" | "standard" | "offensive"; label: string; text: string; values: StrategyValues }> = [
+  { id: "careful", label: "Försiktig", text: "Bromsar vid mindre tapp och kräver mer innan den föreslår ökning. För nya atleter, tung vardag eller skadehistorik.", values: { fallStage1Pct: 3, fallStage2Pct: 7, pushLowPct: 105, pushHighPct: 107, pushSessionBelowPct: 104, pushShare: 0.8, readinessBelowPct: 98 } },
+  { id: "standard", label: "Standard", text: "Appens grundinställning: bevaka vid 5 % tapp, bromsa vid 10 %, redo för mer från 104 %.", values: {} },
+  { id: "offensive", label: "Offensiv", text: "Tål större tapp innan den bromsar och föreslår ökning tidigare. För vana atleter som återhämtar sig bra.", values: { fallStage1Pct: 7, fallStage2Pct: 12, pushLowPct: 103, pushHighPct: 105, pushSessionBelowPct: 102, pushShare: 0.67, readinessBelowPct: 96 } },
+];
+
+export type StrategyPresetId = (typeof STRATEGY_PRESETS)[number]["id"];
+
+/** Form values for a preset: unchanged fields stay empty so they follow the default. */
+export function presetFormValues(id: StrategyPresetId): Partial<Record<keyof EakStrategy, string>> {
+  const preset = STRATEGY_PRESETS.find((p) => p.id === id);
+  return Object.fromEntries(STRATEGY_FIELDS.map((f) => [f.key, preset?.values[f.key] == null ? "" : String(preset.values[f.key])]));
+}
+
+/** Which preset the saved or typed values equal, or null for a custom strategy. */
+export function matchPreset(values: Partial<Record<keyof EakStrategy, string | number | null>>): StrategyPresetId | null {
+  const parsed: Partial<Record<keyof EakStrategy, number | null>> = {};
+  for (const f of STRATEGY_FIELDS) {
+    const raw = values[f.key];
+    const n = raw == null || raw === "" ? null : Number(String(raw).replace(",", "."));
+    parsed[f.key] = n != null && Number.isFinite(n) ? n : null;
+  }
+  const current = resolveStrategy(parsed);
+  for (const p of STRATEGY_PRESETS) {
+    const target = resolveStrategy(p.values);
+    if (STRATEGY_FIELDS.every((f) => Math.abs(current[f.key] - target[f.key]) < 1e-9)) return p.id;
+  }
+  return null;
+}
+
 export const eakDecisionSchema = z.object({
   evaluationId: z.string().uuid(),
   decision: z.enum(["approved", "rejected", "modified"]),

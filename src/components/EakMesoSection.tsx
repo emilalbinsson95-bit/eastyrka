@@ -17,22 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Line, LineChart, ResponsiveContainer, Tooltip } from "recharts";
 import { DEFAULT_STRATEGY, weeklySessionLoad } from "@/lib/eakSignal";
 import { toast } from "sonner";
+import { eakStatus } from "@/lib/eakStatus";
 
 const LIFTS = [
   { key: "squat", label: "Knäböj" },
   { key: "bench", label: "Bänk" },
   { key: "deadlift", label: "Mark" },
 ] as const;
-
-const STATUS: Record<string, { label: string; cls: string }> = {
-  green: { label: "Enligt plan", cls: "bg-status-adapting text-status-adapting-foreground" },
-  yellow: { label: "Bevaka", cls: "bg-status-peaking text-status-peaking-foreground" },
-  red: { label: "Bromsa", cls: "bg-status-exhausted text-status-exhausted-foreground" },
-  red_strong: { label: "Bromsa nu", cls: "bg-status-exhausted text-status-exhausted-foreground" },
-  push: { label: "Redo för mer", cls: "bg-status-undertrained text-status-undertrained-foreground" },
-  low_confidence: { label: "Ovanligt brusigt block", cls: "bg-status-peaking text-status-peaking-foreground" },
-  insufficient_data: { label: "För lite data", cls: "bg-muted text-muted-foreground" },
-};
 
 function stabilityBadge(te: number | null): { label: string; cls: string } {
   if (te == null) return { label: "Brusunderlaget byggs upp", cls: "bg-muted text-muted-foreground" };
@@ -213,19 +204,10 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
       <CardHeader>
         <CardTitle className="text-base">EAk – mesocykel</CardTitle>
         <CardDescription>
-          Signal per tävlingslyft över de senaste passen. Förslag ändrar inget förrän du godkänner dem.
+          Läget per tävlingslyft över de senaste passen. Förslag ändrar inget förrän du godkänner dem.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-1 border-b pb-3">
-          <h3 className="text-sm font-medium">Belastning (sRPE × min)</h3>
-          {loadQuery.isError ? <p role="alert" className="text-xs text-destructive">Kunde inte hämta passbelastningen.</p> : loadQuery.data?.length ? <>
-            <div className="h-20 w-full" role="img" aria-label="Veckobelastning för styrkepass">
-              <ResponsiveContainer width="100%" height="100%"><LineChart data={loadQuery.data}><Line type="monotone" dataKey="load" stroke="var(--color-chart-1)" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} /><Tooltip labelFormatter={(_: unknown, payload: ReadonlyArray<{ payload?: { weekStart?: string } }>) => payload?.[0]?.payload?.weekStart ?? ""} formatter={(value: number | string | Array<number | string>) => [value, "Belastning"]} contentStyle={{ background: "var(--color-popover)", borderColor: "var(--color-border)", color: "var(--color-popover-foreground)" }} /></LineChart></ResponsiveContainer>
-            </div>
-            <p className="text-xs text-muted-foreground">Senaste veckan: {loadQuery.data.at(-1)?.load.toFixed(0)} · Mot föregående fyra veckor: {loadQuery.data.at(-1)?.changePct == null ? "—" : `${loadQuery.data.at(-1)?.changePct?.toFixed(1)} %`}</p>
-          </> : <p className="text-xs text-muted-foreground">Inga pass med både pass-RPE och tid ännu.</p>}
-        </div>
         {!anyData && !evalsQuery.isLoading && (
           <p className="text-sm text-muted-foreground">
             För lite data ännu — signalerna byggs upp när atleten loggat minst fyra pass per lyft.
@@ -234,7 +216,7 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
         {LIFTS.map(({ key, label }) => {
           const ev = latestByLift.get(key);
           if (!ev) return null;
-          const st = STATUS[ev.status] ?? STATUS.insufficient_data;
+          const st = eakStatus(ev.status);
           const stab = stabilityBadge(ev.sem_pool ?? ev.te_i);
           const noisy = ev.noise_ratio != null && ev.noise_ratio > (ev.strategy_snapshot?.noiseRatioFlag ?? DEFAULT_STRATEGY.noiseRatioFlag);
           const rebound = reboundByLift.get(key);
@@ -244,7 +226,8 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{label}</span>
                 <span className={`rounded-full px-2 py-0.5 text-[11px] ${st.cls}`}>{st.label}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] ${stab.cls}`}>{stab.label}</span>
+                {ev.eak_m != null && <span className="text-sm tabular-nums">EAk {ev.eak_m.toFixed(0)} %</span>}
+                <span className="text-xs text-muted-foreground">{ev.n_sessions} pass</span>
                 {!pending && (
                   <span className="text-[11px] text-muted-foreground">
                     Beslut: {ev.coach_decision === "approved" ? "godkänt" : ev.coach_decision === "rejected" ? "avvisat" : "justerat"}
@@ -253,75 +236,97 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
                 )}
               </div>
               {ev.nfor_flag && <div role="alert" className="rounded-md border border-destructive bg-status-exhausted p-3 text-sm text-status-exhausted-foreground"><strong>Utred återhämtningen</strong><p>Prestationen återhämtar sig inte och atletens mående är sämre sedan över två veckor – utred återhämtningen (sömn, energiintag, sjukdom), inte bara programmet.</p></div>}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground sm:grid-cols-3">
-                <span>L_M: {ev.l_m != null ? `${ev.l_m.toFixed(1)} kg` : "—"}</span>
-                <span>ΔL_M: {ev.dl_m != null ? `${ev.dl_m > 0 ? "+" : ""}${ev.dl_m.toFixed(1)} %` : "—"}</span>
-                <span>EAk_M: {ev.eak_m != null ? `${ev.eak_m.toFixed(1)} %` : "—"}</span>
-                <span>Lutning: {ev.slope != null ? `${ev.slope > 0 ? "+" : ""}${ev.slope.toFixed(2)} %/pass` : "—"}</span>
-                <span>Pass: {ev.n_sessions}</span>
-                <span>Tröskel: {ev.threshold_i != null ? `±${ev.threshold_i.toFixed(1)} %` : "—"}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">Jämförelse: mesocykelns medel-e1RM mot föregående mesocykel (annars coachens baslinje). Δ {ev.dl_m == null ? "saknas" : `${ev.dl_m.toFixed(2)} %`} jämförs med ±{ev.threshold_i?.toFixed(2) ?? "—"} %. Lutningen visas separat; trenden tas bara bort när bruset skattas.</p>
-              <p className="text-xs text-muted-foreground">Signalbrus: SEM_pool {ev.sem_pool == null ? "— (underlaget byggs upp)" : `${ev.sem_pool.toFixed(2)} %`} · Blockets bruskvot {ev.noise_ratio == null ? "—" : ev.noise_ratio.toFixed(2)}</p>
+              <p className="text-sm">{ev.suggestion_text || st.text}</p>
               {noisy && <p role="alert" className="text-xs font-medium text-status-peaking-foreground">Ovanligt brusigt block – dra inte slutsatser för snabbt.</p>}
-              <div className="flex flex-wrap gap-2">{[
-                { label: "Readiness", on: ev.supporting_signals?.readiness ?? ev.readiness_signal },
-                { label: "Mående", on: ev.supporting_signals?.subjective ?? ev.athlete_signal },
-                { label: "Uppvärmnings-RPE", on: ev.supporting_signals?.warmupDrift ?? false },
-              ].map((s) => <span key={s.label} className={`rounded-full px-2 py-1 text-[11px] ${s.on ? "bg-status-peaking text-status-peaking-foreground" : "bg-muted text-muted-foreground"}`}>{s.label}: {s.on ? "på" : "av"}</span>)}</div>
-              {rebound && (
-                <p className="text-xs text-muted-foreground">
-                  Rebound efter deload ({rebound.deload_week_start}):{" "}
-                  {rebound.r_value != null ? `R = ${rebound.r_value.toFixed(2)}` : "—"}{" "}
-                  {rebound.passed ? "– återhämtningen ser bra ut" : "– svag återhämtning, bevaka"}
-                </p>
-              )}
-              {ev.suggestion_text && <p className="text-sm">{ev.suggestion_text}</p>}
               {pending && (
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Button size="sm" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handleDecision(ev, "approved")}>
-                    Godkänn
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handleDecision(ev, "rejected")}>
-                    Avvisa
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handleDecision(ev, "modified")}>
-                    Justera
-                  </Button>
-                  <Input
-                    placeholder="Notering (valfritt)"
-                    value={note[ev.id] ?? ""}
-                    onChange={(e) => setNote((s) => ({ ...s, [ev.id]: e.target.value }))}
-                    className="h-8 w-48 text-xs"
-                  />
-                  <div className="w-full space-y-2">
-                    <p id={`plan-question-${ev.id}`} className="text-xs font-medium">Ändrade det planen?</p>
+                <div className="space-y-2 pt-1">
+                  <div className="space-y-1">
+                    <p id={`plan-question-${ev.id}`} className="text-xs font-medium">Ändrade det här planen?</p>
                     <RadioGroup aria-labelledby={`plan-question-${ev.id}`} value={planChanged[ev.id] === undefined ? "" : planChanged[ev.id] ? "yes" : "no"} onValueChange={(value) => setPlanChanged((s) => ({ ...s, [ev.id]: value === "yes" }))} className="flex gap-4">
                       {[{ value: "yes", label: "Ja" }, { value: "no", label: "Nej" }].map((o) => <div key={o.value} className="flex items-center gap-1.5"><RadioGroupItem id={`plan-${ev.id}-${o.value}`} value={o.value} /><Label htmlFor={`plan-${ev.id}-${o.value}`}>{o.label}</Label></div>)}
                     </RadioGroup>
                   </div>
-                  {ev.status === "push" && ev.l_m != null && (
-                    <Button size="sm" variant="secondary" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handlePushBaseline(ev)}>
-                      Uppdatera baseline till {(Math.round(ev.l_m / 2.5) * 2.5).toFixed(1)} kg
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handleDecision(ev, "approved")}>
+                      Godkänn
                     </Button>
-                  )}
+                    <Button size="sm" variant="outline" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handleDecision(ev, "rejected")}>
+                      Avvisa
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handleDecision(ev, "modified")}>
+                      Justera
+                    </Button>
+                    {ev.status === "push" && ev.l_m != null && (
+                      <Button size="sm" variant="secondary" disabled={busy === ev.id || planChanged[ev.id] === undefined} onClick={() => handlePushBaseline(ev)}>
+                        Uppdatera baseline till {(Math.round(ev.l_m / 2.5) * 2.5).toFixed(1)} kg
+                      </Button>
+                    )}
+                    <Input
+                      placeholder="Notering (valfritt)"
+                      aria-label={`Notering ${label}`}
+                      value={note[ev.id] ?? ""}
+                      onChange={(e) => setNote((s) => ({ ...s, [ev.id]: e.target.value }))}
+                      className="h-8 w-48 text-xs"
+                    />
+                  </div>
+                  {planChanged[ev.id] === undefined && <p className="text-[11px] text-muted-foreground">Svara ja eller nej först, så går knapparna att trycka på.</p>}
                 </div>
               )}
-              <div className="flex items-center gap-2 pt-1">
-                <Input
-                  placeholder="Korrigera baseline, kg"
-                  value={correctKg[key] ?? ""}
-                  onChange={(e) => setCorrectKg((s) => ({ ...s, [key]: e.target.value }))}
-                  className="h-8 w-40 text-xs"
-                  inputMode="decimal"
-                />
-                <Button size="sm" variant="ghost" disabled={busy === key} onClick={() => handleCorrection(key)}>
-                  Spara korrigering
-                </Button>
-              </div>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground">Visa detaljer</summary>
+                <div className="mt-2 space-y-2">
+                  <div className="flex flex-wrap gap-2"><span className={`rounded-full px-2 py-0.5 text-[11px] ${stab.cls}`}>{stab.label}</span></div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-muted-foreground sm:grid-cols-3">
+                    <span>L_M: {ev.l_m != null ? `${ev.l_m.toFixed(1)} kg` : "—"}</span>
+                    <span>ΔL_M: {ev.dl_m != null ? `${ev.dl_m > 0 ? "+" : ""}${ev.dl_m.toFixed(1)} %` : "—"}</span>
+                    <span>EAk_M: {ev.eak_m != null ? `${ev.eak_m.toFixed(1)} %` : "—"}</span>
+                    <span>Lutning: {ev.slope != null ? `${ev.slope > 0 ? "+" : ""}${ev.slope.toFixed(2)} %/pass` : "—"}</span>
+                    <span>Pass: {ev.n_sessions}</span>
+                    <span>Tröskel: {ev.threshold_i != null ? `±${ev.threshold_i.toFixed(1)} %` : "—"}</span>
+                  </div>
+                  <p className="text-muted-foreground">Jämförelse: mesocykelns medel-e1RM mot föregående mesocykel (annars coachens baslinje). Δ {ev.dl_m == null ? "saknas" : `${ev.dl_m.toFixed(2)} %`} jämförs med ±{ev.threshold_i?.toFixed(2) ?? "—"} %. Lutningen visas separat; trenden tas bara bort när bruset skattas.</p>
+                  <p className="text-muted-foreground">Signalbrus: SEM_pool {ev.sem_pool == null ? "— (underlaget byggs upp)" : `${ev.sem_pool.toFixed(2)} %`} · Blockets bruskvot {ev.noise_ratio == null ? "—" : ev.noise_ratio.toFixed(2)}</p>
+                  <div className="flex flex-wrap gap-2">{[
+                    { label: "Readiness", on: ev.supporting_signals?.readiness ?? ev.readiness_signal },
+                    { label: "Mående", on: ev.supporting_signals?.subjective ?? ev.athlete_signal },
+                    { label: "Uppvärmnings-RPE", on: ev.supporting_signals?.warmupDrift ?? false },
+                  ].map((s) => <span key={s.label} className={`rounded-full px-2 py-1 text-[11px] ${s.on ? "bg-status-peaking text-status-peaking-foreground" : "bg-muted text-muted-foreground"}`}>{s.label}: {s.on ? "på" : "av"}</span>)}</div>
+                  {rebound && (
+                    <p className="text-muted-foreground">
+                      Rebound efter deload ({rebound.deload_week_start}):{" "}
+                      {rebound.r_value != null ? `R = ${rebound.r_value.toFixed(2)}` : "—"}{" "}
+                      {rebound.passed ? "– återhämtningen ser bra ut" : "– svag återhämtning, bevaka"}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Input
+                      placeholder="Korrigera baseline, kg"
+                      aria-label={`Korrigera baseline ${label}`}
+                      value={correctKg[key] ?? ""}
+                      onChange={(e) => setCorrectKg((s) => ({ ...s, [key]: e.target.value }))}
+                      className="h-8 w-40 text-xs"
+                      inputMode="decimal"
+                    />
+                    <Button size="sm" variant="ghost" disabled={busy === key} onClick={() => handleCorrection(key)}>
+                      Spara korrigering
+                    </Button>
+                  </div>
+                </div>
+              </details>
             </div>
           );
         })}
+        <details className="border-t pt-3 text-xs">
+          <summary className="cursor-pointer text-sm font-medium">Belastning (sRPE × min)</summary>
+          <div className="mt-2 space-y-1">
+            {loadQuery.isError ? <p role="alert" className="text-destructive">Kunde inte hämta passbelastningen.</p> : loadQuery.data?.length ? <>
+              <div className="h-20 w-full" role="img" aria-label="Veckobelastning för styrkepass">
+                <ResponsiveContainer width="100%" height="100%"><LineChart data={loadQuery.data}><Line type="monotone" dataKey="load" stroke="var(--color-chart-1)" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} /><Tooltip labelFormatter={(_: unknown, payload: ReadonlyArray<{ payload?: { weekStart?: string } }>) => payload?.[0]?.payload?.weekStart ?? ""} formatter={(value: number | string | Array<number | string>) => [value, "Belastning"]} contentStyle={{ background: "var(--color-popover)", borderColor: "var(--color-border)", color: "var(--color-popover-foreground)" }} /></LineChart></ResponsiveContainer>
+              </div>
+              <p className="text-muted-foreground">Senaste veckan: {loadQuery.data.at(-1)?.load.toFixed(0)} · Mot föregående fyra veckor: {loadQuery.data.at(-1)?.changePct == null ? "—" : `${loadQuery.data.at(-1)?.changePct?.toFixed(1)} %`}</p>
+            </> : <p className="text-muted-foreground">Inga pass med både pass-RPE och tid ännu.</p>}
+          </div>
+        </details>
       </CardContent>
     </Card>
   );

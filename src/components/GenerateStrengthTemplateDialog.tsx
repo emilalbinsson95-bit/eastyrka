@@ -52,6 +52,7 @@ import { compLiftKey } from "@/lib/liftIdentity";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STRENGTH_VOLUME, volumeProfileFromRow } from "@/lib/strengthVolumeProfile";
 import { applyBlockVolume, evaluateBlock, type VolumeTolerance } from "@/lib/blockVolume";
+import { eakStatus, eakVolumeAdvice } from "@/lib/eakStatus";
 import { summarizePeaking, peakingBasis, PEAK_REFERENCE_LABEL, type PeakReference } from "@/lib/peaking";
 import { buildD0Weeks } from "@/lib/taperAdapter";
 import { DEFAULT_TAPER_SETTINGS } from "@/lib/taperModel";
@@ -201,6 +202,15 @@ export function GenerateStrengthTemplateDialog({
     const {data,error}=await supabase.from("push_state").select("*").eq("athlete_id",athleteId);
     if(error)throw error;
     return (data??[]) as PushConfig[];
+  }});
+
+  // Latest EAk signal per competition lift, shown next to the volume choice.
+  const eakQuery = useQuery({ queryKey: ["eak-evals-generator", athleteId], enabled: open, queryFn: async () => {
+    const { data, error } = await supabase.from("eak_meso_evaluations").select("lift,status,eak_m,coach_decision,created_at").eq("athlete_id", athleteId).order("created_at", { ascending: false }).limit(30);
+    if (error) throw error;
+    const latest = new Map<string, { status: string; eak_m: number | null; coach_decision: string }>();
+    for (const row of data ?? []) if (!latest.has(row.lift)) latest.set(row.lift, row);
+    return latest;
   }});
 
   const [weakIds, setWeakIds] = useState<string[]>([]);
@@ -914,16 +924,42 @@ export function GenerateStrengthTemplateDialog({
             </div>
           )}
 
-          {!isPeaking && !isTimeLimited && blockEvals.length > 0 && (
-            <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Volym från förra blocket (per lyft)</p>
-              {blockEvals.map((e) => (
-                <p key={e.lift}><b className="text-foreground">{e.lift === "squat" ? "Knäböj" : e.lift === "bench" ? "Bänk" : "Mark"} {e.delta > 0 ? "+1" : e.delta < 0 ? "−1" : "±0"} set/vecka</b> — {e.reason}</p>
-              ))}
+          {!isPeaking && !isTimeLimited && blockEvals.length > 0 && (() => {
+            const rows = blockEvals.map((e) => { const ev = eakQuery.data?.get(e.lift); return { e, ev, advice: eakVolumeAdvice(e.delta, ev?.status) }; });
+            const editable = !template?.skipVolumeFloors;
+            const allApplied = rows.every((r) => volumeDeltas[r.e.lift] === r.advice.delta);
+            const fmt = (d: number) => d > 0 ? `+${d}` : d < 0 ? `−${Math.abs(d)}` : "±0";
+            return <div className="space-y-3 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div><p className="text-sm font-medium text-foreground">EAk och volym per lyft</p><p>Förslag från förra blocket och senaste EAk. Inget ändras förrän du väljer.</p></div>
+                {editable && <Button type="button" size="sm" variant="outline" disabled={allApplied} onClick={() => setVolumeDeltas((prev) => ({ ...prev, ...Object.fromEntries(rows.map((r) => [r.e.lift, r.advice.delta])) }))}>Använd alla förslag</Button>}
+              </div>
+              {eakQuery.isError && <p role="alert" className="text-destructive">Kunde inte hämta EAk. Volymförslaget bygger bara på förra blocket.</p>}
+              {rows.map(({ e, ev, advice }) => {
+                const name = e.lift === "squat" ? "Knäböj" : e.lift === "bench" ? "Bänk" : "Mark";
+                const st = eakStatus(ev?.status);
+                const value = volumeDeltas[e.lift];
+                return <div key={e.lift} className="space-y-1 border-t border-border pt-2 first:border-t-0 first:pt-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">{name}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${st.cls}`}>{ev ? st.label : "Ingen EAk än"}</span>
+                    {ev?.eak_m != null && <span className="tabular-nums text-foreground">EAk {Number(ev.eak_m).toFixed(0)} %</span>}
+                    {ev?.coach_decision === "pending" && <span>· obesvarat förslag under Analys</span>}
+                  </div>
+                  <p><b className="text-foreground">Förslag: {fmt(advice.delta)} set/vecka.</b> {advice.byEak ? st.text : e.reason}</p>
+                  {editable && <div className="flex flex-wrap items-center gap-2">
+                    <span>Ditt val:</span>
+                    <Button type="button" size="sm" variant="outline" className="h-7 w-7 p-0" aria-label={`Ett set mindre ${name}`} disabled={value <= -6} onClick={() => setVolumeDeltas((prev) => ({ ...prev, [e.lift]: Math.max(-6, prev[e.lift] - 1) }))}>−</Button>
+                    <span className="min-w-12 text-center font-medium tabular-nums text-foreground" aria-live="polite" id={`delta-${e.lift}`}>{fmt(value)} set</span>
+                    <Button type="button" size="sm" variant="outline" className="h-7 w-7 p-0" aria-label={`Ett set mer ${name}`} disabled={value >= 6} onClick={() => setVolumeDeltas((prev) => ({ ...prev, [e.lift]: Math.min(6, prev[e.lift] + 1) }))}>+</Button>
+                    {value !== advice.delta && <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setVolumeDeltas((prev) => ({ ...prev, [e.lift]: advice.delta }))}>Använd förslaget</Button>}
+                  </div>}
+                </div>;
+              })}
               {blockResult.warnings.map((w) => <p key={w} className="text-destructive">{w}</p>)}
-            </div>
-          )}
-          {!isPeaking && !isTimeLimited && !template?.skipVolumeFloors && <div className="space-y-2 border-t border-border pt-3">
+            </div>;
+          })()}
+          {!isPeaking && !isTimeLimited && !template?.skipVolumeFloors && blockEvals.length === 0 && <div className="space-y-2 border-t border-border pt-3">
             <h3 className="text-sm font-medium">Godkänd setjustering per vecka</h3>
             <div className="grid grid-cols-3 gap-2">{(["squat", "bench", "deadlift"] as const).map((lift) => <div key={lift}><Label htmlFor={`delta-${lift}`}>{lift === "squat" ? "Knäböj" : lift === "bench" ? "Bänk" : "Mark"}</Label><Input id={`delta-${lift}`} type="number" min={-6} max={6} step={1} value={volumeDeltas[lift]} onChange={(e) => setVolumeDeltas((prev) => ({ ...prev, [lift]: Math.max(-6, Math.min(6, Math.trunc(Number(e.target.value)))) }))} /></div>)}</div>
             {blockResult.warnings.map((w) => <p key={w} className="text-xs text-destructive">{w}</p>)}

@@ -71,8 +71,10 @@ export function pctRowLabel(row: { target_sets: number; target_reps: number; tar
  * och lätta förstaset får loggas utan. RPE/RIR-rader kräver alltid RPE.
  */
 export const RPE_REQUIRED_FROM = 7;
-export function rpeRequired(row: { target_pct?: number | null; target_reps: number }, setNumber: number): boolean {
+export function rpeRequired(row: { target_pct?: number | null; target_reps: number; push_main?: boolean | null; rpe_cap?: number | null }, setNumber: number): boolean {
   if (!isPercentRow(row)) return true;
+  // Fixed-percent push and rows with an RPE cap need every set rated, so the cap can be checked.
+  if (row.push_main || row.rpe_cap != null) return true;
   if (setNumber !== 1) return false;
   const est = estimatedRpeFromPct(Number(row.target_pct), row.target_reps);
   return est != null && est >= RPE_REQUIRED_FROM;
@@ -89,3 +91,53 @@ export function avgRatedRpe(rows: { rpe?: unknown }[]): number | null {
 
 /** "8,5" or "–" for an unrated set. */
 export const loggedRpeText = (v: unknown) => (isRatedRpe(v) ? String(Math.round(Number(v) * 10) / 10).replace(".", ",") : "–");
+
+/* ── Steg 4: RPE-tak och max reps ─────────────────────────────────────── */
+
+/** Sets above this rep count give no e1RM and never count in EAk. */
+export const MAX_E1RM_REPS = 12;
+export const RPE_CAP_MIN = 6;
+export const RPE_CAP_MAX = 10;
+
+export function normalizeRpeCap(value: number | string | null | undefined): number | null {
+  const n = typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+  if (value == null || value === "" || !Number.isFinite(n)) return null;
+  return Math.min(RPE_CAP_MAX, Math.max(RPE_CAP_MIN, Math.round(n * 2) / 2));
+}
+
+export const isOverRpeCap = (cap: number | null | undefined, rpe: unknown) =>
+  cap != null && Number(cap) > 0 && isRatedRpe(rpe) && Number(rpe) > Number(cap);
+
+/** 5 % lower than the logged weight, rounded to the coach's step. */
+export function rpeCapReducedKg(weightKg: number, stepKg = 2.5): number {
+  const step = stepKg > 0 ? stepKg : 2.5;
+  return Math.max(0, Math.round((weightKg * 0.95) / step) * step);
+}
+
+/** Squat and deadlift leave 1–2 reps in reserve on max-rep sets, bench leaves 1. */
+export function maxRepsInstruction(lift: "squat" | "bench" | "deadlift" | null): string {
+  return `Så många reps som möjligt med god teknik – lämna ${lift === "squat" || lift === "deadlift" ? "1–2" : "1"}.`;
+}
+
+/** Percent bucket for rep records: nearest 2.5 %. */
+export const pctBucket = (pct: number) => Math.round(pct / 2.5) * 2.5;
+
+export interface MaxRepsLog { exercise: string; variation?: string | null; pct: number; reps: number; date: string }
+export const repRecordKey = (exercise: string, variation: string | null | undefined, pct: number) =>
+  `${exercise.trim().toLowerCase()}::${(variation ?? "").trim().toLowerCase()}::${pctBucket(pct)}`;
+
+/** Best reps per exercise, variant and percent bucket, from max-rep sets only. */
+export function repRecords(logs: MaxRepsLog[]): Map<string, { exercise: string; variation: string | null; pct: number; reps: number; date: string }> {
+  const out = new Map<string, { exercise: string; variation: string | null; pct: number; reps: number; date: string }>();
+  for (const l of [...logs].sort((a, b) => a.date.localeCompare(b.date))) {
+    if (!(l.reps > 0) || !(l.pct > 0)) continue;
+    const key = repRecordKey(l.exercise, l.variation, l.pct);
+    const prev = out.get(key);
+    if (!prev || l.reps > prev.reps) out.set(key, { exercise: l.exercise, variation: l.variation ?? null, pct: pctBucket(l.pct), reps: l.reps, date: l.date });
+  }
+  return out;
+}
+
+/** Max-rep set that may create a max proposal: at most 12 reps and RPE 9 or higher. */
+export const maxRepsQualifiesForProposal = (reps: number, rpe: unknown) =>
+  reps >= 1 && reps <= MAX_E1RM_REPS && isRatedRpe(rpe) && Number(rpe) >= 9;

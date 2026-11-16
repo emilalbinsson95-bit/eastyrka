@@ -35,6 +35,12 @@ export interface TemplateExercise {
   target_reps_max?: number;
   /** Weight step for double progression (byggövning). */
   weight_step_kg?: number;
+  /** Percent rows: optional RPE ceiling (6–10). */
+  rpe_cap?: number;
+  /** Percent rows: last set is max reps. */
+  last_set_max_reps?: boolean;
+  /** Push rows carry their own rules version (fixed percent uses push-3.0-pct). */
+  rules_version?: string;
 }
 
 export interface TemplateSession {

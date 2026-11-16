@@ -12,6 +12,7 @@ Prioriterat efter nytta: först det som visar varför lyft står still, sedan de
 - [ ] 5. RPE-tak och max reps på procentrader, sedan push i fast procent (steg 4–5).
 - [ ] 6. Procenttrappa per huvudlyft (steg 9).
 - [ ] 7. Mallen Volymblock bänk (steg 8) — sist: störst och minst belägg.
+- [ ] 8. Meddelande om förändringar i appen: admin skriver nyhet, användare ser den en gång; utkast om de senaste ändringarna.
 - [ ] Coachbeslut i dokumentet (setdos, mätsingel, max reps i böj/mark m.m.) — dokumentets förslag gäller tills Emil säger annat.
 
 ## Aktuellt

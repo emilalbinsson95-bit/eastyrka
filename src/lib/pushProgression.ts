@@ -4,6 +4,9 @@ import { prescribedWeightKg, pctOf1RMInterp } from "./intensity";
 import type { TemplateExercise, TemplateWeek } from "./strengthTemplates";
 
 export const PUSH_RULES_VERSION = "push-2.0";
+/** Fixed-percent push: every main set at plan-e1RM × percent, RPE ceiling as safety valve. */
+export const PUSH_PCT_RULES_VERSION = "push-3.0-pct";
+export const PUSH_PCT_WEEK_NOTE = "Viktprogression i fast procent: alla huvudset på samma vikt. Logga RPE på varje set. Över RPE-taket: sänk 5 % på resterande set – det räknas som miss. Nästa steg kommer när alla huvudset är klarade under taket.";
 /** Start weight may differ this much from the plan and still count (rounding, plate choice). */
 export const START_WEIGHT_TOLERANCE_KG = 2.5;
 export const PUSH_WEEK_NOTE = "Viktprogression: första arbetssetet på angiven startvikt, logga faktisk RPE och justera följande set efter mål-RPE. Höj inte i förväg — nästa steg kommer när alla huvudset är klarade.";
@@ -11,7 +14,11 @@ export const PUSH_LIFTS = ["squat", "bench", "conventional", "sumo"] as const;
 export type PushLift = typeof PUSH_LIFTS[number];
 export const PUSH_LABELS: Record<PushLift, string> = { squat: "Knäböj", bench: "Bänkpress", conventional: "Konventionellt marklyft", sumo: "Sumomarklyft" };
 export const PUSH_STEPS: Record<PushLift, number> = { squat: 1.5, bench: 1.25, conventional: 2, sumo: 2 };
-export interface PushConfig { lift: PushLift; enabled: boolean; plan_e1rm: number; step_pct: number; rounding_kg: number; main_sets: number; main_reps: number; main_rpe: number; paused_reason?: string | null }
+export type PushType = "rpe" | "percent";
+export interface PushConfig { lift: PushLift; enabled: boolean; plan_e1rm: number; step_pct: number; rounding_kg: number; main_sets: number; main_reps: number; main_rpe: number; paused_reason?: string | null; push_type?: PushType | string | null; main_pct?: number | null; rpe_cap?: number | null }
+export const isPercentPush = (c: Pick<PushConfig, "push_type" | "main_pct">) => c.push_type === "percent" && Number(c.main_pct) > 0;
+/** Fixed-percent push weight: plan-e1RM × percent, rounded to the coach's step. */
+export const pushPctWeightKg = (plan: number, pct: number, rounding: number) => Math.round((plan * pct) / 100 / rounding) * rounding;
 export type PushExercise = TemplateExercise & { push_lift?: PushLift; push_main?: boolean; push_load_pct?: number; plan_e1rm_used?: number };
 export function pushLift(exercise: string, variation?: string | null, genericStyle?: "conventional" | "sumo" | null): PushLift | null {
   if (!isReadinessLift(exercise, variation)) return null;
@@ -35,13 +42,14 @@ export function applyPushProgression(weeks: TemplateWeek[], configs: PushConfig[
   const mainKg = new Map<PushLift, number>();
   for (const c of active) {
     const reps = c.main_reps, rpe = c.main_rpe;
-    const kg = prescribedWeightKg({ oneRmKg: c.plan_e1rm, reps, metric: "rpe", rpe, roundTo: c.rounding_kg });
+    const kg = isPercentPush(c) ? pushPctWeightKg(c.plan_e1rm, Number(c.main_pct), c.rounding_kg) : prescribedWeightKg({ oneRmKg: c.plan_e1rm, reps, metric: "rpe", rpe, roundTo: c.rounding_kg });
     if (kg != null) mainKg.set(c.lift, kg);
   }
   return weeks.map(w => {
     if (w.kind === "peak" || w.kind === "taper" || w.kind === "ramp" || w.week_index <= rampWeeks) return w;
     const picked = new Set<PushLift>();
     let hasMain = false;
+    let hasPctMain = false;
     const sessions = [...w.sessions].sort((a,b) => a.day_of_week-b.day_of_week).map(s => {
       // In push working weeks, heavy singles of a push lift are folded into the main sets (no RPE 9 single on top of push work).
       const singles = new Map<PushLift, number>();
@@ -65,16 +73,21 @@ export function applyPushProgression(weeks: TemplateWeek[], configs: PushConfig[
         if (!main && w.kind !== "working" && weight != null && cap != null && weight > cap) weight = Math.floor(cap / c.rounding_kg) * c.rounding_kg;
         const sets = main ? Math.min(c.main_sets, Math.max(ceilings.get(lift) ?? e.target_sets, e.target_sets + (singles.get(lift) ?? 0))) : e.target_sets;
         if (main) singles.delete(lift);
+        if (main && isPercentPush(c)) {
+          hasPctMain = true;
+          const pct = Number(c.main_pct);
+          return { ...e, target_sets: sets, target_reps: reps, target_pct: pct, target_rpe: undefined, target_rir: undefined, intensity_metric: "rpe", target_weight_kg: pushPctWeightKg(c.plan_e1rm, pct, c.rounding_kg), rpe_cap: Number(c.rpe_cap) || 9, push_lift: lift, push_main: true, push_load_pct: pct / 100, plan_e1rm_used: c.plan_e1rm, rules_version: PUSH_PCT_RULES_VERSION } satisfies PushExercise;
+        }
         return { ...e, target_sets: sets, target_reps: reps, target_rpe: rpe, target_rir: undefined, intensity_metric: "rpe", target_weight_kg: weight ?? undefined, push_lift: lift, push_main: main, push_load_pct: pctOf1RMInterp(rpe,reps)/100, plan_e1rm_used: c.plan_e1rm } satisfies PushExercise;
       }) };
     });
-    return { ...w, sessions, ...(hasMain ? { notes: PUSH_WEEK_NOTE } : {}) };
+    return { ...w, sessions, ...(hasMain ? { notes: hasPctMain ? PUSH_PCT_WEEK_NOTE : PUSH_WEEK_NOTE } : {}) };
   });
 }
 
 export type PushDecision = "push" | "hold" | "miss" | "reset" | "skip" | "paused" | "none";
 export interface PushEvidence { confirmed: boolean; prescribedReps: number; prescribedKg: number; reps: number; kg: number; rpe?: number }
-export function decidePush(input: { plan: number; start: number; step: number; misses: number; sets: PushEvidence[]; expectedSets: number; cooldownDays?: number; phase?: string; paused?: boolean; eak?: number; protocolReduced?: boolean; fatigueStopped?: boolean; firstSetMode?: boolean; targetRpe?: number }) {
+export function decidePush(input: { plan: number; start: number; step: number; misses: number; sets: PushEvidence[]; expectedSets: number; cooldownDays?: number; phase?: string; paused?: boolean; eak?: number; protocolReduced?: boolean; fatigueStopped?: boolean; firstSetMode?: boolean; targetRpe?: number; pctMode?: boolean; rpeCap?: number }) {
   const out = (decision: PushDecision, reason: string, after = input.plan, misses = input.misses) => ({ decision, reason, after, misses });
   if (["deload","ramp"].includes(input.phase ?? "")) return out("none","light_phase");
   if (["peak","taper"].includes(input.phase ?? "") || input.paused) return out("paused","peaking_or_coach_pause");
@@ -90,6 +103,10 @@ export function decidePush(input: { plan: number; start: number; step: number; m
     if (!first || Math.abs(first.kg-first.prescribedKg)>START_WEIGHT_TOLERANCE_KG+1e-9 || targetRpe == null || input.sets.some(s=>s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","first_set_or_rpe_missing");
     if (input.sets.some(s=>s.reps<s.prescribedReps)) return miss();
     if (input.sets.some(s=>s.kg<first.kg-0.001 || (s.rpe ?? 11)>targetRpe)) return out("hold","load_reduced_or_rpe_high");
+  } else if (input.pctMode) {
+    // Fixed percent: every main set on the fixed weight (±2.5 kg), RPE logged; over the cap counts as a miss.
+    if (input.sets.some(s=>Math.abs(s.kg-s.prescribedKg)>START_WEIGHT_TOLERANCE_KG+1e-9 || s.rpe == null || !Number.isFinite(s.rpe))) return out("skip","incomplete_or_changed_load");
+    if (input.sets.some(s=>s.reps<s.prescribedReps || (s.rpe ?? 0)>(input.rpeCap ?? 9))) return miss();
   } else if (input.sets.some(s=>Math.abs(s.kg-s.prescribedKg)>0.001)) return out("skip","incomplete_or_changed_load");
   if (input.sets.some(s => s.reps < s.prescribedReps)) return miss();
   const next = input.plan*(1+input.step/100);

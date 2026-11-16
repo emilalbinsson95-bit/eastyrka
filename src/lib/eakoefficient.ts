@@ -52,7 +52,8 @@ export const EAK_MIN_RPE = 7;
 export const EAK_PEAK_PCT = 103;
 
 export function countsForEAk(set: SetInput): boolean {
-  return !set.is_warmup_reference && !set.is_technique && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.weight_kg > 0;
+  // More than 12 reps is outside the RTS table: no e1RM, never an EAk measurement.
+  return !set.is_warmup_reference && !set.is_technique && set.rpe >= EAK_MIN_RPE && set.reps > 0 && set.reps <= 12 && set.weight_kg > 0;
 }
 
 /**
@@ -62,7 +63,7 @@ export function countsForEAk(set: SetInput): boolean {
  */
 export function dailyE1RM(set: SetInput): number {
   // Unrated sets (NULL, or 0 after Number()) give no estimate.
-  if (!set.weight_kg || !(set.reps > 0) || set.rpe == null || !Number.isFinite(Number(set.rpe)) || !(Number(set.rpe) > 0)) return 0;
+  if (!set.weight_kg || !(set.reps > 0) || set.reps > 12 || set.rpe == null || !Number.isFinite(Number(set.rpe)) || !(Number(set.rpe) > 0)) return 0;
   return (set.weight_kg * 100) / pctOf1RMInterp(set.rpe, set.reps);
 }
 

@@ -474,5 +474,28 @@
     "sorenessHelp": "1 none · 5 noticeable · 10 very sore",
     "motivation": "Motivation to train",
     "motivationHelp": "1 no drive · 5 neutral · 10 very eager"
+  },
+  "volume": {
+    "title": "Volume per week",
+    "description": "Completed volume in squat, bench press and deadlift over the last twelve weeks. Volume = weight ÷ baseline × reps; variations count toward the main lift.",
+    "empty": "No logged training in the competition lifts yet.",
+    "noBaseline": "Baseline missing for {{lifts}}, so volume is not shown there.",
+    "squat": "Squat",
+    "bench": "Bench press",
+    "deadlift": "Deadlift",
+    "heavy": "Heavy sets (85 % or more)",
+    "hard": "Hard sets"
+  },
+  "repRecords": {
+    "title": "Rep records",
+    "description": "Most reps on max-rep sets, per exercise and percentage.",
+    "at": "at {{pct}}",
+    "reps": "{{count}} reps"
+  },
+  "news": {
+    "title": "New in the app",
+    "close": "Got it",
+    "next": "Next",
+    "of": "{{n}} of {{total}}"
   }
 }

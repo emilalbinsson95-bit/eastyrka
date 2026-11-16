@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { lookupBaseline } from "@/lib/eakoefficient";
-import { normalizePct, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
+import { normalizePct, normalizeRpeCap, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
 import { useAthleteBaselines } from "@/hooks/useAthleteBaselines";
 import { useRoundingStep } from "@/hooks/useRoundingStep";
 import { prescribedWeightKg } from "@/lib/intensity";
@@ -26,6 +26,8 @@ interface PlannedExerciseRow {
   intensity_metric: "rpe" | "rir";
   target_weight_kg: number | null;
   target_pct: number | null;
+  rpe_cap: number | null;
+  last_set_max_reps: boolean;
   notes: string | null;
   order_index: number;
 }
@@ -63,7 +65,7 @@ export function PlannedSessionEditor({
       const { data: exes, error: e2 } = await supabase
         .from("planned_exercises")
         .select(
-          "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, notes, order_index",
+          "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, rpe_cap, last_set_max_reps, notes, order_index",
         )
         .eq("planned_session_id", sessionId)
         .order("order_index");
@@ -246,6 +248,26 @@ export function PlannedSessionEditor({
                 <span className={ex.target_weight_kg == null ? "text-destructive" : "text-muted-foreground"}>{pctRowLabel(ex)}</span>
               )}
             </div>
+            {ex.target_pct != null && (
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <label className="flex items-center gap-1">
+                  RPE-tak
+                  <select
+                    aria-label={`RPE-tak för ${ex.exercise}`}
+                    value={ex.rpe_cap != null ? String(Number(ex.rpe_cap)) : ""}
+                    onChange={(e) => updateExercise.mutate({ id: ex.id, patch: { rpe_cap: normalizeRpeCap(e.target.value) } })}
+                    className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+                  >
+                    <option value="">Inget</option>
+                    {[6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((v) => <option key={v} value={String(v)}>{String(v).replace(".", ",")}</option>)}
+                  </select>
+                </label>
+                <label className="flex cursor-pointer items-center gap-1">
+                  <input type="checkbox" checked={ex.last_set_max_reps} onChange={(e) => updateExercise.mutate({ id: ex.id, patch: { last_set_max_reps: e.target.checked } })} />
+                  Sista setet max reps
+                </label>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               <NumField
                 label="Set"

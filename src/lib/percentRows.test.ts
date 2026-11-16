@@ -53,3 +53,36 @@ describe("frivillig RPE på procentrader", () => {
     expect(dailyE1RM({ weight_kg: 100, reps: 5, rpe: null as unknown as number })).toBe(0);
   });
 });
+
+import { isOverRpeCap, rpeCapReducedKg, repRecords, maxRepsQualifiesForProposal, normalizeRpeCap, rpeRequired as rpeRequired4 } from "./percentRows";
+import { countsForEAk } from "./eakoefficient";
+
+describe("steg 4: RPE-tak och max reps", () => {
+  it("5 × 5 @ 80 % med RPE-tak 8,5: RPE 9 föreslår 5 % lägre vikt", () => {
+    expect(isOverRpeCap(8.5, 9)).toBe(true);
+    expect(isOverRpeCap(8.5, 8.5)).toBe(false);
+    expect(isOverRpeCap(null, 10)).toBe(false);
+    expect(rpeCapReducedKg(127.5)).toBe(120);
+  });
+  it("RPE-tak kräver RPE på alla set", () => {
+    expect(rpeRequired4({ target_pct: 58, target_reps: 10, rpe_cap: 8 }, 3)).toBe(true);
+    expect(rpeRequired4({ target_pct: 58, target_reps: 10 }, 3)).toBe(false);
+  });
+  it("RPE-taket begränsas till 6–10 i halvsteg", () => {
+    expect(normalizeRpeCap("8,3")).toBe(8.5);
+    expect(normalizeRpeCap("")).toBeNull();
+    expect(normalizeRpeCap(12)).toBe(10);
+  });
+  it("ett max reps-set på 15 reps blir repsrekord men ger varken e1RM eller EAk", () => {
+    const records = repRecords([
+      { exercise: "Bench press", pct: 70, reps: 12, date: "2026-11-01" },
+      { exercise: "Bench press", pct: 71, reps: 15, date: "2026-11-08" },
+    ]);
+    expect([...records.values()]).toEqual([{ exercise: "Bench press", variation: null, pct: 70, reps: 15, date: "2026-11-08" }]);
+    expect(dailyE1RM({ weight_kg: 100, reps: 15, rpe: 9 })).toBe(0);
+    expect(countsForEAk({ weight_kg: 100, reps: 15, rpe: 9 })).toBe(false);
+    expect(maxRepsQualifiesForProposal(15, 9.5)).toBe(false);
+    expect(maxRepsQualifiesForProposal(8, 9)).toBe(true);
+    expect(maxRepsQualifiesForProposal(8, 8.5)).toBe(false);
+  });
+});

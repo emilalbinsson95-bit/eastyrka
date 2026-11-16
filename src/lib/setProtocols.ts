@@ -37,7 +37,7 @@ export const PROTOCOL_DESCRIPTION: Record<SetProtocol, string> = {
 
 export function protocolGroup(e: TemplateExercise): ProtocolGroup | null {
   // Build exercises always keep their own double progression.
-  if (e.builder_lift || isOneAndHalfRep(e.exercise, e.variation) || e.target_reps < 2 ||
+  if (e.builder_lift || e.target_pct != null || isOneAndHalfRep(e.exercise, e.variation) || e.target_reps < 2 ||
       /over-warm|opener/i.test(e.variation ?? "") ||
       /clean|snatch|jerk|jump|throw|ryck|stöt|vändning|hopp|kast/i.test(e.exercise)) return null;
   const category = volumeCategory(e);

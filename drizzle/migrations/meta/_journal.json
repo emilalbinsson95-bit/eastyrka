@@ -344,6 +344,20 @@
       "when": 1794822475262,
       "tag": "0048_competition_day_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794823297490,
+      "tag": "0049_percent_caps_push_percent_announcements",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794823583938,
+      "tag": "0050_max_reps_max_proposal",
+      "breakpoints": true
     }
   ]
 }

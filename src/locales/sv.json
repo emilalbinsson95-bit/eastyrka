@@ -474,5 +474,28 @@
     "sorenessHelp": "1 ingen ömhet · 5 märkbar · 10 mycket öm",
     "motivation": "Motivation att träna",
     "motivationHelp": "1 ingen lust · 5 neutral · 10 mycket sugen"
+  },
+  "volume": {
+    "title": "Mängd per vecka",
+    "description": "Genomförd mängd i knäböj, bänkpress och marklyft de senaste tolv veckorna. Mängd = vikt ÷ baslinje × reps; varianter räknas till huvudlyftet.",
+    "empty": "Ingen loggad träning i tävlingslyften ännu.",
+    "noBaseline": "Baslinje saknas för {{lifts}}, så mängden visas inte där.",
+    "squat": "Knäböj",
+    "bench": "Bänkpress",
+    "deadlift": "Marklyft",
+    "heavy": "Tunga set (minst 85 %)",
+    "hard": "Hårda set"
+  },
+  "repRecords": {
+    "title": "Repsrekord",
+    "description": "Flest reps på max reps-set, per övning och procent.",
+    "at": "på {{pct}}",
+    "reps": "{{count}} reps"
+  },
+  "news": {
+    "title": "Nytt i appen",
+    "close": "Jag har läst",
+    "next": "Nästa",
+    "of": "{{n}} av {{total}}"
   }
 }

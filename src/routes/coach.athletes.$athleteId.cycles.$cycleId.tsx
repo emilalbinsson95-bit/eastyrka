@@ -1,5 +1,5 @@
 import { lookupBaseline } from "@/lib/eakoefficient";
-import { normalizePct, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
+import { normalizePct, normalizeRpeCap, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
 import { useRoundingStep } from "@/hooks/useRoundingStep";
 import { useAthleteBaselines } from "@/hooks/useAthleteBaselines";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
@@ -152,6 +152,8 @@ interface PlannedExerciseRow {
   intensity_metric: IntensityMetric;
   target_weight_kg: number | null;
   target_pct: number | null;
+  rpe_cap: number | null;
+  last_set_max_reps: boolean;
   lengthened_partials: boolean;
   last_set_to_failure: boolean;
   notes: string | null;
@@ -326,7 +328,7 @@ function CycleDetailPage() {
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, lengthened_partials, last_set_to_failure, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, rpe_cap, last_set_max_reps, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", srcIds);
         if (e2) throw e2;
@@ -375,6 +377,8 @@ function CycleDetailPage() {
               intensity_metric: e.intensity_metric,
               target_weight_kg: e.target_weight_kg,
               target_pct: e.target_pct,
+              rpe_cap: e.rpe_cap,
+              last_set_max_reps: e.last_set_max_reps,
               lengthened_partials: e.lengthened_partials,
               last_set_to_failure: e.last_set_to_failure,
               notes: e.notes,
@@ -558,7 +562,7 @@ function WeekEditor({
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, lengthened_partials, last_set_to_failure, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, rpe_cap, last_set_max_reps, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", sessionIds)
           .order("order_index");
@@ -674,6 +678,8 @@ function WeekEditor({
         intensity_metric: ex.intensity_metric,
         target_weight_kg: ex.target_weight_kg,
         target_pct: ex.target_pct,
+        rpe_cap: ex.rpe_cap,
+        last_set_max_reps: ex.last_set_max_reps,
         lengthened_partials: ex.lengthened_partials,
         last_set_to_failure: ex.last_set_to_failure,
         notes: ex.notes,
@@ -1316,6 +1322,26 @@ function ExerciseRow({
           {pctRowLabel(ex)}
           {ex.target_weight_kg == null ? ". Lägg in en baslinje för övningen så räknas vikten ut." : ". Samma vikt på alla set."}
         </p>
+      )}
+      {isPct && (
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px]" onPointerDown={(e) => e.stopPropagation()}>
+          <label className="flex items-center gap-1">
+            RPE-tak
+            <select
+              aria-label="RPE-tak"
+              className="h-6 rounded border border-border bg-background px-1"
+              value={ex.rpe_cap != null ? String(Number(ex.rpe_cap)) : ""}
+              onChange={(e) => onUpdate({ rpe_cap: normalizeRpeCap(e.target.value) })}
+            >
+              <option value="">Inget</option>
+              {[6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((v) => <option key={v} value={String(v)}>{String(v).replace(".", ",")}</option>)}
+            </select>
+          </label>
+          <label className="flex cursor-pointer items-center gap-1">
+            <Checkbox checked={ex.last_set_max_reps} onCheckedChange={(v) => onUpdate({ last_set_max_reps: v === true })} aria-label="Sista setet max reps" />
+            Sista setet max reps
+          </label>
+        </div>
       )}
 
       {/* Coach-only computed weight hint */}

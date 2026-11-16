@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "app_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_announcements: {
+        Row: {
+          audience: string
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          published_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          published_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       athlete_eak_strategy: {
         Row: {
           athlete_id: string
@@ -1347,6 +1406,7 @@ export type Database = {
           id: string
           intensity_metric: Database["public"]["Enums"]["intensity_metric"]
           is_technique: boolean
+          last_set_max_reps: boolean
           last_set_to_failure: boolean
           lengthened_partials: boolean
           notes: string | null
@@ -1359,6 +1419,7 @@ export type Database = {
           push_load_pct: number | null
           push_main: boolean
           push_terminal_reason: string | null
+          rpe_cap: number | null
           rules_version: string | null
           target_pct: number | null
           target_reps: number
@@ -1379,6 +1440,7 @@ export type Database = {
           id?: string
           intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
           is_technique?: boolean
+          last_set_max_reps?: boolean
           last_set_to_failure?: boolean
           lengthened_partials?: boolean
           notes?: string | null
@@ -1391,6 +1453,7 @@ export type Database = {
           push_load_pct?: number | null
           push_main?: boolean
           push_terminal_reason?: string | null
+          rpe_cap?: number | null
           rules_version?: string | null
           target_pct?: number | null
           target_reps: number
@@ -1411,6 +1474,7 @@ export type Database = {
           id?: string
           intensity_metric?: Database["public"]["Enums"]["intensity_metric"]
           is_technique?: boolean
+          last_set_max_reps?: boolean
           last_set_to_failure?: boolean
           lengthened_partials?: boolean
           notes?: string | null
@@ -1423,6 +1487,7 @@ export type Database = {
           push_load_pct?: number | null
           push_main?: boolean
           push_terminal_reason?: string | null
+          rpe_cap?: number | null
           rules_version?: string | null
           target_pct?: number | null
           target_reps?: number
@@ -1651,13 +1716,16 @@ export type Database = {
           enabled: boolean
           last_decision_at: string | null
           lift: string
+          main_pct: number | null
           main_reps: number
           main_rpe: number
           main_sets: number
           miss_streak: number
           paused_reason: string | null
           plan_e1rm: number
+          push_type: string
           rounding_kg: number
+          rpe_cap: number
           step_pct: number
           updated_at: string
           version: number
@@ -1668,13 +1736,16 @@ export type Database = {
           enabled?: boolean
           last_decision_at?: string | null
           lift: string
+          main_pct?: number | null
           main_reps?: number
           main_rpe?: number
           main_sets?: number
           miss_streak?: number
           paused_reason?: string | null
           plan_e1rm: number
+          push_type?: string
           rounding_kg?: number
+          rpe_cap?: number
           step_pct: number
           updated_at?: string
           version?: number
@@ -1685,13 +1756,16 @@ export type Database = {
           enabled?: boolean
           last_decision_at?: string | null
           lift?: string
+          main_pct?: number | null
           main_reps?: number
           main_rpe?: number
           main_sets?: number
           miss_streak?: number
           paused_reason?: string | null
           plan_e1rm?: number
+          push_type?: string
           rounding_kg?: number
+          rpe_cap?: number
           step_pct?: number
           updated_at?: string
           version?: number
@@ -2557,6 +2631,16 @@ export type Database = {
           _rpe: number
           _sets: number
           _step: number
+        }
+        Returns: undefined
+      }
+      configure_push_type: {
+        Args: {
+          _athlete: string
+          _cap: number
+          _lift: string
+          _pct: number
+          _type: string
         }
         Returns: undefined
       }

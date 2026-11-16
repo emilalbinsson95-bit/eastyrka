@@ -1,4 +1,6 @@
 import { loggedRpeText, isRatedRpe, avgRatedRpe } from "@/lib/percentRows";
+import { WeeklyVolumeCard } from "@/components/WeeklyVolumeCard";
+import { RepRecordsCard } from "@/components/RepRecords";
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
@@ -278,6 +280,8 @@ export function StatsDashboard({
       <EAkoefficientCard logs={logs} baselines={baselines} readiness={readiness} />
       <WeekInNumbersCard logs={logs} endurance={endurance} />
       <MesoSummaryCard logs={logs} mesocycles={mesocycles} />
+      <WeeklyVolumeCard logs={logs} baselines={baselines} />
+      <RepRecordsCard athleteId={athleteId} />
       <PRFeedCard logs={logs} />
       <BodyweightCard readiness={readiness} logs={logs} profile={profileQuery.data ?? null} athleteId={athleteId} />
     </div>

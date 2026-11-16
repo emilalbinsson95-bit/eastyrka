@@ -2,7 +2,9 @@ import { useWarmupLoads } from "@/components/WarmupLoadsCard";
 import { CompetitionDayToday } from "@/components/CompetitionDayCard";
 import { FinishPushButton } from "@/components/PushProgressionCard";
 import { firstSetInstruction } from "@/lib/pushPresentation";
-import { BULK_LOG_MIN_SETS, isPercentRow, loggedRpeText, rpeRequired } from "@/lib/percentRows";
+import { BULK_LOG_MIN_SETS, isOverRpeCap, isPercentRow, loggedRpeText, maxRepsInstruction, rpeCapReducedKg, rpeRequired } from "@/lib/percentRows";
+import { previousRepRecord, useMaxRepsLogs } from "@/components/RepRecords";
+import { compLiftKey } from "@/lib/liftIdentity";
 import { BUILDER_DEFAULT_STEP_KG, BUILDER_LAST_SET_RPE, BUILDER_RPE, builderTarget, builderTargetMet, lastTimeText, type BuilderLogSet, type BuilderTarget } from "@/lib/builderExercises";
 import { START_WEIGHT_TOLERANCE_KG } from "@/lib/pushProgression";
 import { WarmupReferenceFields } from "@/components/WarmupReferenceFields";
@@ -104,6 +106,8 @@ interface PlannedExercise {
   builder_lift?: string | null;
   target_reps_max?: number | null;
   weight_step_kg?: number | null;
+  rpe_cap?: number | null;
+  last_set_max_reps?: boolean;
 }
 
 interface PlannedSession {
@@ -177,7 +181,7 @@ function TodayPage() {
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
                target_weight_kg, target_pct, lengthened_partials, last_set_to_failure,
-               notes, order_index, is_technique, push_main, push_lift, rules_version,
+               notes, order_index, is_technique, push_main, push_lift, rules_version, rpe_cap, last_set_max_reps,
                builder_lift, target_reps_max, weight_step_kg
              )
            )`;
@@ -247,7 +251,7 @@ function TodayPage() {
              id, exercise, variation, target_sets, target_reps,
              target_rpe, target_rir, intensity_metric,
              target_weight_kg, target_pct, lengthened_partials, last_set_to_failure,
-             notes, order_index, is_technique, push_main, push_lift, rules_version,
+             notes, order_index, is_technique, push_main, push_lift, rules_version, rpe_cap, last_set_max_reps,
                builder_lift, target_reps_max, weight_step_kg
            )`,
         )
@@ -828,6 +832,14 @@ function PlannedExerciseRow({
   const pctRow = isPercentRow(ex);
   const pctText = pctRow ? `${String(Number(ex.target_pct)).replace(".", ",")} % av ditt max` : null;
   const builder = useBuilderTarget(ex, athleteId, dateStr, logs);
+  const maxLogs = useMaxRepsLogs(athleteId);
+  const maxRecord = pctRow && ex.last_set_max_reps ? previousRepRecord(maxLogs.data, ex.exercise, ex.variation, Number(ex.target_pct), dateStr) : null;
+  const maxSetLog = ex.last_set_max_reps ? logs.find((l) => l.set_number === targetSets && !l.is_warmup_reference) : undefined;
+  const newRecord = maxSetLog && (!maxRecord || maxSetLog.reps > maxRecord.reps) && maxRecord ? maxSetLog.reps : null;
+  // RPE-tak: the first set above the ceiling suggests 5 % lower load on the remaining sets.
+  const capLog = pctRow ? logs.filter((l) => !l.is_warmup_reference).sort((a, b) => a.set_number - b.set_number).find((l) => isOverRpeCap(ex.rpe_cap, l.rpe)) : undefined;
+  const capHit = !!capLog;
+  const capReducedKg = capLog ? rpeCapReducedKg(Number(capLog.weight_kg), Number(ex.weight_step_kg) || 2.5) : null;
 
   const intensityLabel = pctRow ? null :
     ex.intensity_metric === "rir" && ex.target_rir != null
@@ -852,6 +864,7 @@ function PlannedExerciseRow({
             {intensityLabel && !ex.builder_lift && ` @ ${intensityLabel}`}
             {ex.target_weight_kg != null && ` · ${ex.push_main && ex.rules_version === "push-2.0" ? "Startvikt: " : ""}${ex.target_weight_kg} kg`}
             {pctText && <span className="ml-1 text-[11px]">({pctText})</span>}
+            {pctRow && ex.rpe_cap != null && <span className="ml-1 text-[11px]">· RPE-tak {String(Number(ex.rpe_cap)).replace(".", ",")}</span>}
           </p>
           {(ex.lengthened_partials || ex.last_set_to_failure) && (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -867,7 +880,15 @@ function PlannedExerciseRow({
               )}
             </div>
           )}
-          {pctRow && <p className="mt-2 text-sm">{ex.target_weight_kg != null ? `Fast vikt: ${ex.target_weight_kg} kg på alla set. Behåll vikten även om det känns lätt. ${rpeRequired(ex, 1) ? "Ange RPE på första setet; på övriga set är RPE frivilligt." : "RPE är frivilligt på alla set."}` : "Vikten saknas eftersom din coach inte har lagt in något max för övningen. Fråga din coach."}</p>}
+          {pctRow && <p className="mt-2 text-sm">{ex.target_weight_kg != null ? `Fast vikt: ${ex.target_weight_kg} kg på alla set. Behåll vikten även om det känns lätt. ${rpeRequired(ex, 2) ? `Ange RPE på varje set.${ex.rpe_cap != null ? ` Över RPE ${String(Number(ex.rpe_cap)).replace(".", ",")}: sänk 5 % på resterande set.` : ""}` : rpeRequired(ex, 1) ? "Ange RPE på första setet; på övriga set är RPE frivilligt." : "RPE är frivilligt på alla set."}` : "Vikten saknas eftersom din coach inte har lagt in något max för övningen. Fråga din coach."}</p>}
+          {pctRow && ex.last_set_max_reps && (
+            <div className="mt-2 rounded-md border border-border p-2 text-sm">
+              <p><span className="font-medium">Sista setet: max reps.</span> {maxRepsInstruction(compLiftKey(ex.exercise))}</p>
+              {maxRecord && <p className="text-xs text-muted-foreground">Förra gången: {maxRecord.reps} reps på samma procent ({maxRecord.date}).</p>}
+              {newRecord && <p className="mt-1 font-medium text-primary">Nytt repsrekord: {newRecord} reps på {String(Number(ex.target_pct)).replace(".", ",")} %.</p>}
+            </div>
+          )}
+          {capHit && !isDone && <p role="alert" className="mt-2 rounded-md border border-destructive/50 bg-destructive/10 p-2 text-sm">Över RPE-taket – sänk till {capReducedKg} kg på resterande set. Du väljer själv; din coach ser att taket passerades.</p>}
           {ex.builder_lift && <BuilderTargetBox target={builder.target} last={builder.last} met={builder.met} loading={builder.loading} />}
           {!pctRow && !ex.builder_lift && (ex.push_main || ex.target_weight_kg == null) && <p className="mt-2 text-sm">{ex.push_main && ex.rules_version !== "push-2.0" ? "Detta sparade pass har samma målvikter för huvudseten. Logga faktisk RPE; sänk vikten om den blir för tung. Ändrad vikt ger ingen automatisk höjning." : firstSetInstruction(ex.target_weight_kg, ex.target_rpe)}</p>}
           {ex.notes && !ex.notes.startsWith("Fyra arbetsset på angiven vikt.") && (
@@ -946,7 +967,7 @@ function PlannedExerciseRow({
         </div>
       )}
 
-      {!isDone && pctRow && ex.target_weight_kg != null && targetSets >= BULK_LOG_MIN_SETS && targetSets - completed >= 2 && (
+      {!isDone && !capHit && pctRow && ex.target_weight_kg != null && targetSets >= BULK_LOG_MIN_SETS && targetSets - completed - (ex.last_set_max_reps ? 1 : 0) >= 2 && (
         <BulkLogPlannedSets ex={ex} fromSet={completed + 1} athleteId={athleteId} dateStr={dateStr} />
       )}
       {!isDone && (
@@ -956,6 +977,7 @@ function PlannedExerciseRow({
           baseline={baseline}
           previousLog={logs[logs.length - 1]}
           defaultWeight={builder.target && builder.target.kind !== "none" ? builder.target.weightKg : undefined}
+          capWeight={capReducedKg ?? undefined}
           athleteId={athleteId}
           dateStr={dateStr}
         />
@@ -998,6 +1020,7 @@ function LogSetButton({
   defaultWeight,
   athleteId,
   dateStr,
+  capWeight,
 }: {
   ex: PlannedExercise;
   nextSet: number;
@@ -1005,13 +1028,17 @@ function LogSetButton({
   previousLog: LogRow | undefined;
   /** Byggövning: today's target weight when no set is logged yet. */
   defaultWeight?: number;
+  /** RPE-tak passerat: 5 % lägre vikt föreslås på resterande set. */
+  capWeight?: number;
   athleteId: string;
   dateStr: string;
 }) {
   const [open, setOpen] = useState(false);
+  const isMaxSet = isPercentRow(ex) && ex.last_set_max_reps === true && nextSet === ex.target_sets;
   const [weight, setWeight] = useState<number>(
-    // Percent rows: the planned weight is fixed on every set.
-    isPercentRow(ex) && ex.target_weight_kg != null ? Number(ex.target_weight_kg)
+    // Percent rows: the planned weight is fixed on every set (lower after a passed RPE cap).
+    isPercentRow(ex) && capWeight != null ? capWeight
+      : isPercentRow(ex) && ex.target_weight_kg != null ? Number(ex.target_weight_kg)
       : previousLog ? Number(previousLog.weight_kg) : defaultWeight != null ? defaultWeight : ex.target_weight_kg == null ? NaN : Number(ex.target_weight_kg),
   );
   const [reps, setReps] = useState<number>(
@@ -1022,6 +1049,7 @@ function LogSetButton({
   useEffect(() => {
     if (!previousLog && defaultWeight != null && !isPercentRow(ex)) setWeight((w) => (Number.isFinite(w) ? w : defaultWeight));
   }, [defaultWeight, previousLog, ex]);
+  useEffect(() => { if (capWeight != null && isPercentRow(ex)) setWeight(capWeight); }, [capWeight, ex]);
   const [rir, setRir] = useState<number>(
     NaN,
   );
@@ -1136,6 +1164,8 @@ function LogSetButton({
             <NumField label="Vikt (kg)" step={2.5} value={weight} onChange={setWeight} />
           )}
           <NumField label="Reps" step={1} value={reps} onChange={setReps} />
+          {isMaxSet && <p className="-mt-2 text-xs text-muted-foreground">Max reps-set: {maxRepsInstruction(compLiftKey(ex.exercise))} Fler än 12 reps sparas som repsrekord men ger inget beräknat max.</p>}
+          {capWeight != null && isPercentRow(ex) && <p className="-mt-2 text-xs text-muted-foreground">RPE-taket passerades tidigare i dag, så vikten är sänkt 5 % till {capWeight} kg. Du kan ändra den.</p>}
           {matchesWarmup && <WarmupReferenceFields checked={warmup} rpe={warmupRpe} onChecked={setWarmup} onRpe={setWarmupRpe} />}
           {!isWarmup && (usingRir ? (
             <NumField label={needsRpe ? "RIR (reps in reserve)" : "RIR (valfritt)"} step={1} min={0} max={10} value={rir} onChange={setRir} />
@@ -1231,7 +1261,8 @@ function BulkLogPlannedSets({
   const [open, setOpen] = useState(false);
   const [rpe, setRpe] = useState<number>(NaN);
   const queryClient = useQueryClient();
-  const remaining = ex.target_sets - fromSet + 1;
+  const lastBulkSet = ex.last_set_max_reps ? ex.target_sets - 1 : ex.target_sets;
+  const remaining = lastBulkSet - fromSet + 1;
   const needsRpe = rpeRequired(ex, fromSet);
   const mutation = useMutation({
     mutationFn: async () => {
@@ -1275,7 +1306,7 @@ function BulkLogPlannedSets({
         <SheetHeader>
           <SheetTitle>{ex.exercise} — logga alla set</SheetTitle>
           <SheetDescription>
-            Set {fromSet}–{ex.target_sets}: {ex.target_reps} reps på {ex.target_weight_kg} kg. Använd bara detta om du gjorde seten som planerat.
+            Set {fromSet}–{lastBulkSet}: {ex.target_reps} reps på {ex.target_weight_kg} kg. Använd bara detta om du gjorde seten som planerat.{ex.last_set_max_reps ? " Max reps-setet loggar du separat." : ""}
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-2 px-4 py-4">

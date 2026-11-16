@@ -1,4 +1,5 @@
 import { BuilderTrendCard } from "@/components/BuilderTrendCard";
+import { RepRecordsCard, RpeCapEventsCard } from "@/components/RepRecords";
 import { loggedRpeText, isRatedRpe, avgRatedRpe } from "@/lib/percentRows";
 import { chartMeasurements, chartExerciseKey, chartLiftIdentity, adverseReadinessDeviation } from "@/lib/chartMetrics";
 import { volumeCategory } from "@/lib/strengthTemplates";
@@ -1271,6 +1272,8 @@ function AnalyticsPage() {
             })}</div>
           <LiftMetricsSection athleteId={athleteId} logs={fullLogs} baselines={baselines} days={days} />
           <BuilderTrendCard athleteId={athleteId} />
+          <RpeCapEventsCard athleteId={athleteId} />
+          <RepRecordsCard athleteId={athleteId} />
           </TabsContent>
 
           {/* === ENDURANCE TAB === */}

@@ -5,10 +5,12 @@ import { PUSH_LIFTS } from "./pushProgression";
 
 export const savePushSettings = createServerFn({method:"POST"})
  .middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({athleteId:z.string().uuid(),lift:z.enum(PUSH_LIFTS),enabled:z.boolean(),plan:z.number().positive().max(1000),step:z.number().positive().max(2),rounding:z.union([z.literal(1.25),z.literal(2.5)]),sets:z.number().int().min(2).max(5),reps:z.number().int().min(3).max(5),rpe:z.number().min(6).max(8.5).multipleOf(0.5),resume:z.boolean().default(false)}).parse(input))
+ .inputValidator(input=>z.object({athleteId:z.string().uuid(),lift:z.enum(PUSH_LIFTS),enabled:z.boolean(),plan:z.number().positive().max(1000),step:z.number().positive().max(2),rounding:z.union([z.literal(1.25),z.literal(2.5)]),sets:z.number().int().min(2).max(5),reps:z.number().int().min(3).max(5),rpe:z.number().min(6).max(8.5).multipleOf(0.5),resume:z.boolean().default(false),pushType:z.enum(["rpe","percent"]).default("rpe"),pct:z.number().min(50).max(95).multipleOf(0.5).nullable().default(null),rpeCap:z.number().min(6).max(10).multipleOf(0.5).default(9)}).refine(d=>d.pushType!=="percent"||d.pct!=null,{message:"Ange procent för fast procent"}).parse(input))
  .handler(async({data,context})=>{
   const {error}=await context.supabase.rpc("configure_push",{_athlete:data.athleteId,_lift:data.lift,_enabled:data.enabled,_plan:data.plan,_step:data.step,_rounding:data.rounding,_sets:data.sets,_reps:data.reps,_rpe:data.rpe,_resume:data.resume});
   if(error)throw new Error("Viktprogressionen kunde inte sparas. Kontrollera coachåtkomst och värden.");
+  const {error:typeError}=await context.supabase.rpc("configure_push_type",{_athlete:data.athleteId,_lift:data.lift,_type:data.pushType,_pct:data.pct??0,_cap:data.rpeCap});
+  if(typeError)throw new Error("Push-typen kunde inte sparas. Kontrollera procent och RPE-tak.");
   return {ok:true};
  });
 export const finishPushExposure = createServerFn({method:"POST"})

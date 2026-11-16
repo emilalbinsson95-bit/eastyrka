@@ -8,9 +8,10 @@ import { format, addDays, startOfWeek, parseISO } from "date-fns";
 import { Dumbbell, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
-import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
+import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, getWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
 import { applyVolumeGuards } from "@/lib/volumeGuards";
 import { applyBuilders, type BuilderChoices, type BuilderLift } from "@/lib/builderExercises";
+import { fillSuggestedLoads, finishLightWeeks } from "@/lib/blockFinish";
 import { BuilderExercisesPanel } from "@/components/BuilderExercisesPanel";
 import { volumeFactorForCategory } from "@/lib/strengthVolumeProfile";
 import { applySessionSetBudget } from "@/lib/sessionSetBudget";
@@ -323,6 +324,8 @@ export function GenerateStrengthTemplateDialog({
     () => visibleAdjustments.filter((a) => a.defaultOn && !offIds.has(a.id)),
     [visibleAdjustments, offIds],
   );
+  const loadsOn = activeAdjustments.some((a) => a.kind === "loads");
+  const rampWeeks = Math.max(0, ...activeAdjustments.filter((a) => a.kind === "ramp-in").map((a) => a.rampWeeks ?? 0));
 
   const toggle = (id: string) =>
     setOffIds((prev) => {
@@ -411,7 +414,7 @@ export function GenerateStrengthTemplateDialog({
       // no extra intensityOffset is passed here.
       // Fixed weeks (start week) keep their RPE 10 triples exactly as written.
       if (isFixed) return { weeks: finalWeeks, warnings: [] as string[] };
-      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload), weakIds), styleQuery.data);
+      const weeks = applyDeadliftStyle(isPeaking || isTimeLimited ? finalWeeks : applyWeakPoints(applyOverload(finalWeeks, overload, 0, rampWeeks), weakIds), styleQuery.data);
       if (isPeaking) return { weeks: applyVolumeGuards(weeks, volumeProfile), warnings: d0Plan?.warnings ?? [] };
       if (template?.sessionSetBudget) return {
         weeks: applyVolumeGuards(applySetProtocols(applySessionSetBudget(weeks, baseWeeks, template.sessionSetBudget), setProtocols),volumeProfile),
@@ -424,7 +427,7 @@ export function GenerateStrengthTemplateDialog({
       const floor = Object.fromEntries((["squat", "bench", "deadlift"] as const).map((l) => [l, Math.round(6 * Math.min(1, volumeFactorForCategory(l === "squat" ? "squat" : l === "bench" ? "horizontal-press" : "hinge", volumeProfile)))]));
       // Procenttrappa (steg 9): coach-chosen per lift, never together with push on the same lift.
       const laddered = template?.skipVolumeFloors ? weeks : applyPercentLadder(weeks, Object.fromEntries(Object.entries(ladder).filter(([l]) => !pushLifts.has(l as BuilderLift))), { overrides: ladderOverrides, topSetScale: tuning.volume * tuning.mainLifts });
-      const built = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBuilders(laddered, builders, { pushLifts, floor });
+      const built = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBuilders(laddered, builders, { pushLifts, floor, protect: getWeakPoints(weakIds).flatMap((w) => [w.variation.exercise, w.accessory.exercise]) });
       let adapted = { weeks: built.weeks, warnings: [...built.warnings] };
       if (!template?.skipVolumeFloors) {
         for (let step = 0; step < 6; step++) {
@@ -438,9 +441,16 @@ export function GenerateStrengthTemplateDialog({
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
       return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? guarded.flatMap((w,wi)=>w.sessions.flatMap((session,si)=>session.exercises.flatMap((e,ei)=>{const before=adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets;return before!=null&&before!==e.target_sets?[`${e.exercise}: ${before} → ${e.target_sets} set (slutvakt: pass/vecka).`]:[]}))) : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions, builders, pushQuery.data, ladder, ladderOverrides, tuning.volume, tuning.mainLifts],
+    [finalWeeks, overload, rampWeeks, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions, builders, pushQuery.data, ladder, ladderOverrides, tuning.volume, tuning.mainLifts],
   );
-  const plannedWeeks = useMemo(() => isPeaking || isFixed || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, (pushQuery.data ?? []).filter((c) => !ladderBlocksPush(ladder, c.lift)), styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isFixed,isTimeLimited,template,ladder]);
+  const plannedWeeks = useMemo(() => {
+    const pushed = isPeaking || isFixed || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, (pushQuery.data ?? []).filter((c) => !ladderBlocksPush(ladder, c.lift)), styleQuery.data, rampWeeks);
+    // Fixed start week keeps its RPE 10 triples without weights; peaks keep their own loads.
+    if (isFixed || isPeaking) return pushed;
+    const finished = finishLightWeeks(pushed, rampWeeks);
+    // Suggested weights follow the coach's "working weights from 1RM" choice.
+    return loadsOn ? fillSuggestedLoads(finished, historyQuery.data?.baselines ?? [], styleQuery.data ?? null) : finished;
+  }, [blockResult.weeks,pushQuery.data,styleQuery.data,rampWeeks,loadsOn,isPeaking,isFixed,isTimeLimited,template,ladder,historyQuery.data]);
 
   const weeklySets = useMemo(() => {
     const m = templateWeeklySets(plannedWeeks);

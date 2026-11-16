@@ -4,7 +4,7 @@
  * lift's secondary (variation) slot for a targeted variation and adds one
  * targeted accessory per week (not in deload weeks).
  */
-import { isOneAndHalfRep } from "@/lib/exerciseVariants";
+import { isOneAndHalfRep, sameExerciseName } from "@/lib/exerciseVariants";
 import { isCompLift } from "@/lib/liftIdentity";
 import { volumeCategory, type TemplateExercise, type TemplateWeek } from "@/lib/strengthTemplates";
 
@@ -194,14 +194,23 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
     const usedSlots = new Set<TemplateExercise>();
     // Keep programming priority in memory, never in athlete-visible exercise notes.
     const targeted = new WeakSet<TemplateExercise>();
+    // Accessories chosen by earlier weak points. In working weeks they already
+    // cover a later weak point's variation; deloads skip accessories, so they
+    // must skip that variation too instead of swapping a different slot.
+    const earlierAccessories: string[] = [];
     for (const wp of selected) {
       const cat = LIFT_CAT[wp.lift];
-      const has = (name: string) => sessions.some((s) => s.exercises.some((e) => e.exercise.toLowerCase() === name.toLowerCase()));
+      const has = (name: string) => sessions.some((s) => s.exercises.some((e) => sameExerciseName(e.exercise, name)));
+      if (deload && earlierAccessories.some((a) => sameExerciseName(a, wp.variation.exercise))) {
+        earlierAccessories.push(wp.accessory.exercise);
+        continue;
+      }
+      earlierAccessories.push(wp.accessory.exercise);
       // 1. swap the lift's secondary slot for the targeted variation.
       // Realism: if the week already has that exercise (template or another
       // weak point), prioritise it with +1 set (max 5) instead of adding a
       // second or third session of the same movement.
-      const existing = sessions.flatMap((s) => s.exercises).find((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase());
+      const existing = sessions.flatMap((s) => s.exercises).find((e) => sameExerciseName(e.exercise, wp.variation.exercise));
       if (existing) {
         if (!deload && !targeted.has(existing)) {
           existing.target_sets = Math.min(5, existing.target_sets + 1);
@@ -213,7 +222,7 @@ export function applyWeakPoints(weeks: TemplateWeek[], ids: string[]): TemplateW
       let slot: TemplateExercise | undefined;
       if (!existing)
       for (const s of sessions) {
-        if (s.exercises.some((e) => e.exercise.toLowerCase() === wp.variation.exercise.toLowerCase())) continue;
+        if (s.exercises.some((e) => sameExerciseName(e.exercise, wp.variation.exercise))) continue;
         slot = s.exercises.find((e) => !usedSlots.has(e) && volumeCategory(e) === cat && !isCompSlot(e) && !OVER_WARM.test(e.variation ?? ""));
         if (slot) break;
       }

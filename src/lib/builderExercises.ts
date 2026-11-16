@@ -6,6 +6,7 @@
  * the 8/7/6 exercise cap, never in the main lift's sets, Mängd or EAk.
  */
 import { isCompLift } from "@/lib/liftIdentity";
+import { sameExerciseName } from "@/lib/exerciseVariants";
 import { volumeCategory, type TemplateExercise, type TemplateWeek } from "@/lib/strengthTemplates";
 import { exercisePriority, sessionCap } from "@/lib/weakPoints";
 
@@ -60,6 +61,8 @@ export interface BuilderOptions {
   pushLifts?: Set<BuilderLift>;
   /** Weekly hard-set floor per lift (defaults to 6). */
   floor?: Partial<Record<BuilderLift, number>>;
+  /** Coach-chosen weak-point exercises: a build row never replaces them. */
+  protect?: string[];
 }
 
 /** Only working weeks get build exercises: never deload, ramp, taper or peak. */
@@ -76,12 +79,15 @@ export function applyBuilders(weeks: TemplateWeek[], choices: BuilderChoices, op
       const sets = Math.min(BUILDER_MAX_SETS, Math.max(BUILDER_MIN_SETS, Math.round(c.sets)));
       const hostIdx = sessions.map((s, i) => (s.exercises.some((e) => isLiftRow(e, lift)) ? i : -1)).filter((i) => i >= 0);
       if (!hostIdx.length) { warnings.add(`${BUILDER_LIFT_LABEL[lift]}: inget pass tränar lyftet, så byggövningen ${c.exercise} lades inte in.`); continue; }
-      const hosts = pickHosts(hostIdx, c.perWeek);
+      // Once a week: prefer the first host day that still has room, so a full
+      // day never loses an exercise when another lift day can take the row.
+      const roomy = hostIdx.find((i) => workingCount(sessions[i]) < cap);
+      const hosts = c.perWeek === 1 && roomy != null ? [roomy] : pickHosts(hostIdx, c.perWeek);
       if (hosts.length < c.perWeek) warnings.add(`${BUILDER_LIFT_LABEL[lift]}: lyftet tränas bara ett pass i veckan, så ${c.exercise} läggs in en gång per vecka.`);
       let placed = 0;
       for (const hi of hosts) {
         const s = sessions[hi];
-        if (s.exercises.some((e) => e.exercise.toLowerCase() === c.exercise.trim().toLowerCase())) {
+        if (s.exercises.some((e) => sameExerciseName(e.exercise, c.exercise.trim()))) {
           warnings.add(`${BUILDER_LIFT_LABEL[lift]}: ${c.exercise} finns redan i passet, så den lades inte in en gång till.`);
           continue;
         }
@@ -99,6 +105,7 @@ export function applyBuilders(weeks: TemplateWeek[], choices: BuilderChoices, op
           let low = -1;
           s.exercises.forEach((e, i) => {
             if (isBuilderRow(e) || SINGLE.test(e.variation ?? "")) return;
+            if (opts.protect?.some((name) => sameExerciseName(name, e.exercise))) return;
             const p = exercisePriority(e);
             if (p < pr && (low < 0 || p < exercisePriority(s.exercises[low]))) low = i;
           });

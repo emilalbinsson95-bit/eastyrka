@@ -202,6 +202,9 @@ const WAVE: WaveStep[] = [
   { reps: 3, deadliftReps: 2, rpe: 8.5, pct: "88–91%" },
 ];
 
+/** RPE removed in ramp-in weeks (mirrors applyAdjustments). */
+const RAMP_RPE_CUT = 1;
+
 function waveSlot(sessionIndex: number, e: { exercise: string; variation?: string }): string {
   return `${sessionIndex}|${e.exercise}|${e.variation ?? ""}`;
 }
@@ -217,6 +220,7 @@ function withWaveLoading(
   workingIndex: number,
   intensityOffset: number,
   firstWeekRpe: Map<string, number>,
+  rampCut = 0,
 ): TemplateWeek {
   const step = WAVE[workingIndex % WAVE.length];
   const sessions = week.sessions.map((s, si) => ({
@@ -233,7 +237,7 @@ function withWaveLoading(
       const reps = lift === "deadlift" ? step.deadliftReps : step.reps;
       const firstRpe = firstWeekRpe.get(waveSlot(si, e)) ?? WAVE[0].rpe;
       const deviation = firstRpe - WAVE[0].rpe;
-      const rpe = Math.max(5, Math.min(10, step.rpe + deviation + intensityOffset));
+      const rpe = Math.max(5, Math.min(10, step.rpe + deviation + intensityOffset - rampCut));
       return reconcileLoad(e, {
         ...e,
         target_reps: reps,
@@ -364,7 +368,12 @@ function withBenchConsolidation(week: TemplateWeek): TemplateWeek {
 
 // ---------- public API ----------
 
-export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions, intensityOffset = 0): TemplateWeek[] {
+/**
+ * `rampWeeks`: working weeks that already carry the ramp-in −1 RPE. That cut is
+ * removed before measuring the coach's deviation, and only re-applied to those
+ * weeks, so a lighter first week never lowers the whole wave.
+ */
+export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions, intensityOffset = 0, rampWeeks = 0): TemplateWeek[] {
   if (!overloadTouched(o)) return weeks;
   let workingIndex = 0;
   const firstWeekRpe = new Map<string, number>();
@@ -377,11 +386,11 @@ export function applyOverload(weeks: TemplateWeek[], o: OverloadOptions, intensi
       if (workingIndex === 0) {
         w.sessions.forEach((s, si) =>
           s.exercises.forEach((e) => {
-            if (e.target_rpe != null && !firstWeekRpe.has(waveSlot(si, e))) firstWeekRpe.set(waveSlot(si, e), e.target_rpe);
+            if (e.target_rpe != null && !firstWeekRpe.has(waveSlot(si, e))) firstWeekRpe.set(waveSlot(si, e), e.target_rpe + (rampWeeks > 0 ? RAMP_RPE_CUT : 0));
           }),
         );
       }
-      w = withWaveLoading(w, workingIndex, intensityOffset, firstWeekRpe);
+      w = withWaveLoading(w, workingIndex, intensityOffset, firstWeekRpe, workingIndex < rampWeeks ? RAMP_RPE_CUT : 0);
       workingIndex += 1;
     }
     if (o.overWarmSingles) w = withOverWarmSingles(w);

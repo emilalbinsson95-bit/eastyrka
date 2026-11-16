@@ -60,3 +60,4 @@
 - percentLadder.ts excludes push lifts; volumeBench.ts is fixed (mesocycles.template_id), reordered only by `volume_bench_back_up`.
 - EAk evaluations are unique per athlete/lift/window_end and parallel runs skip on conflict, because duplicate rows left phantom pending coach decisions.
 - Max-rep sets count as rep records only on the planned load, because RPE-cap reductions would inflate records at the planned percent.
+- `blockFinish.ts` runs last (after push): ramp-in/deload rows never exceed working-week intent, and empty RPE rows get suggested kg from own max/history, else a conservative comp-lift share for known variations — suggestions only, never baselines/EAk. Ramp-in −1 RPE is excluded from the wave's deviation, so a light first week never lowers the block.

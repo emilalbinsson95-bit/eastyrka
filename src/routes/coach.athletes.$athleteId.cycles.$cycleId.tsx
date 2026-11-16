@@ -1,5 +1,6 @@
 import { VolumeBenchBackUp } from "@/components/VolumeBenchBackUp";
 import { lookupBaseline } from "@/lib/eakoefficient";
+import { suggestedOneRm } from "@/lib/blockFinish";
 import { normalizePct, normalizeRpeCap, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
 import { useRoundingStep } from "@/hooks/useRoundingStep";
 import { useAthleteBaselines } from "@/hooks/useAthleteBaselines";
@@ -922,6 +923,7 @@ function WeekEditor({
                       <ExerciseRow
                         ex={ex}
                         oneRm={lookupBaseline(baselines, ex.exercise) ?? 0}
+                        estimatedOneRm={suggestedOneRm({ exercise: ex.exercise, variation: ex.variation ?? undefined, target_sets: ex.target_sets, target_reps: ex.target_reps, intensity_metric: "rpe" }, Object.entries(baselines).map(([exercise, one_rm_kg]) => ({ exercise, one_rm_kg }))) ?? 0}
                         roundingKg={roundingKg}
                         onUpdate={(patch) =>
                           updateExerciseMutation.mutate({ id: ex.id, patch })
@@ -1077,7 +1079,8 @@ function SortableItem({
 
 function ExerciseRow({
   ex,
-  oneRm,
+  oneRm: ownOneRm,
+  estimatedOneRm = 0,
   roundingKg = 2.5,
   onUpdate,
   onDuplicate,
@@ -1085,11 +1088,16 @@ function ExerciseRow({
 }: {
   ex: PlannedExerciseRow;
   oneRm: number;
+  /** Share of the competition lift's max for known variations (pause squat, Spoto…). */
+  estimatedOneRm?: number;
   roundingKg?: number;
   onUpdate: (patch: Partial<PlannedExerciseRow>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
+  // Percent rows stay tied to a real max; the estimate only guides RPE/RIR rows.
+  const oneRm = ownOneRm > 0 ? ownOneRm : ex.target_pct != null ? 0 : estimatedOneRm;
+  const isEstimate = ownOneRm <= 0 && oneRm > 0;
   const [sets, setSets] = useState(String(ex.target_sets));
   const [reps, setReps] = useState(String(ex.target_reps));
   const [rpe, setRpe] = useState(ex.target_rpe?.toString() ?? "");
@@ -1356,7 +1364,7 @@ function ExerciseRow({
                 Auto: <span className="font-semibold text-foreground">
                   {computedKg} kg
                 </span>{" "}
-                (from athlete's 1RM, hidden from athlete)
+                {isEstimate ? "(estimated from the competition lift's 1RM, hidden from athlete)" : "(from athlete's 1RM, hidden from athlete)"}
               </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[220px] text-xs">

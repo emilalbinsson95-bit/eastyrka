@@ -1,4 +1,5 @@
-import { isOneAndHalfRep, oneAndHalfParent, ONE_AND_HALF_LOAD_FACTOR, setVolumeWeight } from "@/lib/exerciseVariants";
+import { isOneAndHalfRep, oneAndHalfParent, ONE_AND_HALF_LOAD_FACTOR, resolveVariantExercise, setVolumeWeight } from "@/lib/exerciseVariants";
+import { baselineExerciseKey } from "@/lib/eakoefficient";
 // Individualisation engine for auto-generated strength plans.
 //
 // Takes an athlete's recent history (training logs, readiness surveys, 1RM
@@ -408,17 +409,29 @@ const BASELINE_ALIAS: Record<string, string> = {
   "conventional deadlift": "deadlift",
 };
 
+const COMP_BASELINE_KEYS = new Set(["squat", "bench press", "deadlift", "conventional deadlift", "sumo deadlift"]);
+
 export function matchBaseline(
-  ex: Pick<TemplateExercise, "exercise">,
+  ex: Pick<TemplateExercise, "exercise"> & { variation?: string | null },
   baselines: HistBaseline[],
 ): HistBaseline | undefined {
   const valid = baselines.filter((b) => Number(b.one_rm_kg) > 0);
-  const name = normName(ex.exercise);
+  // "Back squat / Pause squat" is its own lift: resolve the variant name first.
+  const resolved = resolveVariantExercise(ex.exercise, ex.variation).exercise;
+  const name = normName(resolved);
   const exact = valid.find((b) => normName(b.exercise) === name);
   if (exact) return exact;
   const alias = BASELINE_ALIAS[name];
-  if (!alias) return undefined;
-  return valid.find((b) => normName(b.exercise) === alias);
+  const aliased = alias ? valid.find((b) => normName(b.exercise) === alias) : undefined;
+  if (aliased) return aliased;
+  // Shared competition identity (Back squat = Squat = Knäböj). Never variants,
+  // never the other deadlift stance; a stance-named comp pull may use a generic deadlift.
+  const key = baselineExerciseKey(resolved);
+  if (!COMP_BASELINE_KEYS.has(key)) return undefined;
+  const same = valid.find((b) => baselineExerciseKey(b.exercise) === key);
+  if (same) return same;
+  if (key === "sumo deadlift" || key === "conventional deadlift") return valid.find((b) => baselineExerciseKey(b.exercise) === "deadlift");
+  return undefined;
 }
 
 function countLoadableExercises(weeks: TemplateWeek[], baselines: HistBaseline[]) {

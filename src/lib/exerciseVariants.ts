@@ -53,3 +53,16 @@ export function oneAndHalfParent(exercise: string): string | null {
   if (/dead|pull/i.test(exercise)) return "Deadlift";
   return null;
 }
+
+/**
+ * Loose identity for spotting the same movement under two catalog names
+ * ("Close-grip bench" = "Close-Grip Bench press", "Front squat" = "Front Squat").
+ */
+export function exerciseNameKey(name: string): string {
+  let n = name.toLowerCase().replace(/[-_/]+/g, " ").replace(/\s+/g, " ").trim();
+  n = n.replace(/^barbell /, "");
+  if (/\bbench\b/.test(n)) n = n.replace(/ press$/, "");
+  return n;
+}
+
+export const sameExerciseName = (a: string, b: string) => exerciseNameKey(a) === exerciseNameKey(b);

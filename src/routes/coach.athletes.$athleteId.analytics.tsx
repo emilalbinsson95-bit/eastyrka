@@ -1,5 +1,6 @@
 import { BuilderTrendCard } from "@/components/BuilderTrendCard";
-import { RepRecordsCard, RpeCapEventsCard } from "@/components/RepRecords";
+import { RpeCapEventsCard } from "@/components/RepRecords";
+import { compLiftKey, isCompLift } from "@/lib/liftIdentity";
 import { loggedRpeText, isRatedRpe, avgRatedRpe } from "@/lib/percentRows";
 import { chartMeasurements, chartExerciseKey, chartLiftIdentity, adverseReadinessDeviation } from "@/lib/chartMetrics";
 import { volumeCategory } from "@/lib/strengthTemplates";
@@ -45,7 +46,9 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -405,11 +408,16 @@ function AnalyticsPage() {
     return val;
   };
 
-  const exercises = useMemo(() => {
+  // Böj, bänk och mark fästs överst; övriga övningar i bokstavsordning.
+  const { pinnedExercises, otherExercises } = useMemo(() => {
     const set = new Set<string>();
     allLogs.forEach((l) => set.add(l.exercise));
-    return Array.from(set).sort();
+    const names = Array.from(set).sort((a, b) => a.localeCompare(b, "sv"));
+    const order = { squat: 0, bench: 1, deadlift: 2 } as const;
+    const pinned = names.filter((n) => isCompLift(n, null)).sort((a, b) => order[compLiftKey(a)!] - order[compLiftKey(b)!] || a.localeCompare(b, "sv"));
+    return { pinnedExercises: pinned, otherExercises: names.filter((n) => !pinned.includes(n)) };
   }, [allLogs]);
+  const exercises = useMemo(() => [...pinnedExercises, ...otherExercises], [pinnedExercises, otherExercises]);
 
   const exercise = selectedExercise ?? exercises[0];
 
@@ -1023,10 +1031,11 @@ function AnalyticsPage() {
             </Link>
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">
-            {profileQuery.data?.full_name ?? "Athlete"} — Analytics
+            {profileQuery.data?.full_name ?? "Athlete"} — Analys
           </h1>
           <p className="text-sm text-muted-foreground">
-            Performance, volume, adherence and readiness over time.
+            Djupanalys för coachen: EAk-beslut, lyft, volym, följsamhet och dagsform.{" "}
+            <Link to="/coach/athletes/$athleteId/stats" params={{ athleteId }} className="text-primary underline-offset-4 hover:underline">Översikten som atleten ser finns under Stats.</Link>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1121,7 +1130,16 @@ function AnalyticsPage() {
 
           {/* === EXERCISE TAB === */}
           <TabsContent value="exercise" className="mt-4 space-y-4">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {pinnedExercises.length > 0 && (
+                <div role="group" aria-label="Tävlingslyft" className="flex flex-wrap gap-1">
+                  {pinnedExercises.map((name) => (
+                    <Button key={name} size="sm" variant={name === exercise ? "default" : "outline"} onClick={() => navigate({ search: (prev) => ({ ...prev, exercise: name }) })}>
+                      {name}
+                    </Button>
+                  ))}
+                </div>
+              )}
               <Select
                 value={exercise ?? ""}
                 onValueChange={(v) =>
@@ -1132,14 +1150,47 @@ function AnalyticsPage() {
                   <SelectValue placeholder="Välj övning" />
                 </SelectTrigger>
                 <SelectContent>
-                  {exercises.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {e}
-                    </SelectItem>
-                  ))}
+                  {pinnedExercises.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Tävlingslyft</SelectLabel>
+                      {pinnedExercises.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                    </SelectGroup>
+                  )}
+                  {otherExercises.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Övriga övningar</SelectLabel>
+                      {otherExercises.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                    </SelectGroup>
+                  )}
                 </SelectContent>
               </Select>
             </div>
+
+                {multiLiftSeries.lifts.length > 0 && (
+                  <ChartCard title="Böj, bänk och mark – EAk" description="Tre mätpass mot baslinjen som gällde vid varje datum. Periodvalet ändrar bara utsnittet.">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <LineChart data={multiLiftSeries.data}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={[(dataMin: number) => Math.floor(dataMin - 3), (dataMax: number) => Math.ceil(dataMax + 3)]} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
+                        <Legend />
+                        <ReferenceLine y={100} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
+                        {multiLiftSeries.lifts.map((lift, i) => (
+                          <Line
+                            key={lift}
+                            type="monotone"
+                            dataKey={lift}
+                            stroke={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
+                            strokeWidth={2}
+                            dot={{ r: 2 }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                )}
 
             {exercises.length === 0 && (
               <Card>
@@ -1233,31 +1284,6 @@ function AnalyticsPage() {
                   </ResponsiveContainer>
                 </ChartCard>
 
-                {multiLiftSeries.lifts.length > 1 && (
-                  <ChartCard title="EAk per lyft" description="Tre mätpass mot baslinjen som gällde vid varje datum. Periodvalet ändrar bara utsnittet.">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <LineChart data={multiLiftSeries.data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={[(dataMin: number) => Math.floor(dataMin - 3), (dataMax: number) => Math.ceil(dataMax + 3)]} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
-                        <Legend />
-                        <ReferenceLine y={100} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
-                        {multiLiftSeries.lifts.map((lift, i) => (
-                          <Line
-                            key={lift}
-                            type="monotone"
-                            dataKey={lift}
-                            stroke={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
-                            strokeWidth={2}
-                            dot={{ r: 2 }}
-                            connectNulls
-                          />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartCard>
-                )}
               </>
             )}
           </TabsContent>
@@ -1273,7 +1299,6 @@ function AnalyticsPage() {
           <LiftMetricsSection athleteId={athleteId} logs={fullLogs} baselines={baselines} days={days} />
           <BuilderTrendCard athleteId={athleteId} />
           <RpeCapEventsCard athleteId={athleteId} />
-          <RepRecordsCard athleteId={athleteId} />
           </TabsContent>
 
           {/* === ENDURANCE TAB === */}

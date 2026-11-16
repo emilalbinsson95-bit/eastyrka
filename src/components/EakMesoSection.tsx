@@ -15,8 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Line, LineChart, ResponsiveContainer, Tooltip } from "recharts";
-import { DEFAULT_STRATEGY, weeklySessionLoad } from "@/lib/eakSignal";
+import { DEFAULT_STRATEGY } from "@/lib/eakSignal";
 import { toast } from "sonner";
 import { eakStatus } from "@/lib/eakStatus";
 
@@ -99,16 +98,6 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
         .limit(60);
       if (error) throw error;
       return (data ?? []) as EvalRow[];
-    },
-  });
-
-  const loadQuery = useQuery({
-    queryKey: ["eak-session-load", athleteId],
-    queryFn: async () => {
-      const since = new Date(); since.setUTCDate(since.getUTCDate() - 84);
-      const { data, error } = await supabase.from("strength_session_feedback").select("date,session_rpe,duration_min").eq("athlete_id", athleteId).gte("date", since.toISOString().slice(0, 10)).order("date");
-      if (error) throw error;
-      return weeklySessionLoad((data ?? []).filter((r) => r.session_rpe != null && r.duration_min != null).map((r) => ({ date: r.date, sessionRpe: Number(r.session_rpe), durationMin: Number(r.duration_min), sport: "strength" })));
     },
   });
 
@@ -318,17 +307,6 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
             </div>
           );
         })}
-        <details className="border-t pt-3 text-xs">
-          <summary className="cursor-pointer text-sm font-medium">Belastning (sRPE × min)</summary>
-          <div className="mt-2 space-y-1">
-            {loadQuery.isError ? <p role="alert" className="text-destructive">Kunde inte hämta passbelastningen.</p> : loadQuery.data?.length ? <>
-              <div className="h-20 w-full" role="img" aria-label="Veckobelastning för styrkepass">
-                <ResponsiveContainer width="100%" height="100%"><LineChart data={loadQuery.data}><Line type="monotone" dataKey="load" stroke="var(--color-chart-1)" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} /><Tooltip labelFormatter={(_: unknown, payload: ReadonlyArray<{ payload?: { weekStart?: string } }>) => payload?.[0]?.payload?.weekStart ?? ""} formatter={(value: number | string | Array<number | string>) => [value, "Belastning"]} contentStyle={{ background: "var(--color-popover)", borderColor: "var(--color-border)", color: "var(--color-popover-foreground)" }} /></LineChart></ResponsiveContainer>
-              </div>
-              <p className="text-muted-foreground">Senaste veckan: {loadQuery.data.at(-1)?.load.toFixed(0)} · Mot föregående fyra veckor: {loadQuery.data.at(-1)?.changePct == null ? "—" : `${loadQuery.data.at(-1)?.changePct?.toFixed(1)} %`}</p>
-            </> : <p className="text-muted-foreground">Inga pass med både pass-RPE och tid ännu.</p>}
-          </div>
-        </details>
       </CardContent>
     </Card>
   );

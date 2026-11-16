@@ -56,4 +56,4 @@
 - Push: semi-fixed first set; push weeks fold singles into main sets and cap light loads, so plans never contradict push.
 - Calendar shows planned sessions with logged sets as done.
 - EAk presets (`eakStrategy.ts`) write the same strategy columns; generator EAk advice (`eakStatus.ts`) only fills coach-chosen set deltas, so nothing bypasses coach approval.
-- Lift metrics and block warnings live in src/lib/liftMetrics.ts; warnings never change sets.
+- Metrics: liftMetrics.ts; % rows (target_pct): percentRows.ts. Warnings never change sets; guards skip light % rows.

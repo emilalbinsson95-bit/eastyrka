@@ -6,7 +6,8 @@ Prioriterat efter nytta: först det som visar varför lyft står still, sedan de
 - [x] 1b (generatordelen). Mängd och tunga set per vecka mot referensen (snitt av tre senaste genomförda arbetsveckor; avlastning/toppning/innevarande vecka utesluts) i generatorns förhandsvisning.
 - [ ] 1b (atletdelen). Mängdgraf i atletens Statistik (sv/en).
 - [x] 2. Varning "Inga tunga set" (två arbetsveckor i rad; ej avlastning/uppstart/toppning/startvecka/löparstyrka/helkropp 2 dgr) och "Mängd" (>30 % över referens) i generatorn; coach kan skapa ändå och stänga av tunga-set-varningen per atlet. Verifierat som Emil för Shadi och Mattis, av/på provat på Alex. 437 tester.
-- [ ] 3. Procent som styrning per rad + volymvakter som bara räknar hårda set (steg 2–3 ihop, annars stoppas lätt volym).
+- [x] 3. Procent som styrning per rad (RPE/RIR/% i blockredigering och passredigering, vikt = baslinje × % avrundad till coachens steg, fast vikt i Idag, "Logga alla set som planerat" vid ≥4 set, förklaring i Information) + volymvakter som bara räknar hårda set (30-setstaket räknar alla). Alex: 10×10 @ 58 % gav 75 kg (baslinje 130) i redigering och Idag; tio set loggade och testdata borttagen.
+- [ ] 3b. Frivillig RPE på procentrader (dokumentet: obligatorisk bara på första setet vid uppskattad RPE ≥ 7). Väntar på Emils besked: loggar kräver i dag RPE på varje set.
 - [ ] 4. Byggövning: katalogroll, generatorval, "slå förra gången" i Idag och trendkort i Analys (steg 6–7).
 - [ ] 5. RPE-tak och max reps på procentrader, sedan push i fast procent (steg 4–5).
 - [ ] 6. Procenttrappa per huvudlyft (steg 9).

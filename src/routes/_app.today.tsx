@@ -1204,8 +1204,8 @@ function BulkLogPlannedSets({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="mb-2 w-full">
-          Logga alla set som planerat ({remaining} × {ex.target_reps} på {ex.target_weight_kg} kg)
+        <Button variant="outline" className="mb-2 h-auto w-full whitespace-normal py-2">
+          Logga alla set som planerat
         </Button>
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">

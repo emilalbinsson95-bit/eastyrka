@@ -613,7 +613,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                             </div>
                           </td>
                           <td className="bg-readiness-tint/20 px-4 py-3 font-bold">
-                            {p.dailyE1RM.toFixed(1)} kg
+                            {p.dailyE1RM > 0 ? `${p.dailyE1RM.toFixed(1)} kg` : "—"}
                           </td>
                           <td className="bg-readiness-tint/20 px-4 py-3">
                             <div className="font-bold">

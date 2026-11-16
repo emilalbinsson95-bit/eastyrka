@@ -255,7 +255,7 @@ function SetRow({
             >
               {p.eaKoefficient > 0
                 ? `${p.eaKoefficient.toFixed(0)}% · ${readinessLabel(p.status)}`
-                : `${p.dailyE1RM.toFixed(0)}kg E1RM`}
+                : p.dailyE1RM > 0 ? `${p.dailyE1RM.toFixed(0)}kg E1RM` : "Ingen RPE"}
             </span>
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(true)}>
               <Pencil className="h-3.5 w-3.5" />

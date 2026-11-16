@@ -12,7 +12,7 @@ import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { canAddExtraSet } from "@/lib/blockVolume";
 import { moveSessionLogs } from "@/lib/calendar";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   format,
@@ -557,7 +557,7 @@ function TodayPage() {
                   >
                     {p.eaKoefficient > 0
                       ? `Dagsform ${p.eaKoefficient.toFixed(0)} %`
-                      : `${p.dailyE1RM.toFixed(0)}kg E1RM`}
+                      : p.dailyE1RM > 0 ? `${p.dailyE1RM.toFixed(0)}kg E1RM` : "Ingen RPE"}
                   </span>
                 </div>
               </div>
@@ -1015,6 +1015,10 @@ function LogSetButton({
     previousLog ? previousLog.reps : ex.target_reps,
   );
   const [rpe, setRpe] = useState<number>(NaN);
+  // Byggövning: today's target weight arrives after the last session loads.
+  useEffect(() => {
+    if (!previousLog && defaultWeight != null && !isPercentRow(ex)) setWeight((w) => (Number.isFinite(w) ? w : defaultWeight));
+  }, [defaultWeight, previousLog, ex]);
   const [rir, setRir] = useState<number>(
     NaN,
   );

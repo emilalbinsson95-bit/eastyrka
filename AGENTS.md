@@ -26,7 +26,7 @@
 - 1.5-rep variations (`exerciseVariants.ts`): 1RM×0.8, 3–5×3–5 @ RPE 6–8, 1.25 volume sets each, as reps cost more.
 - Accessories cap at 4 sets for MEV top-up and 5 after scaling (unless the template prescribes more); extra volume belongs on main lifts.
 
-- Clip page-level horizontal overflow; wide tables/calendars scroll locally.
+- Clip page overflow; wide tables scroll locally.
 - Apply `applyVolumeGuards` (src/lib/volumeGuards.ts) after weak points/stance and before set protocols: comp lifts capped per session by rep range, 30 sets/session, 6–24 weekly sets per main lift, because stacked modifiers must never produce unrealistic sessions.
 - EAk/E1RM use shared RTS and first qualifying sets; baselines match exact names/comp aliases only. Pool detrended EAk noise by mesocycle ID; thresholds come from athlete_eak_strategy (coach-set, default fallback), preserving history.
 - EAk decisions require a plan_changed yes/no before saving and record next-window outcomes, so the coach overview can describe whether signals helped without claiming causation.
@@ -35,25 +35,25 @@
 - Keep routine steps in src/lib/routines.ts matching Learn; persist stars per athlete in routine_completions (athlete insert, coach/admin read).
 - Admins pass `is_coach_of` for every athlete so they can open any athlete's coach pages to inspect and fix data; skipped routines are stored as `routine='skipped'` rows in routine_completions (thumbs down), because stars and thumbs must share one auditable history.
 
-- Runner strength template: fixed 2 days, skips MEV floors and volume guards (label "Löparstyrka"), as running takes priority.
+- Runner strength ("Löparstyrka"): fixed 2 days, no MEV floors/guards; running has priority.
 
 - Short full-body templates keep base slots via `applySessionSetBudget`; accessory sets trim first, main lifts keep ≥3.
 
 - Catalog reads: shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; expose only shared aliases and the availability singleton, to avoid catalog leakage.
 
-- Season outlines: shift only unprepared blocks, allow gaps, detach without deleting programs; version-check writes.
+- Seasons shift only unprepared blocks, allow gaps, detach without deleting; version-check writes.
 - Coach singles replace work (not meet week/runners/short sessions); openers use recent RTS medians, not stale PRs/other stances.
 - Resolve peak opener lift names through shared competition identity with a strict competition-note filter and stance checks, so competition aliases are included without admitting variants.
-- Compare six first measurements by exercise/variant/rep interval; RTS normalizes RPE without fragmenting trends.
+- Compare six first measurements by exercise/variant/rep interval (RTS-normalized); flagged warmups never count.
 
-- Flagged warmups never count in EAk/progress.
 
 <!-- LOVABLE:BEGIN -->
 - Represent own season blocks with `templateId: "manual"` and `manualWeeks`; create draft mesocycles and reuse the week/session editor without generator logic, so coaches control prescriptions.
 <!-- LOVABLE:END -->
-- D0 peak weeks start on their first session with zero-based days, so sessions land on planned dates.
+- D0 peak weeks start on their first session (zero-based days).
 - `resizeTemplateWeeks` sets block length before modifiers, repeating the wave so effort never exceeds its hardest week.
-- Push: semi-fixed first set; push weeks fold singles into main sets and cap light loads, so plans never contradict push.
-- Calendar shows planned sessions with logged sets as done.
+- Push: semi-fixed first set; singles fold into main sets, light loads capped.
 - EAk presets (`eakStrategy.ts`) write the same strategy columns; generator EAk advice (`eakStatus.ts`) only fills coach-chosen set deltas, so nothing bypasses coach approval.
-- Metrics: liftMetrics.ts; % rows (target_pct): percentRows.ts. Warnings never change sets; guards skip light % rows.
+- Metrics: liftMetrics.ts; % rows: percentRows.ts. Warnings never change sets; guards skip light % rows; calendar marks logged sessions done.
+- Logged RPE is NULL only on % rows (`rpeRequired`); readers use `isRatedRpe`, never fake values.
+- Byggövning (`builderExercises.ts`): after weak points, working weeks only; outside main-lift guards, Mängd, EAk, protocols.

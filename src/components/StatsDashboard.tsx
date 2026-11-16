@@ -1,3 +1,4 @@
+import { loggedRpeText, isRatedRpe, avgRatedRpe } from "@/lib/percentRows";
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
@@ -360,8 +361,8 @@ function strengthLoadSession(
   // session average RPE (Foster sRPE). Keeps strength sessions on the same
   // CTL/ATL/TSB scale as endurance.
   const minutes = rows.length * 3;
-  const avgRpe =
-    rows.reduce((s, r) => s + Number(r.rpe), 0) / rows.length;
+  // Unrated sets (fixed-percent rows) are left out of the average.
+  const avgRpe = avgRatedRpe(rows) ?? 0;
   return {
     date,
     discipline: "strength",
@@ -604,7 +605,7 @@ function WeekInNumbersCard({
       );
       const sets = rows.length;
       const rpeAvg =
-        sets > 0 ? rows.reduce((s, r) => s + Number(r.rpe), 0) / sets : 0;
+        avgRatedRpe(rows) ?? 0;
       const days = new Set(rows.map((r) => r.date)).size;
       return { volume, sets, rpeAvg, days };
     }
@@ -965,7 +966,7 @@ function PRFeedCard({ logs }: { logs: LogRow[] }) {
                   <div className="text-xs text-muted-foreground">
                     {format(parseISO(p.date), "MMM d, yyyy")} ·{" "}
                     {fmtNum(Number(p.log.weight_kg), 1)}kg × {p.log.reps} @ RPE{" "}
-                    {fmtNum(Number(p.log.rpe), 1)}
+                    {isRatedRpe(p.log.rpe) ? fmtNum(Number(p.log.rpe), 1) : "–"}
                   </div>
                 </div>
                 <div className="text-right">

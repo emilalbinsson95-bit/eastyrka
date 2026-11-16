@@ -290,6 +290,7 @@ export function plannedWeekMetrics(weeks: PlanWeekInput[], baselines: Record<str
     const sets: MetricSet[] = [];
     for (const s of w.sessions) {
       for (const e of s.exercises) {
+        if ((e as { builder_lift?: unknown }).builder_lift) continue; // byggövning: never Mängd
         const rpe = e.target_rpe ?? (e.target_rir != null ? 10 - Number(e.target_rir) : null);
         sets.push(...plannedRowSets({ ...e, target_rpe: rpe }, baselines));
       }

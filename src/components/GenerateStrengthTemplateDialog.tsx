@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveVariantExercise } from "@/lib/exerciseVariants";
 import { WEAK_POINTS, applyDeadliftStyle, applyWeakPoints, normalizeWeakIds } from "@/lib/weakPoints";
 import { applyVolumeGuards } from "@/lib/volumeGuards";
+import { applyBuilders, type BuilderChoices, type BuilderLift } from "@/lib/builderExercises";
+import { BuilderExercisesPanel } from "@/components/BuilderExercisesPanel";
+import { volumeFactorForCategory } from "@/lib/strengthVolumeProfile";
 import { applySessionSetBudget } from "@/lib/sessionSetBudget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -360,6 +363,7 @@ export function GenerateStrengthTemplateDialog({
   const [volumeDeltas, setVolumeDeltas] = useState({ squat: 0, bench: 0, deadlift: 0 });
   const [extraSets,setExtraSets]=useState({squat:false,bench:false,deadlift:false});
   const [roundingKg,setRoundingKg]=useState<2.5|1.25|1>(2.5);
+  const [builders, setBuilders] = useState<BuilderChoices>({});
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const preferencesQuery = useQuery({
     queryKey: ["generator-preferences", athleteId], enabled: open,
@@ -372,10 +376,10 @@ export function GenerateStrengthTemplateDialog({
   useEffect(() => {
     if (settingsLoaded || !preferencesQuery.isSuccess) return;
     const saved = preferencesQuery.data;
-    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); setExtraSets(saved.extraSets);setRoundingKg(saved.roundingKg); }
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); setExtraSets(saved.extraSets);setRoundingKg(saved.roundingKg); setBuilders(saved.builders ?? {}); }
     setSettingsLoaded(true);
   }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
-  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions,extraSets,roundingKg };
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions,extraSets,roundingKg, builders };
   const savePreferences = useMutation({
     mutationFn: async () => {
       const parsed = generatorSettingsSchema.parse(settings);
@@ -406,7 +410,11 @@ export function GenerateStrengthTemplateDialog({
       };
       // Runner strength keeps its fixed dose: no data-driven extra sets.
       // Suggestions are displayed, but only coach-approved deltas alter the plan.
-      let adapted = { weeks, warnings: [] as string[] };
+      // Byggövning: same step as weak points, only for full templates (never runner/short/start/peak).
+      const pushLifts = new Set<BuilderLift>((pushQuery.data ?? []).filter((c) => c.enabled).map((c) => (c.lift === "sumo" || c.lift === "conventional" ? "deadlift" : c.lift) as BuilderLift));
+      const floor = Object.fromEntries((["squat", "bench", "deadlift"] as const).map((l) => [l, Math.round(6 * Math.min(1, volumeFactorForCategory(l === "squat" ? "squat" : l === "bench" ? "horizontal-press" : "hinge", volumeProfile)))]));
+      const built = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBuilders(weeks, builders, { pushLifts, floor });
+      let adapted = { weeks: built.weeks, warnings: [...built.warnings] };
       if (!template?.skipVolumeFloors) {
         for (let step = 0; step < 6; step++) {
           const evals = blockEvals.map((ev) => ({ ...ev, delta: (Math.abs(volumeDeltas[ev.lift]) > step ? Math.sign(volumeDeltas[ev.lift]) : 0) as -1 | 0 | 1 }));
@@ -419,7 +427,7 @@ export function GenerateStrengthTemplateDialog({
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
       return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? guarded.flatMap((w,wi)=>w.sessions.flatMap((session,si)=>session.exercises.flatMap((e,ei)=>{const before=adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets;return before!=null&&before!==e.target_sets?[`${e.exercise}: ${before} → ${e.target_sets} set (slutvakt: pass/vecka).`]:[]}))) : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions, builders, pushQuery.data],
   );
   const plannedWeeks = useMemo(() => isPeaking || isFixed || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, pushQuery.data ?? [], styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isFixed,isTimeLimited,template]);
 
@@ -576,6 +584,9 @@ export function GenerateStrengthTemplateDialog({
             lengthened_partials: e.lengthened_partials ?? false,
             last_set_to_failure: e.last_set_to_failure ?? false,
             is_technique:e.variation==="Teknikpass – ej EAk",
+            builder_lift: e.builder_lift ?? null,
+            target_reps_max: e.target_reps_max ?? null,
+            weight_step_kg: e.weight_step_kg ?? null,
             notes: e.notes ?? null,
             order_index: idx,
           }); });
@@ -908,6 +919,10 @@ export function GenerateStrengthTemplateDialog({
                 ))}
               </div>
             </div>
+          )}
+
+          {!isPeaking && !isTimeLimited && !isFixed && !template?.skipVolumeFloors && (
+            <BuilderExercisesPanel coachId={coachId} value={builders} onChange={setBuilders} />
           )}
 
           {/* ---- what the peak is based on ---- */}

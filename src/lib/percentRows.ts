@@ -64,3 +64,28 @@ export function pctRowLabel(row: { target_sets: number; target_reps: number; tar
   if (row.target_weight_kg != null && Number(row.target_weight_kg) > 0) return `${head} · ${fmt(Number(row.target_weight_kg))} kg (${fmt(pct)} %)`;
   return `${head} · ${fmt(pct)} % – baslinje saknas`;
 }
+
+/**
+ * Frivillig RPE (steg 3b). Loggade set får sakna RPE, men bara på procentrader:
+ * första setet kräver RPE när den uppskattade RPE:n är 7 eller mer; övriga set
+ * och lätta förstaset får loggas utan. RPE/RIR-rader kräver alltid RPE.
+ */
+export const RPE_REQUIRED_FROM = 7;
+export function rpeRequired(row: { target_pct?: number | null; target_reps: number }, setNumber: number): boolean {
+  if (!isPercentRow(row)) return true;
+  if (setNumber !== 1) return false;
+  const est = estimatedRpeFromPct(Number(row.target_pct), row.target_reps);
+  return est != null && est >= RPE_REQUIRED_FROM;
+}
+
+/** A logged RPE counts only when it is a real rating (unrated sets are NULL, or 0 after Number()). */
+export const isRatedRpe = (v: unknown): v is number | string => v != null && v !== "" && Number.isFinite(Number(v)) && Number(v) > 0;
+
+/** Average over rated sets only; null when no set was rated. */
+export function avgRatedRpe(rows: { rpe?: unknown }[]): number | null {
+  const vals = rows.filter((r) => isRatedRpe(r.rpe)).map((r) => Number(r.rpe));
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+}
+
+/** "8,5" or "–" for an unrated set. */
+export const loggedRpeText = (v: unknown) => (isRatedRpe(v) ? String(Math.round(Number(v) * 10) / 10).replace(".", ",") : "–");

@@ -29,6 +29,12 @@ export interface TemplateExercise {
   lengthened_partials?: boolean;
   last_set_to_failure?: boolean;
   notes?: string;
+  /** Byggövning: the main lift this row builds. Never counts as main-lift sets, Mängd or EAk. */
+  builder_lift?: "squat" | "bench" | "deadlift";
+  /** Top of the rep range (double progression); target_reps is the bottom. */
+  target_reps_max?: number;
+  /** Weight step for double progression (byggövning). */
+  weight_step_kg?: number;
 }
 
 export interface TemplateSession {

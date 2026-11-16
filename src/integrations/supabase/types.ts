@@ -800,6 +800,8 @@ export type Database = {
       }
       exercises: {
         Row: {
+          builder_lift: string | null
+          builder_step_kg: number | null
           category: string | null
           created_at: string
           created_by: string | null
@@ -811,6 +813,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          builder_lift?: string | null
+          builder_step_kg?: number | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -822,6 +826,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          builder_lift?: string | null
+          builder_step_kg?: number | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -1333,6 +1339,7 @@ export type Database = {
       }
       planned_exercises: {
         Row: {
+          builder_lift: string | null
           created_at: string
           exercise: string
           exercise_id: string | null
@@ -1355,13 +1362,16 @@ export type Database = {
           rules_version: string | null
           target_pct: number | null
           target_reps: number
+          target_reps_max: number | null
           target_rir: number | null
           target_rpe: number | null
           target_sets: number
           target_weight_kg: number | null
           variation: string | null
+          weight_step_kg: number | null
         }
         Insert: {
+          builder_lift?: string | null
           created_at?: string
           exercise: string
           exercise_id?: string | null
@@ -1384,13 +1394,16 @@ export type Database = {
           rules_version?: string | null
           target_pct?: number | null
           target_reps: number
+          target_reps_max?: number | null
           target_rir?: number | null
           target_rpe?: number | null
           target_sets: number
           target_weight_kg?: number | null
           variation?: string | null
+          weight_step_kg?: number | null
         }
         Update: {
+          builder_lift?: string | null
           created_at?: string
           exercise?: string
           exercise_id?: string | null
@@ -1413,11 +1426,13 @@ export type Database = {
           rules_version?: string | null
           target_pct?: number | null
           target_reps?: number
+          target_reps_max?: number | null
           target_rir?: number | null
           target_rpe?: number | null
           target_sets?: number
           target_weight_kg?: number | null
           variation?: string | null
+          weight_step_kg?: number | null
         }
         Relationships: [
           {
@@ -2335,7 +2350,7 @@ export type Database = {
           prescription_snapshot: Json | null
           reps: number
           rir: number | null
-          rpe: number
+          rpe: number | null
           rules_version: string | null
           set_number: number
           to_failure: boolean
@@ -2365,7 +2380,7 @@ export type Database = {
           prescription_snapshot?: Json | null
           reps: number
           rir?: number | null
-          rpe: number
+          rpe?: number | null
           rules_version?: string | null
           set_number: number
           to_failure?: boolean
@@ -2395,7 +2410,7 @@ export type Database = {
           prescription_snapshot?: Json | null
           reps?: number
           rir?: number | null
-          rpe?: number
+          rpe?: number | null
           rules_version?: string | null
           set_number?: number
           to_failure?: boolean

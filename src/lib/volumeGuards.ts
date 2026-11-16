@@ -32,7 +32,7 @@ export function applyVolumeGuards(weeks: TemplateWeek[], profile: StrengthVolume
     const skipFloors = isLight(week);
     const sessions = week.sessions.map((s) => {
       const exercises = s.exercises.map((e) =>
-        isComp(e.exercise) && !isLightPercentRow(e) && e.target_sets > compSetCap(e.target_reps) ? { ...e, target_sets: compSetCap(e.target_reps) } : { ...e },
+        isComp(e.exercise) && !e.builder_lift && !isLightPercentRow(e) && e.target_sets > compSetCap(e.target_reps) ? { ...e, target_sets: compSetCap(e.target_reps) } : { ...e },
       );
       let total = exercises.reduce((a, e) => a + e.target_sets, 0);
       while (total > SESSION_CAP) {
@@ -48,7 +48,8 @@ export function applyVolumeGuards(weeks: TemplateWeek[], profile: StrengthVolume
       const factor = volumeFactorForCategory(cat, profile);
       const floorSets = skipFloors ? 0 : Math.round(WEEK_FLOOR * Math.min(1, factor));
       const ceilSets = Math.round(WEEK_CEIL * factor);
-      const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat && !isLightPercentRow(e)).map((e) => ({ s, e })));
+      // Build exercises (byggövning) never count toward the main lift's sets.
+      const items = sessions.flatMap((s) => s.exercises.filter((e) => !e.builder_lift && volumeCategory(e) === cat && !isLightPercentRow(e)).map((e) => ({ s, e })));
       if (!items.length) continue;
       let sum = items.reduce((a, x) => a + x.e.target_sets, 0);
       // Floor: add to competition lifts (then variations) below their cap, in sessions under the cap.

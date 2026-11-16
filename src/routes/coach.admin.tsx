@@ -1,3 +1,4 @@
+import { loggedRpeText } from "@/lib/percentRows";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -156,7 +157,7 @@ function AdminPage() {
             {inspectionQuery.isLoading && <p>Loading activity…</p>}
             {inspectionQuery.isError && <p role="alert" className="text-destructive">Could not load athlete activity.</p>}
             {inspectionQuery.data && <>
-              <div><h2 className="mb-2 font-semibold">Recent training sets</h2>{inspectionQuery.data.recent_logs.length ? inspectionQuery.data.recent_logs.map((log, i) => <p key={i} className="border-t py-1">{log.date} · {log.exercise} · {log.weight_kg} kg × {log.reps} · RPE {log.rpe}</p>) : <p className="text-muted-foreground">No sets logged.</p>}</div>
+              <div><h2 className="mb-2 font-semibold">Recent training sets</h2>{inspectionQuery.data.recent_logs.length ? inspectionQuery.data.recent_logs.map((log, i) => <p key={i} className="border-t py-1">{log.date} · {log.exercise} · {log.weight_kg} kg × {log.reps} · RPE {loggedRpeText(log.rpe)}</p>) : <p className="text-muted-foreground">No sets logged.</p>}</div>
               <div><h2 className="mb-2 font-semibold">Recent plans</h2>{inspectionQuery.data.recent_plans.length ? inspectionQuery.data.recent_plans.map((plan, i) => <p key={i} className="border-t py-1">{plan.week_start_date} · {plan.status}{plan.is_deload ? " · Planned light" : ""}</p>) : <p className="text-muted-foreground">No plans.</p>}</div>
               <div><h2 className="mb-2 font-semibold">Recent daily form</h2>{inspectionQuery.data.recent_readiness.length ? inspectionQuery.data.recent_readiness.map((item, i) => <p key={i} className="border-t py-1">{item.date} · {item.daily_form}/10</p>) : <p className="text-muted-foreground">No check-ins.</p>}</div>
             </>}

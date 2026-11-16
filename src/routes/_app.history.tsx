@@ -1,3 +1,4 @@
+import { loggedRpeText } from "@/lib/percentRows";
 import { fetchPlannedLightDates } from "@/lib/plannedLightDays";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -105,7 +106,7 @@ function HistoryPage() {
     }) => {
       const { error } = await supabase
         .from("training_logs")
-        .update({ reps, rpe, weight_kg, edited_by_athlete_at: new Date().toISOString() })
+        .update({ reps, rpe: rpe > 0 ? rpe : null, weight_kg, edited_by_athlete_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
     },
@@ -231,7 +232,7 @@ function SetRow({
           <div className="min-w-0">
             <div className="font-medium truncate">{p.source.exercise}</div>
             <div className="text-xs text-muted-foreground">
-              Set {p.source.set_number} · {p.source.reps}×{p.source.weight_kg}kg @RPE{p.source.rpe}
+              Set {p.source.set_number} · {p.source.reps}×{p.source.weight_kg}kg @RPE {loggedRpeText(p.source.rpe)}
             </div>
             {wasEdited && (
               <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
@@ -240,7 +241,7 @@ function SetRow({
                   <>· reps {row.original_reps}→{p.source.reps} </>
                 )}
                 {row.original_rpe != null && Number(row.original_rpe) !== p.source.rpe && (
-                  <>· RPE {row.original_rpe}→{p.source.rpe}</>
+                  <>· RPE {loggedRpeText(row.original_rpe)}→{loggedRpeText(p.source.rpe)}</>
                 )}
               </div>
             )}
@@ -295,7 +296,8 @@ function SetRow({
                 min={1}
                 max={10}
                 step={0.5}
-                value={rpe}
+                value={rpe > 0 ? rpe : ""}
+                placeholder="–"
                 onChange={(e) => setRpe(Number(e.target.value))}
               />
             </div>

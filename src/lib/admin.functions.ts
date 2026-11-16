@@ -37,6 +37,8 @@ export const adminUpdateExercise = createServerFn({ method: "POST" })
         category: z.string().trim().max(40).nullable().optional(),
         description: z.string().trim().max(2000).nullable().optional(),
         default_intensity_metric: z.enum(["rpe", "rir"]),
+        builder_lift: z.enum(["squat", "bench", "deadlift"]).nullable().optional(),
+        builder_step_kg: z.number().positive().max(20).nullable().optional(),
       })
       .parse(input),
   )
@@ -52,6 +54,7 @@ export const adminUpdateExercise = createServerFn({ method: "POST" })
         category: data.category || null,
         description: data.description || null,
         default_intensity_metric: data.default_intensity_metric,
+        ...(data.builder_lift !== undefined ? { builder_lift: data.builder_lift, builder_step_kg: data.builder_lift ? data.builder_step_kg ?? 2.5 : null } : {}),
       })
       .eq("id", data.exerciseId);
     if (error) throw new Error(error.message);

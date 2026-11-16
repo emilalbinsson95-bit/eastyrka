@@ -94,14 +94,14 @@ export function applyBlockVolume(
       if (!ev.delta) continue;
       const cat = LIFT_CAT[ev.lift];
       // Over-warm / opener singles are never volume candidates.
-      const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat && !SINGLE_VARIATION.test(e.variation ?? "")).map((e) => ({ s, e })));
+      const items = sessions.flatMap((s) => s.exercises.filter((e) => !e.builder_lift && volumeCategory(e) === cat && !SINGLE_VARIATION.test(e.variation ?? "")).map((e) => ({ s, e })));
       if (!items.length) continue;
       const comp = items.filter((x) => compLiftKey(x.e.exercise.trim()) === ev.lift);
       const pool = comp.length ? comp : items;
       const weekSum = items.reduce((a, x) => a + x.e.target_sets, 0);
       if (ev.delta > 0) {
         if (weeklyCap && weekSum >= weeklyCap) continue;
-        const liftSets = (s: (typeof sessions)[number]) => s.exercises.filter((e) => volumeCategory(e) === cat).reduce((a, e) => a + e.target_sets, 0);
+        const liftSets = (s: (typeof sessions)[number]) => s.exercises.filter((e) => !e.builder_lift && volumeCategory(e) === cat).reduce((a, e) => a + e.target_sets, 0);
         const target = [...pool].sort((a, b) => liftSets(a.s) - liftSets(b.s))[0];
         if (liftSets(target.s) >= SESSION_LIFT_LIMIT) {
           warnings.add(`${ev.lift}: passen har redan ~${SESSION_LIFT_LIMIT} arbetsset — lägg till en träningsdag eller sprid volymen i stället för fler set.`);

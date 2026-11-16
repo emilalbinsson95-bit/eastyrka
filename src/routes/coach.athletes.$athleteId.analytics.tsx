@@ -1,3 +1,5 @@
+import { BuilderTrendCard } from "@/components/BuilderTrendCard";
+import { loggedRpeText, isRatedRpe, avgRatedRpe } from "@/lib/percentRows";
 import { chartMeasurements, chartExerciseKey, chartLiftIdentity, adverseReadinessDeviation } from "@/lib/chartMetrics";
 import { volumeCategory } from "@/lib/strengthTemplates";
 import { VOLUME_LANDMARKS, categoryLabel, personalReadinessFactor } from "@/lib/individualisation";
@@ -426,6 +428,7 @@ function AnalyticsPage() {
         bestE1RM: number;
         sets: number;
         rpeSum: number;
+        rpeCount?: number;
         qualifying: number;
       }
     >();
@@ -448,7 +451,7 @@ function AnalyticsPage() {
         dailyE1RM({ reps: l.reps, weight_kg: l.weight_kg, rpe: l.rpe }),
       );
       cur.sets += 1;
-      cur.rpeSum += l.rpe;
+      if (isRatedRpe(l.rpe)) { cur.rpeSum += l.rpe; cur.rpeCount = (cur.rpeCount ?? 0) + 1; }
       byDate.set(l.date, cur);
     }
     const history = fullLogs.filter(l=>l.exercise===exercise);
@@ -472,7 +475,7 @@ function AnalyticsPage() {
         qualifying: s.qualifying,
         eaKoefficient:
           m && isReadinessLift(m.exercise,m.variation) && baseline > 0 && roll > 0 ? Number(((roll / baseline) * 100).toFixed(1)) : null,
-        avgRPE: Number((s.rpeSum / s.sets).toFixed(2)),
+        avgRPE: s.rpeCount ? Number((s.rpeSum / s.rpeCount).toFixed(2)) : 0,
         intensity:
           baseline > 0
             ? Number(((s.maxWeight / baseline) * 100).toFixed(1))
@@ -631,6 +634,7 @@ function AnalyticsPage() {
     }
     const actualAvgByDate = new Map<string, { sum: number; count: number }>();
     for (const l of allLogs) {
+      if (!isRatedRpe(l.rpe)) continue;
       const cur = actualAvgByDate.get(l.date) ?? { sum: 0, count: 0 };
       cur.sum += l.rpe;
       cur.count += 1;
@@ -1266,6 +1270,7 @@ function AnalyticsPage() {
               return <ChartCard key={cat} title={categoryLabel(cat)} description={`MEV ${mev} · MRV ${mrv} set/vecka`}><div className="h-48"><ResponsiveContainer><BarChart data={volumeByCategory.data}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="label" fontSize={10}/><YAxis domain={[0,(max:number)=>Math.max(max,mrv+2)]} fontSize={10}/><Tooltip/><ReferenceArea y1={mev} y2={mrv} fill="var(--chart-2)" fillOpacity={.12}/><ReferenceLine y={mev} stroke="var(--chart-2)" strokeDasharray="3 3"/><ReferenceLine y={mrv} stroke="var(--chart-3)" strokeDasharray="3 3"/><Bar dataKey={cat} name="Arbetsset" fill="var(--chart-1)"/></BarChart></ResponsiveContainer></div></ChartCard>;
             })}</div>
           <LiftMetricsSection athleteId={athleteId} logs={fullLogs} baselines={baselines} days={days} />
+          <BuilderTrendCard athleteId={athleteId} />
           </TabsContent>
 
           {/* === ENDURANCE TAB === */}
@@ -1986,7 +1991,7 @@ function exportHistoryCsv({ athleteName, logs, surveys }: ExportArgs) {
       l.set_number,
       l.reps,
       l.weight_kg,
-      l.rpe,
+      isRatedRpe(l.rpe) ? l.rpe : "",
     ]),
   ];
   downloadCsv(`${safeName}-training-${today}.csv`, logRows);

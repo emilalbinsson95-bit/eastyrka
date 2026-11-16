@@ -1,0 +1,2 @@
+ALTER TABLE public.training_logs ALTER COLUMN rpe DROP NOT NULL;
+COMMENT ON COLUMN public.training_logs.rpe IS 'Actual RPE. NULL only for later sets of fixed-percent rows (and light first sets) where the athlete skipped rating; readers must treat NULL as unrated, never as 0.';

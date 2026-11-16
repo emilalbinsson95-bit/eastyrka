@@ -1,3 +1,4 @@
+import { loggedRpeText } from "@/lib/percentRows";
 import { WarmupLoadsCard } from "@/components/WarmupLoadsCard";
 import { PushProgressionCard } from "@/components/PushProgressionCard";
 import { BaselineMaxProposals } from "@/components/BaselineMaxProposals";
@@ -303,7 +304,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
           variation: payload.variation,
           reps: payload.reps,
           weight_kg: payload.weight_kg,
-          rpe: payload.rpe,
+          rpe: payload.rpe > 0 ? payload.rpe : null,
         })
         .eq("id", payload.id);
       if (error) throw error;
@@ -602,7 +603,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              RPE <span className={cn(rpeChanged && "text-amber-700 dark:text-amber-400")}>{p.source.rpe}</span>
+                              RPE <span className={cn(rpeChanged && "text-amber-700 dark:text-amber-400")}>{loggedRpeText(p.source.rpe)}</span>
                               {(repsChanged || rpeChanged) && (
                                 <span className="ml-1 text-[10px]">
                                   (was{repsChanged ? ` ${edit!.origReps}r` : ""}
@@ -684,7 +685,7 @@ function DashboardTable({ athleteId }: { athleteId: string }) {
                                 onClick={() => {
                                   if (
                                     confirm(
-                                      `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${p.source.rpe}\n\nThis cannot be undone.`,
+                                      `Delete this set?\n\n${p.source.exercise} · S${p.source.set_number} · ${p.source.reps}×${p.source.weight_kg}kg @ RPE ${loggedRpeText(p.source.rpe)}\n\nThis cannot be undone.`,
                                     )
                                   ) {
                                     deleteSet.mutate(p.source.id);
@@ -838,7 +839,8 @@ function EditSetDialog({
                 min={1}
                 max={10}
                 step="0.5"
-                value={rpe}
+                value={rpe > 0 ? rpe : ""}
+                placeholder="–"
                 onChange={(e) => setRpe(Number(e.target.value))}
               />
             </div>
@@ -854,7 +856,8 @@ function EditSetDialog({
               !exercise.trim() ||
               reps < 1 ||
               reps > 50 ||
-              rpe < 1 ||
+              (editingSet.rpe > 0 && rpe < 1) ||
+              (rpe !== 0 && rpe < 1) ||
               rpe > 10 ||
               weight < 0
             }

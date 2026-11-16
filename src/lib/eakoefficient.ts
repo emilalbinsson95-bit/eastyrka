@@ -61,7 +61,8 @@ export function countsForEAk(set: SetInput): boolean {
  * RPE is interpolated between half steps, never rounded down.
  */
 export function dailyE1RM(set: SetInput): number {
-  if (!set.weight_kg || !(set.reps > 0) || set.rpe == null || !Number.isFinite(Number(set.rpe))) return 0;
+  // Unrated sets (NULL, or 0 after Number()) give no estimate.
+  if (!set.weight_kg || !(set.reps > 0) || set.rpe == null || !Number.isFinite(Number(set.rpe)) || !(Number(set.rpe) > 0)) return 0;
   return (set.weight_kg * 100) / pctOf1RMInterp(set.rpe, set.reps);
 }
 

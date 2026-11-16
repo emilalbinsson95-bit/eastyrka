@@ -87,7 +87,7 @@ export function AdhocStrengthEditor({
           .map((r) => ({
             reps: String(r.reps),
             weight: String(r.weight_kg),
-            rpe: String(r.rpe),
+            rpe: r.rpe == null ? "" : String(r.rpe),
           })),
       })),
     );

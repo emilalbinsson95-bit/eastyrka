@@ -1,3 +1,4 @@
+import { loggedRpeText, isRatedRpe, avgRatedRpe } from "@/lib/percentRows";
 import { isPercentRow, pctRowLabel } from "@/lib/percentRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
@@ -332,7 +333,7 @@ function summarizeLogs(rows: LogRow[]): string[] {
   return Array.from(by.entries()).map(([ex, sets]) => {
     const parts = sets
       .sort((a, b) => a.set_number - b.set_number)
-      .map((s) => `${Number(s.weight_kg)}kg×${s.reps} @${Number(s.rpe)}`);
+      .map((s) => `${Number(s.weight_kg)}kg×${s.reps}${isRatedRpe(s.rpe) ? ` @${Number(s.rpe)}` : ""}`);
     return `${ex} · ${parts.join(", ")}`;
   });
 }
@@ -353,11 +354,11 @@ async function loadLogs(ownerId: string, date: string, plannedIds: string[] | nu
 async function loadDetail(item: CalendarItem): Promise<Detail> {
   if (item.source === "adhoc_strength") {
     const rows = await loadLogs(item.ownerId, item.sourceId, null);
-    const avg = rows.length ? rows.reduce((a, r) => a + Number(r.rpe), 0) / rows.length : 7;
+    const avg = avgRatedRpe(rows);
     return {
-      chips: [`${new Set(rows.map((r) => r.exercise)).size} exercises`, `${rows.length} sets`, `avg RPE ${avg.toFixed(1)}`],
+      chips: [`${new Set(rows.map((r) => r.exercise)).size} exercises`, `${rows.length} sets`, avg == null ? "RPE –" : `avg RPE ${avg.toFixed(1)}`],
       lines: [],
-      strain: rows.length * (avg / 5),
+      strain: rows.length * ((avg ?? 7) / 5),
       done: summarizeLogs(rows),
     };
   }

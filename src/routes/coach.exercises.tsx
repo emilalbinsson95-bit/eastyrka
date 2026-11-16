@@ -49,7 +49,11 @@ const exerciseSchema = z.object({
   category: z.string().trim().max(40).optional().or(z.literal("")),
   description: z.string().trim().max(2000).optional().or(z.literal("")),
   default_intensity_metric: z.enum(["rpe", "rir"]),
+  builder_lift: z.enum(["squat", "bench", "deadlift"]).nullable(),
+  builder_step_kg: z.number().positive().max(20).nullable(),
 });
+type BuilderLiftValue = "squat" | "bench" | "deadlift" | null;
+const BUILDER_LABEL: Record<"squat" | "bench" | "deadlift", string> = { squat: "knäböj", bench: "bänkpress", deadlift: "marklyft" };
 
 interface Exercise {
   id: string;
@@ -60,6 +64,8 @@ interface Exercise {
   created_by: string | null;
   default_intensity_metric: "rpe" | "rir";
   updated_at: string;
+  builder_lift: BuilderLiftValue;
+  builder_step_kg: number | null;
 }
 
 function ExerciseLibraryPage() {
@@ -76,7 +82,7 @@ function ExerciseLibraryPage() {
       const { data, error } = await supabase
         .from("exercises")
         .select(
-          "id, name, description, category, is_global, created_by, default_intensity_metric, updated_at",
+          "id, name, description, category, is_global, created_by, default_intensity_metric, updated_at, builder_lift, builder_step_kg",
         )
         .order("is_global", { ascending: false })
         .order("name", { ascending: true });
@@ -123,6 +129,8 @@ function ExerciseLibraryPage() {
       category?: string;
       description?: string;
       default_intensity_metric: "rpe" | "rir";
+      builder_lift: BuilderLiftValue;
+      builder_step_kg: number | null;
     }) => {
       const parsed = exerciseSchema.parse(input);
       const payload = {
@@ -130,6 +138,8 @@ function ExerciseLibraryPage() {
         category: parsed.category || null,
         description: parsed.description || null,
         default_intensity_metric: parsed.default_intensity_metric,
+        builder_lift: parsed.builder_lift,
+        builder_step_kg: parsed.builder_lift ? parsed.builder_step_kg ?? 2.5 : null,
         created_by: userId,
         is_global: false,
       };
@@ -141,6 +151,8 @@ function ExerciseLibraryPage() {
             category: payload.category,
             description: payload.description,
             default_intensity_metric: payload.default_intensity_metric,
+            builder_lift: payload.builder_lift,
+            builder_step_kg: payload.builder_step_kg,
           })
           .eq("id", input.id);
         if (error) throw error;
@@ -190,6 +202,8 @@ function ExerciseLibraryPage() {
       category?: string;
       description?: string;
       default_intensity_metric: "rpe" | "rir";
+      builder_lift: BuilderLiftValue;
+      builder_step_kg: number | null;
     }) =>
       adminUpdate({
         data: {
@@ -199,6 +213,8 @@ function ExerciseLibraryPage() {
           category: vars.category || null,
           description: vars.description || null,
           default_intensity_metric: vars.default_intensity_metric,
+          builder_lift: vars.builder_lift,
+          builder_step_kg: vars.builder_step_kg,
         },
       }),
     onSuccess: () => {
@@ -224,9 +240,12 @@ function ExerciseLibraryPage() {
     category?: string;
     description?: string;
     default_intensity_metric: "rpe" | "rir";
+    builder_lift: BuilderLiftValue;
+    builder_step_kg: number | null;
   }) {
-    if (!editing) {
-      upsertMutation.mutate({ ...values });
+    // New exercises and the coach's own exercises are saved directly.
+    if (!editing || (!editing.is_global && editing.created_by === userId)) {
+      upsertMutation.mutate({ ...values, id: editing?.id });
       return;
     }
     const pw = window.prompt(
@@ -367,6 +386,11 @@ function ExerciseLibraryPage() {
                         <Badge variant="outline" className="text-xs uppercase">
                           {ex.default_intensity_metric}
                         </Badge>
+                        {ex.builder_lift && (
+                          <Badge variant="outline" className="text-xs">
+                            Byggövning · {BUILDER_LABEL[ex.builder_lift]} · {String(Number(ex.builder_step_kg ?? 2.5)).replace(".", ",")} kg
+                          </Badge>
+                        )}
                         {!ex.is_global && mine && (
                           <Badge className="bg-primary/10 text-primary hover:bg-primary/15 text-xs">
                             Yours
@@ -428,9 +452,13 @@ function ExerciseDialog({
     category?: string;
     description?: string;
     default_intensity_metric: "rpe" | "rir";
+    builder_lift: BuilderLiftValue;
+    builder_step_kg: number | null;
   }) => void;
   saving: boolean;
 }) {
+  const [builderLift, setBuilderLift] = useState<BuilderLiftValue>(editing?.builder_lift ?? null);
+  const [builderStep, setBuilderStep] = useState<string>(String(editing?.builder_step_kg ?? 2.5));
   const [name, setName] = useState(editing?.name ?? "");
   const [category, setCategory] = useState(editing?.category ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
@@ -495,6 +523,31 @@ function ExerciseDialog({
             override per set in the plan.
           </p>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="builder-lift">Byggövning för</Label>
+            <select
+              id="builder-lift"
+              className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={builderLift ?? ""}
+              onChange={(e) => setBuilderLift((e.target.value || null) as BuilderLiftValue)}
+            >
+              <option value="">Ingen</option>
+              <option value="squat">Knäböj</option>
+              <option value="bench">Bänkpress</option>
+              <option value="deadlift">Marklyft</option>
+            </select>
+          </div>
+          {builderLift && (
+            <div>
+              <Label htmlFor="builder-step">Viktsteg (kg)</Label>
+              <Input id="builder-step" type="number" inputMode="decimal" min={0.5} max={20} step={0.5} value={builderStep} onChange={(e) => setBuilderStep(e.target.value)} />
+            </div>
+          )}
+          <p className="col-span-2 text-xs text-muted-foreground">
+            En byggövning är en icke-teknisk övning som körs hårt med dubbel progression. Den kan väljas i blockgeneratorn.
+          </p>
+        </div>
         <div>
           <Label htmlFor="description">Description / cues</Label>
           <Textarea
@@ -525,6 +578,8 @@ function ExerciseDialog({
               category,
               description,
               default_intensity_metric: metric,
+              builder_lift: builderLift,
+              builder_step_kg: builderLift ? Number(builderStep.replace(",", ".")) || 2.5 : null,
             })
           }
           disabled={saving || !name.trim()}

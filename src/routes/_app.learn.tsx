@@ -158,8 +158,17 @@ function LearnPage() {
           Står det 10 × 10 · 92,5 kg (58 %) och ditt max är 160 kg, ska du köra 92,5 kg på alla tio seten.</p>
         <p><strong>Vikten är fast.</strong> Höj den inte för att det känns lätt, och sänk den inte för att följa en RPE.
           Lätta set med många reps är meningen: de bygger mängd utan att trötta ut lika mycket som tunga set.</p>
-        <p>Logga faktisk RPE som vanligt. Har övningen fyra eller fler likadana set kan du trycka på
+        <p>RPE behövs bara på första setet, och bara när vikten är tung. På övriga set kan du fylla i RPE om du vill,
+          men du behöver inte. Har övningen fyra eller fler likadana set kan du trycka på
           <strong> Logga alla set som planerat</strong> när du är klar. Blev något set annorlunda ändrar du det efteråt.</p>
+      </Topic>
+
+      <Topic title="Byggövning">
+        <p>En <strong>byggövning</strong> är en övning utan mycket teknik, till exempel benpress, hantelpress eller höftlyft. Den ska bygga musklerna bakom
+          ett huvudlyft. Du kör den hårt: RPE 8 på alla set utom sista, som får vara RPE 9.</p>
+        <p><strong>Så räknas målet.</strong> Dagsplanen visar vad du gjorde förra gången och vad du ska slå i dag.
+          Nådde alla set den övre repgränsen förra gången höjer du ett viktsteg och siktar på den nedre gränsen i varje set.
+          Annars behåller du vikten och försöker göra minst en rep mer totalt. Första gången väljer du en vikt du klarar mitt i repintervallet med två reps kvar.</p>
       </Topic>
 
       <Topic title="Lyfthastighet — m/s">

@@ -15,6 +15,7 @@ Prioriterat efter nytta: först det som visar varför lyft står still, sedan de
 - [ ] Coachbeslut i dokumentet (setdos, mätsingel, max reps i böj/mark m.m.) — dokumentets förslag gäller tills Emil säger annat.
 
 ## Aktuellt
+- [x] Tävlingsdag efter toppningen: kalenderpost + kort i Idag med uppvärmning till öppningen, coachens tre viktförslag per lyft och ifyllda försök (godkänt/underkänt, total). Alex: testtävling i dag, försök sparade och återlästa i Idag, kalendern och coachens Tävlingskort; testdata borttagen.
 - [x] Coachvald startvecka (1 vecka, 2–4 dagar): en filmad maxtrea @RPE 10 per tävlingslyft + powerbuilding 3×8–12 @8; markstans följs, inga övriga modifierare/push. Valbar i generator och säsong (låst till 1 vecka). Alex: genererad och återläst (13 övningar, treor 1×3 @10 utan vikt), sedan arkiverad. 402 tester gröna.
 - [x] Informationens RPE förtydligad med mål/faktisk ansträngning, startvikt och singlar; m/s förklaras utan loggfält eller ändrade träningsregler. Verifierat inloggad i atletvyn på dator/mobil utan körfel eller sidöverflöde; bygge OK.
 - [x] Patient/fysio arkiverade utan dataradering: direktlänkar går till pausbesked; registrering, rollväxling och adminval dolda. Verifierat inloggad som Emil på dator/mobil, återgång till coach fungerar; aktiva atlet-/coachvägar testade i regeltester. 392 tester gröna och bygge OK.

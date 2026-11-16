@@ -1,4 +1,5 @@
 import { useWarmupLoads } from "@/components/WarmupLoadsCard";
+import { CompetitionDayToday } from "@/components/CompetitionDayCard";
 import { FinishPushButton } from "@/components/PushProgressionCard";
 import { firstSetInstruction } from "@/lib/pushPresentation";
 import { BULK_LOG_MIN_SETS, isPercentRow, loggedRpeText, rpeRequired } from "@/lib/percentRows";
@@ -475,6 +476,8 @@ function TodayPage() {
       )}
 
       {!isLoading && <ReturnToLoadCard athleteId={userId} dateStr={todayStr} />}
+
+      {!isLoading && <CompetitionDayToday athleteId={userId} dateStr={todayStr} />}
 
       {!isLoading && (
         <ReadinessGate athleteId={userId} dateStr={todayStr}>

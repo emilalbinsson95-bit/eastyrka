@@ -2279,6 +2279,7 @@ export type Database = {
           frozen_baselines: Json | null
           mesocycle_id: string
           openers: Json
+          planned_attempts: Json
           settings: Json
           updated_at: string
           updated_by: string
@@ -2292,6 +2293,7 @@ export type Database = {
           frozen_baselines?: Json | null
           mesocycle_id: string
           openers?: Json
+          planned_attempts?: Json
           settings?: Json
           updated_at?: string
           updated_by: string
@@ -2305,6 +2307,7 @@ export type Database = {
           frozen_baselines?: Json | null
           mesocycle_id?: string
           openers?: Json
+          planned_attempts?: Json
           settings?: Json
           updated_at?: string
           updated_by?: string
@@ -2590,6 +2593,10 @@ export type Database = {
         Returns: undefined
       }
       push_rts_pct: { Args: { _reps: number; _rpe: number }; Returns: number }
+      save_competition_attempts: {
+        Args: { _attempts: Json; _mesocycle_id: string }
+        Returns: undefined
+      }
       search_athlete_profiles: {
         Args: { _query: string }
         Returns: {

@@ -52,8 +52,8 @@
 <!-- LOVABLE:END -->
 - D0 peak weeks start on their first session (zero-based days).
 - `resizeTemplateWeeks` sets block length before modifiers, repeating the wave so effort never exceeds its hardest week.
-- Push: semi-fixed first set; singles fold into main sets, light loads capped.
 - EAk presets (`eakStrategy.ts`) write the same strategy columns; generator EAk advice (`eakStatus.ts`) only fills coach-chosen set deltas, so nothing bypasses coach approval.
-- Metrics: liftMetrics.ts; % rows: percentRows.ts. Warnings never change sets; guards skip light % rows; calendar marks logged sessions done.
+- Metrics: liftMetrics.ts; % rows: percentRows.ts. Warnings never change sets; guards skip light % rows.
 - Logged RPE is NULL only on % rows (`rpeRequired`); readers use `isRatedRpe`, never fake values.
-- Byggövning (`builderExercises.ts`): after weak points, working weeks only; outside main-lift guards, Mängd, EAk, protocols.
+- Builders (`builderExercises.ts`): after weak points, working weeks; outside main-lift guards/EAk/protocols. Push: semi-fixed first set.
+- Meet day lives on taper_followups (`competitionDay.ts`); athletes write attempts only via `save_competition_attempts`.

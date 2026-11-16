@@ -42,6 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createCompetition, deleteCompetition } from "@/lib/competitions";
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
+import { CompetitionDayCard } from "@/components/CompetitionDayCard";
 import { peakStartDate } from "@/lib/peakingDates";
 import {
   CalendarItem,
@@ -657,7 +658,7 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
       </Dialog>
 
       <Dialog open={!!compTarget} onOpenChange={(o) => !o && setCompTarget(null)}>
-        <DialogContent>
+        <DialogContent className={compTarget?.peakMesocycleId ? "max-h-[90vh] overflow-y-auto sm:max-w-2xl" : undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-amber-500" /> {compTarget?.title}
@@ -669,16 +670,17 @@ export function SharedCalendar({ ownerId, readOnly = false, viewerRole }: Props)
           {compTarget?.cancelReason && (
             <p className="text-sm text-muted-foreground">{compTarget.cancelReason}</p>
           )}
+          {compTarget?.peakMesocycleId && <CompetitionDayCard mesocycleId={compTarget.peakMesocycleId} embedded />}
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button
+            {compTarget && !compTarget.sourceId.startsWith("peak:") && <Button
               variant="ghost"
               className="text-muted-foreground hover:text-destructive"
               disabled={compDeleteMutation.isPending}
               onClick={() => compTarget && compDeleteMutation.mutate(compTarget.sourceId)}
             >
               <Trash2 className="mr-1 h-3.5 w-3.5" /> {t("actions.delete")}
-            </Button>
-            {viewerRole === "coach" && compTarget && (
+            </Button>}
+            {viewerRole === "coach" && compTarget && !compTarget.peakMesocycleId && (
               <Button
                 onClick={() => {
                   setPeakingFor(compTarget);

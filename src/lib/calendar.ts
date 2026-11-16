@@ -37,6 +37,8 @@ export type CalendarItem = {
   /** Mesocycle the session belongs to (planned sessions only). */
   cycleId?: string;
   paymentService?: "coaching" | "overview";
+  /** Peak block whose competition day (warmups, attempts) belongs to this item. */
+  peakMesocycleId?: string;
 };
 
 export function monthGridDays(monthDate: Date): Date[] {
@@ -193,6 +195,33 @@ export async function fetchCalendarItems(ownerId: string, monthDate: Date): Prom
       cancelReason: (c.notes as string | null) ?? null,
     };
   });
+
+  // 5b. Competition days at the end of peak blocks
+  const { data: peaks } = await supabase
+    .from("taper_followups")
+    .select("mesocycle_id, competition_date, mesocycles!inner(status)")
+    .eq("athlete_id", ownerId)
+    .gte("competition_date", rangeStart)
+    .lte("competition_date", rangeEnd)
+    .neq("mesocycles.status", "archived");
+  for (const peak of peaks ?? []) {
+    const date = fmt(peak.competition_date as string);
+    const existing = compItems.find((c) => c.effectiveDate === date && !c.peakMesocycleId);
+    if (existing) { existing.peakMesocycleId = peak.mesocycle_id; continue; }
+    compItems.push({
+      key: `competition:peak:${peak.mesocycle_id}`,
+      source: "competition",
+      sourceId: `peak:${peak.mesocycle_id}`,
+      ownerId,
+      title: "Tävling",
+      subtitle: "Tävling",
+      suggestedDate: date,
+      effectiveDate: date,
+      isGhost: false,
+      isCancelled: false,
+      peakMesocycleId: peak.mesocycle_id,
+    });
+  }
 
   const paymentSchedule = await fetchPaymentSchedule(ownerId);
   const paymentItems: CalendarItem[] = paymentSchedule?.active ? paymentReminderDates(paymentSchedule.start_date, rangeStart, rangeEnd).map(date => ({

@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 import { dailyE1RM, rollingE1RMBySession, countsForEAk, isReadinessLift, lookupBaseline as resolveBaseline, baselineExerciseKey } from "@/lib/eakoefficient";
 import { EakMesoSection } from "@/components/EakMesoSection";
+import { LiftMetricsSection } from "@/components/LiftMetricsSection";
 import { autoFloatBaselines, type BaselineAutoResult } from "@/lib/baselineAutofloat.functions";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -1264,6 +1265,7 @@ function AnalyticsPage() {
               const [baseMev,baseMrv]=VOLUME_LANDMARKS[cat];const mev=Math.max(1,Math.round(baseMev*factor));const mrv=Math.max(mev,Math.round(baseMrv*factor));
               return <ChartCard key={cat} title={categoryLabel(cat)} description={`MEV ${mev} · MRV ${mrv} set/vecka`}><div className="h-48"><ResponsiveContainer><BarChart data={volumeByCategory.data}><CartesianGrid stroke="var(--border)"/><XAxis dataKey="label" fontSize={10}/><YAxis domain={[0,(max:number)=>Math.max(max,mrv+2)]} fontSize={10}/><Tooltip/><ReferenceArea y1={mev} y2={mrv} fill="var(--chart-2)" fillOpacity={.12}/><ReferenceLine y={mev} stroke="var(--chart-2)" strokeDasharray="3 3"/><ReferenceLine y={mrv} stroke="var(--chart-3)" strokeDasharray="3 3"/><Bar dataKey={cat} name="Arbetsset" fill="var(--chart-1)"/></BarChart></ResponsiveContainer></div></ChartCard>;
             })}</div>
+          <LiftMetricsSection athleteId={athleteId} logs={fullLogs} baselines={baselines} days={days} />
           </TabsContent>
 
           {/* === ENDURANCE TAB === */}

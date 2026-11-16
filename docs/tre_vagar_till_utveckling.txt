@@ -1,0 +1,872 @@
+SETPOINT – tre vägar till utveckling: RPE, procent och byggövningar
+
+Nov 16, 2026 · @Emil
+
+Sammanfattning
+
+Förslaget lägger två nya vägar bredvid dagens RPE-styrning: procentstyrd
+träning och byggövningar. EAk-beräkningen ändras inte.
+
+- Väg 1 – RPE (som i dag). Vikten räknas från mål-RPE och justeras efter
+  dagsformen. EAk mäter.
+
+- Väg 2 – Procent. Vikten är en fast andel av baslinjen. Den används för
+  lätt volym långt från failure (JE-typ), för trappor upp till toppset
+  (AE-typ) och när du vill pusha en atlet med en bestämd vikt.
+
+- Väg 3 – Byggövning. Din pushande, icke-tekniska övning: benpress,
+  bröstpress och liknande, nära failure, med målet att slå förra passet.
+
+Appen får också tre mått per lyft och vecka, så att vägarna kan jämföras
+och hållas rimliga: hårda set (som i dag), mängd (JE:s mått, lyft vikt
+delat med max) och tunga set (85 % eller mer).
+
+Allt nytt är coachval som är avstängda från början. Befintliga block och
+mallar ska ge exakt samma resultat som i dag tills du slår på något.
+Sist i dokumentet finns en Lovable-prompt per byggsteg, i den ordning de
+bör byggas.
+
+Tre vägar – vilken passar när
+
+Vägarna kan blandas i samma block, per rad och per lyft. En atlet kan ha
+bänk på procent, böj på RPE och en byggövning för benen.
+
+  ------------------------------------------------------------------------
+  Väg               Så bestäms vikten         Exempel         Följs upp
+                                                              med
+  ----------------- ------------------------- --------------- ------------
+  1. RPE (som i     Mål-RPE ger vikt från     4 × 5 @ RPE 7,5 EAk
+  dag)              baslinjen, och följande                   
+                    set justeras efter                        
+                    faktisk RPE                               
+
+  2. Procent        Fast andel av baslinjen,  10 × 10 @ 58 %, Mängd,
+                    samma vikt på alla set    5 × 3 @ 80 %,   genomförda
+                                              max reps @ 72,5 reps och EAk
+                                              %               när RPE
+                                                              loggas
+
+  3. Byggövning     Förra passets vikt och    Benpress 3 ×    Övningens
+                    reps, dubbel progression  8–12, sista     egen trend
+                                              setet RPE 9     
+  ------------------------------------------------------------------------
+
+  -----------------------------------------------------------------------
+  Läge hos atleten               Välj            Skäl
+  ------------------------------ --------------- ------------------------
+  Skattar RPE bra, dagsformen    RPE             Vikten följer dagsformen
+  svänger, tävling inom två                      och EAk ger signal
+  månader                                        
+
+  Håller igen eller skattar för  Procent-push    Du bestämmer vikten och
+  högt                                           ser i loggad RPE hur
+                                                 tungt det var
+
+  Ny och kan inte skatta RPE än  Procent på lätt RPE är osäkrast långt
+                                 och medeltungt  från failure
+                                 arbete          
+
+  Lyftet står still trots tunga  Volymblock      Mer övning och mängd
+  set, atleten tål volym, långt  (JE-typ) eller  utan slitsamma set
+  till tävling                   procenttrappa   
+                                 (AE-typ)        
+
+  Lyftet begränsas av            Byggövning      Hård muskelträning utan
+  muskelmassa, eller leder och                   teknisk kostnad
+  teknik tål inte mer huvudlyft                  
+
+  Lyftet står still och veckorna Tunga singlar   Den tunga exponeringen
+  saknar tunga set               eller           saknas
+                                 procent-push på 
+                                 85–92 %         
+  -----------------------------------------------------------------------
+
+Underlaget
+
+Forskningen ger inget skäl att välja bort någon av vägarna, och dina
+loggar visar att du redan blandade dem. Studierna är hämtade via PubMed.
+
+Forskningen
+
+  -------------------------------------------------------------------------
+  Fråga                  Vad studierna visar                 Följd för
+                                                             appen
+  ---------------------- ----------------------------------- --------------
+  RPE eller procent?     En metaanalys fann ingen säker      Båda fungerar.
+                         skillnad i 1RM mellan autoreglerad  Appen bör ha
+                         och procentbaserad belastning       båda.
+                         (Hickmott 2022). I en åtta veckors  
+                         studie ökade båda grupperna, med en 
+                         liten och inte säkerställd fördel   
+                         för RPE (Helms 2018). En            
+                         nätverksmetaanalys fann ingen       
+                         signifikant skillnad mellan         
+                         RPE-styrning och procent för 1RM i  
+                         knäböj, medan hastighetsstyrd       
+                         träning gav mer än fast procent     
+                         (Bao 2026).                         
+
+  Hur nära failure?      Styrkeökningen var ungefär lika     Tävlingslyft
+                         över ett brett spann av reps i      kan tränas
+                         reserv. Muskeltillväxten ökade ju   långt från
+                         närmare failure seten togs          failure.
+                         (Robinson 2024).                    Byggövningar
+                                                             tas nära
+                                                             failure.
+
+  Hur mycket volym?      Mer veckovolym gav mer styrka, men  Volym hjälper,
+                         med tydligt avtagande utbyte. Högre men dosen ska
+                         frekvens gav också mer styrka       gå att ställa
+                         (Pelland 2025).                     in.
+
+  10 × 10?               Två små studier av 10 × 10 mot 5 ×  Setdosen i
+                         10, på 6 och 12 veckor, fann inte   volymblocket
+                         att 10 set gav mer. I den första    blir ett
+                         ökade bänken mer med 5 set          reglage, 5–10.
+                         (Amirthalingam 2017, Hackett 2018). 
+
+  Lätt eller tungt?      1RM ökade mer med tung än med lätt  Lätta block
+                         belastning när seten togs till      avslutas med
+                         failure. Muskeltillväxten blev lika tunga set, och
+                         (Schoenfeld 2017).                  veckor utan
+                                                             tunga set
+                                                             flaggas.
+
+  Hur bra är             Deltagarna underskattade reps kvar  Procent passar
+  RPE-skattning?         med ungefär en rep. Träffsäkerheten där RPE är
+                         var bättre närmare failure och vid  osäkrast:
+                         färre reps (Halperin 2021).         lätta set med
+                                                             många reps.
+
+  Maskin eller fria      Styrkan ökade mest i det som        Byggövningen
+  vikter?                tränades, medan muskeltillväxten    bygger muskel
+                         inte skilde sig (Haugen 2023).      men ersätter
+                         Knäböj gav mer knäböjsstyrka än     inte
+                         benpress (Rossi 2018).              huvudlyftet
+                                                             helt.
+  -------------------------------------------------------------------------
+
+JE:s upplägg skiljer sig från studierna av 10 × 10: lägre vikt (58 %),
+lång vila och bänk varannan dag. Hans egen jämförelse mellan 10 och 5
+set (87 mot 10 personer) är inte kontrollerad.
+
+Dina loggar
+
+- Du blandade redan. Av raderna för huvudlyft och varianter hade 34 %
+  bara RPE, 30 % bara procent och 31 % båda.
+
+- Lätta set var vanliga. Mellan en tredjedel och hälften av dina
+  procentordinerade set låg under det RPE 6 ger för samma reps i
+  RTS-tabellen. I AE gäller det ungefär 9 av 10 set och i JE drygt 8
+  av 10. Appen kan i dag inte ordinera sådana set.
+
+- Byggövningar fanns med ofta. Benpress, hantelpress, höftlyft eller
+  press fanns med i ungefär två av tre veckor hos Adrian, Armin, Edv och
+  Ju, men bara i 5 av 25 veckor hos Shadi. De låg oftast på 3–4 set ×
+  8–10 på RPE 8. Vikterna steg när övningen låg kvar, men det fanns
+  ingen uttalad progressionsregel.
+
+- Mängden skiljer sig mycket mellan uppläggen. Dina bänkveckor låg på
+  70–114 i median, AE på 62–86 och JE del 1 på cirka 200. Böj låg på
+  19–40 och mark på 12–23 hos dig, mot 35–46 och 36–45 i AE.
+
+- Tunga set saknades där böjen stod still. Shadi och Ju saknade böjset
+  på 85 % eller mer i 78 % respektive 55 % av veckorna. Edv, vars böj
+  ökade, saknade dem i 10 %.
+
+Loggarna är ett litet underlag: sex atleter, perioder utan datum och
+samband snarare än bevis.
+
+Förslagen
+
+Förslaget har fem delar. A–C ger procentvägen, D byggövningarna och E
+två nya upplägg. Inget av det ändrar EAk-beräkningen, toppningen eller
+sparad historik.
+
+A. Procent som styrning per rad
+
+Varje rad i ett block får fältet Styrning: RPE (standard, som i dag)
+eller Procent.
+
+- Vikten är baslinjen × procenten, avrundad till ditt valda steg. Alla
+  set på raden har samma vikt.
+
+- Procenten räknas på övningens egen baslinje. Saknar en variant
+  baslinje räknas den på huvudlyftets, och raden märks med det.
+
+- Atleten ser till exempel "10 × 10 · 92,5 kg (58 %)" och loggar som
+  vanligt. Rader med många lika set får knappen "Logga alla set som
+  planerat".
+
+- RPE är obligatoriskt på första arbetssetet när tabellen ger RPE 7
+  eller högre, så att EAk får sitt mätset. På lättare rader är RPE
+  frivilligt.
+
+- Intensitetsreglaget (±1,5 RPE) rör inte procentrader. Volymreglaget
+  skalar antal set som vanligt.
+
+B. Tre mått per lyft och vecka
+
+Måtten gör att en JE-vecka och en RPE-vecka kan jämföras, och att
+vakterna kan skilja lätt arbete från hårt.
+
+  -----------------------------------------------------------------------
+  Mått      Definition                        Vakt
+  --------- --------------------------------- ---------------------------
+  Hårda set Set på RPE 6 eller högre. Loggad  Dagens tak och golv (6–24
+            RPE används om den finns, annars  per vecka, tak per pass)
+            uppskattas den ur RTS-tabellen    gäller bara hårda set
+            från procent och reps.            
+
+  Lätta set Set under RPE 6, till exempel 10  Räknas i mängd och i
+            reps på 58 % eller 2 reps på 80 % passets 30 set, inte i
+                                              lyftets tak
+
+  Mängd     Vikt ÷ lyftets baslinje × reps,   Varning över 130 % av
+            summerat. Varianter räknas till   snittet för de tre senaste
+            sitt huvudlyft.                   arbetsveckorna
+
+  Tunga set Set på 85 % av baslinjen eller    Varning när ett huvudlyft
+            mer                               saknar tunga set två
+                                              arbetsveckor i rad
+  -----------------------------------------------------------------------
+
+Exempel med baslinje 160 kg: 10 × 10 på 92,5 kg ger 10 lätta set och
+mängd 57,8. 5 × 5 på 127,5 kg ger 5 hårda set och mängd 19,9. 3 × 1 på
+145 kg ger 3 hårda set som också är tunga, och mängd 2,7.
+
+Måtten visas i Analys, i förhandsvisningen och i en ny blockjämförelse:
+en rad per block och lyft med måtten och utfallet (EAk-trend och
+e1RM-median i början och slutet). Där ser du vilken väg som gav
+utveckling för just den atleten.
+
+C. Procent-push
+
+- Push (viktprogression) får typen Fast procent, till exempel 4 × 5 @ 80
+  % av plan-e1RM. Alla huvudset har samma vikt, i stället för att bara
+  första setet är fast.
+
+- RPE-tak (standard 9) är säkerhetsventilen. Ett set över taket ger
+  förslaget 5 % lägre vikt på resten och räknas som miss i dagens
+  bromsar.
+
+- Steg, tak på 6 % per block, fem dagar mellan beslut och ditt
+  godkännande gäller som i dag.
+
+- Valfritt: sista setet på en procentrad kan vara max reps ("lämna 1").
+  Appen sparar repsrekord per procent och visar förra resultatet.
+
+D. Byggövning
+
+Byggövningen är din pushande, icke-tekniska övning. Namnet är valt för
+att inte krocka med Push (viktprogression).
+
+- En övning i katalogen märks som byggövning för böj, bänk eller mark.
+  Förslag: benpress, hacklift och bältesböj för böj; bröstpress i
+  maskin, hantelpress och dips för bänk; ryggresning, hip thrust och
+  lårcurl för mark.
+
+- I generatorn väljer du högst en byggövning per lyft, bredvid
+  Svagpunkter: 1–2 gånger per vecka, 3 set × 8–12 som standard. Sista
+  setet RPE 9, övriga RPE 8.
+
+- Läget är Lägg till eller Ersätt. Ersätt tar bort lika många set från
+  lyftets lättaste rad den veckan, aldrig under mallgolvet och aldrig
+  mätset, push-set eller tunga singlar.
+
+- Progressionen är dubbel progression, som redan finns som setprotokoll.
+  Idag visar "Förra gången: 140 kg × 12, 11, 10" och målet "34 reps".
+  När alla set når övre gränsen höjs vikten ett steg.
+
+- Analys får ett kort per byggövning med trend över sex pass och status
+  Ökar, Står still eller Tappar. Tre pass utan ökning ger förslaget att
+  byta övning.
+
+- Den räknas som assistans i passets tak, aldrig i huvudlyftets set,
+  mängd eller EAk. Den tas inte med i avlastning eller toppning.
+
+E. Två nya upplägg
+
+Volymblock bänk (JE-typ). En mall med fast dos, som Styrka för löpare.
+
+- 21 pass varannan dag (6 veckor) eller 3 dagar per vecka (7 veckor).
+
+- Del 1, pass 1–10: bänk 10 × 10 @ 58 %, RPE-tak 8, 5–6 minuter per set.
+  Setdosen är ett reglage på 5–10, med valet att trappa in 6–8–10.
+
+- Del 2, pass 11–20: upptrappning från 42 % till ett toppset som stiger
+  från 72 % till 97 %, sedan lätta set på 60–62 %.
+
+- Pass 21: maxning. Resultatet blir ett maxförslag som du godkänner.
+
+- Val: mätsingel en gång per vecka så att EAk har en signal, och
+  underhåll av böj och mark.
+
+- Mängden visas mot atletens referens, och du bekräftar innan utkastet
+  sparas.
+
+Procenttrappa (AE-typ). Ett val per huvudlyft i den vanliga generatorn,
+inte en egen mall.
+
+  -----------------------------------------------------------------------
+  Toppset           Reps per set              Antal toppset
+  ----------------- ------------------------- ---------------------------
+  70 %              5                         5
+
+  75 %              4                         5
+
+  80 %              3                         5
+
+  85 %              2                         4
+
+  90 %              1                         3
+  -----------------------------------------------------------------------
+
+- Varje pass trappar upp via 50, 60 och 67,5 % till toppseten. Reps per
+  set är ungefär hälften av vad atleten klarar på procenten.
+
+- Veckans tyngsta dag följer vågen 70, 75, 80, 85 %. Lyftets övriga
+  dagar blir varianter på 60–65 %.
+
+- Push kan inte kombineras med procenttrappa på samma lyft.
+
+Byggordning
+
+Bygg ett steg i taget i den här ordningen. Steg 1–3 ändrar inget i block
+utan procentrader, och steg 6–7 kan byggas när som helst.
+
+  -------------------------------------------------------------------------
+  Steg   Bygger                     Kräver     Ger dig
+                                    steg       
+  ------ -------------------------- ---------- ----------------------------
+  1      Måtten: hårda och lätta    –          Siffror att jämföra vägarna
+         set, mängd, tunga set,                med, utan att något beteende
+         blockjämförelse                       ändras
+
+  2      Procent som styrning per   1          Du kan pusha med procent
+         rad                                   direkt, manuellt i
+                                               blockredigeringen
+
+  3      Volymvakter för lätta set  1, 2       Lätt volym stoppas inte
+         och två varningar                     längre av set-taket
+
+  4      RPE-tak och max reps på    2          Säkerhetsventil och
+         procentrader                          repsrekord
+
+  5      Push i fast procent        2, 4       Veckoprogression på bestämd
+                                               vikt
+
+  6      Byggövning i katalog och   –          Din pushande övning i varje
+         generator                             block
+
+  7      Byggövning i Idag och      6          "Slå förra gången" och trend
+         Analys                                per övning
+
+  8      Mallen Volymblock bänk     2, 3, 4    JE i appen
+
+  9      Procenttrappa per          2, 3       AE-typen i vanliga block
+         huvudlyft                             
+  -------------------------------------------------------------------------
+
+De tre mindre regeländringarna från logganalysen ingår inte här:
+varianter mot huvudlyftets tak, tunga singlar som standard och en egen
+1,5-repsfaktor för mark.
+
+Lovable-prompter
+
+Varje steg i byggordningen har en prompt som är färdig att klistra in.
+Gör så här:
+
+1.  Klistra in projektkunskapen nedan i Project settings → Instructions.
+    Lovable läser den vid varje prompt. Texten är cirka 2 300 tecken,
+    och fältet rymmer 10 000.
+
+2.  För varje steg: välj Plan i lägesväljaren, klistra in prompten och
+    läs planen. Godkänn när den stämmer, så bygger Lovable.
+
+3.  Testa på Alex Athlete enligt promptens "Klart när" och checklistan
+    längre ner. Bokmärk versionen i Version history innan nästa steg.
+
+Projektkunskap
+
+SETPOINT – regler och begrepp för procent, mängd och byggövningar
+Regler som alltid gäller
+- Coachen bestämmer. Allt nytt är coachval och är avstängt som standard.
+- Historik är helig. Loggad träning, sparade program, publicerade pass
+och sparade baslinjer ändras aldrig av ny logik. Nya regler gäller nya
+block.
+- EAk-beräkningen ändras inte. EAk gäller bara tävlingslyften, och
+mätset är första kvalificerade set på RPE 7 eller högre.
+- När inga nya val är påslagna ska befintliga mallar generera exakt
+samma block som före ändringen.
+- Samma lyft, samma siffra: använd samma namnigenkänning, baslinjer och
+RTS-tabell som grafer, EAk och generatorn redan använder.
+- Alla nya texter läggs in på svenska och engelska.
+- Nya generatorregler testas på testatleten Alex Athlete.
+Begrepp
+- Styrning (per rad): "rpe" (standard, dagens beteende) eller "procent".
+- Procentrad: vikt = baslinje × procent, avrundad till coachens steg.
+Samma vikt på alla set. Baslinjen är övningens egen. Saknas den används
+huvudlyftets, och raden märks med det.
+- Uppskattad RPE för ett set utan loggad RPE: ta vikt ÷ baslinje och
+antal reps, och välj den RPE vars värde i RTS-tabellen ligger närmast.
+Ligger kvoten under tabellens värde för RPE 6 är setet under RPE 6. Vid
+fler än 12 reps används kolumnen för 12 reps.
+- Hårt set: RPE 6 eller högre (loggad RPE om den finns, annars
+uppskattad). Rader med styrning "rpe" är alltid hårda set.
+- Lätt set: under RPE 6. Räknas i mängd och i passets totala setantal,
+men inte i huvudlyftets set-tak eller set-golv.
+- Mängd: summan av (vikt ÷ tävlingslyftets baslinje × reps) per
+huvudlyft. Varianter räknas till sitt huvudlyft. Assistans, byggövningar
+och flaggade uppvärmningsset räknas inte.
+- Tungt set: vikt på minst 85 % av baslinjen.
+- RPE-tak: högsta tillåtna RPE på en procentrad. Loggas ett set över
+taket föreslås 5 % lägre vikt på resterande set.
+- Byggövning: icke-teknisk övning (maskin eller hantlar) kopplad till
+knäböj, bänkpress eller marklyft. Körs med dubbel progression. Räknas
+som assistans, aldrig i EAk, mängd eller huvudlyftets set.
+- Fast dos-mall: mall utan golv och volymvakter där coachreglage bara
+kan sänka (som Styrka för löpare).
+
+Steg 1 – Mått (bara visning)
+
+Mål: Visa nya mått per huvudlyft och vecka. Ingen befintlig logik ska
+ändras.
+Gör så här:
+1. Lägg till en gemensam beräkningsfunktion som tar en uppsättning set
+(planerade eller loggade) och returnerar per huvudlyft: hårda set, lätta
+set, mängd och tunga set. Definitionerna står i projektkunskapen.
+2. Loggade set räknas på faktisk vikt, reps och RPE. Planerade set
+räknas på beräknad vikt och mål-RPE. Flaggade uppvärmningsset räknas
+inte.
+3. Visa måtten här:
+a. Analys (coach): en rad per huvudlyft och vecka med Hårda set, Lätta
+set, Mängd och Tunga set, ordinerat och genomfört bredvid varandra.
+b. Förhandsvisningen av ett genererat block: samma mått per vecka, plus
+atletens referens = snittet av genomförda värden de tre senaste
+arbetsveckorna.
+c. Statistik (atlet): mängd per huvudlyft och vecka som en enkel graf.
+d. Ny vy Blockjämförelse under Analys: en rad per block och huvudlyft
+med antal arbetsveckor, snitt per arbetsvecka av hårda set, lätta set,
+mängd och tunga set, EAk-trenden vid blockets första och sista mätpass
+samt e1RM-medianen vid start och slut. Nyaste blocket överst.
+4. Saknas baslinje för ett lyft: visa set, lämna Mängd och Tunga set
+tomma och skriv "Baslinje saknas".
+Rör inte: generatorn, volymvakterna, EAk-beräkningen, push, toppning,
+sparade block och loggar.
+Klart när (Alex Athlete, bänkbaslinje 160 kg, set loggade utan RPE):
+- 10 × 10 på 92,5 kg ger 0 hårda set, 10 lätta set, mängd 57,8 och 0
+tunga set.
+- 5 × 5 på 127,5 kg ger 5 hårda set och mängd 19,9.
+- 3 × 1 på 145 kg ger 3 hårda set, 3 tunga set och mängd 2,7.
+
+Steg 2 – Procent som styrning per rad
+
+Mål: Coachen ska kunna styra en rad med fast procent av baslinjen i
+stället för RPE.
+Gör så här:
+1. Lägg till fältet Styrning på varje övningsrad i ett block: "RPE"
+(standard) eller "Procent". Befintliga rader får "RPE" och ska bete sig
+exakt som i dag.
+2. På en procentrad anger coachen set, reps och procent (30–105 i steg
+om 0,5). Vikten = baslinje × procent, avrundad till coachens valda steg.
+Alla set på raden får samma vikt.
+3. Coachen kan välja styrning och ändra procent i blockredigeringen, i
+utkast och i publicerade pass, på samma sätt som annan manuell
+redigering i dag.
+4. Förhandsvisningen och blockredigeringen visar raden som "10 × 10 ·
+92,5 kg (58 %)". Saknas baslinje: visa "58 % – baslinje saknas" och en
+varning.
+5. Idag (atlet): vikten visas som fast på alla set, med procenten i
+liten text. Följande set justeras inte efter RPE.
+6. Loggning fungerar som i dag. RPE är obligatoriskt på radens första
+arbetsset när uppskattad RPE är 7 eller högre, annars frivilligt.
+7. Rader med fyra eller fler lika set får knappen "Logga alla set som
+planerat". Den fyller i planerad vikt och reps på alla ologgade set, som
+atleten sedan kan ändra.
+8. Generatorns intensitetsreglage (±1,5 RPE) påverkar inte procentrader.
+Volymreglaget skalar antal set som för andra rader. Avrundning sker i
+sista steget som i dag.
+9. Lägg till en kort förklaring i Information: vad procent av baslinjen
+betyder och att vikten är fast.
+Rör inte: EAk-beräkningen, push, toppning, mallarnas innehåll, sparade
+block och loggar.
+Klart när (Alex Athlete, bänkbaslinje 160 kg, steg 2,5 kg):
+- En rad 10 × 10 @ 58 % visar 92,5 kg på alla set i Idag.
+- Ett block som genereras utan procentrader är identiskt med samma block
+före ändringen.
+
+Steg 3 – Volymvakter och varningar
+
+Mål: Volymvakterna ska skilja på hårda och lätta set, och
+förhandsvisningen ska få två nya varningar.
+Gör så här:
+1. Huvudlyftets set-tak och set-golv per vecka (6–24) och taket per pass
+efter repintervall räknar bara hårda set.
+2. Taket på 30 set per pass räknar alla set, hårda och lätta, utom
+flaggade uppvärmningsset.
+3. Ny varning "Mängd": visas när planerad mängd för ett huvudlyft en
+vecka är mer än 30 % över atletens referens (snittet av genomförd mängd
+de tre senaste arbetsveckorna). Texten visar båda talen. Saknas referens
+visas ingen varning.
+4. Ny varning "Inga tunga set": visas när ett huvudlyft saknar tunga set
+två arbetsveckor i rad i blocket. Gäller inte avlastning, uppstart efter
+frånvaro, toppning, startvecka, Styrka för löpare, Helkropp 2 dagar
+eller fast dos-mallar. Coachen kan stänga av varningen per atlet.
+5. Båda är varningar som coachen kan spara förbi. De ändrar inga set
+automatiskt.
+Rör inte: rader med styrning RPE (de är alltid hårda set, så dagens
+block påverkas inte), EAk-beräkningen, push och toppning.
+Klart när (Alex Athlete):
+- Ett standardblock utan procentrader får samma set och samma vakter som
+före ändringen. Det enda nya är de två varningarna.
+- En tillagd rad 6 × 10 @ 58 % i bänk räknas inte mot bänkens 24 set,
+men syns i mängd och i passets 30 set.
+
+Steg 4 – RPE-tak och max reps
+
+Mål: Procentrader ska kunna ha en säkerhetsventil (RPE-tak) och ett
+valfritt sista set på max reps.
+Gör så här:
+1. RPE-tak: valfritt fält på procentrader (6–10 i halvsteg, tomt som
+standard). Loggar atleten ett set över taket visar Idag direkt "Över
+RPE-taket – sänk till X kg på resterande set", där X är 5 % lägre och
+avrundat. Atleten väljer själv, och coachen ser händelsen i Analys.
+2. Max reps: coachen kan markera sista setet på en procentrad som "Max
+reps". Idag visar då "Så många reps som möjligt med god teknik – lämna
+1" och, om det finns, "Förra gången: N reps på samma procent".
+3. Loggningen ska klara fler än 12 reps. Set med fler än 12 reps ger
+inget e1RM och används aldrig i EAk.
+4. Spara repsrekord per övning, variant och procent (avrundad till
+närmaste 2,5 %). Visa nytt rekord i Idag och i atletens Statistik.
+5. Ett max reps-set med högst 12 reps och loggad RPE 9 eller högre får
+skapa ett maxförslag enligt dagens regler. Coachen godkänner eller
+avvisar. Baslinjen ändras aldrig automatiskt.
+Rör inte: EAk-beräkningen, reglerna för mätset, push.
+Klart när (Alex Athlete):
+- På 5 × 5 @ 80 % med RPE-tak 8,5 ger loggad RPE 9 på set 2 förslaget 5
+% lägre vikt på set 3–5.
+- Ett max reps-set på 15 reps sparas som repsrekord och ger varken e1RM
+eller EAk-mätning.
+
+Steg 5 – Push i fast procent
+
+Mål: Push (Baselines → Viktprogression) ska kunna ordineras i fast
+procent av plan-e1RM, som alternativ till dagens upplägg.
+Gör så här:
+1. Nytt val per lyft, Push-typ: "RPE-start" (standard, dagens beteende)
+eller "Fast procent".
+2. Fast procent: coachen anger huvudset som set × reps @ procent, till
+exempel 4 × 5 @ 80 %. Vikten = plan-e1RM × procent, avrundad. Alla
+huvudset har samma fasta vikt.
+3. Push-seten får ett RPE-tak (standard 9). Ett set över taket eller
+missade reps räknas som miss i de bromsar som redan finns.
+4. Allt annat i push gäller oförändrat: steg i procent, förslag om nytt
+steg efter klarade och bekräftade huvudset som coachen godkänner eller
+ångrar, tak på 6 % per block, minst fem dagar mellan beslut, andra
+missen sänker plan-e1RM 5 %, inget push i avlastning, uppstart eller
+toppning, separat progression för sumo och konventionellt, och
+toleransen ±2,5 kg för träffad vikt.
+5. I generatorn ersätts huvudsetet med push-ordinationen som i dag, nu
+som procentrad när push-typen är Fast procent. Ingen extra volym.
+Rör inte: push-typen RPE-start, publicerade pass, baslinjer,
+EAk-beräkningen.
+Klart när (Alex Athlete, plan-e1RM 165 kg i bänk, steg 2,5 kg):
+- 4 × 5 @ 80 % ger 132,5 kg på alla fyra set.
+- Efter klarade och bekräftade set under RPE-taket föreslås nästa steg,
+och coachen måste godkänna.
+
+Steg 6 – Byggövning i katalog och generator
+
+Mål: Coachen ska kunna lägga in en byggövning per huvudlyft – en
+icke-teknisk övning som körs hårt med dubbel progression.
+Gör så här:
+1. Övningar: lägg till rollen "Byggövning" med fälten Bygger (knäböj,
+bänkpress eller marklyft) och Viktsteg (standard 2,5 kg). Coachen kan
+märka egna övningar.
+2. Märk dessa gemensamma standardövningar, och skapa dem som saknas:
+knäböj – benpress (viktsteg 5), hacklift (5), bältesböj; bänkpress –
+bröstpress i maskin (5), hantelpress, lutande hantelpress, dips;
+marklyft – ryggresning, hip thrust, lårcurl.
+3. Generatorn, i samma steg som Svagpunkter: nytt coachval Byggövning
+per huvudlyft. Coachen väljer övning, 1 eller 2 gånger per vecka, antal
+set (2–5, standard 3) och repintervall (standard 8–12).
+4. Raden ordineras som set × repintervall med mål-RPE 8 på alla set utom
+sista, som har RPE 9. Radens setprotokoll är Dubbel progression.
+5. Läge "Lägg till" (standard) eller "Ersätt". Ersätt tar bort lika
+många set från lyftets lättaste huvudlyfts- eller variantrad samma
+vecka. Ta aldrig set från mätset, push-set eller tunga singlar, och
+aldrig så att lyftet hamnar under mallgolvet. Går det inte: lägg till i
+stället och visa en varning.
+6. Byggövningen placeras efter huvudlyft och varianter, på en dag där
+lyftet redan tränas.
+7. Den räknas som assistans i passets tak (30 set) och i övningstaket
+(8/7/6 per pass). Den räknas inte i huvudlyftets set, i mängd eller i
+EAk. Assistanstaket på 4–5 set och assistansreglaget gäller inte
+byggövningen. Dess eget tak är 5 set.
+8. Byggövningar läggs inte in i avlastningsveckor, toppning, startvecka,
+Styrka för löpare eller Helkropp 2 dagar.
+9. Coachens val sparas per atlet till nästa generering, som övriga val.
+Rör inte: Svagpunkter, övriga volymvakter, EAk-beräkningen, push.
+Klart när (Alex Athlete, Standard powerlifting):
+- Med byggövningen Benpress för knäböj (1 gång per vecka, 3 × 8–12, Lägg
+till) får varje arbetsvecka en benpressrad efter böjarbetet, och
+avlastningsveckan ingen.
+- Alla övriga rader är identiska med ett block utan byggövning.
+
+Steg 7 – Byggövning i Idag och Analys
+
+Mål: Atleten ska se ett tydligt mål ("slå förra gången") och coachen ska
+se om byggövningen utvecklas.
+Gör så här:
+1. Idag, på byggövningsrader: visa "Förra gången: 140 kg × 12, 11, 10
+(33 reps)" från senaste loggade pass med samma övning, och "Mål i dag".
+2. Mål i dag enligt dubbel progression:
+- Nådde alla set övre repgränsen förra gången: höj vikten ett viktsteg,
+och målet är nedre repgränsen på varje set.
+- Annars: samma vikt, och målet är minst en rep mer totalt än förra
+gången.
+- Finns ingen historik: visa "Välj en vikt du klarar 10 reps på med 2
+kvar".
+3. Atleten loggar vikt, reps och RPE som vanligt. Nås målet visas en
+kort bekräftelse.
+4. Analys (coach): nytt kort Byggövningar per atlet. Per övning visas
+bästa set per pass för de sex senaste passen (vikt × reps), förändringen
+i procent sedan det första av dem och status: Ökar (mer vikt eller fler
+reps totalt än tre pass tidigare), Står still eller Tappar.
+5. Tre pass i rad utan ökning ger förslaget "Byt övning eller börja om
+på nedre repgränsen". Coachen bestämmer, och inget ändras automatiskt.
+6. Lägg till en kort förklaring i Information: vad en byggövning är och
+hur målet räknas.
+Rör inte: EAk-beräkningen, statistiken för huvudlyften, loggad historik.
+Klart när (Alex Athlete, benpress 8–12 reps, viktsteg 5 kg):
+- Efter 140 kg × 12, 11, 10 visas målet 34 reps på 140 kg.
+- Efter 140 kg × 12, 12, 12 visas målet 145 kg × minst 8 per set.
+
+Steg 8 – Mallen Volymblock bänk
+
+Mål: Ny mall "Volymblock bänk": lätt, fast procent och mycket mängd i
+del 1, stegrande toppset i del 2 och en maxning sist.
+Gör så här:
+1. Skapa mallen som fast dos-mall (som Styrka för löpare): inga golv,
+inga volymvakter, coachreglage kan bara sänka. Den har 21 pass och ingen
+avlastningsvecka.
+2. Schema, coachen väljer:
+- Varannan dag (6 veckor): vecka 1, 3 och 5 måndag, onsdag, fredag,
+söndag; vecka 2, 4 och 6 tisdag, torsdag, lördag.
+- 3 dagar per vecka (7 veckor).
+3. Pass 1–10 (del 1): Bänkpress tävlingsstil, [setdos] × 10 @ 58 %,
+procentrad med RPE-tak 8. Radanteckning: "5–6 minuter per set inklusive
+vila. Inget set till failure." Coachval Setdos 5–10 (standard 10) och
+Trappa in (av som standard): pass 1 får 6 set, pass 2 får 8 set, sedan
+full setdos.
+4. Pass 11–21 (del 2 och maxning): bänkpress tävlingsstil som
+procentrader enligt tabellen. Formatet är procent, set × reps. Raden
+märkt "topp" är passets toppset, och raderna före den är upptrappning.
+Pass 11: 42 % 2×15 · 54 % 2×10 · 62 % 1×5 · 67 % 3×3 · topp 72 % 5×1 ·
+62 % 1×10
+Pass 12: 42 % 2×15 · 54 % 2×12 · 62 % 1×8 · 67 % 1×5 · topp 72 % 5×5 ·
+62 % 2×12
+Pass 13: 42 % 2×15 · 54 % 2×12 · 62 % 1×8 · 67 % 1×5 · 72 % 1×5 · topp
+77 % 5×5 · 62 % 2×12
+Pass 14: 42 % 2×15 · 54 % 2×10 · 64 % 2×5 · 72 % 2×3 · 80 % 2×2 · topp
+83 % 5×1 · 62 % 2×12
+Pass 15: 42 % 2×15 · 54 % 2×12 · 64 % 1×8 · 72 % 1×5 · 78 % 1×3 · topp
+84 % 3×2 · 50 % 2×20
+Pass 16: 42 % 2×10 · 52 % 2×8 · 61 % 2×5 · 69 % 2×3 · 76 % 2×2 · 82 %
+1×1 · topp 87 % 3×1 · 60 % 3×12
+Pass 17: 42 % 2×10 · 54 % 2×8 · 64 % 2×5 · 73 % 2×3 · 81 % 2×2 · 85 %
+1×1 · topp 88 % 3×1 · 75 % 5×3 · 60 % 3×12
+Pass 18: 42 % 2×12 · 54 % 2×8 · 64 % 2×5 · 73 % 1×2 · 81 % 1×1 · 88 %
+1×1 · topp 93 % 3×1 · 81 % 2×4 · 70 % 2×8 · 60 % 2×12
+Pass 19: 42 % 2×10 · 54 % 2×5 · 64 % 2×3 · 73 % 1×1 · 81 % 1×1 · 88 %
+1×1 · 93 % 1×1 · topp 97 % 1×1 · 93 % 1×1 · 85 % 5×1 · 70 % 1×10 · 55 %
+1×20
+Pass 20: 42 % 2×10 · 54 % 2×5 · 62 % 3×1
+Pass 21 (maxning): 42 % 2×10 · 54 % 2×5 · 64 % 2×3 · 73 % 1×1 · 81 % 1×1
+· 88 % 1×1 · 93 % 1×1 · 98 % 1×1 · topp 103 % 1×1
+5. Komplement: fyra assistansrader per pass utan beräknad vikt, 3–5 set
+× 8–20 reps. Första setet lätt (RPE 6), sedan RPE 7–8. A-pass:
+militärpress, utsida axlar, baksida axlar, pushdowns. B-pass: latsdrag,
+stångrodd, facepulls, bicepscurl. Ordning pass 1–18: A B A A B A B A B A
+B A B A A B A B. Pass 19 har bara baksida axlar, pass 20 latsdrag och
+stångrodd, pass 21 inga komplement.
+6. Coachval i mallen, båda av som standard:
+- Mätsingel: första passet varje vecka i del 1 börjar med en
+överuppvärmningssingel @ RPE 7 före bänkseten, så att EAk får ett
+mätset.
+- Underhåll böj och mark: ett pass per vecka får knäböj 3 × 3 @ RPE 7
+och ett annat pass marklyft 3 × 3 @ RPE 7, efter bänken.
+7. Förhandsvisningen visar planerad bänkmängd per vecka mot atletens
+referens. Coachen måste kryssa i "Jag har sett mängden" innan utkastet
+sparas.
+8. Mallen tar inte emot push, svagpunkter, byggövningar, setprotokoll,
+tunga singlar eller förslag från historik, och den kombineras inte med
+Tävlingsförberedelse D0.
+9. Frånvaro: passen hålls i ordning och hoppas aldrig över. Efter
+frånvaro på fem dagar eller mer föreslår appen "Backa tre pass", som
+coachen godkänner.
+10. Maxningen: bästa klarade singel i pass 21 skapar ett maxförslag
+enligt dagens regler, som coachen godkänner.
+11. EAk-vyn: veckor utan mätset i den här mallen visas som "Ingen
+mätning (procentblock)" i stället för som saknad data. EAk-beräkningen
+ändras inte.
+Rör inte: övriga mallar, EAk-beräkningen, push, toppningsmallen.
+Klart när (Alex Athlete, bänkbaslinje 160 kg, steg 2,5 kg, varannan dag,
+setdos 10):
+- Blocket har 21 pass på 6 veckor.
+- Pass 1 visar 10 × 10 på 92,5 kg, och mängden är 57,8.
+- Pass 19 har toppset på 155 kg.
+- Coachen kan redigera alla rader i utkastet som vanligt.
+
+Steg 9 – Procenttrappa per huvudlyft
+
+Mål: Coachen ska kunna välja att ett huvudlyft i ett vanligt block styrs
+med procenttrappa i stället för RPE.
+Gör så här:
+1. Generatorn, direkt efter Mall och dagar: nytt val per huvudlyft,
+Styrning: "RPE" (standard) eller "Procenttrappa". Valet gäller lyftets
+tävlingsrader och varianter i blocket, inte assistans.
+2. Veckans tyngsta dag för lyftet byggs som procentrader:
+- Upptrappning: 50 % × 5, 60 % × 4 och 67,5 % × 3, ett set vardera.
+Hoppa över steg som ligger mindre än 5 procentenheter under toppsetet.
+- Toppset enligt veckovåg: arbetsvecka 1 = 70 %, vecka 2 = 75 %, vecka 3
+= 80 %, vecka 4 = 85 %. Längre block börjar om på vågen med 2,5
+procentenheter högre. Coachen kan ändra procenten per vecka i
+förhandsvisningen.
+- Set och reps för toppseten: 70 % → 5 × 5, 75 % → 5 × 4, 80 % → 5 × 3,
+85 % → 4 × 2, 90 % → 3 × 1. Mellanliggande procent använder närmaste
+lägre rad.
+3. Lyftets övriga dagar i veckan blir procentrader på 62,5 % med 5 set ×
+4 reps och behåller mallens variant (paus, tempo, grepp, stans). Saknar
+varianten egen baslinje räknas procenten på huvudlyftets baslinje.
+4. Upptrappningsset och andra set under RPE 6 är lätta set. Volymvakter
+och varningar gäller enligt projektkunskapen. Volymreglaget skalar antal
+toppset.
+5. Tunga singlar, svagpunkter och byggövning fungerar som i dag. Push
+kan inte kombineras med Procenttrappa på samma lyft, och det ska synas i
+gränssnittet.
+6. Avlastningsveckan följer mallens regler. Procentrader får då 70 % och
+halverat antal set.
+Rör inte: lyft med styrning RPE, EAk-beräkningen, toppning.
+Klart när (Alex Athlete, Standard powerlifting, 4 arbetsveckor,
+Procenttrappa på bänk, RPE på böj och mark):
+- Bänkens tyngsta dag har toppseten 5 × 5 @ 70 %, 5 × 4 @ 75 %, 5 × 3 @
+80 % och 4 × 2 @ 85 % över de fyra veckorna.
+- Böj- och markraderna är identiska med ett block utan valet.
+
+Test på Alex Athlete
+
+Gör samma fem kontroller efter varje steg. Varje prompt har dessutom
+egna siffror under "Klart när".
+
+- ☐ Generera samma standardblock som före steget. Det ska vara identiskt
+  när inga nya val är påslagna.
+
+- ☐ EAk för de senaste fyra veckorna är oförändrad.
+
+- ☐ Ett publicerat pass och en loggad vecka ser likadana ut som före
+  steget.
+
+- ☐ De nya texterna finns på engelska när du byter språk på Alex
+  Athlete.
+
+- ☐ Idag ryms i mobilvyn med de nya raderna.
+
+Spara en skärmbild av referensblocket före varje steg, så har du något
+att jämföra mot.
+
+Beslut du behöver ta
+
+Sju val är dina som coach. Mitt förslag står i mitten.
+
+  ------------------------------------------------------------------------
+  Beslut            Förslag            Skäl
+  ----------------- ------------------ -----------------------------------
+  Namnet på den     Byggövning, eller  Push betyder redan viktprogression
+  pushande övningen ett eget namn som  i appen
+                    inte är Push       
+
+  Setdos i          10 som standard,   JE-dosen är 2–3 gånger dina
+  volymblocket      med Trappa in      tidigare bänkveckor, och studierna
+                    påslaget första    fann inte mer effekt av 10 än 5 set
+                    gången             
+
+  Mätsingel i       På, en gång per    EAk och dagsform är din signal för
+  volymblocket      vecka              när det blir för mycket, och
+                                       kostnaden är en singel
+
+  Gräns för lätta   RPE 6 enligt       Samma tabell som resten av appen
+  set               RTS-tabellen       
+
+  Gräns för tunga   85 %               Samma gräns som toppningen redan
+  set                                  använder
+
+  Max reps i böj    Tillåt, med "lämna Du väljer per atlet och rad
+  och mark          1–2"               
+
+  Volymblock för    Vänta              JE är bara prövat på bänk. Använd
+  böj och mark                         procenttrappa där.
+
+                                       
+  ------------------------------------------------------------------------
+
+Källor
+
+Forskning, hämtad via PubMed:
+
+- Hickmott m.fl. 2022. The Effect of Load and Volume Autoregulation on
+  Muscular Strength and Hypertrophy. Sports Medicine – Open.
+  doi:10.1186/s40798-021-00404-9
+
+- Helms m.fl. 2018. RPE vs. Percentage 1RM Loading in Periodized
+  Programs Matched for Sets and Repetitions. Frontiers in Physiology.
+  doi:10.3389/fphys.2018.00247
+
+- Bao m.fl. 2026. Relative effectiveness of different resistance
+  training modalities on lower-body strength and explosive power.
+  Frontiers in Physiology. doi:10.3389/fphys.2026.1823323
+
+- Robinson m.fl. 2024. Exploring the Dose-Response Relationship Between
+  Estimated Resistance Training Proximity to Failure, Strength Gain, and
+  Muscle Hypertrophy. Sports Medicine. doi:10.1007/s40279-024-02069-2
+
+- Pelland m.fl. 2025. The Resistance Training Dose Response:
+  Meta-Regressions Exploring the Effects of Weekly Volume and Frequency.
+  Sports Medicine. doi:10.1007/s40279-025-02344-w
+
+- Amirthalingam m.fl. 2017. Effects of a Modified German Volume Training
+  Program on Muscular Hypertrophy and Strength. Journal of Strength and
+  Conditioning Research. doi:10.1519/JSC.0000000000001747
+
+- Hackett m.fl. 2018. Effects of a 12-Week Modified German Volume
+  Training Program on Muscle Strength and Hypertrophy. Sports.
+  doi:10.3390/sports6010007
+
+- Schoenfeld m.fl. 2017. Strength and Hypertrophy Adaptations Between
+  Low- vs. High-Load Resistance Training. Journal of Strength and
+  Conditioning Research. doi:10.1519/JSC.0000000000002200
+
+- Halperin m.fl. 2021. Accuracy in Predicting Repetitions to Task
+  Failure in Resistance Exercise. Sports Medicine.
+  doi:10.1007/s40279-021-01559-x
+
+- Haugen m.fl. 2023. Effect of free-weight vs. machine-based strength
+  training on maximal strength, hypertrophy and jump performance. BMC
+  Sports Science, Medicine and Rehabilitation.
+  doi:10.1186/s13102-023-00713-4
+
+- Rossi m.fl. 2018. Strength, body composition, and functional outcomes
+  in the squat versus leg press exercises. Journal of Sports Medicine
+  and Physical Fitness. doi:10.23736/S0022-4707.16.06698-6
+
+Lovable:
+
+- Prompting best practices
+
+- Plan mode
+
+- Knowledge
+
+Dina egna filer: sex träningsloggar i Excel, SETPOINT – så funkar appen,
+10x10 av JE (program och beskrivning) och AE Power Program 3-dagars.

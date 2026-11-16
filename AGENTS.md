@@ -42,7 +42,7 @@
 - Catalog reads: shared defaults, owners, accepted care links, admins or RLS-visible prescriptions; expose only shared aliases and the availability singleton, to avoid catalog leakage.
 
 - Season outlines: shift only unprepared blocks, allow gaps, detach without deleting programs; version-check writes.
-- Coach singles replace work, excluding meet week/runners/short sessions. Editable openers use recent RTS medians, not stale PRs or other stances.
+- Coach singles replace work (not meet week/runners/short sessions); openers use recent RTS medians, not stale PRs/other stances.
 - Resolve peak opener lift names through shared competition identity with a strict competition-note filter and stance checks, so competition aliases are included without admitting variants.
 - Compare six first measurements by exercise/variant/rep interval; RTS normalizes RPE without fragmenting trends.
 
@@ -54,5 +54,6 @@
 - D0 peak weeks start on their first session with zero-based days, so sessions land on planned dates.
 - `resizeTemplateWeeks` sets block length before modifiers, repeating the wave so effort never exceeds its hardest week.
 - Push: semi-fixed first set; push weeks fold singles into main sets and cap light loads, so plans never contradict push.
-- Calendar shows planned sessions with logged sets as done, so trained days never look unconfirmed.
+- Calendar shows planned sessions with logged sets as done.
 - EAk presets (`eakStrategy.ts`) write the same strategy columns; generator EAk advice (`eakStatus.ts`) only fills coach-chosen set deltas, so nothing bypasses coach approval.
+- Lift metrics live in src/lib/liftMetrics.ts, display-only until a coach opt-in, so default generation never changes.

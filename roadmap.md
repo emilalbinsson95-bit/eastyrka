@@ -1,5 +1,17 @@
 # Roadmap
 
+## Tre vägar till utveckling (Emils dokument 2026-11-16, docs/)
+Prioriterat efter nytta: först det som visar varför lyft står still, sedan det som ger push.
+- [x] 1. Mått: hårda/lätta set, mängd, tunga set per huvudlyft och vecka (ordinerat/genomfört) + blockjämförelse i Analys → Volym. Bara visning. Tester med dokumentets siffror (57,8 / 19,9 / 2,7).
+- [ ] 1b. Måtten i generatorns förhandsvisning mot atletens referens (snitt tre arbetsveckor) och mängdgraf i atletens Statistik (sv/en).
+- [ ] 2. Varning "Inga tunga set" (två arbetsveckor i rad) och "Mängd" (>30 % över referens) i generatorns förhandsvisning; coach kan spara förbi.
+- [ ] 3. Procent som styrning per rad + volymvakter som bara räknar hårda set (steg 2–3 ihop, annars stoppas lätt volym).
+- [ ] 4. Byggövning: katalogroll, generatorval, "slå förra gången" i Idag och trendkort i Analys (steg 6–7).
+- [ ] 5. RPE-tak och max reps på procentrader, sedan push i fast procent (steg 4–5).
+- [ ] 6. Procenttrappa per huvudlyft (steg 9).
+- [ ] 7. Mallen Volymblock bänk (steg 8) — sist: störst och minst belägg.
+- [ ] Coachbeslut i dokumentet (setdos, mätsingel, max reps i böj/mark m.m.) — dokumentets förslag gäller tills Emil säger annat.
+
 ## Aktuellt
 - [x] Coachvald startvecka (1 vecka, 2–4 dagar): en filmad maxtrea @RPE 10 per tävlingslyft + powerbuilding 3×8–12 @8; markstans följs, inga övriga modifierare/push. Valbar i generator och säsong (låst till 1 vecka). Alex: genererad och återläst (13 övningar, treor 1×3 @10 utan vikt), sedan arkiverad. 402 tester gröna.
 - [x] Informationens RPE förtydligad med mål/faktisk ansträngning, startvikt och singlar; m/s förklaras utan loggfält eller ändrade träningsregler. Verifierat inloggad i atletvyn på dator/mobil utan körfel eller sidöverflöde; bygge OK.

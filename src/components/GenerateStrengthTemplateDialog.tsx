@@ -62,6 +62,8 @@ import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPla
 import type { Json } from "@/integrations/supabase/types";
 import { resizeTemplateWeeks, templateShape, MAX_WORKING_WEEKS } from "@/lib/blockLength";
 import { buildFixedWeeks, isFixedTemplate } from "@/lib/fixedTemplate";
+import { BlockMetricsPanel } from "@/components/BlockMetricsPanel";
+import { LIGHT_PHASES } from "@/lib/liftMetrics";
 import { peakStartDate, peakFinalSessionDates, validPeakDate, peakPeriodDays, peakWeekStartDates } from "@/lib/peakingDates";
 
 
@@ -140,7 +142,7 @@ export function GenerateStrengthTemplateDialog({
   const historyQuery = useQuery({
     queryKey: ["individualisation-history", athleteId, since92, historyAnchor],
     enabled: open,
-    queryFn: async (): Promise<HistoryInputs & { deloadWeekStarts: string[];overloadDates:string[] }> => {
+    queryFn: async (): Promise<HistoryInputs & { deloadWeekStarts: string[];overloadDates:string[];lightWeekStarts:string[] }> => {
       const [logs, readiness, baselines, unavail, deloads] = await Promise.all([
         supabase
           .from("training_logs")
@@ -178,6 +180,7 @@ export function GenerateStrengthTemplateDialog({
       return {
         today: historyAnchor,
         deloadWeekStarts: (deloads.data ?? []).filter(w=>w.is_deload).map((w) => w.week_start_date),
+        lightWeekStarts: (deloads.data ?? []).filter(w=>w.is_deload||LIGHT_PHASES.has((w.training_phase??"").toLowerCase())||w.training_phase==="overbelastning").map((w) => w.week_start_date),
         overloadDates:(deloads.data??[]).filter(w=>w.training_phase==="overbelastning").flatMap(w=>Array.from({length:7},(_,i)=>format(addDays(parseISO(w.week_start_date),i),"yyyy-MM-dd"))),
         logs: (logs.data ?? []) as HistoryInputs["logs"],
         readiness: (readiness.data ?? []) as HistoryInputs["readiness"],
@@ -1127,6 +1130,17 @@ export function GenerateStrengthTemplateDialog({
               })}
             </div>
           </div>
+          <BlockMetricsPanel
+            athleteId={athleteId}
+            athleteName={athleteName}
+            weeks={plannedWeeks}
+            logs={historyQuery.data?.logs ?? []}
+            baselines={historyQuery.data?.baselines ?? []}
+            lightWeekStarts={historyQuery.data?.lightWeekStarts ?? []}
+            today={today}
+            checkHeavy={!isPeaking && !isTimeLimited && !template?.skipVolumeFloors}
+            rampWeeks={Math.max(0, ...activeAdjustments.filter((a) => a.kind === "ramp-in").map((a) => a.rampWeeks ?? 0))}
+          />
           </>}
 
         </div>

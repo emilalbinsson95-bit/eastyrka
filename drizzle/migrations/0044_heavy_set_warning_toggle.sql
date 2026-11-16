@@ -1,0 +1,1 @@
+ALTER TABLE public.athlete_strength_volume_profiles ADD COLUMN IF NOT EXISTS heavy_set_warning boolean NOT NULL DEFAULT true;

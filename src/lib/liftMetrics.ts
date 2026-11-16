@@ -188,3 +188,183 @@ export function missingHeavyStreaks(
 }
 
 export const round1 = (n: number | null) => (n == null ? null : Math.round(n * 10) / 10);
+
+// ---------------------------------------------------------------------------
+// Steg 2: varningar i generatorns förhandsvisning. Bara information; inga set
+// ändras och coachen kan alltid spara förbi.
+// ---------------------------------------------------------------------------
+
+/** Phases that never count as working weeks (deload, peak, ramp-in …). */
+export const LIGHT_PHASES = new Set(["deload", "taper", "peak", "ramp", "stegtaper", "vila", "toppning"]);
+export const VOLUME_WARNING_RATIO = 1.3;
+export const REFERENCE_WEEKS = 3;
+export const LIFT_LABEL_SV: Record<CompLift, string> = { squat: "knäböj", bench: "bänkpress", deadlift: "marklyft" };
+
+const isoWeekStart = (date: string) => {
+  const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+};
+
+export interface ReferenceMetrics {
+  /** Week starts (Monday) used, newest first. */
+  weeks: string[];
+  volume: Record<CompLift, number | null>;
+  hardSets: Record<CompLift, number | null>;
+  heavySets: Record<CompLift, number | null>;
+}
+
+/**
+ * Athlete reference = average of logged metrics over the last three completed
+ * working weeks (weeks before `today` with logged main-lift sets that no light
+ * plan week — deload, overload/peak, taper — touches).
+ */
+export function referenceMetrics(
+  logs: Array<MetricSet & { date: string }>,
+  baselines: Record<string, number>,
+  lightWeekStarts: string[],
+  today: string,
+  count = REFERENCE_WEEKS,
+): ReferenceMetrics {
+  const current = isoWeekStart(today);
+  // Plan weeks may start on any weekday (D0 peaks): every ISO week a light
+  // plan week touches is left out of the reference.
+  const light = new Set<string>();
+  for (const start of lightWeekStarts) {
+    light.add(isoWeekStart(start));
+    const end = new Date(`${start.slice(0, 10)}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 6);
+    light.add(isoWeekStart(end.toISOString().slice(0, 10)));
+  }
+  const byWeek = new Map<string, MetricSet[]>();
+  for (const l of logs) {
+    const wk = isoWeekStart(l.date);
+    if (wk >= current || light.has(wk)) continue;
+    if (l.is_warmup_reference || l.is_technique || !metricLiftKey(l.exercise, l.variation)) continue;
+    const list = byWeek.get(wk) ?? [];
+    list.push(l);
+    byWeek.set(wk, list);
+  }
+  const weeks = [...byWeek.keys()].sort().reverse().slice(0, count);
+  const per = weeks.map((w) => liftMetrics(byWeek.get(w)!, baselines));
+  const avg = (pick: (m: LiftMetrics) => number | null) =>
+    Object.fromEntries(LIFTS.map((lift) => {
+      if (!per.length) return [lift, null];
+      const values = per.map((p) => pick(p[lift]));
+      if (values.some((v) => v == null)) return [lift, null];
+      return [lift, (values as number[]).reduce((a, b) => a + b, 0) / values.length];
+    })) as Record<CompLift, number | null>;
+  return {
+    weeks,
+    volume: avg((m) => m.volume),
+    hardSets: avg((m) => m.hardSets),
+    heavySets: avg((m) => m.heavySets),
+  };
+}
+
+export interface PlanWeekInput {
+  week_index: number;
+  kind: string;
+  sessions: Array<{
+    exercises: Array<{
+      exercise: string;
+      variation?: string | null;
+      target_sets: number;
+      target_reps: number;
+      target_weight_kg?: number | null;
+      target_rpe?: number | null;
+      target_rir?: number | null;
+    }>;
+  }>;
+}
+
+export interface PlanWeekMetrics {
+  weekIndex: number;
+  kind: string;
+  metrics: LiftMetricsByLift;
+}
+
+/** Planned metrics per generated week (estimated weight from target RPE when no kg). */
+export function plannedWeekMetrics(weeks: PlanWeekInput[], baselines: Record<string, number>): PlanWeekMetrics[] {
+  return weeks.map((w) => {
+    const sets: MetricSet[] = [];
+    for (const s of w.sessions) {
+      for (const e of s.exercises) {
+        const rpe = e.target_rpe ?? (e.target_rir != null ? 10 - Number(e.target_rir) : null);
+        sets.push(...plannedRowSets({ ...e, target_rpe: rpe }, baselines));
+      }
+    }
+    return { weekIndex: w.week_index, kind: w.kind, metrics: liftMetrics(sets, baselines) };
+  });
+}
+
+export interface MetricWarning {
+  kind: "volume" | "no-heavy";
+  lift: CompLift;
+  weeks: number[];
+  message: string;
+}
+
+const fmt1 = (n: number) => (Math.round(n * 10) / 10).toFixed(1).replace(".", ",");
+const weekList = (weeks: number[]) =>
+  weeks.length === 1 ? `vecka ${weeks[0]}` : `vecka ${weeks.slice(0, -1).join(", ")} och ${weeks[weeks.length - 1]}`;
+
+/**
+ * "Mängd": planned Mängd for a lift in a week > 30 % over the athlete's reference.
+ * "Inga tunga set": a trained lift without sets ≥ 85 % of baseline in two
+ * consecutive working weeks (deload/ramp-in weeks are skipped).
+ */
+export function blockMetricWarnings(input: {
+  planned: PlanWeekMetrics[];
+  reference: ReferenceMetrics | null;
+  checkHeavy: boolean;
+  checkVolume: boolean;
+  /** Ramp-in weeks after absence (first N weeks) never trigger "Inga tunga set". */
+  rampWeeks?: number;
+}): MetricWarning[] {
+  const out: MetricWarning[] = [];
+  for (const lift of LIFTS) {
+    const ref = input.reference?.volume[lift] ?? null;
+    if (input.checkVolume && ref != null && ref > 0) {
+      const over = input.planned.filter((w) => {
+        const v = w.metrics[lift].volume;
+        return v != null && v > ref * VOLUME_WARNING_RATIO;
+      });
+      if (over.length) {
+        const max = Math.max(...over.map((w) => w.metrics[lift].volume ?? 0));
+        const pct = Math.round((max / ref - 1) * 100);
+        out.push({
+          kind: "volume",
+          lift,
+          weeks: over.map((w) => w.weekIndex),
+          message: `Mängd ${LIFT_LABEL_SV[lift]}: ${weekList(over.map((w) => w.weekIndex))} planerar upp till ${fmt1(max)} mot referensen ${fmt1(ref)} (+${pct} %).`,
+        });
+      }
+    }
+    if (input.checkHeavy) {
+      const flagged = new Set<number>();
+      let prev: number | null = null;
+      for (const w of input.planned) {
+        const working = w.kind === "working" && w.weekIndex > (input.rampWeeks ?? 0);
+        if (!working) continue;
+        const m = w.metrics[lift];
+        const none = m.hardSets + m.lightSets > 0 && m.heavySets === 0;
+        if (none && prev != null) {
+          flagged.add(prev);
+          flagged.add(w.weekIndex);
+        }
+        prev = none ? w.weekIndex : null;
+      }
+      if (flagged.size) {
+        const weeks = [...flagged].sort((a, b) => a - b);
+        out.push({
+          kind: "no-heavy",
+          lift,
+          weeks,
+          message: `Inga tunga set i ${LIFT_LABEL_SV[lift]}: ${weekList(weeks)} har inget set på ${HEAVY_SET_PCT} % av baslinjen eller mer.`,
+        });
+      }
+    }
+  }
+  return out;
+}

@@ -158,6 +158,7 @@ export type Database = {
           bench_factor: number
           deadlift_factor: number
           deadlift_style: string | null
+          heavy_set_warning: boolean
           squat_factor: number
           updated_at: string
           volume_tolerance: string
@@ -168,6 +169,7 @@ export type Database = {
           bench_factor?: number
           deadlift_factor?: number
           deadlift_style?: string | null
+          heavy_set_warning?: boolean
           squat_factor?: number
           updated_at?: string
           volume_tolerance?: string
@@ -178,6 +180,7 @@ export type Database = {
           bench_factor?: number
           deadlift_factor?: number
           deadlift_style?: string | null
+          heavy_set_warning?: boolean
           squat_factor?: number
           updated_at?: string
           volume_tolerance?: string

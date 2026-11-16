@@ -12,6 +12,7 @@ import { chartStrengthSeries, type ChartLog } from "@/lib/chartMetrics";
 import { compLiftKey, isCompLift, type CompLift } from "@/lib/liftIdentity";
 import {
   LIFTS,
+  LIGHT_PHASES,
   liftMetrics,
   missingHeavyStreaks,
   plannedRowSets,
@@ -22,7 +23,7 @@ import {
 } from "@/lib/liftMetrics";
 
 const LIFT_LABEL: Record<CompLift, string> = { squat: "Knäböj", bench: "Bänkpress", deadlift: "Marklyft" };
-const LIGHT_PHASES = new Set(["deload", "taper", "peak", "ramp", "stegtaper", "vila", "toppning"]);
+
 
 type Log = ChartLog & { variation?: string | null; is_warmup_reference?: boolean; is_technique?: boolean };
 

@@ -3,8 +3,9 @@
 ## Tre vägar till utveckling (Emils dokument 2026-11-16, docs/)
 Prioriterat efter nytta: först det som visar varför lyft står still, sedan det som ger push.
 - [x] 1. Mått: hårda/lätta set, mängd, tunga set per huvudlyft och vecka (ordinerat/genomfört) + blockjämförelse i Analys → Volym. Bara visning. Tester med dokumentets siffror (57,8 / 19,9 / 2,7).
-- [ ] 1b. Måtten i generatorns förhandsvisning mot atletens referens (snitt tre arbetsveckor) och mängdgraf i atletens Statistik (sv/en).
-- [ ] 2. Varning "Inga tunga set" (två arbetsveckor i rad) och "Mängd" (>30 % över referens) i generatorns förhandsvisning; coach kan spara förbi.
+- [x] 1b (generatordelen). Mängd och tunga set per vecka mot referensen (snitt av tre senaste genomförda arbetsveckor; avlastning/toppning/innevarande vecka utesluts) i generatorns förhandsvisning.
+- [ ] 1b (atletdelen). Mängdgraf i atletens Statistik (sv/en).
+- [x] 2. Varning "Inga tunga set" (två arbetsveckor i rad; ej avlastning/uppstart/toppning/startvecka/löparstyrka/helkropp 2 dgr) och "Mängd" (>30 % över referens) i generatorn; coach kan skapa ändå och stänga av tunga-set-varningen per atlet. Verifierat som Emil för Shadi och Mattis, av/på provat på Alex. 437 tester.
 - [ ] 3. Procent som styrning per rad + volymvakter som bara räknar hårda set (steg 2–3 ihop, annars stoppas lätt volym).
 - [ ] 4. Byggövning: katalogroll, generatorval, "slå förra gången" i Idag och trendkort i Analys (steg 6–7).
 - [ ] 5. RPE-tak och max reps på procentrader, sedan push i fast procent (steg 4–5).

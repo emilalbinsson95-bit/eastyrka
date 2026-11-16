@@ -64,6 +64,8 @@ import { resizeTemplateWeeks, templateShape, MAX_WORKING_WEEKS } from "@/lib/blo
 import { buildFixedWeeks, isFixedTemplate } from "@/lib/fixedTemplate";
 import { BlockMetricsPanel } from "@/components/BlockMetricsPanel";
 import { LIGHT_PHASES } from "@/lib/liftMetrics";
+import { pctWeightKg } from "@/lib/percentRows";
+import { lookupBaseline } from "@/lib/eakoefficient";
 import { peakStartDate, peakFinalSessionDates, validPeakDate, peakPeriodDays, peakWeekStartDates } from "@/lib/peakingDates";
 
 
@@ -552,14 +554,17 @@ export function GenerateStrengthTemplateDialog({
             .single();
           if (psErr) throw psErr;
 
+          const pctBaselines = Object.fromEntries((historyQuery.data?.baselines ?? []).map((b) => [b.exercise, Number(b.one_rm_kg)]));
           const exRows = s.exercises.map((source, idx) => { const e = source as PushExercise; return ({
             planned_session_id: ps.id,
             ...resolveVariantExercise(e.exercise, e.variation),
             target_sets: e.target_sets,
             target_reps: e.target_reps,
-            target_rpe: e.target_rpe ?? null,
-            target_rir: e.target_rir ?? null,
-            target_weight_kg: e.target_weight_kg == null ? null : e.push_lift ? e.target_weight_kg : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
+            // Percent rows: fixed % of baseline, rounded last to the coach's step; RPE/RIR stay empty.
+            target_pct: e.target_pct ?? null,
+            target_rpe: e.target_pct != null ? null : e.target_rpe ?? null,
+            target_rir: e.target_pct != null ? null : e.target_rir ?? null,
+            target_weight_kg: e.target_pct != null ? pctWeightKg(lookupBaseline(pctBaselines, e.exercise), e.target_pct, roundingKg) : e.target_weight_kg == null ? null : e.push_lift ? e.target_weight_kg : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
             push_lift: e.push_lift ?? null,
             push_main: e.push_main ?? false,
             push_load_pct: e.push_load_pct ?? null,

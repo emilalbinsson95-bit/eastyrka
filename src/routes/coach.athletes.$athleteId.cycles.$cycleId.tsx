@@ -1,4 +1,7 @@
 import { lookupBaseline } from "@/lib/eakoefficient";
+import { normalizePct, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
+import { useRoundingStep } from "@/hooks/useRoundingStep";
+import { useAthleteBaselines } from "@/hooks/useAthleteBaselines";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -148,6 +151,7 @@ interface PlannedExerciseRow {
   target_rir: number | null;
   intensity_metric: IntensityMetric;
   target_weight_kg: number | null;
+  target_pct: number | null;
   lengthened_partials: boolean;
   last_set_to_failure: boolean;
   notes: string | null;
@@ -168,11 +172,6 @@ interface ExerciseLib {
   category: string | null;
   description: string | null;
   default_intensity_metric: IntensityMetric;
-}
-
-interface BaselineRow {
-  exercise: string;
-  one_rm_kg: number;
 }
 
 function CycleDetailPage() {
@@ -224,28 +223,7 @@ function CycleDetailPage() {
   });
 
   // Athlete's 1RMs — used to compute prescribed kg from RPE/RIR. Coach only.
-  const baselinesQuery = useQuery({
-    queryKey: ["athlete-baselines", athleteId],
-    queryFn: async (): Promise<Record<string, number>> => {
-      const { data, error } = await supabase
-        .from("baselines")
-        .select("exercise, one_rm_kg")
-        .eq("athlete_id", athleteId);
-      if (error) throw error;
-      const map: Record<string, number> = {};
-      // Fallback: derive from recent set-1 logs; coach baselines override.
-      try {
-        const { deriveBaselinesFromLogs } = await import("@/lib/baselineFromLogs");
-        for (const d of await deriveBaselinesFromLogs(athleteId)) map[d.exercise] = d.oneRmKg;
-      } catch {
-        /* ignore */
-      }
-      for (const row of (data ?? []) as BaselineRow[]) {
-        if (Number(row.one_rm_kg) > 0) map[row.exercise] = Number(row.one_rm_kg);
-      }
-      return map;
-    },
-  });
+  const baselinesQuery = useAthleteBaselines(athleteId);
 
   const ensureWeeksMutation = useMutation({
     mutationFn: async () => {
@@ -348,7 +326,7 @@ function CycleDetailPage() {
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", srcIds);
         if (e2) throw e2;
@@ -396,6 +374,7 @@ function CycleDetailPage() {
               target_rir: e.target_rir,
               intensity_metric: e.intensity_metric,
               target_weight_kg: e.target_weight_kg,
+              target_pct: e.target_pct,
               lengthened_partials: e.lengthened_partials,
               last_set_to_failure: e.last_set_to_failure,
               notes: e.notes,
@@ -579,7 +558,7 @@ function WeekEditor({
         const { data: ex, error: e2 } = await supabase
           .from("planned_exercises")
           .select(
-            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, lengthened_partials, last_set_to_failure, notes, order_index",
+            "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, lengthened_partials, last_set_to_failure, notes, order_index",
           )
           .in("planned_session_id", sessionIds)
           .order("order_index");
@@ -600,6 +579,7 @@ function WeekEditor({
     [week.week_start_date],
   );
 
+  const roundingKg = useRoundingStep(athleteId);
   const enduranceQuery = useQuery({
     queryKey: ["week-endurance", athleteId, week.week_start_date],
     queryFn: async () => {
@@ -693,6 +673,7 @@ function WeekEditor({
         target_rir: ex.target_rir,
         intensity_metric: ex.intensity_metric,
         target_weight_kg: ex.target_weight_kg,
+        target_pct: ex.target_pct,
         lengthened_partials: ex.lengthened_partials,
         last_set_to_failure: ex.last_set_to_failure,
         notes: ex.notes,
@@ -933,6 +914,7 @@ function WeekEditor({
                       <ExerciseRow
                         ex={ex}
                         oneRm={lookupBaseline(baselines, ex.exercise) ?? 0}
+                        roundingKg={roundingKg}
                         onUpdate={(patch) =>
                           updateExerciseMutation.mutate({ id: ex.id, patch })
                         }
@@ -1088,12 +1070,14 @@ function SortableItem({
 function ExerciseRow({
   ex,
   oneRm,
+  roundingKg = 2.5,
   onUpdate,
   onDuplicate,
   onDelete,
 }: {
   ex: PlannedExerciseRow;
   oneRm: number;
+  roundingKg?: number;
   onUpdate: (patch: Partial<PlannedExerciseRow>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -1105,7 +1089,24 @@ function ExerciseRow({
   const [weight, setWeight] = useState(ex.target_weight_kg?.toString() ?? "");
   const [notes, setNotes] = useState(ex.notes ?? "");
   const [showNotes, setShowNotes] = useState(!!ex.notes);
+  const [pct, setPct] = useState(ex.target_pct?.toString() ?? "");
   const metric: IntensityMetric = ex.intensity_metric;
+  const isPct = ex.target_pct != null;
+
+  // Percent steering: fixed % of baseline, same weight on every set; RPE/RIR cleared.
+  const pctPatch = (value: string): Partial<PlannedExerciseRow> => {
+    const p = normalizePct(value) ?? 70;
+    setPct(String(p));
+    return {
+      target_sets: parseInt(sets, 10) || 1,
+      target_reps: parseInt(reps, 10) || 1,
+      target_pct: p,
+      intensity_metric: "rpe",
+      target_rpe: null,
+      target_rir: null,
+      target_weight_kg: pctWeightKg(oneRm, p, roundingKg),
+    };
+  };
 
   const computeAndPatch = (
     overrides: Partial<{
@@ -1149,14 +1150,23 @@ function ExerciseRow({
     };
   };
 
-  const commit = () => onUpdate(computeAndPatch());
+  const commit = () => onUpdate(isPct ? pctPatch(pct) : { ...computeAndPatch(), target_pct: null });
 
-  const switchMetric = (next: IntensityMetric) => {
-    if (next === metric) return;
+  const switchMetric = (next: IntensityMetric | "pct") => {
+    if (next === "pct") {
+      if (isPct) return;
+      // Start from the current load as a percent when possible.
+      const kg = weight ? parseFloat(weight) : computedKg;
+      setWeight("");
+      onUpdate(pctPatch(oneRm > 0 && kg ? String((kg / oneRm) * 100) : "70"));
+      return;
+    }
+    if (next === metric && !isPct) return;
     // When switching, clear the other field locally
-    if (next === "rpe") setRir("");
-    else setRpe("");
-    onUpdate(computeAndPatch({ metric: next }));
+    if (next === "rpe") { setRir(""); if (!rpe) setRpe("7"); }
+    else { setRpe(""); if (!rir) setRir("2"); }
+    setPct("");
+    onUpdate({ ...computeAndPatch({ metric: next, rpe: next === "rpe" ? rpe || "7" : "", rir: next === "rir" ? rir || "2" : "", weight: isPct ? "" : weight }), target_pct: null });
   };
 
   // Computed prescribed weight (coach view) — derived live from current inputs
@@ -1198,7 +1208,7 @@ function ExerciseRow({
               onClick={() => switchMetric("rpe")}
               className={cn(
                 "px-1.5 py-0.5 font-semibold",
-                metric === "rpe"
+                metric === "rpe" && !isPct
                   ? "bg-primary text-primary-foreground"
                   : "bg-background text-muted-foreground hover:bg-muted",
               )}
@@ -1210,12 +1220,25 @@ function ExerciseRow({
               onClick={() => switchMetric("rir")}
               className={cn(
                 "px-1.5 py-0.5 font-semibold",
-                metric === "rir"
+                metric === "rir" && !isPct
                   ? "bg-primary text-primary-foreground"
                   : "bg-background text-muted-foreground hover:bg-muted",
               )}
             >
               RIR
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMetric("pct")}
+              aria-label="Styr med procent av baslinjen"
+              className={cn(
+                "px-1.5 py-0.5 font-semibold",
+                isPct
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              %
             </button>
           </div>
           <DropdownMenu>
@@ -1253,7 +1276,9 @@ function ExerciseRow({
       >
         <NumField label="Sets" value={sets} onChange={setSets} onBlur={commit} />
         <NumField label="Reps" value={reps} onChange={setReps} onBlur={commit} />
-        {metric === "rpe" ? (
+        {isPct ? (
+          <NumField label="% av baslinje" value={pct} onChange={setPct} onBlur={commit} step="0.5" />
+        ) : metric === "rpe" ? (
           <NumField
             label="RPE"
             value={rpe}
@@ -1270,18 +1295,31 @@ function ExerciseRow({
             step="1"
           />
         )}
-        <NumField
-          label="kg"
-          value={weight}
-          onChange={setWeight}
-          onBlur={commit}
-          step="0.5"
-          placeholder={computedKg != null ? String(computedKg) : ""}
-        />
+        {isPct ? (
+          <div>
+            <Label className="text-[10px] text-muted-foreground">kg (fast)</Label>
+            <div className="flex h-7 items-center px-2 text-xs font-medium tabular-nums">{ex.target_weight_kg ?? "—"}</div>
+          </div>
+        ) : (
+          <NumField
+            label="kg"
+            value={weight}
+            onChange={setWeight}
+            onBlur={commit}
+            step="0.5"
+            placeholder={computedKg != null ? String(computedKg) : ""}
+          />
+        )}
       </div>
+      {isPct && (
+        <p className={cn("mt-1 text-[10px]", ex.target_weight_kg == null ? "text-destructive" : "text-muted-foreground")}>
+          {pctRowLabel(ex)}
+          {ex.target_weight_kg == null ? ". Lägg in en baslinje för övningen så räknas vikten ut." : ". Samma vikt på alla set."}
+        </p>
+      )}
 
       {/* Coach-only computed weight hint */}
-      {oneRm > 0 && computedKg != null && !weight && (
+      {!isPct && oneRm > 0 && computedKg != null && !weight && (
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1300,7 +1338,7 @@ function ExerciseRow({
           </Tooltip>
         </TooltipProvider>
       )}
-      {oneRm === 0 && (
+      {!isPct && oneRm === 0 && (
         <div className="mt-1 text-[10px] text-muted-foreground">
           No 1RM set for {ex.exercise} — set one to auto-compute kg from{" "}
           {metric.toUpperCase()}.

@@ -761,7 +761,7 @@ export function applyAdjustments(
               next.target_rir = clamp(Math.round(next.target_rir - rpeDelta), 0, 6);
             }
           }
-          if (doLoads) {
+          if (doLoads && next.target_pct == null) {
             // 1.5-reps: load from the main lift's 1RM with a −20 % cut.
             const oneHalf = isOneAndHalfRep(e.exercise, e.variation);
             const parent = oneHalf ? oneAndHalfParent(e.exercise) : null;

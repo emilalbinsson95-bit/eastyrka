@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { lookupBaseline } from "@/lib/eakoefficient";
+import { normalizePct, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
+import { useAthleteBaselines } from "@/hooks/useAthleteBaselines";
+import { useRoundingStep } from "@/hooks/useRoundingStep";
+import { prescribedWeightKg } from "@/lib/intensity";
 
 interface PlannedExerciseRow {
   id: string;
@@ -20,6 +25,7 @@ interface PlannedExerciseRow {
   target_rir: number | null;
   intensity_metric: "rpe" | "rir";
   target_weight_kg: number | null;
+  target_pct: number | null;
   notes: string | null;
   order_index: number;
 }
@@ -50,14 +56,14 @@ export function PlannedSessionEditor({
     queryFn: async () => {
       const { data: session, error: e1 } = await supabase
         .from("planned_sessions")
-        .select("id, title, notes")
+        .select("id, title, notes, week_plans(athlete_id)")
         .eq("id", sessionId)
         .maybeSingle();
       if (e1) throw e1;
       const { data: exes, error: e2 } = await supabase
         .from("planned_exercises")
         .select(
-          "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, notes, order_index",
+          "id, planned_session_id, exercise_id, exercise, variation, target_sets, target_reps, target_rpe, target_rir, intensity_metric, target_weight_kg, target_pct, notes, order_index",
         )
         .eq("planned_session_id", sessionId)
         .order("order_index");
@@ -80,6 +86,27 @@ export function PlannedSessionEditor({
       return (data ?? []) as ExerciseLibRow[];
     },
   });
+
+  const athleteId = (sessionQuery.data?.session as { week_plans?: { athlete_id?: string } | null } | null)?.week_plans?.athlete_id ?? null;
+  const baselines = useAthleteBaselines(athleteId).data ?? {};
+  const roundingKg = useRoundingStep(athleteId);
+
+  /** Switch a row between RPE and fixed percent of baseline (same weight on every set). */
+  const setSteering = (ex: PlannedExerciseRow, steering: "rpe" | "pct") => {
+    const base = lookupBaseline(baselines, ex.exercise) ?? null;
+    if (steering === "pct") {
+      const pct = normalizePct(base && ex.target_weight_kg ? (Number(ex.target_weight_kg) / base) * 100 : 70) ?? 70;
+      updateExercise.mutate({ id: ex.id, patch: { target_pct: pct, target_rpe: null, target_rir: null, intensity_metric: "rpe", target_weight_kg: pctWeightKg(base, pct, roundingKg) } });
+    } else {
+      const kg = base ? prescribedWeightKg({ oneRmKg: base, reps: ex.target_reps, metric: "rpe", rpe: 7, rir: null }) : null;
+      updateExercise.mutate({ id: ex.id, patch: { target_pct: null, target_rpe: 7, target_rir: null, intensity_metric: "rpe", target_weight_kg: kg } });
+    }
+  };
+  const setPct = (ex: PlannedExerciseRow, value: number | null) => {
+    const pct = normalizePct(value);
+    if (pct == null) return;
+    updateExercise.mutate({ id: ex.id, patch: { target_pct: pct, target_weight_kg: pctWeightKg(lookupBaseline(baselines, ex.exercise) ?? null, pct, roundingKg) } });
+  };
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["planned-session-edit", sessionId] });
@@ -204,6 +231,21 @@ export function PlannedSessionEditor({
                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>
             </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Styrning:</span>
+              <select
+                aria-label={`Styrning för ${ex.exercise}`}
+                value={ex.target_pct != null ? "pct" : "rpe"}
+                onChange={(e) => setSteering(ex, e.target.value as "rpe" | "pct")}
+                className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                <option value="rpe">RPE</option>
+                <option value="pct">Procent</option>
+              </select>
+              {ex.target_pct != null && (
+                <span className={ex.target_weight_kg == null ? "text-destructive" : "text-muted-foreground"}>{pctRowLabel(ex)}</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               <NumField
                 label="Set"
@@ -215,7 +257,15 @@ export function PlannedSessionEditor({
                 value={ex.target_reps}
                 onChange={(v) => v != null && updateExercise.mutate({ id: ex.id, patch: { target_reps: v } })}
               />
-              {ex.intensity_metric === "rir" ? (
+              {ex.target_pct != null ? (
+                <NumField
+                  key={`pct-${ex.target_pct}`}
+                  label="% av baslinje"
+                  value={ex.target_pct}
+                  step={0.5}
+                  onChange={(v) => setPct(ex, v)}
+                />
+              ) : ex.intensity_metric === "rir" ? (
                 <NumField
                   label="RIR"
                   value={ex.target_rir}
@@ -230,12 +280,19 @@ export function PlannedSessionEditor({
                   onChange={(v) => updateExercise.mutate({ id: ex.id, patch: { target_rpe: v } })}
                 />
               )}
-              <NumField
-                label="Vikt (kg)"
-                value={ex.target_weight_kg}
-                step={2.5}
-                onChange={(v) => updateExercise.mutate({ id: ex.id, patch: { target_weight_kg: v } })}
-              />
+              {ex.target_pct != null ? (
+                <div>
+                  <Label className="text-xs">Vikt (fast)</Label>
+                  <div className="flex h-9 items-center text-sm font-medium tabular-nums">{ex.target_weight_kg != null ? `${ex.target_weight_kg} kg` : "—"}</div>
+                </div>
+              ) : (
+                <NumField
+                  label="Vikt (kg)"
+                  value={ex.target_weight_kg}
+                  step={2.5}
+                  onChange={(v) => updateExercise.mutate({ id: ex.id, patch: { target_weight_kg: v } })}
+                />
+              )}
               <div className="col-span-2 sm:col-span-1">
                 <Label className="text-xs">Notering</Label>
                 <Input

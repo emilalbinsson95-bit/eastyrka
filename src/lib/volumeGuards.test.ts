@@ -26,3 +26,33 @@ describe("volume guards", () => {
     }
   });
 });
+
+describe("volymvakter räknar bara hårda set (procentrader)", () => {
+  const row = (exercise: string, sets: number, reps: number, extra: Record<string, unknown> = {}) =>
+    ({ exercise, target_sets: sets, target_reps: reps, target_rpe: 8, intensity_metric: "rpe", ...extra }) as any;
+  const week = (sessions: any[][]) => [{ week_index: 1, label: "V1", kind: "working", sessions: sessions.map((exercises, i) => ({ day_of_week: i + 1, title: `P${i}`, exercises })) }] as any;
+  const benchSets = (w: any) => w[0].sessions.flatMap((s: any) => s.exercises).filter((e: any) => volumeCategory(e) === "horizontal-press" && e.target_pct == null).reduce((a: number, e: any) => a + e.target_sets, 0);
+
+  it("6 × 10 @ 58 % i bänk räknas inte mot bänkens 24 set", () => {
+    const light = row("Bench press", 6, 10, { target_pct: 58, target_rpe: undefined });
+    const out = applyVolumeGuards(week([
+      [row("Bench press", 6, 5), light],
+      [row("Bench press", 6, 5), row("Close-grip bench press", 6, 6)],
+      [row("Bench press", 6, 5), row("Close-grip bench press", 6, 6)],
+    ]));
+    expect(benchSets(out)).toBe(24); // 30 hårda set kapade till 24
+    const pctRow = out[0].sessions[0].exercises.find((e: any) => e.target_pct === 58);
+    expect(pctRow?.target_sets).toBe(6);
+  });
+  it("men räknas i passets 30 set", () => {
+    const light = row("Bench press", 10, 10, { target_pct: 58, target_rpe: undefined });
+    const out = applyVolumeGuards(week([[row("Back squat", 6, 5), light, row("Leg press", 8, 10), row("Lat pulldown", 8, 10)]]));
+    expect(out[0].sessions[0].exercises.reduce((a: number, e: any) => a + e.target_sets, 0)).toBe(30);
+    expect(out[0].sessions[0].exercises.find((e: any) => e.target_pct === 58)?.target_sets).toBe(10);
+  });
+  it("en tung procentrad räknas som hårda set och kapas som vanligt", () => {
+    const heavy = row("Bench press", 10, 5, { target_pct: 80, target_rpe: undefined });
+    const out = applyVolumeGuards(week([[heavy]]));
+    expect(out[0].sessions[0].exercises[0].target_sets).toBe(compSetCap(5));
+  });
+});

@@ -1,6 +1,7 @@
 import { useWarmupLoads } from "@/components/WarmupLoadsCard";
 import { FinishPushButton } from "@/components/PushProgressionCard";
 import { firstSetInstruction } from "@/lib/pushPresentation";
+import { BULK_LOG_MIN_SETS, isPercentRow } from "@/lib/percentRows";
 import { START_WEIGHT_TOLERANCE_KG } from "@/lib/pushProgression";
 import { WarmupReferenceFields } from "@/components/WarmupReferenceFields";
 import { matchesWarmupLoad } from "@/lib/warmupReference";
@@ -89,6 +90,7 @@ interface PlannedExercise {
   target_rir: number | null;
   intensity_metric: "rpe" | "rir";
   target_weight_kg: number | null;
+  target_pct?: number | null;
   lengthened_partials: boolean;
   last_set_to_failure: boolean;
   notes: string | null;
@@ -169,7 +171,7 @@ function TodayPage() {
              planned_exercises (
                id, exercise, variation, target_sets, target_reps,
                target_rpe, target_rir, intensity_metric,
-               target_weight_kg, lengthened_partials, last_set_to_failure,
+               target_weight_kg, target_pct, lengthened_partials, last_set_to_failure,
                notes, order_index, is_technique, push_main, push_lift, rules_version
              )
            )`;
@@ -238,7 +240,7 @@ function TodayPage() {
            planned_exercises (
              id, exercise, variation, target_sets, target_reps,
              target_rpe, target_rir, intensity_metric,
-             target_weight_kg, lengthened_partials, last_set_to_failure,
+             target_weight_kg, target_pct, lengthened_partials, last_set_to_failure,
              notes, order_index, is_technique, push_main, push_lift, rules_version
            )`,
         )
@@ -775,8 +777,10 @@ function PlannedExerciseRow({
   const completed = logs.length;
   const targetSets = ex.target_sets;
   const isDone = completed >= targetSets;
+  const pctRow = isPercentRow(ex);
+  const pctText = pctRow ? `${String(Number(ex.target_pct)).replace(".", ",")} % av ditt max` : null;
 
-  const intensityLabel =
+  const intensityLabel = pctRow ? null :
     ex.intensity_metric === "rir" && ex.target_rir != null
       ? `${ex.target_rir} RIR`
       : ex.target_rpe != null
@@ -798,6 +802,7 @@ function PlannedExerciseRow({
             {ex.notes?.includes("Setupplägg:") ? `${ex.target_sets} arbetsset · första setet: ${ex.target_reps} reps` : `Mål: ${ex.target_sets}×${ex.target_reps}`}
             {intensityLabel && ` @ ${intensityLabel}`}
             {ex.target_weight_kg != null && ` · ${ex.push_main && ex.rules_version === "push-2.0" ? "Startvikt: " : ""}${ex.target_weight_kg} kg`}
+            {pctText && <span className="ml-1 text-[11px]">({pctText})</span>}
           </p>
           {(ex.lengthened_partials || ex.last_set_to_failure) && (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -813,7 +818,8 @@ function PlannedExerciseRow({
               )}
             </div>
           )}
-          {(ex.push_main || ex.target_weight_kg == null) && <p className="mt-2 text-sm">{ex.push_main && ex.rules_version !== "push-2.0" ? "Detta sparade pass har samma målvikter för huvudseten. Logga faktisk RPE; sänk vikten om den blir för tung. Ändrad vikt ger ingen automatisk höjning." : firstSetInstruction(ex.target_weight_kg, ex.target_rpe)}</p>}
+          {pctRow && <p className="mt-2 text-sm">{ex.target_weight_kg != null ? `Fast vikt: ${ex.target_weight_kg} kg på alla set. Behåll vikten även om det känns lätt. Logga faktisk RPE.` : "Vikten saknas eftersom din coach inte har lagt in något max för övningen. Fråga din coach."}</p>}
+          {!pctRow && (ex.push_main || ex.target_weight_kg == null) && <p className="mt-2 text-sm">{ex.push_main && ex.rules_version !== "push-2.0" ? "Detta sparade pass har samma målvikter för huvudseten. Logga faktisk RPE; sänk vikten om den blir för tung. Ändrad vikt ger ingen automatisk höjning." : firstSetInstruction(ex.target_weight_kg, ex.target_rpe)}</p>}
           {ex.notes && !ex.notes.startsWith("Fyra arbetsset på angiven vikt.") && (
             <p className="mt-1 whitespace-pre-line text-xs italic text-muted-foreground">
               {ex.notes}
@@ -890,6 +896,9 @@ function PlannedExerciseRow({
         </div>
       )}
 
+      {!isDone && pctRow && ex.target_weight_kg != null && targetSets >= BULK_LOG_MIN_SETS && targetSets - completed >= 2 && (
+        <BulkLogPlannedSets ex={ex} fromSet={completed + 1} athleteId={athleteId} dateStr={dateStr} />
+      )}
       {!isDone && (
         <LogSetButton
           ex={ex}
@@ -947,7 +956,9 @@ function LogSetButton({
 }) {
   const [open, setOpen] = useState(false);
   const [weight, setWeight] = useState<number>(
-    previousLog ? Number(previousLog.weight_kg) : ex.target_weight_kg == null ? NaN : Number(ex.target_weight_kg),
+    // Percent rows: the planned weight is fixed on every set.
+    isPercentRow(ex) && ex.target_weight_kg != null ? Number(ex.target_weight_kg)
+      : previousLog ? Number(previousLog.weight_kg) : ex.target_weight_kg == null ? NaN : Number(ex.target_weight_kg),
   );
   const [reps, setReps] = useState<number>(
     previousLog ? previousLog.reps : ex.target_reps,
@@ -1027,7 +1038,9 @@ function LogSetButton({
     onError: (e) => toast.error((e as Error).message),
   });
 
-  const intensityLabel = usingRir
+  const intensityLabel = isPercentRow(ex)
+    ? `fast vikt (${String(Number(ex.target_pct)).replace(".", ",")} %)`
+    : usingRir
     ? ex.target_rir != null
       ? `${ex.target_rir} RIR`
       : "RIR"
@@ -1131,6 +1144,85 @@ function LogSetButton({
           >
             <Save className="mr-1 h-4 w-4" />
             {mutation.isPending ? "Saving…" : "Save set"}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/**
+ * Percent rows with many equal sets: log every remaining set at the planned
+ * weight and reps in one go. The athlete gives one RPE for the sets and can
+ * edit each logged set afterwards.
+ */
+function BulkLogPlannedSets({
+  ex,
+  fromSet,
+  athleteId,
+  dateStr,
+}: {
+  ex: PlannedExercise;
+  fromSet: number;
+  athleteId: string;
+  dateStr: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rpe, setRpe] = useState<number>(NaN);
+  const queryClient = useQueryClient();
+  const remaining = ex.target_sets - fromSet + 1;
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!Number.isFinite(rpe)) throw new Error("Välj hur tunga seten kändes (RPE).");
+      const parsed = setSchema.parse({ weight_kg: Number(ex.target_weight_kg), reps: ex.target_reps, rpe });
+      const rows = Array.from({ length: remaining }, (_, i) => ({
+        athlete_id: athleteId,
+        date: dateStr,
+        exercise: ex.exercise,
+        variation: ex.variation,
+        set_number: fromSet + i,
+        reps: parsed.reps,
+        weight_kg: parsed.weight_kg,
+        rpe: parsed.rpe,
+        is_warmup_reference: false,
+        is_technique: ex.is_technique === true,
+        planned_exercise_id: ex.id,
+        actively_confirmed: true,
+      }));
+      const { error } = await supabase.from("training_logs").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${remaining} set loggade som planerat. Ändra ett set med pennan om något blev annorlunda.`);
+      queryClient.invalidateQueries({ queryKey: ["logs-today", athleteId, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["week-logs", athleteId] });
+      setOpen(false);
+      setRpe(NaN);
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="outline" className="mb-2 w-full">
+          Logga alla set som planerat ({remaining} × {ex.target_reps} på {ex.target_weight_kg} kg)
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{ex.exercise} — logga alla set</SheetTitle>
+          <SheetDescription>
+            Set {fromSet}–{ex.target_sets}: {ex.target_reps} reps på {ex.target_weight_kg} kg. Använd bara detta om du gjorde seten som planerat.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="space-y-2 px-4 py-4">
+          <NumField label="Hur tunga kändes seten? (faktisk RPE)" step={0.5} min={1} max={10} value={rpe} onChange={setRpe} />
+          <p className="text-xs text-muted-foreground">Samma RPE sparas på alla set. Du kan ändra vikt, reps eller RPE på varje set efteråt.</p>
+        </div>
+        <SheetFooter className="px-4 pb-4">
+          <Button className="w-full" size="lg" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+            <Save className="mr-1 h-4 w-4" />
+            {mutation.isPending ? "Sparar…" : `Spara ${remaining} set`}
           </Button>
         </SheetFooter>
       </SheetContent>

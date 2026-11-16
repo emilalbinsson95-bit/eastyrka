@@ -1353,6 +1353,7 @@ export type Database = {
           push_main: boolean
           push_terminal_reason: string | null
           rules_version: string | null
+          target_pct: number | null
           target_reps: number
           target_rir: number | null
           target_rpe: number | null
@@ -1381,6 +1382,7 @@ export type Database = {
           push_main?: boolean
           push_terminal_reason?: string | null
           rules_version?: string | null
+          target_pct?: number | null
           target_reps: number
           target_rir?: number | null
           target_rpe?: number | null
@@ -1409,6 +1411,7 @@ export type Database = {
           push_main?: boolean
           push_terminal_reason?: string | null
           rules_version?: string | null
+          target_pct?: number | null
           target_reps?: number
           target_rir?: number | null
           target_rpe?: number | null

@@ -153,6 +153,15 @@ function LearnPage() {
           Ett långsamt lyft är inte automatiskt RPE 10, och ett set som känns jobbigt behöver inte vara nära max.</p>
       </Topic>
 
+      <Topic title="Procent av ditt max">
+        <p>Vissa övningar styrs med <strong>procent av ditt max</strong> i stället för RPE. Ditt max är den baslinje coachen har lagt in för övningen.
+          Står det 10 × 10 · 92,5 kg (58 %) och ditt max är 160 kg, ska du köra 92,5 kg på alla tio seten.</p>
+        <p><strong>Vikten är fast.</strong> Höj den inte för att det känns lätt, och sänk den inte för att följa en RPE.
+          Lätta set med många reps är meningen: de bygger mängd utan att trötta ut lika mycket som tunga set.</p>
+        <p>Logga faktisk RPE som vanligt. Har övningen fyra eller fler likadana set kan du trycka på
+          <strong> Logga alla set som planerat</strong> när du är klar. Blev något set annorlunda ändrar du det efteråt.</p>
+      </Topic>
+
       <Topic title="Lyfthastighet — m/s">
         <p>Har du en hastighetsmätare kan den ge ytterligare underlag för viktvalet.
           <strong> m/s betyder meter per sekund</strong> och beskriver hur snabbt stången rör sig.

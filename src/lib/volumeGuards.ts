@@ -1,5 +1,6 @@
 import { volumeCategory, type TemplateWeek } from "@/lib/strengthTemplates";
 import { compLiftKey } from "@/lib/liftIdentity";
+import { isLightPercentRow } from "@/lib/percentRows";
 import { DEFAULT_STRENGTH_VOLUME, volumeFactorForCategory, type StrengthVolumeProfile } from "@/lib/strengthVolumeProfile";
 
 /**
@@ -7,6 +8,9 @@ import { DEFAULT_STRENGTH_VOLUME, volumeFactorForCategory, type StrengthVolumePr
  * - per-session cap on a competition lift, tighter on heavy low-rep weeks
  * - session cap of 30 total sets, trimming accessories first
  * - weekly floor (6) and ceiling (24) of hard sets for squat, bench and deadlift
+ * The per-session comp cap and the weekly floor/ceiling count hard sets only:
+ * light percent rows (estimated RPE under 6) are left alone there, but still
+ * count toward the 30-set session cap. RPE/RIR rows are always hard.
  */
 const MAIN_CATS = ["squat", "horizontal-press", "hinge"] as const;
 const SESSION_CAP = 30;
@@ -28,7 +32,7 @@ export function applyVolumeGuards(weeks: TemplateWeek[], profile: StrengthVolume
     const skipFloors = isLight(week);
     const sessions = week.sessions.map((s) => {
       const exercises = s.exercises.map((e) =>
-        isComp(e.exercise) && e.target_sets > compSetCap(e.target_reps) ? { ...e, target_sets: compSetCap(e.target_reps) } : { ...e },
+        isComp(e.exercise) && !isLightPercentRow(e) && e.target_sets > compSetCap(e.target_reps) ? { ...e, target_sets: compSetCap(e.target_reps) } : { ...e },
       );
       let total = exercises.reduce((a, e) => a + e.target_sets, 0);
       while (total > SESSION_CAP) {
@@ -44,7 +48,7 @@ export function applyVolumeGuards(weeks: TemplateWeek[], profile: StrengthVolume
       const factor = volumeFactorForCategory(cat, profile);
       const floorSets = skipFloors ? 0 : Math.round(WEEK_FLOOR * Math.min(1, factor));
       const ceilSets = Math.round(WEEK_CEIL * factor);
-      const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat).map((e) => ({ s, e })));
+      const items = sessions.flatMap((s) => s.exercises.filter((e) => volumeCategory(e) === cat && !isLightPercentRow(e)).map((e) => ({ s, e })));
       if (!items.length) continue;
       let sum = items.reduce((a, x) => a + x.e.target_sets, 0);
       // Floor: add to competition lifts (then variations) below their cap, in sessions under the cap.

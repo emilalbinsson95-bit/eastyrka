@@ -1,3 +1,4 @@
+import { isPercentRow, pctRowLabel } from "@/lib/percentRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
 import { Dumbbell, Footprints, HeartPulse, Utensils, Moon, Flame, Wind, Play, Pencil } from "lucide-react";
@@ -378,13 +379,13 @@ async function loadDetail(item: CalendarItem): Promise<Detail> {
 async function loadStrength(plannedSessionId: string): Promise<Detail> {
   const { data: session } = await supabase
     .from("planned_sessions")
-    .select("title, notes, planned_exercises(exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg)")
+    .select("title, notes, planned_exercises(exercise, variation, target_sets, target_reps, target_rpe, target_weight_kg, target_pct)")
     .eq("id", plannedSessionId)
     .maybeSingle();
 
   const exs = (session?.planned_exercises ?? []) as Array<{
     exercise: string; variation: string | null; target_sets: number; target_reps: number;
-    target_rpe: number | null; target_weight_kg: number | null;
+    target_rpe: number | null; target_weight_kg: number | null; target_pct: number | null;
   }>;
   const totalSets = exs.reduce((a, e) => a + (e.target_sets ?? 0), 0);
   const avgRpe = exs.length
@@ -395,6 +396,7 @@ async function loadStrength(plannedSessionId: string): Promise<Detail> {
 
   const lines = exs.map((e) => {
     const label = [e.exercise, e.variation].filter(Boolean).join(" — ");
+    if (isPercentRow(e)) return `${label} · ${pctRowLabel(e)}`;
     const parts: string[] = [`${e.target_sets}×${e.target_reps}`];
     if (e.target_weight_kg) parts.push(`@${e.target_weight_kg}kg`);
     if (e.target_rpe != null) parts.push(`RPE ${e.target_rpe}`);

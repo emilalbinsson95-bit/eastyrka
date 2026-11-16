@@ -23,6 +23,8 @@ export interface TemplateExercise {
   target_rir?: number;
   /** Optional prescribed working weight (set by the individualisation engine). */
   target_weight_kg?: number;
+  /** Percent steering: fixed % of the exercise baseline (30–105). RPE/RIR stay empty. */
+  target_pct?: number;
   intensity_metric: IntensityMetric;
   lengthened_partials?: boolean;
   last_set_to_failure?: boolean;

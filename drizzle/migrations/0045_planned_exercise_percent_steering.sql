@@ -1,0 +1,3 @@
+ALTER TABLE public.planned_exercises ADD COLUMN IF NOT EXISTS target_pct numeric(4,1) NULL;
+ALTER TABLE public.planned_exercises ADD CONSTRAINT planned_exercises_target_pct_range CHECK (target_pct IS NULL OR (target_pct >= 30 AND target_pct <= 105));
+COMMENT ON COLUMN public.planned_exercises.target_pct IS 'Percent steering: fixed % of the exercise baseline (30–105). NULL = RPE/RIR steering (default).';

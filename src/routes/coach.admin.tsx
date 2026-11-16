@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoachingAvailabilityEditor } from "@/components/CoachingAvailabilityEditor";
+import { AnnouncementComposer } from "@/components/Announcements";
 import { isArchivedRole } from "@/lib/moduleAvailability";
 
 export const Route = createFileRoute("/coach/admin")({
@@ -125,6 +126,7 @@ function AdminPage() {
 
   return (
     <div className="space-y-4">
+      <AnnouncementComposer />
       <CoachingAvailabilityEditor />
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

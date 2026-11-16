@@ -4,15 +4,15 @@
 Prioriterat efter nytta: först det som visar varför lyft står still, sedan det som ger push.
 - [x] 1. Mått: hårda/lätta set, mängd, tunga set per huvudlyft och vecka (ordinerat/genomfört) + blockjämförelse i Analys → Volym. Bara visning. Tester med dokumentets siffror (57,8 / 19,9 / 2,7).
 - [x] 1b (generatordelen). Mängd och tunga set per vecka mot referensen (snitt av tre senaste genomförda arbetsveckor; avlastning/toppning/innevarande vecka utesluts) i generatorns förhandsvisning.
-- [ ] 1b (atletdelen). Mängdgraf i atletens Statistik (sv/en).
+- [x] 1b (atletdelen). Mängdgraf (12 veckor) i atletens Statistik och coachens statistikvy, samma beräkning som Analys.
 - [x] 2. Varning "Inga tunga set" (två arbetsveckor i rad; ej avlastning/uppstart/toppning/startvecka/löparstyrka/helkropp 2 dgr) och "Mängd" (>30 % över referens) i generatorn; coach kan skapa ändå och stänga av tunga-set-varningen per atlet. Verifierat som Emil för Shadi och Mattis, av/på provat på Alex. 437 tester.
 - [x] 3. Procent som styrning per rad (RPE/RIR/% i blockredigering och passredigering, vikt = baslinje × % avrundad till coachens steg, fast vikt i Idag, "Logga alla set som planerat" vid ≥4 set, förklaring i Information) + volymvakter som bara räknar hårda set (30-setstaket räknar alla). Alex: 10×10 @ 58 % gav 75 kg (baslinje 130) i redigering och Idag; tio set loggade och testdata borttagen.
 - [x] 3b. Frivillig RPE på procentrader: krävs bara på första setet vid uppskattad RPE ≥ 7; set utan RPE visas som streck och räknas inte i snitt, max eller EAk. Alex loggade 4 × 10 @ 75 kg utan RPE (enstaka + "logga alla"), återläst som tomt i coachvyn; testdata borttagen.
 - [x] 4. Byggövning (steg 6–7): katalogroll + viktsteg, tio standardövningar märkta (Dips skapad), generatorval per lyft (1–2 ggr, 2–5 set, repintervall, Lägg till/Ersätt), "Förra gången/Mål i dag" i Idag, kort i Analys → Volym, förklaring i Information. Alex: Standard powerlifting med benpress gav rad efter böj i v1–3, ingen i avlastning; 140 × 12, 11, 10 gav målet 34 reps och bekräftelse efter 12, 12, 10. Testblock arkiverat, testdata borttagen.
-- [ ] 5. RPE-tak och max reps på procentrader, sedan push i fast procent (steg 4–5).
-- [ ] 6. Procenttrappa per huvudlyft (steg 9).
-- [ ] 7. Mallen Volymblock bänk (steg 8) — sist: störst och minst belägg.
-- [ ] 8. Meddelande om förändringar i appen: admin skriver nyhet, användare ser den en gång; utkast om de senaste ändringarna.
+- [x] 5. RPE-tak (6–10, över taket föreslår 5 % lägre vikt) och max reps på sista setet (repsrekord per 2,5 %, >12 reps ger varken e1RM eller EAk, ≤12 @ RPE 9+ ger coachgodkänt maxförslag); push i fast procent (Push-typ i Viktprogression, alla huvudset samma vikt, över taket/missade reps = miss). Alex: fast procent sparad och återläst, sedan återställd. Tester med dokumentets siffror (165 kg × 80 % = 132,5).
+- [x] 6. Procenttrappa per huvudlyft i generatorn (50/60/67,5 upptrappning, toppset 70/75/80/85 + 2,5 per varv, övriga dagar 62,5 % 5 × 4, avlastning 70 % halva set), procent per vecka redigerbar, spärrad mot push på samma lyft. Panel provad som Emil på Alex.
+- [x] 7. Volymblock bänk: 21 pass (varannan dag 6 v / 3 dgr 7 v), setdos, intrappning, mätsingel, underhåll, mängdbekräftelse, "Backa tre pass" efter ≥5 dagars uppehåll (coach godkänner), maxförslag från pass 21, "Ingen mätning (procentblock)" i EAk. Alex: block skapat (21 pass, 75 kg = 58 % av 130), backning provad med loggade pass 1–4, sedan borttaget.
+- [x] 8. Nyheter i appen: admin skriver/sparar utkast/publicerar per mottagare; användare ser nyheten en gång tills "Jag har läst". Två utkast (atleter, coacher) sparade, inte publicerade — Emil publicerar själv.
 - [ ] Coachbeslut i dokumentet (setdos, mätsingel, max reps i böj/mark m.m.) — dokumentets förslag gäller tills Emil säger annat.
 
 ## Aktuellt

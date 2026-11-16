@@ -10,6 +10,7 @@
 // for 3 / 4 / 5 / 6 days — condensing key work when frequency drops, adding targeted
 // hypertrophy / weak-point days when it climbs. No blank "Day N" placeholders.
 
+import { buildVolumeBenchWeeks } from "./volumeBench";
 import { buildPeakingWeeks, type PeakSummary } from "@/lib/peaking";
 
 export type IntensityMetric = "rpe" | "rir";
@@ -1040,6 +1041,20 @@ export const STRENGTH_TEMPLATES: StrengthTemplate[] = [
     maxDays: 4,
     inspiration: "Teknikbedömning på film och en första referens för nästa block. En vecka visar inte volymtolerans.",
     buildWeeks: startWeek,
+    skipVolumeFloors: true,
+    fixedPrescription: true,
+  },
+  {
+    id: "volume-bench",
+    name: "Volymblock bänk",
+    short: "21 pass bänk — fast procent, toppset och maxning / 6–7 veckor",
+    goal: "Fast dos för bänken: del 1 (pass 1–10) lätt procent med mycket mängd, del 2 (pass 11–20) stegrande toppset och maxning i pass 21. Passen görs i ordning och hoppas aldrig över. Ingen avlastningsvecka.",
+    weeks: 6,
+    daysPerWeek: 3,
+    minDays: 3,
+    maxDays: 4,
+    inspiration: "Procentstyrd volymcykel för bänk. Coachen väljer schema, setdos och tillval.",
+    buildWeeks: () => buildVolumeBenchWeeks(),
     skipVolumeFloors: true,
     fixedPrescription: true,
   },

@@ -4,6 +4,7 @@
  * status, siffror, signalstabilitet, rebound-test och förslag med
  * Godkänn/Avvisa/Justera. Inget ändras i planen förrän coachen beslutar.
  */
+import { PercentBlockEakWeeks } from "@/components/PercentBlockEakWeeks";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -213,6 +214,7 @@ export function EakMesoSection({ athleteId }: { athleteId: string }) {
             För lite data ännu — signalerna byggs upp när atleten loggat minst fyra pass per lyft.
           </p>
         )}
+        <PercentBlockEakWeeks athleteId={athleteId} />
         {LIFTS.map(({ key, label }) => {
           const ev = latestByLift.get(key);
           if (!ev) return null;

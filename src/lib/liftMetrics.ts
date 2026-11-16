@@ -146,6 +146,7 @@ export function plannedRowSets(row: {
   target_reps: number;
   target_weight_kg?: number | null;
   target_rpe?: number | null;
+  target_pct?: number | null;
   is_technique?: boolean;
 }, baselines: Record<string, number>): MetricSet[] {
   const lift = metricLiftKey(row.exercise, row.variation);
@@ -155,6 +156,11 @@ export function plannedRowSets(row: {
     const own = lookupBaseline(baselines, row.exercise) ?? compBaseline(baselines, lift, row.exercise, row.variation);
     const pct = pctOf1RM(rpe, row.target_reps);
     if (own && pct) weight = Math.round((own * pct) / 100 / 2.5) * 2.5;
+  }
+  // Percent rows: fixed % of the exercise's own baseline (competition baseline as fallback).
+  if ((weight == null || weight <= 0) && lift && row.target_pct != null && row.target_pct > 0) {
+    const own = lookupBaseline(baselines, row.exercise) ?? compBaseline(baselines, lift, row.exercise, row.variation);
+    if (own) weight = Math.round((own * Number(row.target_pct)) / 100 / 2.5) * 2.5;
   }
   const n = Math.max(0, Math.round(Number(row.target_sets) || 0));
   return Array.from({ length: n }, () => ({
@@ -274,6 +280,7 @@ export interface PlanWeekInput {
       target_weight_kg?: number | null;
       target_rpe?: number | null;
       target_rir?: number | null;
+      target_pct?: number | null;
     }>;
   }>;
 }

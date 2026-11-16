@@ -11,7 +11,7 @@ describe("weak points", () => {
 
   it("never exceeds the session cap and keeps comp lifts", () => {
     for (const t of STRENGTH_TEMPLATES) {
-      if (t.id === "peak-3w") continue;
+      if (t.id === "peak-3w" || t.id === "volume-bench") continue; // fixed-dose blocks never get weak points
       for (const d of [2, 3, 4].filter(d => d >= t.minDays && d <= t.maxDays)) {
         const base = t.buildWeeks(d);
         const out = applyWeakPoints(base, ["squat-quads", "bench-elbows", "dl-hitch"]);

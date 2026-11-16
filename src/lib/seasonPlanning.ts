@@ -14,6 +14,7 @@ export const generatorSettingsSchema = z.object({
   volumeDeltas: z.object({ squat: z.number().int().min(-6).max(6), bench: z.number().int().min(-6).max(6), deadlift: z.number().int().min(-6).max(6) }).default({ squat: 0, bench: 0, deadlift: 0 }),
   heavySingles: z.object({ enabled: z.boolean(), rpe: z.number().min(8).max(9.5).multipleOf(.5), weeks: z.array(z.number().int().min(1).max(4)) }).default({ enabled: false, rpe: 8, weeks: [2, 3] }),
   builders: z.record(z.enum(["squat", "bench", "deadlift"]), z.object({ exercise: z.string().trim().min(1).max(100), perWeek: z.union([z.literal(1), z.literal(2)]), sets: z.number().int().min(2).max(5), repMin: z.number().int().min(1).max(30), repMax: z.number().int().min(1).max(30), mode: z.enum(["add", "replace"]), stepKg: z.number().positive().max(20) }).nullable()).default({}),
+  ladder: z.object({ squat: z.boolean(), bench: z.boolean(), deadlift: z.boolean() }).partial().default({}),
   peak: z.object({ singles: z.enum(["unset", "yes", "no"]), rpe: z.number().min(7).max(9).multipleOf(.5), weeks: z.array(z.number().int().min(1).max(5)), openers: z.object({ squat: z.number().positive().optional(), bench: z.number().positive().optional(), deadlift: z.number().positive().optional() }) }).default({ singles: "unset", rpe: 8, weeks: [1, 2, 3], openers: {} }),
 });
 export type GeneratorSettings = z.infer<typeof generatorSettingsSchema>;

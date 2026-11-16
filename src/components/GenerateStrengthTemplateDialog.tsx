@@ -65,9 +65,11 @@ import { generatorSettingsSchema, type GeneratorSettings } from "@/lib/seasonPla
 import type { Json } from "@/integrations/supabase/types";
 import { resizeTemplateWeeks, templateShape, MAX_WORKING_WEEKS } from "@/lib/blockLength";
 import { buildFixedWeeks, isFixedTemplate } from "@/lib/fixedTemplate";
+import { buildVolumeBenchWeeks, DEFAULT_VOLUME_BENCH, VOLUME_BENCH_ID, type VolumeBenchOptions } from "@/lib/volumeBench";
 import { BlockMetricsPanel } from "@/components/BlockMetricsPanel";
-import { LIGHT_PHASES } from "@/lib/liftMetrics";
+import { LIGHT_PHASES, compBaseline, metricLiftKey } from "@/lib/liftMetrics";
 import { pctWeightKg } from "@/lib/percentRows";
+import { applyPercentLadder, ladderBlocksPush, ladderWavePct, type LadderChoices, type LadderOverrides } from "@/lib/percentLadder";
 import { lookupBaseline } from "@/lib/eakoefficient";
 import { peakStartDate, peakFinalSessionDates, validPeakDate, peakPeriodDays, peakWeekStartDates } from "@/lib/peakingDates";
 
@@ -274,8 +276,13 @@ export function GenerateStrengthTemplateDialog({
   const [withDeload, setWithDeload] = useState<boolean | null>(defaultDeload ?? null);
   const effWorking = workingWeeks ?? defaultShape?.workingWeeks ?? 3;
   const effDeload = withDeload ?? defaultShape?.deload ?? true;
+  const [vbOptions, setVbOptions] = useState<VolumeBenchOptions>(DEFAULT_VOLUME_BENCH);
+  const [vbSeen, setVbSeen] = useState(false);
+  const isVolumeBench = template?.id === VOLUME_BENCH_ID;
+  useEffect(() => setVbSeen(false), [vbOptions, template?.id]);
   const baseWeeks = useMemo(() => {
     if (!template) return [];
+    if (template.id === VOLUME_BENCH_ID) return applyDeadliftStyle(buildVolumeBenchWeeks(vbOptions), styleQuery.data);
     if (template.buildFromHistory) return d0Plan?.weeks ?? [];
     if (isFixedTemplate(template)) return buildFixedWeeks(template, daysPerWeek, styleQuery.data);
     // Coach-chosen length first, so every later step sees the real block.
@@ -283,7 +290,7 @@ export function GenerateStrengthTemplateDialog({
     // Apply the athlete's competition style before loads so sumo/conventional get their own 1RM.
     if (template.skipVolumeFloors) return applyDeadliftStyle(sized, styleQuery.data);
     return applyDeadliftStyle(enforceTemplateFloors(sized), styleQuery.data);
-  }, [template, daysPerWeek, styleQuery.data, d0Plan, effWorking, effDeload]);
+  }, [template, daysPerWeek, styleQuery.data, d0Plan, effWorking, effDeload, vbOptions]);
 
 
   const suggestion = useMemo(() => {
@@ -364,6 +371,8 @@ export function GenerateStrengthTemplateDialog({
   const [extraSets,setExtraSets]=useState({squat:false,bench:false,deadlift:false});
   const [roundingKg,setRoundingKg]=useState<2.5|1.25|1>(2.5);
   const [builders, setBuilders] = useState<BuilderChoices>({});
+  const [ladder, setLadder] = useState<LadderChoices>({});
+  const [ladderOverrides, setLadderOverrides] = useState<LadderOverrides>({});
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const preferencesQuery = useQuery({
     queryKey: ["generator-preferences", athleteId], enabled: open,
@@ -376,10 +385,10 @@ export function GenerateStrengthTemplateDialog({
   useEffect(() => {
     if (settingsLoaded || !preferencesQuery.isSuccess) return;
     const saved = preferencesQuery.data;
-    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); setExtraSets(saved.extraSets);setRoundingKg(saved.roundingKg); setBuilders(saved.builders ?? {}); }
+    if (saved) { setTuning(saved.tuning); setSetProtocols(saved.setProtocols); if (saved.overload) setOverload(saved.overload); setVolumeDeltas(saved.volumeDeltas); setHeavySingles(saved.heavySingles); setPeakOptions(saved.peak); setExtraSets(saved.extraSets);setRoundingKg(saved.roundingKg); setBuilders(saved.builders ?? {}); setLadder(saved.ladder ?? {}); }
     setSettingsLoaded(true);
   }, [preferencesQuery.isSuccess, preferencesQuery.data, settingsLoaded]);
-  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions,extraSets,roundingKg, builders };
+  const settings: GeneratorSettings = { tuning, overload, setProtocols, volumeDeltas, heavySingles, peak: peakOptions,extraSets,roundingKg, builders, ladder };
   const savePreferences = useMutation({
     mutationFn: async () => {
       const parsed = generatorSettingsSchema.parse(settings);
@@ -413,7 +422,9 @@ export function GenerateStrengthTemplateDialog({
       // Byggövning: same step as weak points, only for full templates (never runner/short/start/peak).
       const pushLifts = new Set<BuilderLift>((pushQuery.data ?? []).filter((c) => c.enabled).map((c) => (c.lift === "sumo" || c.lift === "conventional" ? "deadlift" : c.lift) as BuilderLift));
       const floor = Object.fromEntries((["squat", "bench", "deadlift"] as const).map((l) => [l, Math.round(6 * Math.min(1, volumeFactorForCategory(l === "squat" ? "squat" : l === "bench" ? "horizontal-press" : "hinge", volumeProfile)))]));
-      const built = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBuilders(weeks, builders, { pushLifts, floor });
+      // Procenttrappa (steg 9): coach-chosen per lift, never together with push on the same lift.
+      const laddered = template?.skipVolumeFloors ? weeks : applyPercentLadder(weeks, Object.fromEntries(Object.entries(ladder).filter(([l]) => !pushLifts.has(l as BuilderLift))), { overrides: ladderOverrides, topSetScale: tuning.volume * tuning.mainLifts });
+      const built = template?.skipVolumeFloors ? { weeks, warnings: [] as string[] } : applyBuilders(laddered, builders, { pushLifts, floor });
       let adapted = { weeks: built.weeks, warnings: [...built.warnings] };
       if (!template?.skipVolumeFloors) {
         for (let step = 0; step < 6; step++) {
@@ -427,9 +438,9 @@ export function GenerateStrengthTemplateDialog({
       const changedByGuards = guarded.some((w, wi) => w.sessions.some((session, si) => session.exercises.some((e, ei) => e.target_sets !== adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets)));
       return { weeks: applyVolumeGuards(applyCoachSingles(applySetProtocols(guarded, effProtocols), heavySingles, Boolean(template?.skipVolumeFloors)),volumeProfile), warnings: [...adapted.warnings, ...(changedByGuards ? guarded.flatMap((w,wi)=>w.sessions.flatMap((session,si)=>session.exercises.flatMap((e,ei)=>{const before=adapted.weeks[wi]?.sessions[si]?.exercises[ei]?.target_sets;return before!=null&&before!==e.target_sets?[`${e.exercise}: ${before} → ${e.target_sets} set (slutvakt: pass/vecka).`]:[]}))) : [])] };
     },
-    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions, builders, pushQuery.data],
+    [finalWeeks, overload, tuning.intensity, isPeaking, isTimeLimited, isFixed, template, baseWeeks, weakIds, styleQuery.data, setProtocols, blockEvals, volumeDeltas, heavySingles, volumeProfileQuery.data, volumeProfile, peakOptions, openerSuggestions, builders, pushQuery.data, ladder, ladderOverrides, tuning.volume, tuning.mainLifts],
   );
-  const plannedWeeks = useMemo(() => isPeaking || isFixed || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, pushQuery.data ?? [], styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isFixed,isTimeLimited,template]);
+  const plannedWeeks = useMemo(() => isPeaking || isFixed || template?.skipVolumeFloors || isTimeLimited ? blockResult.weeks : applyPushProgression(blockResult.weeks, (pushQuery.data ?? []).filter((c) => !ladderBlocksPush(ladder, c.lift)), styleQuery.data, Math.max(0,...activeAdjustments.filter(a=>a.kind==="ramp-in").map(a=>a.rampWeeks??0))), [blockResult.weeks,pushQuery.data,styleQuery.data,activeAdjustments,isPeaking,isFixed,isTimeLimited,template,ladder]);
 
   const weeklySets = useMemo(() => {
     const m = templateWeeklySets(plannedWeeks);
@@ -454,6 +465,7 @@ export function GenerateStrengthTemplateDialog({
       if (pushQuery.isLoading || pushQuery.isError) throw new Error("Viktprogressionen kunde inte laddas. Försök igen.");
       if (volumeProfileQuery.isLoading || volumeProfileQuery.isError || historyQuery.isLoading || historyQuery.isError) throw new Error("Athlete history or volume profile is not available yet. Try again.");
       const weeks = plannedWeeks.length > 0 ? plannedWeeks : baseWeeks;
+      if (isVolumeBench && !vbSeen) throw new Error("Kryssa i \"Jag har sett mängden\" innan utkastet sparas.");
       if (!isPeaking && !isTimeLimited && !isFixed) {
         const { error: wpErr } = await supabase.from("athlete_weak_points").upsert(
           { athlete_id: athleteId, weak_points: weakIds, updated_at: new Date().toISOString() },
@@ -472,6 +484,7 @@ export function GenerateStrengthTemplateDialog({
           generator_version: "generator-push-1.0",
           rules_version: PUSH_RULES_VERSION,
           name: blockName ?? template.name,
+          template_id: template.id,
           goal: blockFocus ? `${blockFocus === "volume" ? "Volymfokus" : blockFocus === "strength" ? "Styrkefokus" : "Tävlingsförberedelse"}. ${template.goal}` : template.goal,
           start_date: effectiveStartDate,
           total_weeks: weeks.length,
@@ -572,7 +585,7 @@ export function GenerateStrengthTemplateDialog({
             target_pct: e.target_pct ?? null,
             target_rpe: e.target_pct != null ? null : e.target_rpe ?? null,
             target_rir: e.target_pct != null ? null : e.target_rir ?? null,
-            target_weight_kg: e.target_pct != null && e.push_main && e.target_weight_kg != null ? e.target_weight_kg : e.target_pct != null ? pctWeightKg(lookupBaseline(pctBaselines, e.exercise), e.target_pct, roundingKg) : e.target_weight_kg == null ? null : e.push_lift ? e.target_weight_kg : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
+            target_weight_kg: e.target_pct != null && e.push_main && e.target_weight_kg != null ? e.target_weight_kg : e.target_pct != null ? pctWeightKg(lookupBaseline(pctBaselines, e.exercise) ?? (() => { const l = metricLiftKey(e.exercise, e.variation); return l ? compBaseline(pctBaselines, l, e.exercise, e.variation) : null; })(), e.target_pct, roundingKg) : e.target_weight_kg == null ? null : e.push_lift ? e.target_weight_kg : Math.round(e.target_weight_kg / roundingKg) * roundingKg,
             push_lift: e.push_lift ?? null,
             push_main: e.push_main ?? false,
             push_load_pct: e.push_load_pct ?? null,
@@ -696,7 +709,7 @@ export function GenerateStrengthTemplateDialog({
                 onChange={(e) => isPeaking ? setPeakStart(e.target.value) : setStartDate(e.target.value)}
               />
             </div>
-            <div>
+            <div hidden={isVolumeBench}>
               <Label htmlFor="tpl-dpw">Training days / week</Label>
               <select
                 id="tpl-dpw"
@@ -729,7 +742,41 @@ export function GenerateStrengthTemplateDialog({
             </div>
           </div>
 
-          {isFixed && (
+          {isVolumeBench && (
+            <div className="space-y-3 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Volymblock bänk skapas som fast dos</p>
+              <p>21 pass utan avlastningsvecka. Inga volymgolv, volymvakter, push, svagpunkter, byggövningar, setprotokoll, tunga singlar eller historikförslag. Passen görs i ordning. Du kan redigera alla rader i utkastet efteråt.</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="vb-schedule">Schema</Label>
+                  <select id="vb-schedule" className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground" value={vbOptions.schedule} onChange={(e) => setVbOptions((o) => ({ ...o, schedule: e.target.value as VolumeBenchOptions["schedule"] }))}>
+                    <option value="every-other-day">Varannan dag (6 veckor)</option>
+                    <option value="three-per-week">3 dagar per vecka (7 veckor)</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="vb-dose">Setdos pass 1–10 (5–10 set × 10)</Label>
+                  <Input id="vb-dose" className="mt-1" type="number" min={5} max={10} step={1} value={vbOptions.setDose} onChange={(e) => { const v = Math.round(Number(e.target.value)); if (v >= 5 && v <= 10) setVbOptions((o) => ({ ...o, setDose: v })); }} />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-foreground"><Checkbox checked={vbOptions.rampIn} onCheckedChange={(v) => setVbOptions((o) => ({ ...o, rampIn: v === true }))} />Trappa in: pass 1 får 6 set, pass 2 får 8 set</label>
+              <label className="flex items-center gap-2 text-foreground"><Checkbox checked={vbOptions.measureSingle} onCheckedChange={(v) => setVbOptions((o) => ({ ...o, measureSingle: v === true }))} />Mätsingel @ RPE 7 första passet varje vecka i del 1 (ger EAk ett mätset)</label>
+              <label className="flex items-center gap-2 text-foreground"><Checkbox checked={vbOptions.maintenance} onCheckedChange={(v) => setVbOptions((o) => ({ ...o, maintenance: v === true }))} />Underhåll böj och mark: 3 × 3 @ RPE 7 en gång var per vecka, efter bänken</label>
+              <BlockMetricsPanel
+                athleteId={athleteId}
+                athleteName={athleteName}
+                weeks={baseWeeks}
+                logs={historyQuery.data?.logs ?? []}
+                baselines={historyQuery.data?.baselines ?? []}
+                lightWeekStarts={historyQuery.data?.lightWeekStarts ?? []}
+                today={today}
+                checkHeavy={false}
+                rampWeeks={0}
+              />
+              <label className="flex items-center gap-2 font-medium text-foreground"><Checkbox checked={vbSeen} onCheckedChange={(v) => setVbSeen(v === true)} aria-label="Jag har sett mängden" />Jag har sett mängden</label>
+            </div>
+          )}
+          {isFixed && !isVolumeBench && (
             <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Startveckan skapas exakt som mallen</p>
               <p>En vecka med en maximal trea på RPE 10 i knäböj, bänk och marklyft. Marken följer atletens stans. Viktprogression, svagpunkter, setprotokoll, tunga singlar, volymjusteringar och historikförslag används inte, så treorna ändras inte. Du kan redigera passen efteråt.</p>
@@ -925,6 +972,41 @@ export function GenerateStrengthTemplateDialog({
 
           {!isPeaking && !isTimeLimited && !isFixed && !template?.skipVolumeFloors && (
             <BuilderExercisesPanel coachId={coachId} value={builders} onChange={setBuilders} />
+          )}
+
+          {!isPeaking && !isTimeLimited && !isFixed && !template?.skipVolumeFloors && !template?.sessionSetBudget && (
+            <div className="rounded-lg border bg-card">
+              <div className="border-b px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-primary">Procenttrappa</div>
+              <div className="space-y-3 p-3 text-sm">
+                <p className="text-muted-foreground">Styr ett huvudlyft med procent i stället för RPE. Tyngsta dagen: upptrappning 50/60/67,5 % och toppset 70/75/80/85 % vecka för vecka. Övriga dagar 62,5 % 5 × 4. Avlastning 70 % med halva seten.</p>
+                {(["squat", "bench", "deadlift"] as const).map((lift) => {
+                  const pushOn = (pushQuery.data ?? []).some((c) => c.enabled && (c.lift === lift || (lift === "deadlift" && (c.lift === "sumo" || c.lift === "conventional"))));
+                  const workingWeeks = finalWeeks.filter((w) => w.kind === "working");
+                  return (
+                    <div key={lift} className="space-y-2 border-t pt-2 first:border-t-0 first:pt-0">
+                      <label className="flex items-center gap-2">
+                        <Checkbox checked={!!ladder[lift] && !pushOn} disabled={pushOn} onCheckedChange={(v) => setLadder((c) => ({ ...c, [lift]: v === true }))} />
+                        <span className="font-medium">{lift === "squat" ? "Knäböj" : lift === "bench" ? "Bänkpress" : "Marklyft"}</span>
+                        {pushOn && <span className="text-xs text-muted-foreground">Push är på för lyftet. Stäng av push först.</span>}
+                      </label>
+                      {ladder[lift] && !pushOn && workingWeeks.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {workingWeeks.map((w, i) => (
+                            <label key={w.week_index} className="flex items-center gap-1 text-xs">
+                              V{w.week_index}
+                              <Input className="h-8 w-20" type="number" step={2.5} min={50} max={95} aria-label={`Toppset vecka ${w.week_index}`}
+                                value={ladderOverrides[lift]?.[w.week_index] ?? ladderWavePct(i + 1)}
+                                onChange={(e) => { const v = Number(e.target.value); setLadderOverrides((o) => ({ ...o, [lift]: { ...(o[lift] ?? {}), [w.week_index]: Number.isFinite(v) && v >= 50 && v <= 95 ? v : ladderWavePct(i + 1) } })); }} />
+                              %
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {/* ---- what the peak is based on ---- */}

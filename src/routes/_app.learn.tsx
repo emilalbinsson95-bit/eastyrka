@@ -161,6 +161,10 @@ function LearnPage() {
         <p>RPE behövs bara på första setet, och bara när vikten är tung. På övriga set kan du fylla i RPE om du vill,
           men du behöver inte. Har övningen fyra eller fler likadana set kan du trycka på
           <strong> Logga alla set som planerat</strong> när du är klar. Blev något set annorlunda ändrar du det efteråt.</p>
+        <p><strong>RPE-tak.</strong> Står det till exempel "RPE-tak 8,5" anger du RPE på varje set. Blir ett set tyngre än taket
+          sänker du vikten med 5 % på resten av seten. Appen fyller i den lägre vikten åt dig.</p>
+        <p><strong>Max reps.</strong> Är sista setet märkt max reps gör du så många reps du klarar med godkänd teknik, utan att gå till
+          failure. Fler reps än förra gången på samma procent blir ett repsrekord. Över 12 reps räknas inte in i ditt beräknade max.</p>
       </Topic>
 
       <Topic title="Byggövning">

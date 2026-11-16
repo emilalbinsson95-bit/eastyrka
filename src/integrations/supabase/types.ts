@@ -1003,6 +1003,7 @@ export type Database = {
           rules_version: string | null
           start_date: string
           status: Database["public"]["Enums"]["cycle_status"]
+          template_id: string | null
           total_weeks: number
           updated_at: string
         }
@@ -1019,6 +1020,7 @@ export type Database = {
           rules_version?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["cycle_status"]
+          template_id?: string | null
           total_weeks: number
           updated_at?: string
         }
@@ -1035,6 +1037,7 @@ export type Database = {
           rules_version?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["cycle_status"]
+          template_id?: string | null
           total_weeks?: number
           updated_at?: string
         }
@@ -2700,6 +2703,10 @@ export type Database = {
         Returns: string
       }
       undo_push: { Args: { _id: string }; Returns: undefined }
+      volume_bench_back_up: {
+        Args: { _mesocycle: string; _steps?: number }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "coach" | "athlete" | "physio" | "patient" | "admin"

@@ -358,6 +358,20 @@
       "when": 1794823583938,
       "tag": "0050_max_reps_max_proposal",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794824208973,
+      "tag": "0051_volume_bench_back_up",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1794824287163,
+      "tag": "0052_max_proposal_competition_variation",
+      "breakpoints": true
     }
   ]
 }

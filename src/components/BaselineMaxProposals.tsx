@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { dailyE1RM, lookupBaseline, lookupBaselineName } from "@/lib/eakoefficient";
 import { maxRepsQualifiesForProposal } from "@/lib/percentRows";
+import { isCompetitionDescriptor } from "@/lib/liftIdentity";
 import { Button } from "@/components/ui/button";
 
 export function BaselineMaxProposals({athleteId}:{athleteId:string}) {
@@ -18,11 +19,11 @@ export function BaselineMaxProposals({athleteId}:{athleteId:string}) {
     if(baselines.error) throw baselines.error; if(logs.error) throw logs.error; if(decisions.error) throw decisions.error;
     const map=Object.fromEntries((baselines.data??[]).map(b=>[b.exercise,Number(b.one_rm_kg)]));
     const seen=new Set((decisions.data??[]).map(d=>d.training_log_id));
-    const singles=(logs.data??[]).filter(l=>!seen.has(l.id)&&!l.variation&&Number(l.weight_kg)>(lookupBaseline(map,l.exercise)??Infinity)).map(l=>({...l,proposed:Number(l.weight_kg),baseline:lookupBaseline(map,l.exercise)??0,baselineName:lookupBaselineName(map,l.exercise)}));
+    const singles=(logs.data??[]).filter(l=>!seen.has(l.id)&&isCompetitionDescriptor(l.variation)&&Number(l.weight_kg)>(lookupBaseline(map,l.exercise)??Infinity)).map(l=>({...l,proposed:Number(l.weight_kg),baseline:lookupBaseline(map,l.exercise)??0,baselineName:lookupBaselineName(map,l.exercise)}));
     // Max-rep sets (≤12 reps, RPE ≥9) propose their estimated max, rounded down to 2.5 kg.
     const repMaxes=(maxSets.data??[]).flatMap(l=>{
       const pe=l.planned_exercises as unknown as {target_sets:number}|null;
-      if(!pe||l.set_number!==pe.target_sets||seen.has(l.id)||l.variation||!maxRepsQualifiesForProposal(l.reps,l.rpe))return [];
+      if(!pe||l.set_number!==pe.target_sets||seen.has(l.id)||!isCompetitionDescriptor(l.variation)||!maxRepsQualifiesForProposal(l.reps,l.rpe))return [];
       const proposed=Math.floor(dailyE1RM({weight_kg:Number(l.weight_kg),reps:l.reps,rpe:Number(l.rpe)})/2.5)*2.5;
       const baseline=lookupBaseline(map,l.exercise);
       return baseline!=null&&proposed>baseline?[{...l,proposed,baseline,baselineName:lookupBaselineName(map,l.exercise)}]:[];

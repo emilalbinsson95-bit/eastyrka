@@ -1,3 +1,4 @@
+import { VolumeBenchBackUp } from "@/components/VolumeBenchBackUp";
 import { lookupBaseline } from "@/lib/eakoefficient";
 import { normalizePct, normalizeRpeCap, pctRowLabel, pctWeightKg } from "@/lib/percentRows";
 import { useRoundingStep } from "@/hooks/useRoundingStep";
@@ -422,6 +423,7 @@ function CycleDetailPage() {
             <ArrowLeft className="mr-1 h-4 w-4" /> Mesocycles
           </Link>
         </Button>
+        <VolumeBenchBackUp cycleId={cycleId} athleteId={athleteId} />
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{cycle.name}</h1>

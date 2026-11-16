@@ -11,14 +11,14 @@ export function useMaxRepsLogs(athleteId: string) {
     queryKey: ["max-reps-logs", athleteId],
     queryFn: async (): Promise<MaxRepsLog[]> => {
       const { data, error } = await supabase.from("training_logs")
-        .select("date, exercise, variation, reps, set_number, is_warmup_reference, planned_exercises!inner(target_pct, target_sets, last_set_max_reps)")
+        .select("date, exercise, variation, reps, weight_kg, set_number, is_warmup_reference, planned_exercises!inner(target_pct, target_sets, target_weight_kg, last_set_max_reps)")
         .eq("athlete_id", athleteId).eq("planned_exercises.last_set_max_reps", true).eq("is_warmup_reference", false)
         .order("date").limit(2000);
       if (error) throw error;
       return (data ?? []).flatMap((row) => {
-        const pe = row.planned_exercises as unknown as { target_pct: number | null; target_sets: number } | null;
+        const pe = row.planned_exercises as unknown as { target_pct: number | null; target_sets: number; target_weight_kg: number | null } | null;
         if (!pe || pe.target_pct == null || row.set_number !== pe.target_sets) return [];
-        return [{ exercise: row.exercise, variation: row.variation, pct: Number(pe.target_pct), reps: row.reps, date: row.date }];
+        return [{ exercise: row.exercise, variation: row.variation, pct: Number(pe.target_pct), reps: row.reps, date: row.date, weightKg: row.weight_kg == null ? null : Number(row.weight_kg), plannedKg: pe.target_weight_kg == null ? null : Number(pe.target_weight_kg) }];
       });
     },
   });
@@ -63,13 +63,15 @@ export function RpeCapEventsCard({ athleteId }: { athleteId: string }) {
     queryKey: ["rpe-cap-events", athleteId],
     queryFn: async () => {
       const { data, error } = await supabase.from("training_logs")
-        .select("id, date, exercise, variation, set_number, reps, weight_kg, rpe, planned_exercises!inner(rpe_cap, target_pct)")
+        .select("id, date, exercise, variation, set_number, reps, weight_kg, rpe, planned_exercises!inner(rpe_cap, target_pct, target_sets, last_set_max_reps)")
         .eq("athlete_id", athleteId).not("planned_exercises.rpe_cap", "is", null).eq("is_warmup_reference", false)
         .order("date", { ascending: false }).limit(500);
       if (error) throw error;
       return (data ?? []).flatMap((row) => {
-        const pe = row.planned_exercises as unknown as { rpe_cap: number | null; target_pct: number | null } | null;
+        const pe = row.planned_exercises as unknown as { rpe_cap: number | null; target_pct: number | null; target_sets: number; last_set_max_reps: boolean } | null;
         if (!pe?.rpe_cap || row.rpe == null || Number(row.rpe) <= Number(pe.rpe_cap)) return [];
+        // The max-reps set is meant to end close to failure, so it is not a cap event.
+        if (pe.last_set_max_reps && row.set_number === pe.target_sets) return [];
         return [{ ...row, cap: Number(pe.rpe_cap), pct: pe.target_pct }];
       }).slice(0, 20);
     },

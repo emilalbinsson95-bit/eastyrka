@@ -85,4 +85,11 @@ describe("steg 4: RPE-tak och max reps", () => {
     expect(maxRepsQualifiesForProposal(8, 9)).toBe(true);
     expect(maxRepsQualifiesForProposal(8, 8.5)).toBe(false);
   });
+  it("max reps på sänkt vikt efter RPE-taket (85 kg i stället för 90 kg) blir inget repsrekord på 70 %", () => {
+    const records = repRecords([
+      { exercise: "Bench press", pct: 70, reps: 9, date: "2026-11-16", weightKg: 85, plannedKg: 90 },
+      { exercise: "Bench press", pct: 70, reps: 7, date: "2026-11-09", weightKg: 90, plannedKg: 90 },
+    ]);
+    expect([...records.values()].map((r) => r.reps)).toEqual([7]);
+  });
 });

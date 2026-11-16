@@ -58,3 +58,5 @@
 - Builders (builderExercises.ts): after weak points; outside guards/EAk/protocols.
 - Meet day: taper_followups (`competitionDay.ts`); attempts only via `save_competition_attempts`.
 - percentLadder.ts excludes push lifts; volumeBench.ts is fixed (mesocycles.template_id), reordered only by `volume_bench_back_up`.
+- EAk evaluations are unique per athlete/lift/window_end and parallel runs skip on conflict, because duplicate rows left phantom pending coach decisions.
+- Max-rep sets count as rep records only on the planned load, because RPE-cap reductions would inflate records at the planned percent.

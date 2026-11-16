@@ -217,6 +217,8 @@ export const runEakEvaluation = createServerFn({ method: "POST" })
         supporting_signals: JSON.parse(JSON.stringify(r.supportingSignals)),
         nfor_flag: r.nforFlag,
       });
+      // A parallel run already stored this window (unique athlete/lift/window_end).
+      if (error?.code === "23505") { results.push({ lift, status: "unchanged", stored: false }); continue; }
       if (error) throw new Error(error.message);
       results.push({ lift, status: r.status, stored: true });
 

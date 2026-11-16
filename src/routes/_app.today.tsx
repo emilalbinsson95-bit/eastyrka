@@ -2,7 +2,7 @@ import { useWarmupLoads } from "@/components/WarmupLoadsCard";
 import { CompetitionDayToday } from "@/components/CompetitionDayCard";
 import { FinishPushButton } from "@/components/PushProgressionCard";
 import { firstSetInstruction } from "@/lib/pushPresentation";
-import { BULK_LOG_MIN_SETS, isOverRpeCap, isPercentRow, loggedRpeText, maxRepsInstruction, rpeCapReducedKg, rpeRequired } from "@/lib/percentRows";
+import { BULK_LOG_MIN_SETS, isOverRpeCap, isPercentRow, loggedRpeText, maxRepsAtPlannedLoad, maxRepsInstruction, rpeCapReducedKg, rpeRequired } from "@/lib/percentRows";
 import { previousRepRecord, useMaxRepsLogs } from "@/components/RepRecords";
 import { compLiftKey } from "@/lib/liftIdentity";
 import { BUILDER_DEFAULT_STEP_KG, BUILDER_LAST_SET_RPE, BUILDER_RPE, builderTarget, builderTargetMet, lastTimeText, type BuilderLogSet, type BuilderTarget } from "@/lib/builderExercises";
@@ -835,7 +835,8 @@ function PlannedExerciseRow({
   const maxLogs = useMaxRepsLogs(athleteId);
   const maxRecord = pctRow && ex.last_set_max_reps ? previousRepRecord(maxLogs.data, ex.exercise, ex.variation, Number(ex.target_pct), dateStr) : null;
   const maxSetLog = ex.last_set_max_reps ? logs.find((l) => l.set_number === targetSets && !l.is_warmup_reference) : undefined;
-  const newRecord = maxSetLog && (!maxRecord || maxSetLog.reps > maxRecord.reps) && maxRecord ? maxSetLog.reps : null;
+  const maxSetOnPlannedLoad = !maxSetLog || maxRepsAtPlannedLoad(Number(maxSetLog.weight_kg), ex.target_weight_kg == null ? null : Number(ex.target_weight_kg));
+  const newRecord = maxSetLog && maxSetOnPlannedLoad && (!maxRecord || maxSetLog.reps > maxRecord.reps) && maxRecord ? maxSetLog.reps : null;
   // RPE-tak: the first set above the ceiling suggests 5 % lower load on the remaining sets.
   const capLog = pctRow ? logs.filter((l) => !l.is_warmup_reference).sort((a, b) => a.set_number - b.set_number).find((l) => isOverRpeCap(ex.rpe_cap, l.rpe)) : undefined;
   const capHit = !!capLog;
@@ -885,6 +886,7 @@ function PlannedExerciseRow({
             <div className="mt-2 rounded-md border border-border p-2 text-sm">
               <p><span className="font-medium">Sista setet: max reps.</span> {maxRepsInstruction(compLiftKey(ex.exercise))}</p>
               {maxRecord && <p className="text-xs text-muted-foreground">Förra gången: {maxRecord.reps} reps på samma procent ({maxRecord.date}).</p>}
+              {maxSetLog && !maxSetOnPlannedLoad && <p className="mt-1 text-xs text-muted-foreground">Setet gjordes på lägre vikt än planerat och räknas inte som repsrekord på {String(Number(ex.target_pct)).replace(".", ",")} %.</p>}
               {newRecord && <p className="mt-1 font-medium text-primary">Nytt repsrekord: {newRecord} reps på {String(Number(ex.target_pct)).replace(".", ",")} %.</p>}
             </div>
           )}

@@ -122,7 +122,11 @@ export function maxRepsInstruction(lift: "squat" | "bench" | "deadlift" | null):
 /** Percent bucket for rep records: nearest 2.5 %. */
 export const pctBucket = (pct: number) => Math.round(pct / 2.5) * 2.5;
 
-export interface MaxRepsLog { exercise: string; variation?: string | null; pct: number; reps: number; date: string }
+export interface MaxRepsLog { exercise: string; variation?: string | null; pct: number; reps: number; date: string; weightKg?: number | null; plannedKg?: number | null }
+
+/** A max-rep set only counts as a record at its percent when it was done on the planned load (not after an RPE-cap reduction). */
+export const maxRepsAtPlannedLoad = (weightKg: number | null | undefined, plannedKg: number | null | undefined) =>
+  plannedKg == null || weightKg == null || Number(weightKg) >= Number(plannedKg) - 0.01;
 export const repRecordKey = (exercise: string, variation: string | null | undefined, pct: number) =>
   `${exercise.trim().toLowerCase()}::${(variation ?? "").trim().toLowerCase()}::${pctBucket(pct)}`;
 
@@ -130,7 +134,7 @@ export const repRecordKey = (exercise: string, variation: string | null | undefi
 export function repRecords(logs: MaxRepsLog[]): Map<string, { exercise: string; variation: string | null; pct: number; reps: number; date: string }> {
   const out = new Map<string, { exercise: string; variation: string | null; pct: number; reps: number; date: string }>();
   for (const l of [...logs].sort((a, b) => a.date.localeCompare(b.date))) {
-    if (!(l.reps > 0) || !(l.pct > 0)) continue;
+    if (!(l.reps > 0) || !(l.pct > 0) || !maxRepsAtPlannedLoad(l.weightKg, l.plannedKg)) continue;
     const key = repRecordKey(l.exercise, l.variation, l.pct);
     const prev = out.get(key);
     if (!prev || l.reps > prev.reps) out.set(key, { exercise: l.exercise, variation: l.variation ?? null, pct: pctBucket(l.pct), reps: l.reps, date: l.date });

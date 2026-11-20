@@ -31,6 +31,7 @@ import {
 import { GenerateMarathonPlanDialog } from "@/components/GenerateMarathonPlanDialog";
 import { GenerateStrengthTemplateDialog } from "@/components/GenerateStrengthTemplateDialog";
 import { SeasonPlanner } from "@/components/SeasonPlanner";
+import { PlanOverlapAlert } from "@/components/PlanOverlapAlert";
 
 export const Route = createFileRoute("/coach/athletes/$athleteId/cycles")({
   head: () => ({
@@ -392,6 +393,7 @@ function CyclesListPage() {
         </div>
       </div>
 
+      <PlanOverlapAlert athleteId={athleteId} />
       {userId && <SeasonPlanner athleteId={athleteId} coachId={userId} athleteName={profileQuery.data?.full_name ?? "Athlete"} />}
 
       {cyclesQuery.isLoading ? (

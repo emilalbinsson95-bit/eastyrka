@@ -1,3 +1,4 @@
+import { PublishCheckDialog } from "@/components/PublishCheckDialog";
 import { VolumeBenchBackUp } from "@/components/VolumeBenchBackUp";
 import { lookupBaseline } from "@/lib/eakoefficient";
 import { suggestedOneRm } from "@/lib/blockFinish";
@@ -186,6 +187,7 @@ function CycleDetailPage() {
   const userId = user!.id;
   const qc = useQueryClient();
   const [activeWeek, setActiveWeek] = useState(0);
+  const [checkWeekId, setCheckWeekId] = useState<string | null>(null);
 
   const cycleQuery = useQuery({
     queryKey: ["mesocycle", cycleId],
@@ -292,9 +294,10 @@ function CycleDetailPage() {
         .eq("id", input.weekId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["meso-weeks", cycleId] });
-      toast.success("Updated");
+      setCheckWeekId(null);
+      toast.success(vars.publish ? "Veckan är publicerad" : "Veckan är ett utkast igen");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -503,7 +506,9 @@ function CycleDetailPage() {
           athleteId={athleteId}
           onPostponeDeload={()=>{if(confirm("Ersätt vecka fyra med vecka tres arbete och flytta avlastningen till vecka fem? Båda blir utkast. Loggade veckor och tävlingsförberedelse kan inte skrivas över.")) checkpointMutation.mutate(currentWeek.id);}}
           onTogglePublish={(publish) =>
-            togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
+            publish
+              ? setCheckWeekId(currentWeek.id)
+              : togglePublishMutation.mutate({ weekId: currentWeek.id, publish })
           }
           onCopyFromWeek={(fromWeekId, fromIndex) => {
             if (
@@ -520,6 +525,17 @@ function CycleDetailPage() {
         />
       )}
 
+      {checkWeekId && (
+        <PublishCheckDialog
+          open
+          onOpenChange={(o) => !o && setCheckWeekId(null)}
+          athleteId={athleteId}
+          mesocycleId={cycleId}
+          weekId={checkWeekId}
+          pending={togglePublishMutation.isPending}
+          onConfirm={() => togglePublishMutation.mutate({ weekId: checkWeekId, publish: true })}
+        />
+      )}
     </div>
   );
 }

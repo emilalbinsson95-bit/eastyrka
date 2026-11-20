@@ -58,6 +58,8 @@ import { EnduranceSummaryCard } from "@/components/EnduranceSummary";
 import { RpePaceEstimateCard } from "@/components/RpePaceEstimateCard";
 import { StrengthVolumeProfileCard } from "@/components/StrengthVolumeProfileCard";
 import { MesocycleProgressCard } from "@/components/MesocycleProgressCard";
+import { PlanOverlapAlert } from "@/components/PlanOverlapAlert";
+import { BlockReviewCard } from "@/components/BlockReviewCard";
 import { E1rmPrCard, RpePaceTrendCard } from "@/components/StrengthTrendCards";
 
 
@@ -190,6 +192,8 @@ function AthleteDetailPage() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
+          <PlanOverlapAlert athleteId={athleteId} />
+          <BlockReviewCard athleteId={athleteId} compact />
           <MesocycleProgressCard athleteId={athleteId} />
           <EnduranceSummaryCard athleteId={athleteId} />
           <div className="grid gap-4 md:grid-cols-2">

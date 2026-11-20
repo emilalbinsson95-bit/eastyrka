@@ -53,6 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BlockReviewCard } from "@/components/BlockReviewCard";
 import { Badge } from "@/components/ui/badge";
 import { plannedSessionDate } from "@/lib/planned-session-dates";
 import { dailyE1RM, rollingE1RMBySession, countsForEAk, isReadinessLift, lookupBaseline as resolveBaseline, baselineExerciseKey } from "@/lib/eakoefficient";
@@ -1111,6 +1112,8 @@ function AnalyticsPage() {
       )}
 
       {!isLoading && <EakMesoSection athleteId={athleteId} />}
+
+      {!isLoading && <BlockReviewCard athleteId={athleteId} />}
 
       {!isLoading && (
         <Tabs

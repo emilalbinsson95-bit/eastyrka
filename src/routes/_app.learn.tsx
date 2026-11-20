@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_app/learn")({
   head: () => ({
     meta: [
       { title: "RPE, lyfthastighet och träningsbegrepp — SETPOINT" },
-      { name: "description", content: "Praktiska förklaringar av RPE, singlar, startvikter och lyfthastighet i m/s, samt begreppen i ditt träningsprogram." },
+      { name: "description", content: "Praktiska förklaringar av teknik, RPE, singlar, startvikter och lyfthastighet i m/s, samt begreppen i ditt träningsprogram." },
       { property: "og:title", content: "Lär dig träningsbegreppen — SETPOINT" },
       { property: "og:description", content: "Förstå mål-RPE, faktisk RPE och lyfthastighet i m/s, tillsammans med block, deload och toppning." },
       { property: "og:type", content: "website" },
@@ -122,6 +122,24 @@ function LearnPage() {
         <p>Rulla upp sakta, kota för kota, med huvudet sist. Gör sedan 5 stora, långsamma armcirklar framåt och 5 bakåt, en arm i taget. Avsluta med att sträcka båda armarna mot taket och luta dig lätt åt höger och vänster.</p>
       </Topic>
 
+
+      <Topic title="Teknik — samma lyft varje rep">
+        <p>Teknik är inte en enda sak. Stans, grepp och vinklar skiljer sig mellan lyftare, men ett effektivt lyft har alltid fem saker gemensamt.
+          Det gäller oavsett vikt, antal reps och om du har fem reps kvar eller ingen.</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li><strong>Symmetri</strong> — båda sidor jobbar lika och stången rör sig rakt. Höften vrids inte i böjen, ena armen trycker inte före den andra i bänken och stången går inte snett i marken.</li>
+          <li><strong>Kontroll</strong> — du styr stången hela vägen, även på väg ner. I böj och bänk sänker du i samma fart varje rep, utan att tappa ner vikten och studsa. I marken sätter du ner stången i stället för att släppa den.</li>
+          <li><strong>Stabilitet</strong> — fötterna står still, bålen är spänd innan stången börjar röra sig och i bänken ligger skulderbladen kvar där du satte dem.</li>
+          <li><strong>Kraft</strong> — när stången ska upp trycker du så snabbt du kan, även när vikten är lätt. Uppvärmning och lätta procentset är inget undantag.</li>
+          <li><strong>Konsekvens</strong> — varje rep görs på samma sätt: samma setup, andning, djup och fart ner. Första repen med tom stång ska se ut som sista repen i tyngsta setet.</li>
+        </ul>
+        <p><strong>Konsekvens håller ihop resten.</strong> Byter du setup när vikten blir tung, eller slarvar med de lätta repsen, tränar du i praktiken två olika lyft.
+          Det lätta setet förbereder dig då inte för det tunga.</p>
+        <p>Det påverkar också siffrorna i appen. RPE, E1RM och EAk utgår från att setet gjordes som vanligt.
+          En rep med kortare djup, kortare paus eller studs ger ett värde som inte går att jämföra med förra veckan.</p>
+        <p>Saknas en eller flera av de fem delarna förlorar du en del av träningseffekten, även om vikterna går upp.
+          Filma tunga set från sidan och snett framifrån och gå igenom dem med coachen. Mycket syns på film som inte känns under setet.</p>
+      </Topic>
 
       <Topic title="RPE — hur tungt var setet?">
         <p>RPE beskriver hur nära din gräns ett set var. Bedöm direkt efter setet:

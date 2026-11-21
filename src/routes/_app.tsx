@@ -1,4 +1,5 @@
 import { AnnouncementBanner } from "@/components/Announcements";
+import { CoachNoticeBanner } from "@/components/CoachNotices";
 import { BrandMark } from "@/components/BrandMark";
 import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
@@ -100,6 +101,7 @@ function AthleteLayout() {
 
       <main className="mx-auto max-w-3xl px-4 py-6">
         <AnnouncementBanner />
+        <CoachNoticeBanner />
         <Outlet />
       </main>
 

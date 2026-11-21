@@ -459,6 +459,62 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_notice_reads: {
+        Row: {
+          notice_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          notice_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          notice_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_notice_reads_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "coach_notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_notices: {
+        Row: {
+          body: string
+          coach_id: string
+          coach_name: string | null
+          created_at: string
+          id: string
+          recipient_ids: string[] | null
+          visible_until: string | null
+        }
+        Insert: {
+          body: string
+          coach_id: string
+          coach_name?: string | null
+          created_at?: string
+          id?: string
+          recipient_ids?: string[] | null
+          visible_until?: string | null
+        }
+        Update: {
+          body?: string
+          coach_id?: string
+          coach_name?: string | null
+          created_at?: string
+          id?: string
+          recipient_ids?: string[] | null
+          visible_until?: string | null
+        }
+        Relationships: []
+      }
       coaching_availability: {
         Row: {
           coaching_places: number
@@ -2665,6 +2721,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_accepted_athlete_of: {
+        Args: { _athlete_id: string; _coach_id: string }
         Returns: boolean
       }
       is_coach_of: {

@@ -1,4 +1,5 @@
 import { PendingCoachDecisions } from "@/components/PendingCoachDecisions";
+import { CoachNoticeComposer } from "@/components/CoachNotices";
 import { latestChartStrength, chartMeasurements } from "@/lib/chartMetrics";
 import { isReadinessLift, lookupBaseline } from "@/lib/eakoefficient";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -313,6 +314,7 @@ function CoachRosterPage() {
           />
         ))}
       </div>
+      <CoachNoticeComposer athletes={athletes} />
       <PendingCoachDecisions athletes={athletes} />
       <EakDecisionPanel athletes={athletes} />
     </div>

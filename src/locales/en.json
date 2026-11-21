@@ -497,5 +497,10 @@
     "close": "Got it",
     "next": "Next",
     "of": "{{n}} of {{total}}"
+  },
+  "coachNotice": {
+    "title": "Note from your coach",
+    "from": "From {{name}}",
+    "close": "OK"
   }
 }

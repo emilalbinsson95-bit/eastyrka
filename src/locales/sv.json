@@ -497,5 +497,10 @@
     "close": "Jag har läst",
     "next": "Nästa",
     "of": "{{n}} av {{total}}"
+  },
+  "coachNotice": {
+    "title": "Notis från coach",
+    "from": "Från {{name}}",
+    "close": "OK"
   }
 }

@@ -949,6 +949,8 @@ function BaselinesEditor({ athleteId }: { athleteId: string }) {
       queryClient.invalidateQueries({ queryKey: ["athlete-baselines-list", athleteId] });
       queryClient.invalidateQueries({ queryKey: ["athlete-baselines", athleteId] });
       queryClient.invalidateQueries({ queryKey: ["baseline-history", athleteId] });
+      // Coach baseline edits also move the push calculation max (database trigger).
+      queryClient.invalidateQueries({ queryKey: ["push-state", athleteId] });
     },
     onError: (e) => toast.error((e as Error).message),
   });

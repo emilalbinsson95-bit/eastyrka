@@ -2739,6 +2739,7 @@ export type Database = {
         Args: { _week_id: string }
         Returns: undefined
       }
+      push_lift_for_baseline: { Args: { _exercise: string }; Returns: string }
       push_rts_pct: { Args: { _reps: number; _rpe: number }; Returns: number }
       save_competition_attempts: {
         Args: { _attempts: Json; _mesocycle_id: string }
